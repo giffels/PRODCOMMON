@@ -22,13 +22,13 @@ def loadConf():
        #NOTE: do nothing for the moment.
        i='do_nothing'
     except StandardError, ex:
-        msg = "ProdDb.Config:"
-        msg += "Unable to load ProdAgent Config for ProdDb\n"
+        msg = "ProdDB.Config:"
+        msg += "Unable to load ProdAgent Config for ProdDB\n"
         msg += "%s\n" % ex
         logging.warning(msg)
 
 
-defaultConfig={'dbName':'ProdDb',
+defaultConfig={'dbName':'ProdDB',
                'host':'localhost',
                'user':'Proddie',
                'passwd':'ProddiePass',

@@ -74,6 +74,7 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=True):
            __connectionCache[cacheKey]=(conn,time.time(),time.time())
            return conn
        except Exception, v:
+           logging.debug("Error connecting to the database: "+str(v))
            # wait and try again.
            time.sleep(__dbWaitingTime)
    raise RuntimeError(1,"Could not connect to database")

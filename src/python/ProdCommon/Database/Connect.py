@@ -20,7 +20,7 @@ def connect(**config):
      """
      actualConfig = defaultConfig
      if config != {}:
-          actualConfig = config
+         actualConfig = config
      try:
          conn=Mysql.connect(actualConfig['dbName'],\
                             actualConfig['host'],\
