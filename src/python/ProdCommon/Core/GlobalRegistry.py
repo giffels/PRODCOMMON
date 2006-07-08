@@ -74,10 +74,10 @@ def retrieveHandler(objectName,registryName):
 
     """
     if not GlobalRegistry.registries.has_key(registryName):
-       msg = "Registry %s is not registered in the GlobalRegistry\n" % name
+       msg = "Registry %s is not registered in the GlobalRegistry\n" % registryName
        raise ProdException(msg)
     if objectName not in GlobalRegistry.registries[registryName].keys():
-        msg = "Name: %s not a registered Handler\n" % name
+        msg = "Name: %s not a registered Handler\n" % registryName
         msg += "No object registered with that name in GlobalRegistry"
         raise RuntimeError, msg
     logging.debug("Retrieving "+objectName+" from registry "+registryName)
