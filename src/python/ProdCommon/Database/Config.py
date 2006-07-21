@@ -14,13 +14,15 @@ import logging
 
 from ProdCommon.Core.ProdException import ProdException
 
-#NOTE: Need to make a distinction for prodagent and prodmanager
-#NOTE: when loading the configuration.
+#NOTE: we use the convention that we pass the configuration
+#NOTE: object which has a "DB" block
 
-def loadConf():
+def loadConf(configuration=None):
     try:
-       #NOTE: do nothing for the moment.
-       i='do_nothing'
+       if configuration!=None:
+          configObject=configuration()
+          dbConfig=configObject.getConfig("DB")
+          defaultConfig.update(dbConfig)
     except StandardError, ex:
         msg = "ProdDB.Config:"
         msg += "Unable to load ProdAgent Config for ProdDB\n"
@@ -28,20 +30,17 @@ def loadConf():
         logging.warning(msg)
 
 
-defaultConfig={'dbName':'ProdDB',
-               'host':'localhost',
-               'user':'Proddie',
-               'passwd':'ProddiePass',
-               'socketFileLocation':'/opt/openpkg/var/mysql/mysql.sock',
+# NOTE: these files need to be overwritten by values from the config file.
+defaultConfig={'dbName':'ChangeMe',
+               'host':'ChangeMe',
+               'user':'ChangeMe',
+               'passwd':'ChangeMe',
+               'socketFileLocation':'ChangeMe',
                'portNr':'',
                'refreshPeriod' : 4*3600 ,
                'maxConnectionAttempts' : 5,
                'dbWaitingTime' : 10 
               }
 
-try:
-   loadConf()
-except Exception,ex:
-   raise ProdException(str(ex))
 
         
