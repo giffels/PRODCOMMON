@@ -52,7 +52,7 @@ def preInstall(valid):
    print("the prod agent database")
    print
 
-   print("Using config file: "+config)
+   print("Using config file: "+str(config))
    return config
 
 def adminLogin():
