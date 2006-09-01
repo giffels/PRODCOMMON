@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+"""
+_prodcommon-config_
+
+Command line tool for generating a ProdmgrConfiguration.
+
+Requires that PRODCOMMON_CONFIG be set to provide the location
+of the configuration file being created
+
+"""
+
+import getopt
+import os
+import sys
+import time
+
+from ProdCommon.Core.Configuration import ProdCommonConfiguration
+
+_Timestamp = time.strftime("%d-%M-%Y")
+
+def usage():
+    """print usage info"""
+    strg = "Usage: prodcommon-new-config <options>\n"
+    strg += " --config=<configFileName> : Config will be written into\n"
+    strg += "   file provided, else it will be written to $PRODAGENT_CONFIG\n"
+
+    print strg
+
+
+valid = ["config="]
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "", valid)
+except getopt.GetoptError, ex:
+    print str(ex)
+    usage()
+    sys.exit(1)
+
+configFile = None
+
+for opt, arg in opts:
+    
+    if opt == "--config":
+        configFile = arg
+
+
+
+if configFile == None:
+    configFile = os.environ.get("PRODCOMMON_CONFIG", None)
+    if configFile == None:
+        print "Configfile not found:"
+        print "Must be provided either via $PRODCOMMON_CONFIG env var"
+        print "Or via --config option"
+        sys.exit(1)
+
+if os.path.exists(configFile):
+    print "Config File Already Exists: %s" % configFile
+    backup = "%s.BAK.%s" % (configFile, _Timestamp)
+    os.system("/bin/cp %s %s" % (configFile, backup))
+    print "Config File backed up to:"
+    print " ", backup
+
+
+coreFields = {
+    "Core" :{
+    'logFile':'/tmp/prodcommon',
+    'debug':'on'
+    },
+    "DB": {
+    'dbName':'ProdCommonDB',
+    'host':'localhost',
+    'user':'Proddie',
+    'passwd':'ProddiePass',
+    'socketFileLocation':'/var/lib/mysql/mysql.sock',
+    'portNr':'',
+    'schemaLocation': "/home/fvlingen/programs/PRODCOMMON/src/sql/ProdCommonDB/ProdCommonDB.sql"
+    },
+    }# end core Fields
+
+
+
+#  //
+# // Map of block names to comments for the block.
+#//  Comments get inserted into the config file as XML comments
+#  //and provide docs for people who want to poke around in there
+# //
+#//
+comments = {
+    "DB" : \
+"""
+You should only supply either the portNr OR socketFileLocation
+""",
+    }
+
+print "Writing Config File: %s" % configFile
+
+
+config = ProdCommonConfiguration()
+
+#  //
+# // Process core fields
+#//
+for name, values in coreFields.items():
+    cfgDict = config.getConfig(name)
+    cfgDict.update(values)
+    if comments.has_key(name):
+        cfgDict.comment = comments[name]
+
+
+
+#  //
+# // Save config file
+#//
+config.saveToFile(configFile)
+
+
+
+
+
+
+
+
+
+
