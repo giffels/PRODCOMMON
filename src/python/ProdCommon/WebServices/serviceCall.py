@@ -26,9 +26,11 @@ def log(client_id,service_call,service_parameters,service_result):
        dbCur.execute(sqlStr)
        dbCur.execute("COMMIT")
        dbCur.close()
+       conn.close()
     except Exception,ex:
        dbCur.execute("ROLLBACK")
        dbCur.close()
+       conn.close()
        raise ProdException(str(ex))
 
 
@@ -41,7 +43,6 @@ def retrieve(client_id,service_call=None):
        conn=connect(**db_config)
        dbCur=conn.cursor()
        dbCur.execute("START TRANSACTION")
-       logging.info("test1")
        if service_call==None:
            sqlStr=""" SELECT service_result, service_call,service_parameters  
                FROM ws_last_call_server 
@@ -50,13 +51,13 @@ def retrieve(client_id,service_call=None):
                FROM ws_last_call_server 
                WHERE client_id="%s" GROUP BY client_id);
                """ %(client_id)
-           logging.info("test2 "+sqlStr)
            dbCur.execute(sqlStr)
            rows=dbCur.fetchall()
            service_results=cPickle.loads(base64.decodestring(rows[0][0]))
            service_parameters=cPickle.loads(base64.decodestring(rows[0][2]))
            dbCur.execute("COMMIT")
            dbCur.close()
+           conn.close()
            return [str(rows[0][1]),service_parameters,service_results]
 
        sqlStr="""SELECT service_result,service_parameters FROM ws_last_call_server WHERE client_id="%s"
@@ -67,10 +68,12 @@ def retrieve(client_id,service_call=None):
        service_parameters=cPickle.loads(base64.decodestring(rows[0][1]))
        dbCur.execute("COMMIT")
        dbCur.close()
+       conn.close()
        return [service_results,service_parameters]
     except Exception,ex:
        dbCur.execute("ROLLBACK")
        dbCur.close()
+       conn.close()
        raise ProdException(str(ex))
 
 def remove(client_id,service_call):
@@ -86,9 +89,11 @@ def remove(client_id,service_call):
        dbCur.execute(sqlStr)
        dbCur.execute("COMMIT")
        dbCur.close()
+       conn.close()
     except Exception,ex:
        dbCur.execute("ROLLBACK")
        dbCur.close()
+       conn.close()
        raise ProdException(str(ex))
 
 def client_component_id(args_length,args):

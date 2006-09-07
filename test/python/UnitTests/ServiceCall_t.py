@@ -16,8 +16,8 @@ class ServiceCallTest(unittest.TestCase):
    
    def setUp(self):
        """setup for tests"""
-       self.prodagents=10
-       self.components=6
+       self.prodagents=20
+       self.components=10
 
    def testA(self):
        job_parameters={'numberOfJobs':20,
@@ -60,7 +60,6 @@ class ServiceCallTest(unittest.TestCase):
                        True)
                    logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"releaseJob")
                    self.assertEqual(logged_result[0],True)
-                   # try again this should give an error:
                    try:
                        serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-1","acquireAllocation",\
                           ["prodAgentID","myRequest",15],\
@@ -69,7 +68,7 @@ class ServiceCallTest(unittest.TestCase):
                        print("Handling error")
                        pass
            print("Pretending the client crashes")
-           #time.sleep(4)
+           time.sleep(40)
            for i in xrange(0,self.prodagents):
                for j in xrange(0,self.components):
                    serviceCall.remove("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireAllocation")

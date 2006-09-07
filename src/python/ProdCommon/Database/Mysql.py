@@ -25,7 +25,7 @@ __dbWaitingTime=int(defaultConfig['dbWaitingTime'])
 # Set check connectivity period
 __checkConnectionPeriod = (__maxConnectionAttempts * __dbWaitingTime) / 2
 
-def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=True):
+def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=False):
 
    """
 
@@ -38,6 +38,7 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=True):
    """
    cacheKey=dbName+dbHost+dbUser+dbPasswd
    if __connectionCache.has_key(cacheKey):
+       logging.debug("Found database connection in cache")
        conn, staleness, lastCheck = __connectionCache[cacheKey]
        timeDiff=time.time()-staleness
        if(timeDiff > __refreshPeriod) or not cache:
@@ -71,7 +72,10 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=True):
                conn=MySQLdb.Connect(unix_socket=socketLocation,\
                                    host=dbHost,db=dbName,\
                                    user=dbUser,passwd=dbPasswd)
-           __connectionCache[cacheKey]=(conn,time.time(),time.time())
+           if cache:
+               __connectionCache[cacheKey]=(conn,time.time(),time.time())
+           else:
+               logging.debug("Not caching database connection")
            return conn
        except Exception, v:
            logging.debug("Error connecting to the database: "+str(v))

@@ -62,8 +62,7 @@ if os.path.exists(configFile):
 
 coreFields = {
     "Core" :{
-    'logFile':'/tmp/prodcommon',
-    'debug':'on'
+    'placeholder':'placeholder_value'
     },
     "DB": {
     'dbName':'ProdCommonDB',
