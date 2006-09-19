@@ -23,19 +23,15 @@ from ProdCommon.Database.Install import preInstall
 
 # start the install db process:
     
-valid = ['config=','help']
-
-# check the input
-config=preInstall(valid)
 # load config file
-if config==None:
-    try:
-        config = loadProdCommonConfiguration()
-        compCfg = config.getConfig("DB")
-    except StandardError, ex:
-        msg = "Error reading configuration:\n"
-        msg += str(ex)
-        raise RuntimeError, msg
+try:
+    config = loadProdCommonConfiguration()
+    
+    compCfg = config.getConfig("DB")
+except StandardError, ex:
+    msg = "Error reading configuration:\n"
+    msg += str(ex)
+    raise RuntimeError, msg
 # ask for password (optional)
 userName,passwd=adminLogin()
 
