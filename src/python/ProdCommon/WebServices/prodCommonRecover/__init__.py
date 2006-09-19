@@ -1,13 +1,13 @@
 from ProdCommon.WebServices import serviceCall
 
 def lastCall(req,method_name,args):
-  component=serviceCall.client_component_id(1,args)
-  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,None)
+  component,client_tag=serviceCall.client_component_id(2,args)
+  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,None)
   return result
 
 def lastServiceCall(req,method_name,args):
-  component=serviceCall.client_component_id(2,args)
-  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,args[0])
+  component,client_tag=serviceCall.client_component_id(3,args)
+  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,args[0])
   return result
 
 

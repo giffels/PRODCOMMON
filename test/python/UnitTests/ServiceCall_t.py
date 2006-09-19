@@ -42,23 +42,29 @@ class ServiceCallTest(unittest.TestCase):
                for j in xrange(0,self.components):
                    serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireAllocation",\
                        ["prodAgentID","myRequest",15],\
-                       allocation_result)
-                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireAllocation")
+                       allocation_result,"my_tag1")
+                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"my_tag1","acquireAllocation")
                    self.assertEqual(logged_result[0],allocation_result)
+
+                   try:
+                       logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"my_wrong_tag1","acquireAllocation")
+                   except Exception,ex:
+                       print(str(ex))
+                       print('INTENTIONAL ERROR!')
                    serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireJobs",\
                        ["prodAgentID","myRequest",job_parameters],\
                        job_result)
-                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireJobs")
+                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"0","acquireJobs")
                    self.assertEqual(logged_result[0],job_result)
                    serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"releaseAllocation",\
                        ["prodAgentID","myRequest/1"],\
                        True)
-                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"releaseAllocation")
+                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"0","releaseAllocation")
                    self.assertEqual(logged_result[0],True)
                    serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"releaseJob",\
                        ["prodAgentID","jobspec1",30],\
                        True)
-                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"releaseJob")
+                   logged_result=serviceCall.retrieve("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"0","releaseJob")
                    self.assertEqual(logged_result[0],True)
                    try:
                        serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-1","acquireAllocation",\
