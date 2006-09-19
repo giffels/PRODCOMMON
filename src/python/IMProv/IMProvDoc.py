@@ -11,13 +11,13 @@ ToDo - Add XPath search abilities to this object in future
 
 """
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvDoc.py,v 1.1 2006/04/10 17:01:33 evansde Exp $"
+__revision__ = "$Id: IMProvDoc.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 
 import os
 
 from xml.dom.minidom import Document
 #from xml.dom.ext import PrettyPrint
-from ProdCommon.IMProv.IMProvNode import IMProvNode
+from IMProv.IMProvNode import IMProvNode
 
 
 

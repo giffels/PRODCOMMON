@@ -6,7 +6,7 @@ Exception classes for IMProv package
 
 """
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvException.py,v 1.1 2006/04/10 17:01:33 evansde Exp $"
+__revision__ = "$Id: IMProvException.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 
 import exceptions
 import inspect

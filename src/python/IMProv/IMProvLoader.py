@@ -8,14 +8,14 @@ converting it into a tree of IMProvNodes
 
 """
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvLoader.py,v 1.1 2006/04/10 17:01:34 evansde Exp $"
+__revision__ = "$Id: IMProvLoader.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 
 
 from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
 
-from ProdCommon.IMProv.IMProvDoc import IMProvDoc
-from ProdCommon.IMProv.IMProvNode import IMProvNode
+from IMProv.IMProvDoc import IMProvDoc
+from IMProv.IMProvNode import IMProvNode
 
 
 

@@ -6,12 +6,12 @@ Dictionary based node container for constructing
 IMProv Documents from
 """
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvNode.py,v 1.1 2006/04/10 17:01:34 evansde Exp $"
+__revision__ = "$Id: IMProvNode.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 
 
 from xml.dom.minidom import Element, Text
 
-from ProdCommon.IMProv.IMProvException import IMProvException
+from IMProv.IMProvException import IMProvException
 
 
 

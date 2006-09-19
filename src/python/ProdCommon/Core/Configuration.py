@@ -4,17 +4,17 @@ _Configuration_
 
 
 """
-__revision__ = "$Id: Configuration.py,v 1.2 2006/08/31 01:28:10 fvlingen Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: Configuration.py,v 1.1 2006/09/01 02:27:29 fvlingen Exp $"
+__version__ = "$Revision: 1.1 $"
 __author__ = "evansde@fnal.gov"
 
 
 import os
 
-from ProdCommon.IMProv.IMProvNode import IMProvNode
-from ProdCommon.IMProv.IMProvDoc import IMProvDoc
-from ProdCommon.IMProv.IMProvQuery import IMProvQuery
-from ProdCommon.IMProv.IMProvLoader import loadIMProvFile
+from IMProv.IMProvNode import IMProvNode
+from IMProv.IMProvDoc import IMProvDoc
+from IMProv.IMProvQuery import IMProvQuery
+from IMProv.IMProvLoader import loadIMProvFile
 
 
 def loadProdCommonConfiguration():

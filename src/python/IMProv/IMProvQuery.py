@@ -7,12 +7,12 @@ from an IMProvNode structure
 
 """
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvQuery.py,v 1.1 2006/04/10 17:01:34 evansde Exp $"
+__revision__ = "$Id: IMProvQuery.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 
 
 import re
-from ProdCommon.IMProv.Predicates import parsePredicate
-from ProdCommon.IMProv.IMProvException import IMProvException
+from IMProv.Predicates import parsePredicate
+from IMProv.IMProvException import IMProvException
 
 _MatchPredicate = re.compile("^[\S]+\[[\S]+\]$")
 

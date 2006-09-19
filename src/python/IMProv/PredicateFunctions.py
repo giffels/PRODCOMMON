@@ -11,7 +11,7 @@ The first argument accepted by a Predicate Function must be
 an IMProvNode instance.
 
 """
-__revision__ = "$Id: PredicateFunctions.py,v 1.1 2006/04/10 17:01:34 evansde Exp $"
+__revision__ = "$Id: PredicateFunctions.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 __version__ = "$Revision: 1.1 $"
 __author__ = "evansde@fnal.gov"
 

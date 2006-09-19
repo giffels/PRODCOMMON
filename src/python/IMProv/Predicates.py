@@ -8,7 +8,7 @@ a predicate object tree structure that can be evaluated on a
 node
 
 """
-__revision__ = "$Id: Predicates.py,v 1.1 2006/04/10 17:01:34 evansde Exp $"
+__revision__ = "$Id: Predicates.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
 __version__ = "$Revision: 1.1 $"
 __author__ = "evansde@fnal.gov"
 
@@ -16,9 +16,9 @@ import shlex
 import re
 import StringIO
 
-from ProdCommon.IMProv.IMProvException import IMProvException
-from ProdCommon.IMProv.PredicateFunctions import PredicateFunctions
-from ProdCommon.IMProv.PredicateOperators import PredicateOperators
+from IMProv.IMProvException import IMProvException
+from IMProv.PredicateFunctions import PredicateFunctions
+from IMProv.PredicateOperators import PredicateOperators
 
     
 class ExpressionParser:
