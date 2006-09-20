@@ -75,7 +75,7 @@ def retrieve(serverURL=None,method_name=None,componentID=None):
        rows=dbCur.fetchall()
        if len(rows)==0:
            raise ProdException("No result in local last service call table with componentID :"+\
-               str(componentID))
+               str(componentID),1000)
        server_url=rows[0][0]
        service_call=rows[0][1]
        component_id=rows[0][2]

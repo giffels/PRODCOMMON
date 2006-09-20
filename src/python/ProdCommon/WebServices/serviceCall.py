@@ -33,8 +33,7 @@ def log(client_id,service_call,service_parameters,service_result,client_tag='0')
        dbCur.execute("ROLLBACK")
        dbCur.close()
        conn.close()
-       raise ProdException(str(ex))
-
+       raise ProdException(str(ex),1001)
 
 
 def retrieve(client_id,client_tag='0',service_call=None):
@@ -59,7 +58,7 @@ def retrieve(client_id,client_tag='0',service_call=None):
            dbCur.execute(sqlStr)
            rows=dbCur.fetchall()
            if len(rows)!=1:
-               raise ProdException("No entries found for client ID: "+str(client_id)+" and tag "+str(client_tag))
+               raise ProdException("No entries found for client ID: "+str(client_id)+" and tag "+str(client_tag),1002)
            service_results=cPickle.loads(base64.decodestring(rows[0][0]))
            service_parameters=cPickle.loads(base64.decodestring(rows[0][2]))
            dbCur.execute("COMMIT")
@@ -72,7 +71,7 @@ def retrieve(client_id,client_tag='0',service_call=None):
        dbCur.execute(sqlStr)
        rows=dbCur.fetchall()
        if len(rows)!=1:
-           raise ProdException("No entries found for client ID: "+str(client_id)+" and tag "+str(client_tag))
+           raise ProdException("No entries found for client ID: "+str(client_id)+" and tag "+str(client_tag),1002)
        service_results=cPickle.loads(base64.decodestring(rows[0][0]))
        service_parameters=cPickle.loads(base64.decodestring(rows[0][1]))
        dbCur.execute("COMMIT")
@@ -83,7 +82,7 @@ def retrieve(client_id,client_tag='0',service_call=None):
        dbCur.execute("ROLLBACK")
        dbCur.close()
        conn.close()
-       raise ProdException(str(ex))
+       raise ProdException(str(ex),1001)
 
 def remove(client_id,service_call):
     global db_config
@@ -103,7 +102,7 @@ def remove(client_id,service_call):
        dbCur.execute("ROLLBACK")
        dbCur.close()
        conn.close()
-       raise ProdException(str(ex))
+       raise ProdException(str(ex),1001)
 
 def client_component_id(args_length,args):
    if len(args)<args_length:

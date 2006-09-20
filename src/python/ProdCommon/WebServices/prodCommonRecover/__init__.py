@@ -1,14 +1,26 @@
+from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.WebServices import serviceCall
 
 def lastCall(req,method_name,args):
-  component,client_tag=serviceCall.client_component_id(2,args)
-  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,None)
-  return result
+  try:
+     component,client_tag=serviceCall.client_component_id(2,args)
+     result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,None)
+     return result
+  except ProdException, ex:
+        raise RuntimeError(ex['ErrorNr'],str(ex))
+  except Exception,ex:
+        raise RuntimeError(0,str(ex))
+
 
 def lastServiceCall(req,method_name,args):
-  component,client_tag=serviceCall.client_component_id(3,args)
-  result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,args[0])
-  return result
+  try:
+     component,client_tag=serviceCall.client_component_id(3,args)
+     result=serviceCall.retrieve(str(req.clarens_dn)+"-"+component,client_tag,args[0])
+     return result
+  except ProdException, ex:
+        raise RuntimeError(ex['ErrorNr'],str(ex))
+  except Exception,ex:
+        raise RuntimeError(0,str(ex))
 
 
 # ---------------------------------------------------------------------------------

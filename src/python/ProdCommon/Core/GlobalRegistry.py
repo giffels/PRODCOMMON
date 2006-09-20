@@ -36,8 +36,7 @@ class GlobalRegistry:
 
    def __init__(self):
        msg = "ProdCommon.Core.GlobalRegistry should not be initialised"
-       raise ProdException(msg)
-    
+       raise ProdException(msg,1003)
 
 def registerHandler(objectRef, objectName,registryName):
    """
@@ -53,13 +52,13 @@ def registerHandler(objectRef, objectName,registryName):
    if objectName in GlobalRegistry.registries[registryName].keys():
        msg = "Duplicate Name used to registerHandler object:\n"
        msg += "%s already exists\n" % objectName
-       raise ProdException(msg)
+       raise ProdException(msg,1004)
    if not callable(objectRef):
        msg = "Object registered as a Handler is not callable:\n"
        msg += "Object registered as %s\n" % objectName
        msg += "The object must be a callable object, either\n"
        msg += "a function or class instance with a __call__ method\n"
-       raise ProdException(msg)
+       raise ProdException(msg,1005)
 
    GlobalRegistry.registries[registryName][objectName] = objectRef
    logging.debug("Registered "+objectName+" in registry "+registryName)
@@ -75,7 +74,7 @@ def retrieveHandler(objectName,registryName):
     """
     if not GlobalRegistry.registries.has_key(registryName):
        msg = "Registry %s is not registered in the GlobalRegistry\n" % registryName
-       raise ProdException(msg)
+       raise ProdException(msg,1006)
     if objectName not in GlobalRegistry.registries[registryName].keys():
         msg = "Name: %s not a registered Handler\n" % objectName
         msg += "No object registered with that name in GlobalRegistry"

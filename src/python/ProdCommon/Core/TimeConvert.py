@@ -8,7 +8,7 @@ def seconds2H_M_S(remainingSeconds):
 
     try:
         if remainingSeconds<0:
-            raise ProdException("seconds for conversion should be larger than 1")
+            raise ProdException("seconds for conversion should be larger than 1",1007)
 
         secondsInHours=3600
         secondsInMinutes=60
@@ -21,4 +21,4 @@ def seconds2H_M_S(remainingSeconds):
         timeFormat=str(hours)+":"+str(minutes)+":"+str(seconds)
         return timeFormat
     except Exception,ex:
-        raise ProdException("Error converting seconds to H:M:S format: "+str(ex))
+        raise ProdException("Error converting seconds to H:M:S format: "+str(ex),1008)

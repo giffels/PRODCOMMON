@@ -7,7 +7,7 @@ General Exception class for Prod modules
 """
 
 __version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: ProdException.py,v 1.1 2006/06/13 17:39:18 fvlingen Exp $"
+__revision__ = "$Id: ProdException.py,v 1.1 2006/06/13 19:21:30 fvlingen Exp $"
 
 import exceptions
 import inspect
@@ -21,7 +21,7 @@ class ProdException(exceptions.Exception):
     it was raised.
 
     """
-    def __init__(self, message, **data):
+    def __init__(self, message, errorNo=None,**data):
         self.name = str(self.__class__.__name__)
         exceptions.Exception.__init__(self, self.name,
                                       message)
@@ -36,6 +36,10 @@ class ProdException(exceptions.Exception):
         self.data.setdefault("ClassInstance", None)
         self.data.setdefault("FileName", None)
         self.data.setdefault("LineNumber", None)
+        if errorNo==None:
+            self.data.setdefault("ErrorNr",0)
+        else:
+            self.data.setdefault("ErrorNr",errorNo)
         
         self.message = message
         self.data.update(data)

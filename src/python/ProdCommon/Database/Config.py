@@ -12,7 +12,6 @@ here will be used.
 import os
 import logging
 
-from ProdCommon.Core.ProdException import ProdException
 
 #NOTE: we use the convention that we pass the configuration
 #NOTE: object which has a "DB" block
