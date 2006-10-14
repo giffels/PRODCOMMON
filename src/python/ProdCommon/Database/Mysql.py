@@ -14,8 +14,6 @@ except:
 import time
 import logging
 
-# Cache (connection pool) so we can reuse connections.
-__connectionCache={}
 # Refresh connections every 4 hours
 __refreshPeriod=int(defaultConfig['refreshPeriod'])
 # Try to connect a maximum of 5 times.
@@ -25,43 +23,14 @@ __dbWaitingTime=int(defaultConfig['dbWaitingTime'])
 # Set check connectivity period
 __checkConnectionPeriod = (__maxConnectionAttempts * __dbWaitingTime) / 2
 
-def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=False):
+def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr=""):
 
    """
 
    _connect_
 
    Generic connect method that returns a connection opbject.
-   We do not need to close this object as we can reuse it.
-   We do however have a refresh period to prevent the connection 
-   from actually "cutting" us of.
    """
-   cacheKey=dbName+dbHost+dbUser+dbPasswd
-   if __connectionCache.has_key(cacheKey):
-       logging.debug("Found database connection in cache")
-       conn, staleness, lastCheck = __connectionCache[cacheKey]
-       timeDiff=time.time()-staleness
-       if(timeDiff > __refreshPeriod) or not cache:
-           conn.close()
-           del __connectionCache[cacheKey] 
-       else:
-           # test if the connection is still open?
-           # NOTE: is there a better way to do this?
-           # NOTE: checking the connection using a cursor
-           # NOTE: can be time consuming and 
-           # NOTE: defeats the use of a cache.
-           # NOTE: what I put in here is a hybrid solution.
-           timeDiff=time.time()-lastCheck
-           if(timeDiff > __checkConnectionPeriod):
-              try:
-                 cursor = conn.cursor()
-                 cursor.execute("SELECT CURDATE()")
-                 cursor.close()
-                 return conn
-              except:
-                 pass
-           else:
-              return conn
    for attempt in range(__maxConnectionAttempts):
        try:
            if (portNr!=""):
@@ -72,10 +41,6 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr="",cache=False):
                conn=MySQLdb.Connect(unix_socket=socketLocation,\
                                    host=dbHost,db=dbName,\
                                    user=dbUser,passwd=dbPasswd)
-           if cache:
-               __connectionCache[cacheKey]=(conn,time.time(),time.time())
-           else:
-               logging.debug("Not caching database connection")
            return conn
        except Exception, v:
            logging.debug("Error connecting to the database: "+str(v))

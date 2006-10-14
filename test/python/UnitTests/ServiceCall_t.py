@@ -74,7 +74,6 @@ class ServiceCallTest(unittest.TestCase):
                        print("Handling error")
                        pass
            print("Pretending the client crashes")
-           time.sleep(40)
            for i in xrange(0,self.prodagents):
                for j in xrange(0,self.components):
                    serviceCall.remove("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireAllocation")
