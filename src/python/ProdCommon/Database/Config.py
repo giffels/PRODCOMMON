@@ -24,7 +24,7 @@ def loadConf(configuration=None):
           defaultConfig.update(dbConfig)
     except StandardError, ex:
         msg = "ProdDB.Config:"
-        msg += "Unable to load ProdAgent Config for ProdDB\n"
+        msg += "Unable to load Config for ProdDB\n"
         msg += "%s\n" % ex
         logging.warning(msg)
 

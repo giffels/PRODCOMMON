@@ -92,8 +92,9 @@ def execute(sqlQuery,sessionID=None):
        start_transaction(sessionID)
    cursor=get_cursor(sessionID)
    try:
-       cursor.execute(sqlQuery)
+       rowsModified=cursor.execute(sqlQuery)
        session[sessionID]['queries'].append(sqlQuery)
+       return rowsModified
    except:
        logging.warning("connection to database lost")
        invalidate(sessionID)
@@ -101,8 +102,9 @@ def execute(sqlQuery,sessionID=None):
        start_transaction(sessionID)
        logging.warning("connection recovered")
        redo()
-       cursor.execute(sqlQuery)
+       rowsModified=cursor.execute(sqlQuery)
        session[sessionID]['queries'].append(sqlQuery)
+       return rowsModified
 
 def fetchall(sessionID=None):       
    if sessionID==None:

@@ -6,16 +6,16 @@ import time
 from ProdCommon.Core.Configuration import loadProdCommonConfiguration
 from ProdCommon.Database.Config import loadConf
 
-config={}
 db_config={}
+configuration=None
 
 def initialize():
    global config 
-   global policies
+   global configuration
  
    compConf=loadProdCommonConfiguration()
-   config.update(compConf.get('Core'))
    db_config.update(compConf.get('DB'))
+   configuration=compConf
 
 initialize()
 
