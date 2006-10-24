@@ -4,6 +4,7 @@ import logging
 
 from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.Core.Codes import exceptions
+from ProdCommon.Database.Dialect import dialect
 from ProdCommon.Database.Connect import connect as dbConnect
 
 # session is a tripplet identified by an id: (connection,cursor,state)
@@ -30,7 +31,8 @@ def start_transaction(sessionID=None):
        raise ProdException(exceptions[4002],4002)
    if not session[sessionID]['state']=='start_transaction':
        session[sessionID]['cursor']=session[sessionID]['connection'].cursor()
-       session[sessionID]['cursor'].execute("START TRANSACTION")
+       startTransaction=str(dialect[current_db['dbType']]['start transaction'])
+       session[sessionID]['cursor'].execute(startTransaction)
        session[sessionID]['state']='start_transaction'
 
    
@@ -95,8 +97,8 @@ def execute(sqlQuery,sessionID=None):
        rowsModified=cursor.execute(sqlQuery)
        session[sessionID]['queries'].append(sqlQuery)
        return rowsModified
-   except:
-       logging.warning("connection to database lost")
+   except Exception,ex:
+       logging.warning("connection to database lost "+str(ex))
        invalidate(sessionID)
        connect(sessionID)
        start_transaction(sessionID)

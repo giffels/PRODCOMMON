@@ -68,7 +68,17 @@ def adminLogin():
    return (userName,passwd)
 
 
-def installDB(schemaLocation,dbName,socketFileLocation,portNr,host,installUser,replace=True ):
+def installDB(schemaLocation,dbName,socketFileLocation,portNr,host,installUser,dbType='mysql',replace=True ):
+
+   if dbType=='oracle':
+       msg="""
+This install script currently only works with mysql. For oracle 
+run The sqlplus application and import the schema 
+(e.g. @ProdMgrDB.ora). To delete the schema do: 
+@ProdMgrDBDelete.ora. You can find the schemas most likely 
+on this location: %s """ %(schemaLocation)
+       print(msg)
+       sys.exit(1)
 
    updateData="--user="+installUser['userName']+ " --password="+str(installUser['passwd'])
    if (socketFileLocation!=""):

@@ -65,6 +65,7 @@ coreFields = {
     'placeholder':'placeholder_value'
     },
     "DB": {
+    'dbType':'mysql',
     'dbName':'ProdCommonDB',
     'host':'localhost',
     'user':'Proddie',
@@ -86,7 +87,8 @@ coreFields = {
 comments = {
     "DB" : \
 """
-You should only supply either the portNr OR socketFileLocation
+-You should only supply either the portNr OR socketFileLocation
+-The database type (dbType) should be either mysql or oracle.
 """,
     }
 

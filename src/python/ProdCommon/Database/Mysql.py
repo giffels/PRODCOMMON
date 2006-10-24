@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 
+from ProdCommon.Core.Codes import exceptions
+from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.Database.Config import defaultConfig
+
 try:
    import MySQLdb
 except:
@@ -46,5 +49,5 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr=""):
            logging.debug("Error connecting to the database: "+str(v))
            # wait and try again.
            time.sleep(__dbWaitingTime)
-   raise RuntimeError(1,"Could not connect to database")
+   raise ProdException(exceptions[4007],4007)
        

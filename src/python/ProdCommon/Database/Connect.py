@@ -2,6 +2,8 @@
 from ProdCommon.Database.Config import defaultConfig
 from ProdCommon.Database import Mysql
 
+import logging
+
 def connect(**config):
      """
      _connect_  Connects to the underlying MySQL database.
@@ -22,13 +24,26 @@ def connect(**config):
      if config != {}:
          actualConfig = config
      try:
-         conn=Mysql.connect(actualConfig['dbName'],\
-                            actualConfig['host'],\
-                            actualConfig['user'],\
-                            actualConfig['passwd'],\
-                            actualConfig['socketFileLocation'],\
-                            actualConfig['portNr'])
-         return conn
+         #NOTE: we might do this a little bit nicer by dynamically
+         #NOTE: loading the connect objects
+         if actualConfig['dbType']=='mysql':
+             logging.debug("Using MySQL connector")
+             conn=Mysql.connect(actualConfig['dbName'],\
+                  actualConfig['host'],\
+                  actualConfig['user'],\
+                  actualConfig['passwd'],\
+                  actualConfig['socketFileLocation'],\
+                  actualConfig['portNr'])
+             return conn
+         if actualConfig['dbType']=='oracle':
+             logging.debug("Using Oracle connector")
+             conn=Oracle.connect(actualConfig['dbName'],\
+                  actualConfig['host'],\
+                  actualConfig['user'],\
+                  actualConfig['passwd'],\
+                  actualConfig['socketFileLocation'],\
+                  actualConfig['portNr'])
+             return conn
      except:
          raise
 

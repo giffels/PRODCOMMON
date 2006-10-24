@@ -40,7 +40,7 @@ installUser={'userName':userName,
              'passwd':passwd}
 # install the database
 installDB(compCfg['schemaLocation'],compCfg['dbName'],compCfg['socketFileLocation'],
-          compCfg['portNr'],compCfg['host'],installUser)
+          compCfg['portNr'],compCfg['host'],installUser,compCfg['dbType'])
 grantUsers(compCfg['dbName'],compCfg['socketFileLocation'],compCfg['portNr'],compCfg['host'],
            users,installUser)
 
