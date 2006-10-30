@@ -124,7 +124,7 @@ def writeSpec(filename, *relValInstances):
 
 
 
-def readRelValSpec(url):
+def readRelValSpec(url, topNode = "ReleaseValidation"):
     """
     _readRelValSpec_
 
@@ -140,7 +140,7 @@ def readRelValSpec(url):
     mainNode = handler._ParentDoc
 
     result = []
-    query = IMProvQuery("/ReleaseValidation/Validate")
+    query = IMProvQuery("/%s/Validate" % topNode)
     nodes = query(mainNode)
     for node in nodes:
         relval = RelValidation("")
@@ -149,7 +149,7 @@ def readRelValSpec(url):
     return result
         
 
-def getRelValSpecForVersion(url, version):
+def getRelValSpecForVersion(url, *versions):
     """
     _getRelValSpecForVersion_
     
@@ -157,11 +157,27 @@ def getRelValSpecForVersion(url, version):
     specs = readRelValSpec(url)
     result = None
     for item in specs:
-        if item.release == version:
-            result = item
+        if item.release in versions:
+            if result == None:
+                result = item
+            else:
+                result.extend(item)
     return result
 
-        
+def listAllVersions(url):
+    """
+    _listAllVersions_
+
+    
+    
+    """
+    specs = readRelValSpec(url)
+    result = []
+    for item in specs:
+        result.append(item.release)
+    return result
+
+
 if __name__ == '__main__':
     #val = RelValidation("CMSSW_0_7_0")
     #val.addTest("RelValSingleMuPlusPt100", 500, 'https://twiki.cern.ch/twiki/pub/CMS/Reco/single_mu_pt_100_positive.cfg')

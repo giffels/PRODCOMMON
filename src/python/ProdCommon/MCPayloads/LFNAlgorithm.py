@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.4 2006/09/05 21:11:35 evansde Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.5 2006/10/27 13:58:19 evansde Exp $"
+__version__ = "$Revision: 1.5 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -63,7 +63,7 @@ def unmergedLFNBase(workflowSpecInstance):
     workflowSpecInstance.parameters['UnmergedLFNBase'] = result
     return result
 
-def mergedLFNBase(workflowSpecInstance):
+def mergedLFNBase(workflowSpecInstance, lfnGroup = None):
     """
     _mergedLFNBase_
 
@@ -79,6 +79,9 @@ def mergedLFNBase(workflowSpecInstance):
         makeTimestampString(timestamp),      # time/date
         workflowSpecInstance.workflowName()  # name of workflow/request
         )
+    if lfnGroup != None:
+        result += "/%s" % lfnGroup
+    
     #  //
     # // Add this to the WorkflowSpec instance
     #//
