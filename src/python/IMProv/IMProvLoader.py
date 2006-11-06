@@ -7,8 +7,8 @@ Sax based parser for reading an IMProv XML file and
 converting it into a tree of IMProvNodes
 
 """
-__version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: IMProvLoader.py,v 1.1 2006/07/21 22:28:27 fvlingen Exp $"
+__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: IMProvLoader.py,v 1.2 2006/11/06 20:08:02 evansde Exp $"
 
 
 from xml.sax.handler import ContentHandler
@@ -89,7 +89,19 @@ def loadIMProvFile(filename):
 
 
 
+def loadIMProvString(xmlString):
+    """
+    _loadIMProvString_
 
+    Treat string as an XML document and feed it through the parser to
+    create an improv tree
+    """
+    handler = IMProvHandler()
+    parser = make_parser()
+    parser.setContentHandler(handler)
+    parser.feed(xmlString)
+    return handler._ParentDoc
+    
 
 
 
