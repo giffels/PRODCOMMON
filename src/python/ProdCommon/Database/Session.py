@@ -98,6 +98,9 @@ def execute(sqlQuery,sessionID=None):
        session[sessionID]['queries'].append(sqlQuery)
        return rowsModified
    except Exception,ex:
+       # the exception might not be a los of connection
+       if ex[0]==1062:
+           raise ex
        logging.warning("connection to database lost "+str(ex))
        invalidate(sessionID)
        connect(sessionID)
