@@ -3,9 +3,11 @@ import cPickle
 import logging
 import time
 
+from ProdCommon.Core.Codes import exceptions
+from ProdCommon.Core.Initialize import db_config
 from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.Database import Session
-from ProdCommon.Core.Initialize import db_config
+from ProdCommon.Database.Dialect import Dialect
 
 #NOTE: we want to implement this different
 #NOTE: as the connection is not the same as
@@ -17,11 +19,10 @@ def log(client_id,service_call,service_parameters,service_result,client_tag='0')
 
     logging.debug('logging service call')
     try:
+       sqlStr=Dialect.buildQuery("ProdCom.Query1",{'client_id':client_id,\
+           'service_call':service_call,'service_parameters':service_parameters,\
+           'service_result':service_result,'client_tag':client_tag,})
        # NOTE: this has to be done different, we do this to keep the log time unique
-       sqlStr="""INSERT INTO ws_last_call_server(client_id,service_call,service_parameters,service_result,client_tag) 
-           VALUES("%s","%s","%s","%s","%s") ON DUPLICATE KEY UPDATE 
-           service_parameters="%s", service_result="%s",client_tag="%s";
-           """ %(str(client_id),str(service_call),base64.encodestring(cPickle.dumps(service_parameters)),base64.encodestring(cPickle.dumps(service_result)),str(client_tag),base64.encodestring(cPickle.dumps(service_parameters)),base64.encodestring(cPickle.dumps(service_result)),str(client_tag))
        Session.execute(sqlStr)
        logging.debug('service call logged')
     except Exception,ex:
@@ -35,16 +36,8 @@ def retrieve(client_id,client_tag='0',service_call=None):
     logging.debug('retrieving logged service call '+str(client_id)+','+str(client_tag)+','+str(service_call))
     try:
        if service_call==None:
-           sqlStr=""" SELECT service_result, service_call,service_parameters  
-               FROM ws_last_call_server 
-               WHERE id in (
-               SELECT max(id)
-               FROM ws_last_call_server
-               WHERE client_id="%s" AND client_tag="%s" AND log_time in (
-               SELECT max(log_time) 
-               FROM ws_last_call_server 
-               WHERE client_id="%s" AND client_tag="%s" GROUP BY client_id) GROUP BY client_id);
-               """ %(str(client_id),str(client_tag),str(client_id),str(client_tag))
+           sqlStr=Dialect.buildQuery("ProdCom.Query2",{'client_id':client_id,\
+               'client_tag':client_tag})
            Session.execute(sqlStr)
            rows=Session.fetchall()
            if len(rows)!=1:
@@ -53,8 +46,8 @@ def retrieve(client_id,client_tag='0',service_call=None):
            service_parameters=cPickle.loads(base64.decodestring(rows[0][2]))
            return [str(rows[0][1]),service_parameters,service_results]
 
-       sqlStr="""SELECT service_result,service_parameters FROM ws_last_call_server WHERE client_id="%s" AND client_tag="%s"
-           AND service_call="%s";""" %(client_id,str(client_tag),service_call)
+       sqlStr=Dialect.buildQuery("ProdCom.Query3",{'client_id':client_id,\
+           'client_tag':client_tag,'service_call':service_call})
        Session.execute(sqlStr)
        rows=Session.fetchall()
        if len(rows)!=1:
@@ -63,15 +56,15 @@ def retrieve(client_id,client_tag='0',service_call=None):
        service_parameters=cPickle.loads(base64.decodestring(rows[0][1]))
        return [service_results,service_parameters]
     except Exception,ex:
-       raise ProdException(str(ex),1001)
+       raise ProdException(exceptions[4001]+str(ex),4001)
 
 def remove(client_id,service_call):
     global db_config
 
     logging.debug('removing logged service call')
     try:
-       sqlStr=""" DELETE FROM ws_last_call_server WHERE client_id="%s"
-           AND service_call="%s"; """ %(client_id,service_call)
+       sqlStr=Dialect.buildQuery("ProdCom.Query4",{'client_id':client_id,\
+           'service_call':service_call})
        Session.execute(sqlStr)
     except Exception,ex:
        raise ProdException(str(ex),1001)
