@@ -7,5 +7,5 @@ setup (name='prodcommon',
                     'ProdCommon': 'src/python/ProdCommon'},
        packages=['IMProv', 'ProdCommon',
 		 'ProdCommon.CMSConfigTools', 'ProdCommon.Core', 'ProdCommon.Database', 
-		 'ProdCommon.IMProv', 'ProdCommon.MCPayloads', 'ProdCommon.WebServiceClient', 'ProdCommon.WebServices'],)
+		 'ProdCommon.MCPayloads', 'ProdCommon.WebServiceClient', 'ProdCommon.WebServices'],)
 
