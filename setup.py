@@ -5,5 +5,7 @@ setup (name='prodcommon',
        version='1.0',
        package_dir={'IMProv': 'src/python/IMProv',
                     'ProdCommon': 'src/python/ProdCommon'},
-       packages=['IMProv', 'ProdCommon'],)
+       packages=['IMProv', 'ProdCommon',
+		 'ProdCommon.CMSConfigTools', 'ProdCommon.Core', 'ProdCommon.Database', 
+		 'ProdCommon.IMProv', 'ProdCommon.MCPayloads', 'ProdCommon.WebServiceClient', 'ProdCommon.WebServices'],)
 
