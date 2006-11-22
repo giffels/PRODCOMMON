@@ -6,14 +6,13 @@ from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.Database.Config import defaultConfig
 
 try:
-   import MySQLdb
+   import cx_Oracle
 except:
    # NOTE: we might need some mappings from error code number to 
    # NOTE: error types?
-   raise RuntimeError(2,"MySQLdb could not be found. Make sure it is "+ \
+   raise RuntimeError(2,"cx_Oracle moudle could not be found. Make sure it is "+ \
                             "installed or that the path is set correctly "+ \
-                            "more information at: " \
-                            "http://sourceforge.net/projects/mysql-python ")
+                            "more information at: " )
 import time
 import logging
 
@@ -25,21 +24,13 @@ __dbWaitingTime=int(defaultConfig['dbWaitingTime'])
 def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr=""):
 
    """
-
    _connect_
 
    Generic connect method that returns a connection opbject.
    """
    for attempt in range(__maxConnectionAttempts):
        try:
-           if (portNr!=""):
-               conn=MySQLdb.Connect(host=dbHost,db=dbName,\
-                                   user=dbUser,passwd=dbPasswd, \
-                                   port=int(portNr))
-           else:
-               conn=MySQLdb.Connect(unix_socket=socketLocation,\
-                                   host=dbHost,db=dbName,\
-                                   user=dbUser,passwd=dbPasswd)
+           conn=cx_Oracle.connect(dbUser+'/'+dbPasswd)
            return conn
        except Exception, v:
            logging.debug("Error connecting to the database: "+str(v))

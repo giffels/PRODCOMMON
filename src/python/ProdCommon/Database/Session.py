@@ -24,15 +24,29 @@ def connect(sessionID=None):
 
 def start_transaction(sessionID=None):
    global session
+   global current_db
+
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
        raise ProdException(exceptions[4002],4002)
    if not session[sessionID]['state']=='start_transaction':
        session[sessionID]['cursor']=session[sessionID]['connection'].cursor()
-       startTransaction="START TRANSACTION"
-       session[sessionID]['cursor'].execute(startTransaction)
+       if current_db['dbType']=='mysql':
+           startTransaction="START TRANSACTION"
+           session[sessionID]['cursor'].execute(startTransaction)
        session[sessionID]['state']='start_transaction'
+
+def get_cursor(sessionID=None):
+   global session
+   global current_db
+
+   if sessionID==None:
+       sessionID=current_session
+   if not session.has_key(sessionID):
+       raise ProdException(exceptions[4002],4002)
+   return session[sessionID]['cursor']
+
 
    
 def commit(sessionID=None):

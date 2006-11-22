@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from ProdCommon.Database.Config import defaultConfig
 from ProdCommon.Database import Mysql
+from ProdCommon.Database import Oracle
 
 import logging
 
