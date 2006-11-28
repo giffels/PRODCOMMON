@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 
 from ProdCommon.Core.Codes import exceptions
 from ProdCommon.Core.ProdException import ProdException
@@ -8,11 +9,9 @@ from ProdCommon.Database.Config import defaultConfig
 try:
    import cx_Oracle
 except:
-   # NOTE: we might need some mappings from error code number to 
-   # NOTE: error types?
-   raise RuntimeError(2,"cx_Oracle moudle could not be found. Make sure it is "+ \
-                            "installed or that the path is set correctly "+ \
-                            "more information at: " )
+   logging.debug(exceptions[4008])
+   logging.debug(exceptions[4008])
+
 import time
 import logging
 
