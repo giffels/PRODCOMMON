@@ -107,7 +107,8 @@ def execute(sqlQuery,sessionID=None):
        start_transaction(sessionID)
    cursor=get_cursor(sessionID)
    try:
-       rowsModified=cursor.execute(sqlQuery)
+       cursor.execute(sqlQuery)
+       rowsModified=cursor.rowcount
        session[sessionID]['queries'].append(sqlQuery)
        return rowsModified
    except Exception,ex:
