@@ -17,7 +17,6 @@ def seconds2H_M_S(remainingSeconds):
         remainingSeconds=remainingSeconds-secondsInHours*hours
         minutes=int(math.floor(float(remainingSeconds)/float(secondsInMinutes)))
         seconds=remainingSeconds-secondsInMinutes*minutes
-    
         timeFormat=str(hours)+":"+str(minutes)+":"+str(seconds)
         return timeFormat
     except Exception,ex:
