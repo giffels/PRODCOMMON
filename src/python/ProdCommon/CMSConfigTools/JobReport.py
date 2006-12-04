@@ -61,6 +61,47 @@ def insertReport(cfgInterface):
     loggerSvc['fwkJobReports'][2].append("\"FrameworkJobReport.xml\"")
     return
 
+def insertEventLogger(cfgInterface):
+    """
+    _insertEventLogger_
+
+    Add a message logger destination that writes an EventLog file containing
+    the FwkReport messages for live event count monitoring
+
+    Assumes MessageLogger service is already present
+
+    untracked PSet EventLogger = {
+    untracked PSet default = { untracked int32 limit = 0 }
+    untracked PSet FwkReport  = {
+         untracked int32 limit = 10000000
+         untracked int32 reportEvery = 1
+      }
+    }
+    """
+    loggerSvc = cfgInterface.cmsConfig.service("MessageLogger")
+
+
+    if not loggerSvc.has_key("destinations"):
+        loggerSvc['destinations'] = ('vstring', 'untracked', [])
+    destinations = loggerSvc['destinations']
+    if "\"EventLogger\"" not in destinations:
+        loggerSvc['destinations'][2].append("\"EventLogger\"")
+
+        loggerSvc['EventLogger'] = ('PSet', "untracked", {
+            'default' : ( 'PSet', 'untracked', {
+            'limit' : ( "int32", "untracked", '0')
+            }),
+            'FwkReport' : ( 'PSet', 'untracked', {
+            'limit' : ( "int32", "untracked", '1000000'),
+            'reportEvery' :( "int32", "untracked", '1'),
+            
+            }),
+            
+            })
+        
+    return
+
+        
 
 def checkJobReport(cfgInterface):
     """
@@ -72,6 +113,7 @@ def checkJobReport(cfgInterface):
     if hasReport(cfgInterface):
         return
     insertReport(cfgInterface)
+    insertEventLogger(cfgInterface)
     return
 
 

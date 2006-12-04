@@ -57,3 +57,20 @@ class CfgInterface:
     def __str__(self):
         """string rep of self: give python format PSet"""
         return self.cmsConfig.asPythonString()
+
+
+    def mixingModules(self):
+        """
+        _mixingModules_
+
+        return refs to all mixing modules in the cfg
+
+        """
+        result = []
+        for secSource in self.cmsConfig.moduleNamesWithSecSources():
+            module = self.cmsConfig.module(secSource)
+            if module['@classname'][2] == "MixingModule":
+                result.append(module)
+        return result
+                
+            
