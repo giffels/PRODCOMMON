@@ -20,7 +20,7 @@ import base64
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
-from MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 
 def intersection(list1, list2):
     """fast intersection of two lists"""

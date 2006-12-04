@@ -10,10 +10,10 @@ Common tools used in the creation of Workflow Specs
 import popen2
 import sys
 
-from MCPayloads.WorkflowSpec import WorkflowSpec
-from MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
+from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
+from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
-from MCPayloads.DatasetExpander import splitMultiTier
+from ProdCommon.MCPayloads.DatasetExpander import splitMultiTier
 
 from IMProv.IMProvNode import IMProvNode
 

@@ -15,7 +15,7 @@ job such as seeds, run number, event totals, lfns etc.
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
-from MCPayloads.PayloadNode import PayloadNode
+from ProdCommon.MCPayloads.PayloadNode import PayloadNode
 
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 

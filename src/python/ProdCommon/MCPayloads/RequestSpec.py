@@ -20,7 +20,7 @@ from IMProv.IMProvDoc import IMProvDoc
 from IMProv.IMProvQuery import IMProvQuery
 from IMProv.IMProvLoader import loadIMProvFile
 
-from MCPayloads.WorkflowSpec import WorkflowSpec
+from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 
 class RequestSpec:
     """

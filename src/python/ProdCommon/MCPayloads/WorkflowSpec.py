@@ -13,11 +13,11 @@ dataset ids for input and output between steps.
 
 import time
 
-from MCPayloads.PayloadNode import PayloadNode
-from MCPayloads.JobSpecNode import JobSpecNode
-from MCPayloads.JobSpec import JobSpec
-from MCPayloads.DatasetExpander import expandDatasetInfo
-import  MCPayloads.DatasetTools as DatasetTools
+from ProdCommon.MCPayloads.PayloadNode import PayloadNode
+from ProdCommon.MCPayloads.JobSpecNode import JobSpecNode
+from ProdCommon.MCPayloads.JobSpec import JobSpec
+from ProdCommon.MCPayloads.DatasetExpander import expandDatasetInfo
+import  ProdCommon.MCPayloads.DatasetTools as DatasetTools
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvLoader import loadIMProvFile

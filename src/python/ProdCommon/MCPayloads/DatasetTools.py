@@ -8,7 +8,7 @@ JobSpecNodes
 
 """
 
-from MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 
 def getOutputDatasets(payloadNode):

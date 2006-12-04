@@ -8,7 +8,7 @@ into four basic tier datasets
 
 """
 
-from MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 
 def isMultiTier(dataTier):
     """

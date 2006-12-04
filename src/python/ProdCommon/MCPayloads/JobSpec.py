@@ -9,9 +9,9 @@ concrete job definition
 
 import time
 
-from MCPayloads.JobSpecNode import JobSpecNode
-import MCPayloads.DatasetTools as DatasetTools
-import MCPayloads.AppVersionTools as AppVersionTools
+from ProdCommon.MCPayloads.JobSpecNode import JobSpecNode
+import ProdCommon.MCPayloads.DatasetTools as DatasetTools
+import ProdCommon.MCPayloads.AppVersionTools as AppVersionTools
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvLoader import loadIMProvFile
