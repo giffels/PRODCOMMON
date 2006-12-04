@@ -17,7 +17,7 @@ from IMProv.IMProvQuery import IMProvQuery
 
 from MCPayloads.PayloadNode import PayloadNode
 
-from CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 
         
 class JobSpecNode(PayloadNode):

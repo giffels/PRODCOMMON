@@ -12,7 +12,7 @@ import sys
 
 from MCPayloads.WorkflowSpec import WorkflowSpec
 from MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
-from CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from MCPayloads.DatasetExpander import splitMultiTier
 
 from IMProv.IMProvNode import IMProvNode

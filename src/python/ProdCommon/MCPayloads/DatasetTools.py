@@ -9,7 +9,7 @@ JobSpecNodes
 """
 
 from MCPayloads.DatasetInfo import DatasetInfo
-from CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 
 def getOutputDatasets(payloadNode):
     """

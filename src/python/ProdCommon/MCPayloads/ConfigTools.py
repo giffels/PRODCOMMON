@@ -10,7 +10,7 @@ official cmsconfig tool currently under development
 
 """
 
-from CMSConfigTools.cmsconfig import cmsconfig
+from ProdCommon.CMSConfigTools.cmsconfig import cmsconfig
 
 def expandPSetDetails(jobSpecNode):
     """
