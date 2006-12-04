@@ -81,7 +81,7 @@ class PayloadNode:
         #//   
         self._InputDatasets = []
         self._OutputDatasets = []
-        
+        self._PileupDatasets = []
         self.configuration = ""
 
         
@@ -124,6 +124,21 @@ class PayloadNode:
         newDataset['ProcessedDataset'] = processedDS
         self._InputDatasets.append(newDataset)
         return newDataset
+
+    def addPileupDataset(self, primary, tier, processed):
+        """
+        _addPileupDataset_
+
+        Add a pileup dataset to this node
+
+        """
+        newDataset = DatasetInfo()
+        newDataset['PrimaryDataset'] = primary
+        newDataset['DataTier'] = tier
+        newDataset['ProcessedDataset'] = processed
+        self._PileupDatasets.append(newDataset)
+        return newDataset
+        
 
     def addOutputDataset(self, primaryDS, processedDS, outputModuleName):
         """
@@ -201,13 +216,16 @@ class PayloadNode:
         outputNode = IMProvNode("OutputDatasets")
         for outDS in self._OutputDatasets:
             outputNode.addNode(outDS.save())
-        
+        pileupNode = IMProvNode("PileupDatasets")
+        for puDS in self._PileupDatasets:
+            pileupNode.addNode(puDS.save())
         configNode = IMProvNode("Configuration",
                                 base64.encodestring(self.configuration),
                                 Encoding="base64")
         node.addNode(appNode)
         node.addNode(inputNode)
         node.addNode(outputNode)
+        node.addNode(pileupNode)
         node.addNode(configNode)
 
         for child in self.children:
@@ -308,7 +326,16 @@ class PayloadNode:
             newDS = DatasetInfo()
             newDS.load(item)
             self._OutputDatasets.append(newDS)
-
+        #  //
+        # // Pileup Datasets
+        #//
+        pileupDSQ = IMProvQuery(
+            "/%s/PileupDatasets/DatasetInfo" % self.__class__.__name__)
+        pileupDS = pileupDSQ(improvNode)
+        for item in pileupDS:
+            newDS = DatasetInfo()
+            newDS.load(item)
+            self._PileupDatasets.append(newDS)
         #  //
         # // Configuration
         #//
