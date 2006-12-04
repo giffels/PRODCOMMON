@@ -6,7 +6,7 @@ Util for manipulating OutputModules within a PSet
 
 """
 
-from CMSConfigTools.Utilities import isQuoted
+from ProdCommon.CMSConfigTools.Utilities import isQuoted
 
 class OutputModule:
     """

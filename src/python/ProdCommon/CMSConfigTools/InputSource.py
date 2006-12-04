@@ -6,7 +6,7 @@ Object to assist with manipulating the input source provided in a PSet
 
 """
 
-from CMSConfigTools.Utilities import isQuoted
+from ProdCommon.CMSConfigTools
 
 class InputSource:
     """

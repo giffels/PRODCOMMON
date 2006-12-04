@@ -9,9 +9,9 @@ the InputSource and output modules
 
 import copy
 
-from CMSConfigTools.cmsconfig import cmsconfig
-from CMSConfigTools.InputSource import InputSource
-from CMSConfigTools.OutputModule import OutputModule
+from ProdCommon.CMSConfigTools.cmsconfig import cmsconfig
+from ProdCommon.CMSConfigTools.InputSource import InputSource
+from ProdCommon.CMSConfigTools.OutputModule import OutputModule
 
 
 class CfgInterface:

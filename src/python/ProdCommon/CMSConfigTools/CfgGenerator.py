@@ -7,10 +7,9 @@ job specific configuration files from it
 
 """
 
-from CMSConfigTools.CfgInterface import CfgInterface
-from CMSConfigTools.JobReport import checkJobReport
-
-from CMSConfigTools.SeedService import generateSeeds
+from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.JobReport import checkJobReport
+from ProdCommon.CMSConfigTools.SeedService import generateSeeds
 
 
 

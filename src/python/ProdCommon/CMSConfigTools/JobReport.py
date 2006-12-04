@@ -8,7 +8,7 @@ All jobs expect a job report called FrameworkJobReport.xml
 
 """
 
-from CMSConfigTools.Utilities import unQuote
+from ProdCommon.CMSConfigTools.Utilities import unQuote
 
 def hasService(cfgInterface):
     """
