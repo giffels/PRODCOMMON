@@ -131,6 +131,17 @@ class WorkflowSpec:
         return
 
 
+    def saveString(self):
+        """
+        _saveString_
+
+        Save this object to an XML string
+
+        """
+        improv = self.makeIMProv()
+        return str(improv.makeDOMElement().toprettyxml())
+    
+
     def loadFromNode(self, improvNode):
         """
         _loadFromNode_
