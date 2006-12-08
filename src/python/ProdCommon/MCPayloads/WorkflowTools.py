@@ -9,12 +9,12 @@ Common tools used in the creation of Workflow Specs
 
 import popen2
 import sys
+import time
 
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
-from ProdCommon.MCPayloads.DatasetExpander import splitMultiTier
-
+from ProdCommon.MCPayloads import UUID as MCPayloadsUUID
 from IMProv.IMProvNode import IMProvNode
 
 
@@ -80,7 +80,7 @@ def createPythonConfig(cfgFile):
 
 
 def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFile, hashValue,
-                       timestamp, prodName):
+                       timestamp, prodName, fakeHash = False):
     """
     _populateCMSRunNode_
 
@@ -96,27 +96,43 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFile, hashValue,
     payloadNode.configuration = file(pyCfgFile).read() # Python PSet file
     
     cfgInt = CfgInterface(payloadNode.configuration, True)
+    
     for outModName, val in cfgInt.outputModules.items():
-        #  //
-        # // Check for Multi Tiers.
-        #//  If Output module contains - characters, we split based on it
-        #  //And create a different tier for each basic tier
-        # //
-        #//
-        tierList = splitMultiTier(outModName)
-        for dataTier in tierList:
+        datasets = val.datasets()
+        for outDataset in datasets:
+            dataTier = outDataset['dataTier']
+
             processedDS = "%s-%s-%s-unmerged" % (
                 payloadNode.application['Version'], outModName, timestamp)
-            outDS = payloadNode.addOutputDataset(prodName,
+
+            if outDataset.has_key("processedDataset"):
+                processedDS = outDataset['processedDataset']
+
+            primaryName = prodName
+            if outDataset.has_key("primaryDataset"):
+                primaryName = outDataset['primaryDataset']
+        
+
+            outDS = payloadNode.addOutputDataset(primaryName, 
                                             processedDS,
                                             outModName)
+                                        
             outDS['DataTier'] = dataTier
             outDS["ApplicationName"] = payloadNode.application["Executable"]
             outDS["ApplicationProject"] = payloadNode.application["Project"]
             outDS["ApplicationVersion"] = payloadNode.application["Version"]
             outDS["ApplicationFamily"] = outModName
-            outDS['PSetHash'] = hashValue
+            if fakeHash:
+                guid = MCPayloadsUUID.uuidgen()
+                if guid == None:
+                    guid = MCPayloadsUUID.uuid()
+                hashValue = "hash=%s;guid=%s" % (hashValue, guid)
+                outDS['PSetHash'] = hashValue
+            else:
+                outDS['PSetHash'] = hashValue
 
+    return
+    
 
             
 def addStageOutNode(cmsRunNode, nodeName):
@@ -184,3 +200,49 @@ def generateFilenames(workflowSpec):
     mergedLFNBase(workflowSpec)
     unmergedLFNBase(workflowSpec)
     return
+
+
+
+
+def createProductionWorkflow(prodName, cfgFile, cmsswVersion, category = "mc", **args):
+    """
+    _createProductionWorkflow_
+
+    Create a Production style workflow, ie generation of new events
+
+    """
+
+    timestamp = int(time.time())
+    pycfgFile = createPythonConfig(cfgFile)
+    realPSetHash = createPSetHash(cfgFile)
+
+    #  // 
+    # // Create a new WorkflowSpec and set its name
+    #//
+    spec = WorkflowSpec()
+    spec.setWorkflowName(prodName)
+    spec.setRequestCategory(category)
+    spec.setRequestTimestamp(timestamp)
+
+    cmsRun = spec.payload
+    populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFile, realPSetHash,
+                       timestamp, prodName, fakeHash = args.get("FakeHash", False))
+    
+    
+    addStageOutNode(cmsRun, "stageOut1")
+    generateFilenames(spec)
+    return spec
+    
+
+
+
+def createProcessingWorkflow(**args):
+    """
+    _createProcessingWorkflow_
+
+    Create a Processing style workflow, ie consume a dataset.
+
+    """
+    pass
+
+    
