@@ -79,7 +79,7 @@ def createPythonConfig(cfgFile):
 
 
 
-def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFile, hashValue,
+def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent, hashValue,
                        timestamp, prodName, fakeHash = False):
     """
     _populateCMSRunNode_
@@ -93,7 +93,7 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFile, hashValue,
     payloadNode.application["Version"] = version # version
     payloadNode.application["Architecture"] = "slc3_ia32_gcc323" # obsolete
     payloadNode.application["Executable"] = "cmsRun" # binary name
-    payloadNode.configuration = file(pyCfgFile).read() # Python PSet file
+    payloadNode.configuration = pyCfgFileContent # Python PSet file
     
     cfgInt = CfgInterface(payloadNode.configuration, True)
     
@@ -204,7 +204,7 @@ def generateFilenames(workflowSpec):
 
 
 
-def createProductionWorkflow(prodName, cfgFile, cmsswVersion, category = "mc", **args):
+def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None, category = "mc", **args):
     """
     _createProductionWorkflow_
 
@@ -213,8 +213,21 @@ def createProductionWorkflow(prodName, cfgFile, cmsswVersion, category = "mc", *
     """
 
     timestamp = int(time.time())
-    pycfgFile = createPythonConfig(cfgFile)
-    realPSetHash = createPSetHash(cfgFile)
+    if args.get("PyCfg", None) == None:
+        if cfgFile == None:
+            msg = "Error: No Cfg File or python cfg file provided to createProductionWorkflow"
+            raise RuntimeError, msg
+        pycfgFile = createPythonConfig(cfgFile)
+        pycfgFileContent = file(pycfgFile).read()
+    else:
+        pycfgFileContent = args['PyCfg']
+
+    
+
+    if args.get("PSetHash", None) == None:
+        realPSetHash = createPSetHash(cfgFile)
+    else:
+        realPSetHash = args['PSetHash']
 
     #  // 
     # // Create a new WorkflowSpec and set its name
@@ -225,7 +238,7 @@ def createProductionWorkflow(prodName, cfgFile, cmsswVersion, category = "mc", *
     spec.setRequestTimestamp(timestamp)
 
     cmsRun = spec.payload
-    populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFile, realPSetHash,
+    populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFileContent, realPSetHash,
                        timestamp, prodName, fakeHash = args.get("FakeHash", False))
     
     
