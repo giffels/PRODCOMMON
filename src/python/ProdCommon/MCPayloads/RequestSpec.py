@@ -69,15 +69,14 @@ class RequestSpec:
 
         Extract information for this object from the improv instance provided
         """
-
-        wfQuery = IMProvQuery("/RequestSpec/WorkflowSpec")
+        wfQuery = IMProvQuery("/Request/WorkflowSpec")
         wfnode = wfQuery(improvNode)[0]
         wfspec = WorkflowSpec()
         wfspec.loadFromNode(wfnode)
         self.workflow = wfspec
 
-        policyQuery = IMProvQuery("/RequestSpec/Policies/*")
-        detailQuery = IMProvQuery("/RequestSpec/RequestDetails/*")
+        policyQuery = IMProvQuery("/Request/Policies/*")
+        detailQuery = IMProvQuery("/Request/RequestDetails/*")
 
         policies = policyQuery(improvNode)
         details = detailQuery(improvNode)
@@ -85,8 +84,8 @@ class RequestSpec:
         for policy in policies:
             self.policies[str(policy.name)] = str(policy.chardata)
 
-        for detail in details:
-            self.requestDetails[str(detail.name)] = str(detail.chardata)
+        for detail in improvNode.attrs.keys():
+            self.requestDetails[detail] = str(improvNode.attrs[detail])
             
 
         return
@@ -136,7 +135,7 @@ def readSpecFile(filename):
     result = []
 
     node = loadIMProvFile(filename)
-    specQ = IMProvQuery("RequestSpec")
+    specQ = IMProvQuery("Request")
     specNodes = specQ(node)
 
     for snode in specNodes:
@@ -152,7 +151,7 @@ def writeSpecFile(filename, *specInstances):
     Util to write multiple specs to a single file
 
     """
-    doc = IMProvDoc("RequestSpecs")
+    doc = IMProvDoc("Requests")
     for spec in specInstances:
         doc.addNode(spec.save())
 
