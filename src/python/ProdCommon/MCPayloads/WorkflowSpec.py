@@ -293,6 +293,15 @@ class WorkflowSpec:
         return DatasetTools.getPileupDatasetsFromTree(self.payload)
     
 
+    def inputDatasets(self):
+        """
+        _inputDatasets_
+
+        return a list of Input datasets from this workflow
+
+        """
+        return DatasetTools.getInputDatasetsFromTree(self.payload)
+
 def updateWorkflowName(payloadNode, workflowName):
     """
     _updateWorkflowName_

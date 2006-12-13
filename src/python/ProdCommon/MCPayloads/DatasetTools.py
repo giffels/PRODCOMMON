@@ -80,6 +80,24 @@ def getPileupDatasets(payloadNode):
         result.append(resultEntry)
     return result
 
+def getInputDatasets(payloadNode):
+    """
+    _getInputDatasets_
+
+    Extract all the information about input datasets from the
+    payloadNode object provided.
+
+    Returns a list of DatasetInfo objects including App details
+    from the node.
+
+    """
+    result = []
+    for item in payloadNode._InputDatasets:
+        resultEntry = DatasetInfo()
+        resultEntry.update(item)
+        result.append(resultEntry)
+    return result
+
 
 class Accumulator:
     """
@@ -113,6 +131,18 @@ def getOutputDatasetsFromTree(topPayloadNode):
 
     """
     accum = Accumulator(getOutputDatasets)
+    topPayloadNode.operate(accum)
+    return accum.result
+
+def getInputDatasetsFromTree(topPayloadNode):
+    """
+    _getInputDatasetsFromTree_
+
+    Traverse a PayloadNode tree with the getInputDatasets method
+    and accumulate the datasets from all nodes, to be returned as a list
+
+    """
+    accum = Accumulator(getInputDatasets)
     topPayloadNode.operate(accum)
     return accum.result
 
