@@ -1,5 +1,5 @@
-<Requests>
-	<Request type="event" owner="Unknown" id="1" approval_id="1" events="1000">
+<RequestSpecSpecs>
+	<RequestSpec type="file" owner="Unknown" id="0" approval_id="0" events="1000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event
@@ -10,13 +10,13 @@
 	<Parameter Name="UnmergedLFNBase">
 		/store/unmerged/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestTimestamp">
+	<Parameter Name="RequestSpecTimestamp">
 		1161271657
 	</Parameter>
 	<Parameter Name="MergedLFNBase">
 		/store/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestCategory">
+	<Parameter Name="RequestSpecCategory">
 		PreProd
 	</Parameter>
 	<Parameter Name="WorkflowName">
@@ -1458,8 +1458,8 @@
 		</PayloadNode>
 	</Payload>
 </WorkflowSpec>
-</Request>
-	<Request type="event" owner="Unknown" id="1" approval_id="2" events="1000">
+</RequestSpec>
+	<RequestSpec type="event" owner="Unknown" id="1" approval_id="2" events="1000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event
@@ -1470,13 +1470,13 @@
 	<Parameter Name="UnmergedLFNBase">
 		/store/unmerged/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestTimestamp">
+	<Parameter Name="RequestSpecTimestamp">
 		1161271657
 	</Parameter>
 	<Parameter Name="MergedLFNBase">
 		/store/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestCategory">
+	<Parameter Name="RequestSpecCategory">
 		PreProd
 	</Parameter>
 	<Parameter Name="WorkflowName">
@@ -2918,8 +2918,8 @@
 		</PayloadNode>
 	</Payload>
 </WorkflowSpec>
-</Request>
-	<Request type="event" owner="Unknown" id="2" approval_id="3" events="1000">
+</RequestSpec>
+	<RequestSpec type="event" owner="Unknown" id="2" approval_id="3" events="1000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event
@@ -2930,13 +2930,13 @@
 	<Parameter Name="UnmergedLFNBase">
 		/store/unmerged/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestTimestamp">
+	<Parameter Name="RequestSpecTimestamp">
 		1161271657
 	</Parameter>
 	<Parameter Name="MergedLFNBase">
 		/store/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestCategory">
+	<Parameter Name="RequestSpecCategory">
 		PreProd
 	</Parameter>
 	<Parameter Name="WorkflowName">
@@ -4378,8 +4378,8 @@
 		</PayloadNode>
 	</Payload>
 </WorkflowSpec>
-</Request>
-	<Request type="event" owner="Unknown" id="3" approval_id="4" events="2000">
+</RequestSpec>
+	<RequestSpec type="event" owner="Unknown" id="3" approval_id="4" events="2000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event
@@ -4390,13 +4390,13 @@
 	<Parameter Name="UnmergedLFNBase">
 		/store/unmerged/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestTimestamp">
+	<Parameter Name="RequestSpecTimestamp">
 		1161271657
 	</Parameter>
 	<Parameter Name="MergedLFNBase">
 		/store/PreProd/2006/10/19/LPCMC-QCD_pt_0_15_RECO-TEST1
 	</Parameter>
-	<Parameter Name="RequestCategory">
+	<Parameter Name="RequestSpecCategory">
 		PreProd
 	</Parameter>
 	<Parameter Name="WorkflowName">
@@ -5838,5 +5838,5 @@
 		</PayloadNode>
 	</Payload>
 </WorkflowSpec>
-</Request>
-</Requests>
+</RequestSpec>
+</RequestSpecSpecs>
