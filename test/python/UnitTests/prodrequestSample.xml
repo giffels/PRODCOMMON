@@ -1459,7 +1459,7 @@
 	</Payload>
 </WorkflowSpec>
 </RequestSpec>
-	<RequestSpec type="event" owner="Unknown" id="1" approval_id="2" events="1000">
+	<RequestSpec type="file" owner="Unknown" id="1" approval_id="2" events="1000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event
@@ -2919,7 +2919,7 @@
 	</Payload>
 </WorkflowSpec>
 </RequestSpec>
-	<RequestSpec type="event" owner="Unknown" id="2" approval_id="3" events="1000">
+	<RequestSpec type="file" owner="Unknown" id="2" approval_id="3" events="1000">
 <WorkflowSpec>
 	<Parameter Name="SplitType">
 		event

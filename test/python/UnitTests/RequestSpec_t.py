@@ -11,8 +11,16 @@ from TestHandler import *
 from ProdCommon.MCPayloads.RequestSpec import *
 
 def parseNewRequest(request):
-   print('workflow: '+str(request.workflow.makeIMProv().makeDOMElement().toprettyxml()))
-   print('request type: '+str(request.requestDetails["type"]))
+   #print('workflow: '+str(request.workflow.makeIMProv().makeDOMElement().toprettyxml()))
+   request_type=str(request.requestDetails["type"])
+   if request_type=="file":
+       datasetsInfo=request.workflow.inputDatasets()
+       for datasetInfo in datasetsInfo:
+           dataset='/'+datasetInfo['PrimaryDataset']+\
+                   '/'+datasetInfo['DataTier']+\
+                   '/'+datasetInfo['ProcessedDataset']
+           print('dataset used: '+dataset)
+   print('request type: '+request_type)
    print('owner: '+str(request.requestDetails["owner"]))
    print('id: '+str(request.requestDetails["id"]))
 

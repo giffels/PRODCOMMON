@@ -7,11 +7,14 @@ _DLSDBS_ wrappers
 import logging
 import warnings
 warnings.filterwarnings("ignore","Python C API version mismatch for module _lfc",RuntimeWarning)
+
+# DBS-1 objects
 import dlsClient
 from dlsDataObjects import *
-
 import dbsCgiApi
 from dbsException import DbsException
+# DBS-2
+#import dbsApi
 
 from ProdCommon.Core.ProdException import ProdException
 from ProdCommon.Core.Codes import exceptions
@@ -48,15 +51,7 @@ class DBS:
         return a list of file block names for a dataset
 
         """
-        try:
-            fileBlocks = self.api.getDatasetFileBlocks(dataset)
-        except DbsException, ex:
-            msg = "DbsException for DBS API getDatasetFileBlocks:\n"
-            msg += "  Dataset = %s\n" % dataset
-            msg += "  Exception Class: %s\n" % ex.getClassName()
-            msg += "  Exception Message: %s\n" % ex.getErrorMessage()
-            logging.error(msg)
-            return []
+        fileBlocks = self.api.getDatasetFileBlocks(dataset)
         fileblocks=[]
         for fileblock in fileBlocks:
             fileblocks.append(fileblock['blockName'])
@@ -68,15 +63,7 @@ class DBS:
 
         """
         result = {}
-        try:
-            contents = self.api.getDatasetContents(dataset)
-        except DbsException, ex:
-            msg = "DbsException for DBS API getDatasetContents:\n"
-            msg += "  Dataset = %s\n" % dataset
-            msg += "  Exception Class: %s\n" % ex.getClassName()
-            msg += "  Exception Message: %s\n" % ex.getErrorMessage()
-            logging.error(msg)
-            return {}
+        contents = self.api.getDatasetContents(dataset)
         files = []
         for block in contents:
             files.extend(map(extractFile,  block['eventCollectionList']))
@@ -84,6 +71,19 @@ class DBS:
             result[item[0]] = item[1]
         return result
 
+   def getFileBlockFiles(self, dataset):
+        """
+        _getFileBlockFiles_
+
+        """
+        contents = self.api.getDatasetContents(dataset)
+        fileBlocks={}
+        files = []
+        for block in contents:
+            files = []
+            files.extend(map(extractFile,  block['eventCollectionList']))
+            fileBlocks[block['blockName']]=files
+        return fileBlocks
 
 class DLS:
 
@@ -117,20 +117,12 @@ class DLS:
         Get a list of fileblock locations
 
         """
-        try:
-            locations = self.api.getLocations(fileBlockName)
-        except dlsApi.DlsApiError, ex:
-            msg = "Error in the DLS query: %s\n" % str(ex)
-            msg += "When trying to get locations for file Block:\n"
-            msg += "%s\n" % fileBlockName
-            logging.error(msg)
-            return []
-        result = []
+        locations = self.api.getLocations(fileBlockName)
+        result = {} 
         for loc in locations:
+            result[str(loc.fileBlock.name)]=[]
             for locInst in  loc.locations:
-                host = locInst.host
-                if host not in result:
-                    result.append(host)
+                result[str(loc.fileBlock.name)].append(str(locInst.host))
         return result
 
 
@@ -144,7 +136,7 @@ def extractFile(evColl):
     name = evColl['collectionName']
     count = evColl['numberOfEvents']
     name = evColl['fileList'][-1]['logicalFileName']
-    return name, count
+    return (name, count)
 
 
 

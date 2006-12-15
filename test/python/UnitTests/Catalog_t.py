@@ -43,6 +43,8 @@ class CatalogTest(unittest.TestCase):
                 print('>>>FileblockLocations: '+str(fileblockLocations))
                 files=mydbs1.getDatasetFiles(dataset)
                 print('>>>Files: '+str(files))
+                fileBlocks=mydbs1.getFileBlockFiles(dataset)
+                print('>>>FileBlockFiles: '+str(fileBlocks))
                 print('*****************************')
                 print('*****************************')
             mydbs2=DBS(self.dbs_url2,self.dbs_address2)
@@ -56,6 +58,8 @@ class CatalogTest(unittest.TestCase):
                 print('>>>FileblockLocations: '+str(fileblockLocations))
                 files=mydbs2.getDatasetFiles(dataset)
                 print('>>>Files: '+str(files))
+                fileBlocks=mydbs2.getFileBlockFiles(dataset)
+                print('>>>FileBlockFiles: '+str(fileBlocks))
                 print('*****************************')
                 print('*****************************')
         except StandardError, ex:
