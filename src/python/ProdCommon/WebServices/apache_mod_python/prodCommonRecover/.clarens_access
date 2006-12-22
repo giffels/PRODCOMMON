@@ -1,0 +1,9 @@
+ORDER_ALLOW_DENY=0
+ORDER_DENY_ALLOW=1
+access=[("",[ORDER_ALLOW_DENY,        # Order
+         ["/"], # Allow everybody who can log in
+         [],                                # Allow group
+         [],                        # Deny indiv default=all
+         []  ,                              # Deny default=all
+         [None, None, None]])
+        ]              # modtime, start_time, end_time
