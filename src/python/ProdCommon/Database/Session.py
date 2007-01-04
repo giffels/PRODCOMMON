@@ -132,6 +132,14 @@ def fetchall(sessionID=None):
        raise ProdException(exceptions[4002],4002)
    cursor=get_cursor(sessionID)
    return cursor.fetchall()
+
+def fetchone(sessionID=None):
+   if sessionID==None:
+       sessionID=current_session
+   if not session.has_key(sessionID):
+       raise ProdException(exceptions[4002],4002)
+   cursor=get_cursor(sessionID)
+   return cursor.fetchone()
        
 def commit_all():
    global session
