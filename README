@@ -1,5 +1,5 @@
 
-   $Id: README,v 1.2 2006/06/06 20:21:43 elmer Exp $
+   $Id: README,v 1.4 2006/09/21 16:10:48 fvlingen Exp $
 
 Exception Codes:
 ------------
@@ -19,3 +19,8 @@ retrieving a last made service call. (thrown in ProdCommon.WebServices.serviceCa
 1008   : Error in time conversion
 
   
+
+
+$Revision$
+$Source$
+$Id$
