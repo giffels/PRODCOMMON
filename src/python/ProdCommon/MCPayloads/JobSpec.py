@@ -15,6 +15,7 @@ import ProdCommon.MCPayloads.AppVersionTools as AppVersionTools
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvLoader import loadIMProvFile
+from IMProv.IMProvLoader import loadIMProvString
 from IMProv.IMProvQuery import IMProvQuery
 
 
@@ -121,17 +122,19 @@ class JobSpec:
         handle.write(self.makeIMProv().makeDOMElement().toprettyxml())
         handle.close()
         return  
-    
-
-    def load(self, filename):
+   
+    def saveString(self):
         """
-        _load_
+        _saveString_
 
-        Load a saved JobSpec object and install its information
-        into this instance
+        Save this object to an XML string
 
         """
-        node = loadIMProvFile(filename)
+        improv = self.makeIMProv()
+        return str(improv.makeDOMElement().toprettyxml())
+
+    def loadFromNode(self, improvNode):
+
         paramQ = IMProvQuery("/JobSpec/Parameter")
         payloadQ = IMProvQuery("/JobSpec/Payload/JobSpecNode")
         whitelistQ = IMProvQuery("/JobSpec/SiteWhitelist/Site")
@@ -140,7 +143,7 @@ class JobSpec:
         #  //
         # // Extract Params
         #//
-        paramNodes = paramQ(node)
+        paramNodes = paramQ(improvNode)
         for item in paramNodes:
             paramName = item.attrs.get("Name", None)
             if paramName == None:
@@ -151,12 +154,12 @@ class JobSpec:
         #  //
         # // Extract site lists
         #//
-        whiteNodes = whitelistQ(node)
+        whiteNodes = whitelistQ(improvNode)
         for wnode in whiteNodes:
             value = wnode.attrs.get("Name", None)
             if value != None:
                 self.siteWhitelist.append(str(value))
-        blackNodes = blacklistQ(node)
+        blackNodes = blacklistQ(improvNode)
         for bnode in blackNodes:
             value = bnode.attrs.get("Name", None)
             if value != None:
@@ -165,10 +168,35 @@ class JobSpec:
         #  //
         # // Extract Payload Nodes
         #//
-        payload = payloadQ(node)[0]
+        payload = payloadQ(improvNode)[0]
         self.payload = JobSpecNode()
         self.payload.populate(payload)
         return
+
+
+    def load(self, filename):
+        """
+        _load_
+
+        Load a saved JobSpec object and install its information
+        into this instance
+
+        """
+        node = loadIMProvFile(filename)
+        self.loadFromNode(node)
+        return
+
+    def loadString(self, xmlString):
+        """
+        _load_
+
+        Load a saved JobSpec from a string
+
+        """
+        node = loadIMProvString(xmlString)
+        self.loadFromNode(node)
+        return
+
 
     #  //
     # // Accessor methods for retrieving dataset information
