@@ -74,3 +74,42 @@ class CfgInterface:
         return result
                 
             
+    def configMetadata(self):
+        """
+        _configMetadata_
+
+        Get a dictionary of the configuration metadata from this cfg
+        file if present
+
+        """
+        
+        result = {}
+        cMeta = self.cmsConfig.psdata['psets'].get(
+            "configurationMetadata", ("", "", {}))[2]
+
+        if cMeta.has_key("version"):
+            version = cMeta['version'][2]
+            version = version.replace("$", "")
+            version = version.replace("\"", "")
+            result['Version'] = version.strip()
+
+        if cMeta.has_key("name"):
+            name = cMeta["name"][2]
+            name = name.replace("$", "")
+            name = name.replace("\"", "")
+            name = name.replace(",v", "")
+            name = name.replace("Source", "")
+            name = name.strip()
+            result["Name"] = name
+
+
+        if cMeta.has_key("annotation"):
+            annot = cMeta["annotation"][2]
+            annot = annot.replace("\"", "")
+            result["Annotation"] = annot
+            
+        
+            
+        return result
+            
+
