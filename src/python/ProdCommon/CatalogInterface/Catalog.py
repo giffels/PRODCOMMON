@@ -92,10 +92,12 @@ class DLS:
        self.conf['type']=dls_type
        self.conf['address']=dls_address
        try:
+           logging.debug('Instantiating DLS client interface')
            self.api= dlsClient.getDlsApi(dls_type = dls_type,\
                                      dls_endpoint = dls_address)
+           logging.debug('DLS client interface instantiated')
        except dlsApi.DlsApiError, inst:
-           raise ProdException(exceptions[4010]+str(ex),4010)
+           raise ProdException(exceptions[4010]+str(inst),4010)
 
    def getName(self):
         """
