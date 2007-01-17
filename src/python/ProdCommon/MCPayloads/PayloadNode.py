@@ -83,7 +83,7 @@ class PayloadNode:
         self._OutputDatasets = []
         self._PileupDatasets = []
         self.configuration = ""
-
+        self.userSandbox = None
         
 
     def newNode(self, name):
@@ -222,11 +222,17 @@ class PayloadNode:
         configNode = IMProvNode("Configuration",
                                 base64.encodestring(self.configuration),
                                 Encoding="base64")
+        
         node.addNode(appNode)
         node.addNode(inputNode)
         node.addNode(outputNode)
         node.addNode(pileupNode)
         node.addNode(configNode)
+
+        if self.userSandbox != None:
+            sandboxNode = IMProvNode("UserSandbox", self.userSandbox)
+            node.addNode(sandboxNode)
+
 
         for child in self.children:
             node.addNode(child.makeIMProv())
@@ -343,6 +349,14 @@ class PayloadNode:
         configNode = configQ(improvNode)[0]
         self.configuration = base64.decodestring(str(configNode.chardata))
         
+        #  //
+        # // User sandbox
+        #//
+        sandboxQ = IMProvQuery("/%s/UserSandbox" % self.__class__.__name__)
+        sandboxNodes = sandboxQ(improvNode)
+        if len(sandboxNodes) > 0:
+            sandboxNode = sandboxNodes[-1]
+            self.userSandbox = str(sandboxNode.chardata)
         
         return
     

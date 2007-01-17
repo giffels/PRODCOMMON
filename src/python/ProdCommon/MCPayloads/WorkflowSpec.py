@@ -37,7 +37,8 @@ class WorkflowSpec:
         self.parameters = {}
         self.parameters.setdefault("WorkflowName", "Workflow-%s" % time.time())
         self.parameters.setdefault("RequestTimestamp", int(time.time()))
-        self.parameters.setdefault("RequestCategory", "PreProd") 
+        self.parameters.setdefault("RequestCategory", "PreProd")
+        self.parameters.setdefault("WorkflowType", "Processing")
         self._NodeMap = {}
 
     def workflowName(self):
