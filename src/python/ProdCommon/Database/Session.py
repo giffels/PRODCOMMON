@@ -98,6 +98,18 @@ def set_database(connection_parameters={}):
    global current_db
    current_db=connection_parameters
 
+def callproc(procName,parameters={},sessionID='default'):
+   global session
+   if sessionID==None:
+       sessionID=current_session
+   if not session.has_key(sessionID):
+       logging.debug("Connection not available, trying to connect")
+       connect(sessionID)
+       start_transaction(sessionID)
+   print('test '+str(dir(session[sessionID]['cursor'])))
+   session[sessionID]['cursor'].callproc(procName,parameters)
+  
+
 def execute(sqlQuery,sessionID=None):
    if sessionID==None:
        sessionID=current_session
