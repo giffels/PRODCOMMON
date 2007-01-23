@@ -6,8 +6,8 @@ General Exception class for Prod modules
 
 """
 
-__version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: ProdException.py,v 1.1 2006/06/13 19:21:30 fvlingen Exp $"
+__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: ProdException.py,v 1.2 2006/09/20 11:32:35 fvlingen Exp $"
 
 import exceptions
 import inspect
@@ -96,6 +96,29 @@ class ProdException(exceptions.Exception):
             self[key] = value
         return
 
+    def xml(self):
+        """create a xml string rep of this exception"""
+        strg ="<Exception>\n"
+        strg +="<Object>\n"
+        strg += "%s\n" % self.name
+        strg +="</Object>\n"
+        strg +="<Message>\n"
+        strg += self.message
+        strg +="</Message>\n"
+        strg +="<DataItems>\n"
+        for key, value in self.data.items():
+            strg +="<DataItem>\n"
+            strg += "<Key>\n"
+            strg += str(key)
+            strg += "</Key>\n"
+            strg += "<Value>\n"
+            strg += str(value)
+            strg += "</Value>\n"
+            strg +="</DataItem>\n"
+        strg +="</DataItems>\n"
+        strg +="</Exception>\n"
+        logging.error(strg)
+        return strg
 
     def __str__(self):
         """create a string rep of this exception"""
