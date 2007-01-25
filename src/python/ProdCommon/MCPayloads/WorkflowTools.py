@@ -17,6 +17,18 @@ from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads import UUID as MCPayloadsUUID
 from IMProv.IMProvNode import IMProvNode
 
+class NodeFinder:
+    """
+    Util to search a workflow for a node by name
+
+    """
+    def __init__(self, nodeName):
+        self.nodeName = nodeName
+        self.result = None
+
+    def __call__(self, nodeInstance):
+        if nodeInstance.name == self.nodeName:
+            self.result = nodeInstance
 
 
 def createPSetHash(cfgFile):
@@ -79,8 +91,9 @@ def createPythonConfig(cfgFile):
 
 
 
-def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent, hashValue,
-                       timestamp, prodName, fakeHash = False):
+def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
+                       hashValue, timestamp, prodName,
+                       fakeHash = False, usePrimaryDataset = None):
     """
     _populateCMSRunNode_
 
@@ -101,18 +114,26 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent, hashVal
         datasets = val.datasets()
         for outDataset in datasets:
             dataTier = outDataset['dataTier']
-
+            filterName = outDataset.get("filterName", None)
             processedDS = "%s-%s-%s-unmerged" % (
                 payloadNode.application['Version'], outModName, timestamp)
+            if filterName != None:
+                processedDS = "%s-%s-%s-unmerged" % (
+                    cmsRun.application['Version'],
+                    filterName, timestamp)
 
             if outDataset.has_key("processedDataset"):
                 processedDS = outDataset['processedDataset']
 
-            primaryName = prodName
+            if usePrimaryDataset != None:
+                primaryName = usePrimaryDataset
+            else:
+                primaryName = prodName
+                
             if outDataset.has_key("primaryDataset"):
                 primaryName = outDataset['primaryDataset']
-        
-
+                
+                
             outDS = payloadNode.addOutputDataset(primaryName, 
                                             processedDS,
                                             outModName)
@@ -204,7 +225,8 @@ def generateFilenames(workflowSpec):
 
 
 
-def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None, category = "mc", **args):
+def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
+                             category = "mc", **args):
     """
     _createProductionWorkflow_
 
@@ -247,6 +269,56 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None, category = 
     return spec
     
 
+def addPileupToSpec(spec, pileupDataset, filesPerJob, **options):
+    """
+    _addPileupToSpec_
+
+    Add pileup info to the workflow spec.
+
+    - pileupDataset is the /primary/tier/processed name of the PU dataset
+    - filesPerJob is the number of pileup files per job to be used
+    - options can contain:
+
+      - NodeName - the name of the workflow node to attach the PU to,
+        default is cmsRun1 as that is used by the tools in this module
+
+      - DBS/DLS Contact Info for the DBS instance containing the PU dataset
+        This defaults to the global DBS/DLS which should be the majority
+        of cases.
+
+    """
+
+    dbsContacts = {}
+    
+    dbsContacts["DBSURL"] = options.get(
+        "DBSURL",
+        "http://cmsdbs.cern.ch/cms/prod/comp/DBS/CGIServer/prodquery")
+    dbsContacts["DBSAddress"] =  options.get("DBSAddress", "MCGlobal/Writer")
+    dbsContacts["DBSType"] = options.get("DBSType", "CGI")
+    dbsContacts["DLSAddress"] = options.get(
+        "DLSAddress" , "prod-lfc-cms-central.cern.ch/grid/cms/DLS/LFC")
+    dbsContacts["DLSType"] = options.get("DLSType" , "DLS_TYPE_DLI")
+
+    nodeName = options.get("NodeName", "cmsRun1")
+
+    finder = NodeFinder(nodeName)
+    spec.payload.operate(finder)
+    nodeInstance = finder.result
+    if nodeInstance == None:
+        msg = "Error adding pileup to Workflow Spec:\n"
+        msg += "Couldnt find node in spec named: %s\n" % nodeName
+        raise RuntimeError, msg
+
+    
+
+    puPrimary = pileupDataset.split("/")[1]
+    puTier = pileupDataset.split("/")[2]
+    puProc = pileupDataset.split("/")[3]
+    puDataset = nodeInstance.addPileupDataset(puPrimary, puTier, puProc)
+    puDataset['FilesPerJob'] = filesPerJob
+    puDataset.update(dbsContacts)
+    
+    return
 
 
 def createProcessingWorkflow(**args):
