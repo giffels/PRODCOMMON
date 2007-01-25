@@ -6,6 +6,7 @@ Tool to take a JobSpec of N total events and split it into J jobs of
 N/j events
 
 """
+import math
 
 from ProdCommon.CMSConfigTools.CfgGenerator import CfgGenerator
 from ProdCommon.MCPayloads.JobSpec import JobSpec
@@ -59,7 +60,7 @@ class CfgMaker(dict):
         
 
 
-def factoriseJobSpec(jobSpecInstance, njobs, eventCount, **args):
+def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
     """
     _factoriseJobSpec_
 
@@ -72,14 +73,13 @@ def factoriseJobSpec(jobSpecInstance, njobs, eventCount, **args):
     
     """
     
-    runNumber = args.get("RunNumber",
-                         int(jobSpecInstance.parameters['RunNumber']))
-    firstEvent = args.get("FirstEvent", 0)
+    runNumber = int(args.get("RunNumber",
+                         int(jobSpecInstance.parameters['RunNumber'])))
+    firstEvent = int(args.get("FirstEvent",0))
     maxRunNumber = args.get("MaxRunNumber", None)
 
     
-    eventsPerJob = float(eventCount)/float(njobs)
-    eventsPerJob = int(eventsPerJob)
+    eventsPerJob = int(math.ceil(float(eventCount)/float(njobs)))
     
     result = []
 
@@ -91,7 +91,6 @@ def factoriseJobSpec(jobSpecInstance, njobs, eventCount, **args):
     currentEvent = firstEvent
     
     for i in range(0, njobs):
-        
         jobName = "%s-%s" % (workflowName, currentRun)
         newSpec = JobSpec()
         newSpec.loadFromNode(template)
@@ -107,10 +106,19 @@ def factoriseJobSpec(jobSpecInstance, njobs, eventCount, **args):
         newSpec.payload.operate(generator)
         createUnmergedLFNs(newSpec)
 
-        result.append(newSpec)
+        newSpec.parameters['FirstEvent']=currentEvent
+        newSpec.parameters['RunNumber']=currentRun
+        newSpec.parameters['EventCount']=eventsPerJob
+
+        jobSpecLocation=jobSpecDir+newSpec.parameters['JobName']+'.xml'
+        newSpec.save(jobSpecLocation)
+
+        result.append({'id':newSpec.parameters['JobName'],'spec':jobSpecLocation})
 
         currentRun += 1
         currentEvent += eventsPerJob
+        if((eventsPerJob+currentEvent)>(firstEvent+int(eventCount))):
+            eventsPerJob=firstEvent+int(eventCount)-currentEvent
         if maxRunNumber != None:
             if currentRun > maxRunNumber:
                 break
