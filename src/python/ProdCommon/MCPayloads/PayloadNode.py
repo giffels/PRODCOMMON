@@ -21,6 +21,7 @@ from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 
 def intersection(list1, list2):
     """fast intersection of two lists"""
@@ -47,7 +48,76 @@ def listAllNames(payloadNode):
     return  payloadNode.listDescendantNames()
 
 
+class NodeFinder:
 
+    def __init__(self, nodeName):
+        self.nodeName = nodeName
+        self.result = None
+
+    def __call__(self, nodeInstance):
+        if nodeInstance.name == self.nodeName:
+            self.result = nodeInstance
+
+
+def getNodeByName(payloadNode, nodeName):
+    """
+    _getNodeByName_
+
+    Given a payload node, search the tree it is part of for the
+    node with the name provided.
+
+    """
+    if payloadNode.parent != None:
+        return getNodeByName(payloadNode.parent, nodeName)
+
+    finder = NodeFinder(nodeName)
+    payloadNode.operate(finder)
+    return finder.result
+
+
+class InputLink(dict):
+    """
+    _InputLink_
+
+    Object that can be used to create an IO link dependency between
+    two Payload Nodes. This object is added to the PayloadNode
+    that will process the data.
+
+    node1 -> node2
+              - InputLink(node1)
+
+    Contains:
+
+    InputNode - name of the PayloadNode where the input is coming from
+    OutputModule - name of the OutputModule in the input node that generates
+                   the data to be input.
+
+    InputSource - name of the PoolSource that the input data will be fed to.
+    
+    """
+    def __init__(self, **args):
+        dict.__init__(self)
+        self.setdefault("InputNode", None)
+        self.setdefault("InputSource", None)
+        self.setdefault("OutputModule", None)
+        self.update(args)
+
+    def save(self):
+        result = IMProvNode("InputLink")
+        for key, value in self.items():
+            result.addNode(IMProvNode(key, None, Value = value))
+        return result
+
+    def load(self, improvNode):
+        dataQ = IMProvQuery("/InputLink/*")
+        dataNodes = dataQ(improvNode)
+        for node in dataNodes:
+            key = str(node.name)
+            val = str(node.attrs['Value'])
+            self[key] = val
+        return
+    
+                          
 
 class PayloadNode:
     """
@@ -69,12 +139,15 @@ class PayloadNode:
         self.application.setdefault("Version", None)
         self.application.setdefault("Architecture", None)
         self.application.setdefault("Executable", None)
-
+        self.applicationControls = {}
+        self.applicationControls.setdefault("EventMultiplier", None)
+        self.applicationControls.setdefault("SelectionEfficiency", None)
         #  //
         # // These lists are deprecated and are maintained here
         #//  for backwards compatibility for short term
         self.inputDatasets = []
         self.outputDatasets = []
+        
 
         #  //
         # // Dataset information is stored as DatasetInfo objects
@@ -84,6 +157,11 @@ class PayloadNode:
         self._PileupDatasets = []
         self.configuration = ""
         self.userSandbox = None
+        
+        #  //
+        # // Input Links to other nodes
+        #//
+        self._InputLinks = []
         
 
     def newNode(self, name):
@@ -157,6 +235,77 @@ class PayloadNode:
         self._OutputDatasets.append(newDataset)
         return newDataset
     
+    def addInputLink(self, nodeName, nodeOutputModName,
+                     thisNodeSourceName = None):
+        """
+        _addInputLink_
+
+        Add an input link between this node and another node above it in
+        the tree. This means that output from the named output module 
+        of the node will be linked to the source on this node. If a source name
+        is not provided, the main source will be used
+        
+
+        """
+        #  //
+        # // Safety checks
+        #//  1. Node name must exist
+        if nodeName not in listAllNames(self):
+            msg = "Error adding input link:  Node named %s " % nodeName
+            msg += "Does not exist in the node tree"
+            raise RuntimeError, msg
+        #  //
+        # // 2. Must be above this node. IE not in nodes descended from
+        #//  this node
+        if nodeName in self.listDescendantNames():
+            msg = "Error adding input link: Node named %s \n" % nodeName
+            msg += "Is below node %s in the tree\n" % self.name
+            msg += "%s will run before %s\n" % (self.name, nodeName)
+            raise RuntimeError, msg
+        
+        
+        #  //
+        # // Verify input node has an output module of the requested
+        #//  name
+        nodeInstance = getNodeByName(self, nodeName)
+        try:
+            inputCfg = CfgInterface(nodeInstance.configuration, True)
+        except Exception, ex:
+            msg = "Unable to read configuration from input node\n"
+            msg += "Error adding input link %s.%s -> %s\n " % (
+                nodeName, nodeOutputModName, self.name)
+            raise RuntimeError, msg
+
+        knownMods = inputCfg.outputModules.keys()
+        if nodeOutputModName not in knownMods:
+            msg = "Output Modulename %s not known in cfg for %s\n" % (
+                 nodeOutputModName , nodeName)
+            msg += "Output Modules are %s\n" % knownMods
+            msg += "Error adding input link %s.%s -> %s\n " % (
+                nodeName, nodeOutputModName, self.name)
+            raise RuntimeError, msg
+        
+        #  //
+        # // verify that this cfg has an input source
+        #//
+        try:
+            outputCfg = CfgInterface(self.configuration, True)
+        except Exception, ex:
+            msg = "Unable to read configuration from this node\n"
+            msg += "Error adding input link %s.%s -> %s\n " % (
+                nodeName, nodeOutputModName, self.name)
+            raise RuntimeError, msg
+
+        #  //
+        # // TODO: Check if named source is present
+        #//
+        link = InputLink(InputNode = nodeName,
+                         InputSource = thisNodeSourceName,
+                         OutputModule = nodeOutputModName)
+        self._InputLinks.append(link)
+
+        return
+        
 
     def addNode(self, nodeInstance):
         """
@@ -210,6 +359,12 @@ class PayloadNode:
         appNode = IMProvNode("Application")
         for key, val in self.application.items():
             appNode.addNode(IMProvNode(key, None, Value = val))
+        appConNode = IMProvNode("ApplicationControl")
+        for key, val in self.applicationControls.items():
+            if val == None:
+                continue
+            appConNode.addNode(IMProvNode(key, None, Value = val))
+
         inputNode = IMProvNode("InputDatasets")
         for inpDS in self._InputDatasets:
             inputNode.addNode(inpDS.save())
@@ -219,20 +374,29 @@ class PayloadNode:
         pileupNode = IMProvNode("PileupDatasets")
         for puDS in self._PileupDatasets:
             pileupNode.addNode(puDS.save())
+
+        inpLinksNode = IMProvNode("InputLinks")
+        for iLink in self._InputLinks:
+            inpLinksNode.addNode(iLink.save())
+            
+
         configNode = IMProvNode("Configuration",
                                 base64.encodestring(self.configuration),
                                 Encoding="base64")
         
         node.addNode(appNode)
+        node.addNode(appConNode)
         node.addNode(inputNode)
         node.addNode(outputNode)
         node.addNode(pileupNode)
+        node.addNode(inpLinksNode)
         node.addNode(configNode)
-
+        
         if self.userSandbox != None:
             sandboxNode = IMProvNode("UserSandbox", self.userSandbox)
             node.addNode(sandboxNode)
 
+        
 
         for child in self.children:
             node.addNode(child.makeIMProv())
@@ -309,6 +473,15 @@ class PayloadNode:
             field = str(appField.name)
             value = str(appField.attrs['Value'])
             self.application[field] = value
+        #  //
+        # // App Control details
+        #//  
+        appConDataQ = IMProvQuery("/%s/ApplicationControl/*" % self.__class__.__name__)
+        appConData = appConDataQ(improvNode)
+        for appConField in appConData:
+            field = str(appConField.name)
+            value = str(appConField.attrs['Value'])
+            self.applicationControls[field] = value
             
         #  //
         # // Dataset details
@@ -342,6 +515,18 @@ class PayloadNode:
             newDS = DatasetInfo()
             newDS.load(item)
             self._PileupDatasets.append(newDS)
+        #  //
+        # // Input Links
+        #//
+        inpLinkQ = IMProvQuery(
+            "/%s/InputLinks/InputLink" % self.__class__.__name__)
+        inpLinks = inpLinkQ(improvNode)
+        for ilink in inpLinks:
+            newLink = InputLink()
+            newLink.load(ilink)
+            self._InputLinks.append(newLink)
+            
+        
         #  //
         # // Configuration
         #//
