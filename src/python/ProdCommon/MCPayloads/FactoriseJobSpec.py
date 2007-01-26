@@ -91,7 +91,8 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
     currentEvent = firstEvent
     
     for i in range(0, njobs):
-        jobName = "%s-%s" % (workflowName, currentRun)
+        #jobName = "%s-%s" % (workflowName, currentRun)
+        jobName = jobSpecInstance.parameters['JobName']+'_jobcut-'+workflowName+'-'+str(i)
         newSpec = JobSpec()
         newSpec.loadFromNode(template)
         newSpec.setJobName(jobName)
@@ -110,7 +111,7 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
         newSpec.parameters['RunNumber']=currentRun
         newSpec.parameters['EventCount']=eventsPerJob
 
-        jobSpecLocation=jobSpecDir+newSpec.parameters['JobName']+'.xml'
+        jobSpecLocation=jobSpecDir+'/'+newSpec.parameters['JobName']+'.xml'
         newSpec.save(jobSpecLocation)
 
         result.append({'id':newSpec.parameters['JobName'],'spec':jobSpecLocation})
