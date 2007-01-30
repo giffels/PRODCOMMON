@@ -8,6 +8,9 @@ import time
 import unittest
 
 from ProdCommon.WebServices import serviceCall
+from ProdCommon.Database import Session
+from ProdCommon.Core.Initialize import configuration
+
 
 class ServiceCallTest(unittest.TestCase):
    """
@@ -38,6 +41,7 @@ class ServiceCallTest(unittest.TestCase):
 
        try:
            print("testA")
+           Session.set_database(configuration.get('DB'))
            for i in xrange(0,self.prodagents):
                for j in xrange(0,self.components):
                    serviceCall.log("DN-ProdAgent-"+str(i)+"-Component-"+str(j),"acquireAllocation",\
