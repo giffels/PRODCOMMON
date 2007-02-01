@@ -19,6 +19,36 @@ from IMProv.IMProvLoader import loadIMProvString
 from IMProv.IMProvQuery import IMProvQuery
 
 
+class Parametrization(dict):
+    """
+    _Parametrization_
+
+    Dictionary representing a parametrization against a template
+    job spec.
+
+    Will contain eg, RunNumber plus seeds for a single job
+    
+    """
+    def __init__(self):
+        dict.__init__(self)
+        self.setdefault("RunNumber", None)
+        
+    def save(self):
+        """this to improv"""
+        result = IMProvNode("Parametrization")
+        for key, val in self.items():
+            if val != None:
+                result.addNode(IMProvNode(key, value))
+        return result
+
+    def load(self, improvNode):
+        """improv to this"""
+        for child in improvNode.children:
+            self[str(child.name)] = str(child.chardata)
+        return
+    
+            
+
 class JobSpec:
     """
     _JobSpec_
@@ -33,8 +63,14 @@ class JobSpec:
         self.parameters.setdefault("JobType", "Processing")
         self.siteWhitelist = []
         self.siteBlacklist = []
+
+        #  //
+        # // Used for PM/PA interaction, not normal jobs
+        #//
+        self.associatedFiles = {}
         
 
+        
     def addWhitelistSite(self, sitename):
         """
         _addWhitelistSite_
@@ -77,6 +113,31 @@ class JobSpec:
         self.parameters['JobType'] = jobType
         updateJobType(self.payload, jobType)
         return
+
+
+    def addAssociatedFiles(self, listName, *fileData):
+        """
+        _addAssociatedFiles_
+
+        Add a set of associated files to this JobSpec
+
+        """
+        if not self.associatedFiles.has_key(listName):
+            self.associatedFiles[listName] = []
+
+        knownLFNs = [ x['LFN'] for x in self.associatedFiles[listName] ]
+
+        for fData in fileData:
+            lfn = fData['LFN']
+            if lfn in knownLFNs:
+                msg = "Duplicate LFN in list %s\n" % listName
+                msg += " %s already exists\n " % lfn
+                raise RuntimeError, msg
+
+            self.associatedFiles[listName].append(fData)
+        return
+    
+            
         
       
     def makeIMProv(self):
@@ -103,7 +164,19 @@ class JobSpec:
                 IMProvNode("Site", None, Name = site)
                 )
 
-        
+        if len(self.associatedFiles.keys()) > 0:
+            assocFiles = IMProvNode("AssociatedFiles")
+            for key, val in self.associatedFiles.items():
+                assocList = IMProvNode("AssocFileList", None, Name = key)
+                assocFiles.addNode(assocList)
+                for fileEntry in val:
+                    fileNode = IMProvNode("AssocFile", fileEntry['LFN'])
+                    for fileAttr, fileVal in fileEntry.items():
+                        if fileAttr == "LFN":
+                            continue
+                        fileNode.attrs[fileAttr] = str(fileVal)
+                    assocList.addNode(fileNode)
+            node.addNode(assocFiles)
         
         payload = IMProvNode("Payload")
         payload.addNode(self.payload.makeIMProv())
@@ -139,6 +212,8 @@ class JobSpec:
         payloadQ = IMProvQuery("/JobSpec/Payload/JobSpecNode")
         whitelistQ = IMProvQuery("/JobSpec/SiteWhitelist/Site")
         blacklistQ = IMProvQuery("/JobSpec/SiteBlacklist/Site")
+        assocFileQ = IMProvQuery("/JobSpec/AssociatedFiles/AssocFileList")
+        
 
         #  //
         # // Extract Params
@@ -165,6 +240,24 @@ class JobSpec:
             if value != None:
                 self.siteBlacklist.append(str(value))
 
+        #  //
+        # // Extract Associated Files
+        #//
+        assocFiles = assocFileQ(improvNode)
+        if len(assocFiles) > 0:
+            for assocFileList in assocFiles:
+                assocListName = str(assocFileList.attrs['Name'])
+                assocList = []
+                for aFile in assocFileList.children:
+                    fileEntry = {
+                        "LFN" : str(aFile.chardata),
+                        }
+                    for attrName, attrVal in aFile.attrs.items():
+                        fileEntry[str(attrName)] = str(attrVal)
+                    assocList.append(fileEntry)
+                self.addAssociatedFiles(assocListName, *assocList)
+                
+        
         #  //
         # // Extract Payload Nodes
         #//
