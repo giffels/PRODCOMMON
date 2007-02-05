@@ -25,6 +25,7 @@ def connect(sessionID=None):
 def start_transaction(sessionID=None):
    global session
    global current_db
+   global current_session
 
    if sessionID==None:
        sessionID=current_session
@@ -36,6 +37,7 @@ def start_transaction(sessionID=None):
            startTransaction="START TRANSACTION"
            session[sessionID]['cursor'].execute(startTransaction)
        session[sessionID]['state']='start_transaction'
+   current_session=sessionID
 
 def get_cursor(sessionID=None):
    global session
@@ -46,7 +48,6 @@ def get_cursor(sessionID=None):
    if not session.has_key(sessionID):
        raise ProdException(exceptions[4002],4002)
    return session[sessionID]['cursor']
-
 
    
 def commit(sessionID=None):
@@ -97,6 +98,8 @@ def set_session(sessionID="default"):
 def set_database(connection_parameters={}):
    global current_db
    current_db=connection_parameters
+   if not current_db.has_key('dbType'):
+       current_db['dbType']='mysql'
 
 def callproc(procName,parameters={},sessionID='default'):
    global session
