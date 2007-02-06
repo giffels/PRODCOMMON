@@ -63,9 +63,12 @@ class JobSpecNode(PayloadNode):
         self.type = genericPayload.type
         self.workflow = genericPayload.workflow
         self.application = genericPayload.application
+        self.applicationControls = genericPayload.applicationControls
         self._InputDatasets = genericPayload._InputDatasets
         self._OutputDatasets = genericPayload._OutputDatasets
         self.configuration = genericPayload.configuration
+        self._InputLinks = genericPayload._InputLinks
+        self.userSandbox = genericPayload.userSandbox
         self.loadConfiguration()
 
 
