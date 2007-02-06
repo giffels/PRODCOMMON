@@ -5,9 +5,9 @@ _DBSReader_
 Readonly DBS Interface
 
 """
-from dbsApi import DbsApi
-from dbsException import *
-from dbsApiException import *
+from DBSAPI.dbsApi import DbsApi
+from DBSAPI.dbsException import *
+from DBSAPI.dbsApiException import *
 
 from ProdCommon.DataMgmt.DBS.DBSErrors import DBSReaderError, formatEx
 

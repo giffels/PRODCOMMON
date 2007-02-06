@@ -7,15 +7,17 @@ into DBS if required
 
 """
 
-from dbsApi import DbsApi
-from dbsException import *
-from dbsApiException import *
-from dbsPrimaryDataset import DbsPrimaryDataset
-from dbsAlgorithm import DbsAlgorithm
-from dbsQueryableParameterSet import DbsQueryableParameterSet
-from dbsProcessedDataset import DbsProcessedDataset
-from dbsFile import DbsFile
-from dbsFileBlock import DbsFileBlock
+import logging
+
+from DBSAPI.dbsApi import DbsApi
+from DBSAPI.dbsException import *
+from DBSAPI.dbsApiException import *
+from DBSAPI.dbsPrimaryDataset import DbsPrimaryDataset
+from DBSAPI.dbsAlgorithm import DbsAlgorithm
+from DBSAPI.dbsQueryableParameterSet import DbsQueryableParameterSet
+from DBSAPI.dbsProcessedDataset import DbsProcessedDataset
+from DBSAPI.dbsFile import DbsFile
+from DBSAPI.dbsFileBlock import DbsFileBlock
 
 
 
@@ -36,7 +38,7 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     return primary
 
 
-def createAlgorithm(datasetInfo, configMetadata, apiRef = None):
+def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     """
     _createAlgorithm_
     
@@ -55,23 +57,38 @@ def createAlgorithm(datasetInfo, configMetadata, apiRef = None):
         
     
     psetContent = datasetInfo['PSetContent']
-    
-    psetInstance = DbsQueryableParameterSet(
-        Hash = psetHash,
-        Name = configMetadata['Name'],
-        Version = configMetadata['Version'],
-        Type = configMetadata['Type'],
-        Annotation = configMetadata['Annotation'],
-        Content = psetContent, 
-        )
-    
-    algorithmInstance = DbsAlgorithm(
-        ExecutableName = exeName,
-        ApplicationVersion = appVersion,
-        ApplicationFamily = appFamily,
-        ParameterSetID = psetInstance
-        )
 
+    #
+    # HACK: 100 char limit on cfg file name
+    if configMetadata != None:
+        cfgName = configMetadata['Name']
+        if len(cfgName) > 100:
+            configMetadata['Name'] = cfgName[-99]
+    
+        psetInstance = DbsQueryableParameterSet(
+            Hash = psetHash,
+            Name = configMetadata['Name'],
+            Version = configMetadata['Version'],
+            Type = configMetadata['Type'],
+            Annotation = configMetadata['Annotation'],
+            Content = psetContent, 
+            )
+
+        
+        algorithmInstance = DbsAlgorithm(
+            ExecutableName = exeName,
+            ApplicationVersion = appVersion,
+            ApplicationFamily = appFamily,
+            ParameterSetID = psetInstance
+            )
+    else:
+        algorithmInstance = DbsAlgorithm(
+            ExecutableName = exeName,
+            ApplicationVersion = appVersion,
+            ApplicationFamily = appFamily,
+            )
+        
+        
     if apiRef != None:
         apiRef.insertAlgorithm(algorithmInstance)
     return algorithmInstance
@@ -161,18 +178,55 @@ def createDBSFiles(fjrFileInfo):
             Dataset = processed,
             TierList = [dataset['DataTier']],
             AlgoList = [algo],
-            ParentList = inputLFNs
+            ParentList = inputLFNs,
+            BranchList = fjrFileInfo.branches,
             )
         
         results.append(dbsFileInstance)
     return results
 
-def createDBSFileBlock(procDataset, apiRef = None):
-    """
-    _createDBSFileBlock_
 
-    Create a DBS FileBlock instance
+    
+def getDBSFileBlock(dbsApiRef, procDataset, seName):
+    """
+    _getDBSFileBlock_
+
+    Given the procDataset and seName provided, get the currently open
+    file block for that dataset/se pair.
+    If an open block does not exist, then create a new block and
+    return that
 
     """
+
+    allBlocks = dbsApiRef.listBlocks(procDataset, block_name = "*",
+                                     storage_element_name = seName)
     
-    
+        
+    openBlocks = [b for b in allBlocks if str(b['OpenForWriting']) == "1"]
+
+
+    blockRef = None
+    if len(openBlocks) > 1:
+        msg = "Too many open blocks for dataset:\n"
+        msg += "SE: %s\n" % seName
+        msg += "Dataset: %s\n" %procDataset
+        msg += "Using last open block\n"
+        logging.warning(msg)
+        blockRef = openBlocks[-1]
+    elif len(openBlocks) == 1:
+        blockRef = openBlocks[0]
+
+    if blockRef == None:
+        #  //
+        # // Need to create new block
+        #//
+        
+        
+        newBlockName = dbsApiRef.insertBlock (procDataset, None ,
+                                              storage_element = [seName])
+        blockRef = DbsFileBlock(
+            Name = newBlockName,
+            Dataset = procDataset,
+            StorageElementList = [seName]
+            )
+    return blockRef
