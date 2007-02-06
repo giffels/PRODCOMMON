@@ -142,6 +142,7 @@ class PayloadNode:
         self.applicationControls = {}
         self.applicationControls.setdefault("EventMultiplier", None)
         self.applicationControls.setdefault("SelectionEfficiency", None)
+        self.applicationControls.setdefault("PerRunFraction", None)
         #  //
         # // These lists are deprecated and are maintained here
         #//  for backwards compatibility for short term
