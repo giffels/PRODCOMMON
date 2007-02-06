@@ -22,15 +22,16 @@ class CfgGenerator:
 
     
     """
-    def __init__(self, pyFormatCfgFile, isString = False):
+    def __init__(self, pyFormatCfgFile, isString = False, appControls = {}):
         self.template = CfgInterface(pyFormatCfgFile, isString)
+        self.appControls = appControls
         #  //
         # // Ensure that the template contains the expected 
         #//  framework job report entry
         checkJobReport(self.template)
         
 
-
+        
 
     def __call__(self, jobName, **args):
         """
@@ -50,7 +51,7 @@ class CfgGenerator:
         maxEvents - maxEvents parameter to input source (int32)
         firstRun - firstRun number parameter to input source (int32)
         fileNames - Input file names to be used, list expected
-
+        
         """
         #  //
         # // Create the new config object
@@ -68,12 +69,42 @@ class CfgGenerator:
             outModule.setCatalog("%s-%s-Output.xml" % (jobName, modName))
             outModule.setFileName("%s-%s.root" % (jobName, modName))
             outModule.setLogicalFileName("%s-%s.root" % (jobName, modName))
-        
-        #  //
-        # // Insert parameters into InputSource 
-        #//
+
+
         maxEvents = args.get("maxEvents", None)
+
         if maxEvents != None:
+            selectionEff = self.appControls.get("SelectionEfficiency", None)
+            evMultiplier = self.appControls.get("EventMultiplier", None)
+            perRunFrac = self.appControls.get("PerRunFraction", None)
+            
+            
+
+            #  //
+            # // Adjust number of events for selection efficiency
+            #//
+            if selectionEff != None:
+                newMaxEv = float(maxEvents) / float(selectionEff)
+                maxEvents = int(newMaxEv) 
+
+            #  //
+            # // If this node has an Event Multiplier, adjust maxEvents
+            #//
+            if evMultiplier != None:
+                maxEvents = int(maxEvents) * int(evMultiplier)
+
+            #  //
+            # // Per Run Fraction means generator will run in two runs
+            #//  
+            if perRunFrac != None:
+                numEvInRun = float(maxEvents) * float(perRunFrac)
+                numEvInRun = int(numEvInRun)
+                maxEvents = -1
+                newCfg.inputSource.setNumberEventsInRun(numEvInRun)
+
+            #  //
+            # // Insert whatever maxEvents turned out to be
+            #//
             newCfg.inputSource.setMaxEvents(maxEvents)
 
         skipEvents = args.get("skipEvents", None)
@@ -87,8 +118,9 @@ class CfgGenerator:
         fileNames = args.get("fileNames", None)
         if fileNames != None:
             newCfg.inputSource.setFileNames(*fileNames)
-        
 
+            
+            
         #  //
         # // Insert Random seeds into the random seed service
         #//

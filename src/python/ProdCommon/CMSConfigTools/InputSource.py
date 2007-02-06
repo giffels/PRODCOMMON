@@ -51,6 +51,12 @@ class InputSource:
     def setFirstRun(self, firstRun):
         """set first run number"""
         self.data['firstRun'] = ('uint32', 'untracked', firstRun)
+
+    def setNumberEventsInRun(self, numEvents):
+        """
+        set numberEventsInRun parameter
+        """
+        self.data['numberEventsInRun'] = ('uint32', 'untracked', numEvents)
         
     def fileNames(self):
         """ return value of fileNames, None if not provided """
