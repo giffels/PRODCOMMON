@@ -14,6 +14,7 @@ total size, thresholds and policies to be used
 This can also be serialised into XML
 
 """
+import logging
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvDoc import IMProvDoc
@@ -133,16 +134,23 @@ def readSpecFile(filename):
     Returns a list of spec instances found
     """
     result = []
-
+    # ignore failed parsed requests
+    ignore = 0
+  
+    node = loadIMProvFile(filename)
     node = loadIMProvFile(filename)
     specQ = IMProvQuery("RequestSpec")
     specNodes = specQ(node)
 
     for snode in specNodes:
         newSpec = RequestSpec()
-        newSpec.load(snode)
+        try: 
+           newSpec.load(snode)
+        except Exception,ex:
+           logging.debug('ERROR loading a requestspec, will ignore this requestspec :'+str(ex))
+           ignore+=1
         result.append(newSpec)
-    return result
+    return (result,ignore)
 
 def writeSpecFile(filename, *specInstances):
     """
