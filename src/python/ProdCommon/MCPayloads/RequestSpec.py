@@ -146,10 +146,10 @@ def readSpecFile(filename):
         newSpec = RequestSpec()
         try: 
            newSpec.load(snode)
+           result.append(newSpec)
         except Exception,ex:
            logging.debug('ERROR loading a requestspec, will ignore this requestspec :'+str(ex))
            ignore+=1
-        result.append(newSpec)
     return (result,ignore)
 
 def writeSpecFile(filename, *specInstances):
