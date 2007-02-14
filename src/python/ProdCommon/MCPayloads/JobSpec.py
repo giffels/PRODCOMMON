@@ -19,35 +19,71 @@ from IMProv.IMProvLoader import loadIMProvString
 from IMProv.IMProvQuery import IMProvQuery
 
 
-class Parametrization(dict):
+
+class BulkSpecs(dict):
     """
-    _Parametrization_
+    _BulkSpecs_
 
-    Dictionary representing a parametrization against a template
-    job spec.
+    Object for representing a Bulk JobSpec.
 
-    Will contain eg, RunNumber plus seeds for a single job
-    
+    basically a map of job name to job spec file to allow
+    a single JobSpec to represent many jobs.
+
+    Kind of clunky, but useful for a first pass
+
     """
     def __init__(self):
         dict.__init__(self)
-        self.setdefault("RunNumber", None)
-        
+
+    def addJobSpec(self, jobSpecId, jobSpecFile):
+        """
+        _addJobSpec_
+
+        Can also just use dict assignment
+        """
+        self[jobSpecId] = jobSpecFile
+        return
+
     def save(self):
-        """this to improv"""
-        result = IMProvNode("Parametrization")
-        for key, val in self.items():
-            if val != None:
-                result.addNode(IMProvNode(key, value))
+        """
+        _save_
+
+        return IMProv structure of self
+
+        """
+        result = IMProvNode("BulkSpecs")
+        for key, value in self.items():
+            result.addNode(IMProvNode("BulkSpec", value, ID = key))
         return result
 
     def load(self, improvNode):
-        """improv to this"""
-        for child in improvNode.children:
-            self[str(child.name)] = str(child.chardata)
+        """
+        _load_
+
+        Load from IMProvNode structure & populate self
+
+        """
+        nodesQ = IMProvQuery("/BulkSpecs/BulkSpec")
+        nodes = nodesQ(improvNode)
+        for node in nodes:
+            id = node.attrs.get("ID", None)
+            if id == None:
+                continue
+            self[str(id)] = str(node.chardata)
         return
     
-            
+
+    def isPopulated(self):
+        """
+        _isPopulated_
+
+        True of False wether this contains entries
+        
+        """
+        return len(self.keys()) > 0
+    
+    
+
 
 class JobSpec:
     """
@@ -68,8 +104,12 @@ class JobSpec:
         # // Used for PM/PA interaction, not normal jobs
         #//
         self.associatedFiles = {}
-        
 
+        #  //
+        # // Used for Bulk Specs, ignored when empty
+        #//
+        self.bulkSpecs = BulkSpecs()
+        
         
     def addWhitelistSite(self, sitename):
         """
@@ -113,6 +153,15 @@ class JobSpec:
         self.parameters['JobType'] = jobType
         updateJobType(self.payload, jobType)
         return
+
+    def isBulkSpec(self):
+        """
+        _isBulkSpec_
+
+        True or False wether this is a bulk spec or not
+
+        """
+        return self.bulkSpecs.isPopulated()
 
 
     def addAssociatedFiles(self, listName, *fileData):
@@ -177,6 +226,9 @@ class JobSpec:
                         fileNode.attrs[fileAttr] = str(fileVal)
                     assocList.addNode(fileNode)
             node.addNode(assocFiles)
+
+        if self.isBulkSpec():
+            node.addNode(self.bulkSpecs.save())
         
         payload = IMProvNode("Payload")
         payload.addNode(self.payload.makeIMProv())
@@ -213,7 +265,7 @@ class JobSpec:
         whitelistQ = IMProvQuery("/JobSpec/SiteWhitelist/Site")
         blacklistQ = IMProvQuery("/JobSpec/SiteBlacklist/Site")
         assocFileQ = IMProvQuery("/JobSpec/AssociatedFiles/AssocFileList")
-        
+        bulkSpecQ = IMProvQuery("/JobSpec/BulkSpecs")
 
         #  //
         # // Extract Params
@@ -256,7 +308,10 @@ class JobSpec:
                         fileEntry[str(attrName)] = str(attrVal)
                     assocList.append(fileEntry)
                 self.addAssociatedFiles(assocListName, *assocList)
-                
+
+        bulkNodes = bulkSpecQ(improvNode)
+        if len(bulkNodes) > 0:
+            self.bulkSpecs.load(bulkNodes[-1])
         
         #  //
         # // Extract Payload Nodes
