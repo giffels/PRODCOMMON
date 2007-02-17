@@ -171,6 +171,19 @@ def rollback_all():
    for sessionID in session.keys():
        rollback(sessionID)
 
+def convert(description=[],rows=[],oneItem=False):
+   result=[]
+   for row in rows:
+      row_result={}
+      for i in xrange(0,len(description)):
+          row_result[description[i]]=row[i]
+      result.append(row_result)
+   if oneItem:
+      if len(result)>0:
+          return result[0]
+      return None
+   return result
+
 ###########################################################
 ###  used only in this file most of the time.        #####
 ###########################################################
