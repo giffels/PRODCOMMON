@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import base64
+import cPickle
 import logging
 
 from ProdCommon.Core.ProdException import ProdException
@@ -13,6 +15,7 @@ current_db={}
 
 def connect(sessionID=None):
    global session
+   global current_session
    if sessionID==None:
        sessionID=current_session
    # check if cursor exists
@@ -52,6 +55,8 @@ def get_cursor(sessionID=None):
    
 def commit(sessionID=None):
    global session
+   global current_session
+
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -67,6 +72,7 @@ def commit(sessionID=None):
 
 def rollback(sessionID=None):
    global session
+   global current_session
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -80,6 +86,7 @@ def rollback(sessionID=None):
 
 def close(sessionID=None):
    global session
+   global current_session
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -114,6 +121,8 @@ def callproc(procName,parameters={},sessionID='default'):
   
 
 def execute(sqlQuery,sessionID=None):
+   global current_session
+   global session
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -141,6 +150,8 @@ def execute(sqlQuery,sessionID=None):
        return rowsModified
 
 def fetchall(sessionID=None):       
+   global current_session
+   global session
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -149,6 +160,8 @@ def fetchall(sessionID=None):
    return cursor.fetchall()
 
 def fetchone(sessionID=None):
+   global current_session
+   global session
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
@@ -157,6 +170,7 @@ def fetchone(sessionID=None):
    return cursor.fetchone()
        
 def commit_all():
+   global current_session
    global session
    for sessionID in session.keys():
        commit(sessionID)
@@ -171,12 +185,15 @@ def rollback_all():
    for sessionID in session.keys():
        rollback(sessionID)
 
-def convert(description=[],rows=[],oneItem=False):
+def convert(description=[],rows=[],oneItem=False,decode=[]):
    result=[]
    for row in rows:
       row_result={}
       for i in xrange(0,len(description)):
-          row_result[description[i]]=row[i]
+          if description[i] in decode:
+              row_result[description[i]]=cPickle.loads(base64.decode(row[i]))
+          else:
+              row_result[description[i]]=row[i]
       result.append(row_result)
    if oneItem:
       if len(result)>0:
