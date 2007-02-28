@@ -191,7 +191,7 @@ def convert(description=[],rows=[],oneItem=False,decode=[]):
       row_result={}
       for i in xrange(0,len(description)):
           if description[i] in decode:
-              row_result[description[i]]=cPickle.loads(base64.decode(row[i]))
+              row_result[description[i]]=cPickle.loads(base64.decodestring(row[i]))
           else:
               row_result[description[i]]=row[i]
       result.append(row_result)
