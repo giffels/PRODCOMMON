@@ -40,8 +40,7 @@ class RelValTest(dict):
             result.attrs['FractionSelected'] = str(self['FractionSelected'])
 
         if self['InputDataset'] != None:
-            dsNode = IMProvNode("InputDataset", self['InputDataset'])
-            result.addNode(dsNode)
+            result.attrs['InputDataset'] = self['InputDataset']
         return result
 
     def load(self, improvNode):
@@ -51,11 +50,8 @@ class RelValTest(dict):
         self['CfgUrl'] = str(improvNode.chardata)
         if improvNode.attrs.has_key("FractionSelected"):
             self['FractionSelected'] = str(improvNode.attrs['FractionSelected'])
-        datasetQ = IMProvQuery("/Test/InputDataset")
-        datasets = datasetQ(improvNode)
-        if len(datasets) > 0:
-            datasetName = datasets[-1].chardata
-            self['InputDataset'] = str(datasetName)
+        if improvNode.attrs.has_key("InputDataset"):
+            self['InputDataset'] = str(improvNode.attrs['InputDataset'])
         return
 
 
