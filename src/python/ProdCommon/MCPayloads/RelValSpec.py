@@ -28,6 +28,7 @@ class RelValTest(dict):
         self.setdefault('Name', None)
         self.setdefault("CfgUrl", None)
         self.setdefault("FractionSelected", None)
+        self.setdefault("InputDataset", None)
 
     def save(self):
         """self to improv"""
@@ -37,6 +38,10 @@ class RelValTest(dict):
                             )
         if self['FactionSelected'] != None:
             result.attrs['FractionSelected'] = str(self['FractionSelected'])
+
+        if self['InputDataset'] != None:
+            dsNode = IMProvNode("InputDataset", self['InputDataset'])
+            result.addNode(dsNode)
         return result
 
     def load(self, improvNode):
@@ -46,6 +51,11 @@ class RelValTest(dict):
         self['CfgUrl'] = str(improvNode.chardata)
         if improvNode.attrs.has_key("FractionSelected"):
             self['FractionSelected'] = str(improvNode.attrs['FractionSelected'])
+        datasetQ = IMProvQuery("/Test/InputDataset")
+        datasets = datasetQ(improvNode)
+        if len(datasets) > 0:
+            datasetName = datasets[-1].chardata
+            self['InputDataset'] = str(datasetName)
         return
 
 
@@ -62,7 +72,7 @@ class RelValidation(list):
         self.release = release
 
 
-    def addTest(self, name, numEvents, cfgUrl):
+    def addTest(self, name, numEvents, cfgUrl, inpDataset = None):
         """
         _addTest_
 
@@ -75,11 +85,15 @@ class RelValidation(list):
 
         - *cfgUrl* : http based url for the cfg file for this test
 
+        - *inpDataset* : Optional Input dataset name
+
         """
         newTest = RelValTest()
         newTest['Name'] = name
         newTest['Events'] = numEvents
         newTest['CfgUrl'] = cfgUrl
+        if inpDataset != None:
+            newTest['InputDataset'] = inpDataset
         #  //
         # // NOTE: Should check for dupe names here?
         #//
