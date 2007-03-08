@@ -147,8 +147,7 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
                 guid = MCPayloadsUUID.uuidgen()
                 if guid == None:
                     guid = MCPayloadsUUID.uuid()
-                hashValue = "hash=%s;guid=%s" % (hashValue, guid)
-                outDS['PSetHash'] = hashValue
+                outDS['PSetHash'] = "hash=%s;guid=%s" % (hashValue, guid)
             else:
                 outDS['PSetHash'] = hashValue
 
