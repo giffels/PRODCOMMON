@@ -18,7 +18,7 @@ from DBSAPI.dbsQueryableParameterSet import DbsQueryableParameterSet
 from DBSAPI.dbsProcessedDataset import DbsProcessedDataset
 from DBSAPI.dbsFile import DbsFile
 from DBSAPI.dbsFileBlock import DbsFileBlock
-
+from DBSAPI.dbsStorageElement import DbsStorageElement
 
 
 
@@ -55,14 +55,27 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
         psetHash = psetHash.split(";")[0]
         psetHash = psetHash.replace("hash=", "")
         
-    
+    #
+    # HACK:  Problem with large PSets
+    #
     psetContent = datasetInfo['PSetContent']
-
+    msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
+    msg += "TEST HACK USED FOR PSetContent\n" 
+    msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    logging.warning(msg)
+    print msg
+    psetContent = "This is not a PSet"
+    
     #
     # HACK: 100 char limit on cfg file name
     if configMetadata != None:
         cfgName = configMetadata['Name']
         if len(cfgName) > 100:
+            msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
+            msg += "TEST HACK USED FOR Config File Name"
+            msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+            logging.warning(msg)
+            print msg
             configMetadata['Name'] = cfgName[-99]
     
         psetInstance = DbsQueryableParameterSet(
@@ -120,6 +133,32 @@ def createAlgorithmForInsert(datasetInfo):
         )
     return algorithmInstance
 
+def createMergeAlgorithm(datasetInfo, apiRef = None):
+    """
+    _createMergeAlgorithm_
+
+    Create a DbsAlgorithm for a merge dataset
+
+    """
+    exeName = datasetInfo['ApplicationName']
+    version = datasetInfo['ApplicationVersion']
+    family = datasetInfo.get('ApplicationFamily', None)
+    if family == None:
+        family = datasetInfo['OutputModuleName']
+
+    
+    mergeAlgo = DbsAlgorithm (
+        ExecutableName = exeName,
+        ApplicationVersion = version,
+        ApplicationFamily = family,
+        )
+
+    if apiRef != None:
+        apiRef.insertAlgorithm(mergeAlgo)
+    return mergeAlgo
+
+
+    
     
 def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
                            apiRef = None):
@@ -148,7 +187,7 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
         
     return processedDataset
 
-def createDBSFiles(fjrFileInfo):
+def createDBSFiles(fjrFileInfo, jobType = None):
     """
     _createDBSFiles_
 
@@ -164,7 +203,10 @@ def createDBSFiles(fjrFileInfo):
     
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
-        algo = createAlgorithmForInsert(dataset)
+        if jobType == "Merge":
+            algo = createMergeAlgorithm(dataset)
+        else:
+            algo = createAlgorithmForInsert(dataset)
         processed = createProcessedDataset(primary, algo, dataset)
 
         dbsFileInstance = DbsFile(
@@ -185,6 +227,13 @@ def createDBSFiles(fjrFileInfo):
         results.append(dbsFileInstance)
     return results
 
+
+def createDBSStorageElement(seName):
+    """
+    _createDBSStorageElement_
+
+    """
+    return DbsStorageElement(Name = seName)
 
     
 def getDBSFileBlock(dbsApiRef, procDataset, seName):
@@ -227,6 +276,8 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
         blockRef = DbsFileBlock(
             Name = newBlockName,
             Dataset = procDataset,
-            StorageElementList = [seName]
+            StorageElementList = [ seName ]
             )
     return blockRef
+
+

@@ -71,3 +71,12 @@ class DBSReader:
         return result
         
     
+    def listDatasetFiles(self, datasetPath):
+        """
+        _listDatasetFiles_
+
+        Get list of files for dataset
+
+        """
+        
+        print self.dbs.listFiles(datasetPath)
