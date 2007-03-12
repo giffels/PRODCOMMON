@@ -80,3 +80,123 @@ class DBSReader:
         """
         
         print self.dbs.listFiles(datasetPath)
+
+
+    def listFileBlocks(self, dataset, onlyClosedBlocks = False):
+        """
+        _listFileBlocks_
+
+        Retrieve a list of fileblock names for a dataset
+
+        """
+
+        try:
+             blocks = self.dbs.listBlocks(dataset)
+        except DbsException, ex:
+            msg = "Error in DBSReader.listFileBlocks(%s)\n" % dataset
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+        
+        if onlyClosedBlocks:
+            result = [
+                x['Name'] for x in blocks \
+                  if str(x['OpenForWriting']) != "1"
+                ]
+
+        else:
+            result = [ x['Name'] for x in blocks ]
+            
+        return result
+
+
+    def listFilesInBlock(self, fileBlockName):
+        """
+        _listFilesInBlock_
+
+        Get a list of files in the named fileblock
+
+        """
+        try:
+            files = self.dbs.listFiles("", fileBlockName)
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.listFilesInBlock(%s)\n" % fileBlockName
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        result = {}
+        [ result.__setitem__(x['LogicalFileName'], x['NumberOfEvents']) \
+            for x in files ]
+        return result
+
+        
+
+    def listFileBlockLocation(self, fileBlockName):
+        """
+        _listFileBlockLocation_
+
+        Get a list of fileblock locations
+
+        """
+        try:
+
+            blocks = self.dbs.listBlocks(block_name = fileBlockName)
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.getFileBlockLocation(%s)\n" % fileBlockName
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        if blocks == []:
+            return None
+
+        ses = []
+        [ ses.extend(x['StorageElementList']) for x in blocks]
+
+        seList = set()
+
+        [ seList.add(x['Name']) for x in ses ]
+
+        return list(seList)
+        
+    def getFileBlock(self, fileBlockName):
+        """
+        _getFileBlock_
+
+        return a dictionary:
+        { blockName: {
+             "StorageElements" : [<se list>],
+             "Files" : { LFN : Events },
+             }
+        }
+        """
+        result = { fileBlockName: {
+            "StorageElements" : self.listFileBlockLocation(fileBlockName),
+            "Files" : self.listFilesInBlock(fileBlockName),
+      
+            
+            }
+                   }
+        return result
+
+    
+
+    def getFiles(self, dataset, onlyClosedBlocks = False):
+        """
+        _getFiles_
+
+        Returns a dictionary of block names for the dataset where
+        each block constists of a dictionary containing the StorageElements
+        for that block and the files in that block by LFN mapped to NEvents
+
+        """
+        result = {}
+        
+        blocks = self.listFileBlocks(dataset, onlyClosedBlocks)
+
+        [ result.update(self.getFileBlock(x)) for x in blocks ]
+
+        return result
+
+          
+        
