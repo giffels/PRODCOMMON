@@ -225,7 +225,7 @@ def generateFilenames(workflowSpec):
 
 
 def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
-                             category = "mc", physicsGroup="NophysicsGroup" , processingLabel="Test07", **args):
+                             category = "mc", **args):
     """
     _createProductionWorkflow_
 
@@ -250,6 +250,7 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
     else:
         realPSetHash = args['PSetHash']
 
+
     #  // 
     # // Create a new WorkflowSpec and set its name
     #//
@@ -260,7 +261,7 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
 
     cmsRun = spec.payload
     populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFileContent, realPSetHash,
-                       timestamp, prodName, physicsGroup, processingLabel, fakeHash = args.get("FakeHash", False))
+                       timestamp, prodName, physicsGroup = args.get("physicsGroup", "NoPhysicsGroup"), processingLabel=args.get("processingLabel", "Test07"), fakeHash = args.get("FakeHash", False))
     
     
     addStageOutNode(cmsRun, "stageOut1")
