@@ -64,7 +64,7 @@ def commit(sessionID=None):
    if session[sessionID]['state']=='connect':
        raise ProdException(exceptions[4005],4005)
    if session[sessionID]['state']!='commit':
-       session[sessionID]['cursor'].execute("COMMIT")
+       execute("COMMIT",sessionID)
        session[sessionID]['cursor'].close()
        session[sessionID]['state']='commit'
        session[sessionID]['queries']=[]
@@ -79,7 +79,7 @@ def rollback(sessionID=None):
        raise ProdException(exceptions[4002],4002)
    if not session[sessionID]['state']=='start_transaction':
        raise ProdException(exceptions[4003],4003)
-   session[sessionID]['cursor'].execute("ROLLBACK")
+   execute("ROLLBACK",sessionID)
    session[sessionID]['cursor'].close()
    session[sessionID]['state']='commit'
    session[sessionID]['queries']=[]
