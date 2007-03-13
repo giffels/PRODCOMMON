@@ -255,7 +255,8 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
     # // Create a new WorkflowSpec and set its name
     #//
     spec = WorkflowSpec()
-    spec.setWorkflowName(prodName)
+    workflowname = "%s__%s-%s-%s"%(prodName,cmsswVersion,args.get("processingLabel","Test07"),args.get("physicsGroup","NoPhysicsGroup"))
+    spec.setWorkflowName(workflowname)
     spec.setRequestCategory(category)
     spec.setRequestTimestamp(timestamp)
 
