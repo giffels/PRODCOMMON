@@ -92,8 +92,8 @@ def createPythonConfig(cfgFile):
 
 
 def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
-                       hashValue, timestamp, prodName,
-                       fakeHash = False, usePrimaryDataset = None):
+                       hashValue, timestamp, prodName, physicsGroup , 
+                       processingLabel, fakeHash = False, usePrimaryDataset = None):
     """
     _populateCMSRunNode_
 
@@ -116,11 +116,11 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
             dataTier = outDataset['dataTier']
             filterName = outDataset.get("filterName", None)
             processedDS = "%s-%s-%s-unmerged" % (
-                payloadNode.application['Version'], outModName, timestamp)
+                payloadNode.application['Version'], processingLabel, physicsGroup )
             if filterName != None:
-                processedDS = "%s-%s-%s-unmerged" % (
-                    cmsRun.application['Version'],
-                    filterName, timestamp)
+                processedDS = "%s-%s-%s-%s-unmerged" % (
+                    payloadNode.application['Version'], processingLabel, physicsGroup,
+                    filterName)
 
             if outDataset.has_key("processedDataset"):
                 processedDS = outDataset['processedDataset']
@@ -225,7 +225,7 @@ def generateFilenames(workflowSpec):
 
 
 def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
-                             category = "mc", **args):
+                             category = "mc", physicsGroup="NophysicsGroup" , processingLabel="Test07", **args):
     """
     _createProductionWorkflow_
 
@@ -260,7 +260,7 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
 
     cmsRun = spec.payload
     populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFileContent, realPSetHash,
-                       timestamp, prodName, fakeHash = args.get("FakeHash", False))
+                       timestamp, prodName, physicsGroup, processingLabel, fakeHash = args.get("FakeHash", False))
     
     
     addStageOutNode(cmsRun, "stageOut1")
