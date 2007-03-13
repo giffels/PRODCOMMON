@@ -14,6 +14,7 @@ from DBSAPI.dbsApiException import *
 
 
 import ProdCommon.DataMgmt.DBS.DBSWriterObjects as DBSWriterObjects
+from ProdCommon.DataMgmt.DBS.DBSErrors import DBSWriterError, formatEx
 
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasetsWithPSet
@@ -129,9 +130,15 @@ class DBSWriter:
         provided
 
         """
-        workflowSpec.payload.operate(
-            _CreateDatasetOperator(self.dbs, workflowSpec)
-            )
+        try:
+            workflowSpec.payload.operate(
+                _CreateDatasetOperator(self.dbs, workflowSpec)
+                )
+        except DbsException, ex:
+            msg = "Error in DBSWriter.createDatasets\n"
+            msg += "For Workflow: %s\n" % workflowSpec.workflowName()
+            msg += "%s\n" % formatEx(ex)
+            raise DBSWriterError(msg)
         return
         
 
@@ -146,9 +153,17 @@ class DBSWriter:
         
         """
         mergeSpec = createMergeDatasetWorkflow(workflowSpec, fastMerge)        
-        mergeSpec.payload.operate(
-            _CreateMergeDatasetOperator(self.dbs, workflowSpec)
-            )
+        try:
+            mergeSpec.payload.operate(
+                _CreateMergeDatasetOperator(self.dbs, workflowSpec)
+                )
+            
+        except DbsException, ex:
+            msg = "Error in DBSWriter.createMergeDatasets\n"
+            msg += "For Workflow: %s\n" % workflowSpec.workflowName()
+            msg += "%s\n" % formatEx(ex)
+            raise DBSWriterError(msg)
+        
         return
         
 
@@ -170,8 +185,17 @@ class DBSWriter:
             # // Convert each file into a DBS File object
             #//
             seName = outFile['SEName']
-            dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
-                                                       fwkJobRep.jobType)
+
+            try:
+                dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
+                                                           fwkJobRep.jobType)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.insertFiles:\n"
+                msg += "Error creating DbsFile instances for file:\n"
+                msg += "%s\n" % outFile['LFN']
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+            
             for f in dbsFiles:
                 datasetName = makeDBSDSName(f)
                 hashName = "%s-%s" % (seName, datasetName)
@@ -190,12 +214,19 @@ class DBSWriter:
 
         for fileList in insertLists.values():
             procDataset = fileList[0]['Dataset']
-            
-            fileBlock = DBSWriterObjects.getDBSFileBlock(
-                self.dbs,
-                procDataset,
-                fileList.seName)
-            
+
+            try:
+                fileBlock = DBSWriterObjects.getDBSFileBlock(
+                    self.dbs,
+                    procDataset,
+                    fileList.seName)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.insertFiles\n"
+                msg += "Cannot retrieve FileBlock for dataset:\n"
+                msg += " %s\n" % procDataset
+                msg += "In Storage Element:\n %s\n" % fileList.seName
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
 
             if fwkJobRep.jobType == "Merge":
                 #  //
@@ -203,13 +234,29 @@ class DBSWriter:
                 #//
                 for mergedFile in fileList:
                     mergedFile['Block'] = fileBlock
-                    self.dbs.insertMergedFile(mergedFile['ParentList'],
-                                              mergedFile)
-                
+                    try:
+                        self.dbs.insertMergedFile(mergedFile['ParentList'],
+                                                  mergedFile)
+                    except DbsException, ex:
+                        msg = "Error in DBSWriter.insertFiles\n"
+                        msg += "Cannot insert merged file:\n"
+                        msg += "  %s\n" % mergedFile['LogicalFileName']
+                        msg += "%s\n" % formatEx(ex)
+                        raise DBSWriterError(msg)
             else:
                 #  //
                 # // Processing files
                 #//
-                self.dbs.insertFiles(procDataset, list(fileList), fileBlock)
-                
+                try:
+                    self.dbs.insertFiles(procDataset, list(fileList),
+                                         fileBlock)
+                except DbsException, ex:
+                    msg = "Error in DBSWriter.insertFiles\n"
+                    msg += "Cannot insert processed files:\n"
+                    msg += " %s\n" % (
+                        [ x['LogicalFileName'] for x in fileList ],
+                        )
+                    
+                    msg += "%s\n" % formatEx(ex)
+                    raise DBSWriterError(msg)
         return
