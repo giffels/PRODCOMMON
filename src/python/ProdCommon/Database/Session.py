@@ -12,6 +12,7 @@ from ProdCommon.Database.Connect import connect as dbConnect
 session={}
 current_session='default'
 current_db={}
+lost_connection_statements=[]
 
 def connect(sessionID=None):
    global session
@@ -20,7 +21,9 @@ def connect(sessionID=None):
        sessionID=current_session
    # check if cursor exists
    if not session.has_key(sessionID):
+       logging.debug("Establishing session")
        session[sessionID]={}
+       logging.debug("Creating connection object")
        session[sessionID]['connection']=dbConnect(**current_db)
        session[sessionID]['state']='connect'
        session[sessionID]['queries']=[]
@@ -35,6 +38,7 @@ def start_transaction(sessionID=None):
    if not session.has_key(sessionID):
        raise ProdException(exceptions[4002],4002)
    if not session[sessionID]['state']=='start_transaction':
+       logging.debug("Creating cursor object")
        session[sessionID]['cursor']=session[sessionID]['connection'].cursor()
        if current_db['dbType']=='mysql':
            startTransaction="START TRANSACTION"
@@ -68,6 +72,7 @@ def commit(sessionID=None):
        session[sessionID]['cursor'].close()
        session[sessionID]['state']='commit'
        session[sessionID]['queries']=[]
+   logging.debug("Transaction committed")
    
 
 def rollback(sessionID=None):
@@ -83,6 +88,7 @@ def rollback(sessionID=None):
    session[sessionID]['cursor'].close()
    session[sessionID]['state']='commit'
    session[sessionID]['queries']=[]
+   logging.debug("Transaction rolled back")
 
 def close(sessionID=None):
    global session
@@ -113,10 +119,9 @@ def callproc(procName,parameters={},sessionID='default'):
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
-       logging.debug("Connection not available, trying to connect")
+       logging.warning("Connection not available, trying to connect")
        connect(sessionID)
        start_transaction(sessionID)
-   print('test '+str(dir(session[sessionID]['cursor'])))
    session[sessionID]['cursor'].callproc(procName,parameters)
   
 
@@ -126,7 +131,7 @@ def execute(sqlQuery,sessionID=None):
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
-       logging.debug("Connection not available, trying to connect")
+       logging.warning("Connection not available, trying to connect")
        connect(sessionID)
        start_transaction(sessionID)
    cursor=get_cursor(sessionID)
@@ -136,16 +141,20 @@ def execute(sqlQuery,sessionID=None):
        session[sessionID]['queries'].append(sqlQuery)
        return rowsModified
    except Exception,ex:
-       # the exception might not be a los of connection
-       if ex[0]==1062:
-           raise ex
-       logging.warning("connection to database lost "+str(ex))
+       # the exception might not be a lost of connection
+       if(ex.args) and (len(ex.args)>1):
+           if ex.args[0]==0:
+               logging.warning("Connection to database with session '"+str(sessionID)+"' lost. Problem: "+str(ex))
+           else:
+               raise ex
+       else:
+           logging.warning("Connection to database with session '"+str(sessionID)+"' lost. Problem: "+str(ex))
        invalidate(sessionID)
        connect(sessionID)
        start_transaction(sessionID)
-       logging.warning("connection recovered")
+       logging.warning("Connection recovered")
        redo()
-       rowsModified=cursor.execute(sqlQuery)
+       rowsModified=session[sessionID]['cursor'].execute(sqlQuery)
        session[sessionID]['queries'].append(sqlQuery)
        return rowsModified
 
@@ -206,20 +215,44 @@ def convert(description=[],rows=[],oneItem=False,decode=[]):
 ###########################################################
 
 def redo(sessionID=None):
+   global lost_connection_statements
+
+   logging.warning("Trying to redo sql statements")
    if sessionID==None:
        sessionID=current_session
    if not session.has_key(sessionID):
-       logging.debug("Connection not available, trying to connect")
+       logging.warning("Connection not available, trying to connect")
        connect(sessionID)
        start_transaction(sessionID)
    cursor=get_cursor(sessionID)
+   logging.warning("Recover "+str(len(lost_connection_statements))+" lost sql statements")
+   session[sessionID]['queries']=lost_connection_statements
    for query in session[sessionID]['queries']:
+       logging.debug("Re-instantiating: "+query)
        cursor.execute(query)
+   logging.warning("Redo is successful")
 
 def invalidate(sessionID=None):
+   global lost_connection_statements
+
    if sessionID==None:
        sessionID=current_session
+   logging.warning("Backing up lost sql statements")
+   lost_connection_statements=session[sessionID]['queries']
+   logging.warning("Invalidate session '"+sessionID+"' removing connection and cursor ")
    try:
+       logging.warning("Trying to close connection and cursor (if possible)")
+       try:
+           session[sessionID]['cursor'].close()
+           logging.warning("Successful in closing cursor")
+       except Exception,ex:
+           logging.warning("Unsuccessful in closing cursor: "+str(ex))
+       try:
+           session[sessionID]['connection'].close()
+           logging.warning("Successful in closing connection")
+       except Exception,ex:
+           logging.warning("Unsuccessful in closing connection: "+str(ex))
+           pass
        del session[sessionID]
    except:
        pass 
