@@ -115,12 +115,12 @@ def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
         for outDataset in datasets:
             dataTier = outDataset['dataTier']
             filterName = outDataset.get("filterName", None)
-            processedDS = "%s-%s-%s-unmerged" % (
-                payloadNode.application['Version'], processingLabel, physicsGroup )
+            processedDS = "%s-%s-%s-%s-unmerged" % (
+                payloadNode.application['Version'], processingLabel, physicsGroup, timestamp)
             if filterName != None:
-                processedDS = "%s-%s-%s-%s-unmerged" % (
+                processedDS = "%s-%s-%s-%s-%s-unmerged" % (
                     payloadNode.application['Version'], processingLabel, physicsGroup,
-                    filterName)
+                    filterName, timestamp)
 
             if outDataset.has_key("processedDataset"):
                 processedDS = outDataset['processedDataset']
