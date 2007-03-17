@@ -38,7 +38,7 @@ def start_transaction(sessionID=None):
    if not session.has_key(sessionID):
        raise ProdException(exceptions[4002],4002)
    if not session[sessionID]['state']=='start_transaction':
-       logging.debug("Creating cursor object")
+       logging.debug("Creating cursor object for session: "+str(sessionID))
        session[sessionID]['cursor']=session[sessionID]['connection'].cursor()
        if current_db['dbType']=='mysql':
            startTransaction="START TRANSACTION"
