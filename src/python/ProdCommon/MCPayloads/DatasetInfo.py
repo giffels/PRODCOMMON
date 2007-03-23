@@ -6,8 +6,8 @@ Serialisable container for information about a dataset
 
 """
 
-__version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: DatasetInfo.py,v 1.1 2006/04/10 17:11:18 evansde Exp $"
+__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: DatasetInfo.py,v 1.3 2006/12/04 13:29:31 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -62,11 +62,10 @@ class DatasetInfo(dict):
         
         """
         result = "/%s" % self['PrimaryDataset']
-        result += "/%s" % self['DataTier']
-
-        if self['ProcessedDataset'] != None:
-            result += "/%s" % self['ProcessedDataset']
-
+        result += "/%s" % self['ProcessedDataset']
+        if self['DataTier'] != None:
+            result += "/%s" % self['DataTier']
+            
         # NOTE: Include AnalysisDataset in this object in future???
 
         return result

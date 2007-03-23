@@ -16,7 +16,6 @@ import time
 from ProdCommon.MCPayloads.PayloadNode import PayloadNode
 from ProdCommon.MCPayloads.JobSpecNode import JobSpecNode
 from ProdCommon.MCPayloads.JobSpec import JobSpec
-from ProdCommon.MCPayloads.DatasetExpander import expandDatasetInfo
 import  ProdCommon.MCPayloads.DatasetTools as DatasetTools
 
 from IMProv.IMProvNode import IMProvNode
@@ -254,13 +253,7 @@ class WorkflowSpec:
         in all nodes of this WorkflowSpec
 
         """
-        allDatasets = DatasetTools.getOutputDatasetsFromTree(self.payload)
-        result = []
-        #  //
-        # // Split multi tiers into basic tiers
-        #//
-        for dataset in allDatasets:
-            result.extend(expandDatasetInfo(dataset, self.requestTimestamp()))
+        result = DatasetTools.getOutputDatasetsFromTree(self.payload)
         return result
 
     def outputDatasetsWithPSet(self):
@@ -274,14 +267,9 @@ class WorkflowSpec:
 
 
         """
-        allDatasets = DatasetTools.getOutputDatasetsWithPSetFromTree(
+        result = DatasetTools.getOutputDatasetsWithPSetFromTree(
             self.payload)
-        result = []
-        #  //
-        # // Split multi tiers into basic tiers
-        #//
-        for dataset in allDatasets:
-            result.extend(expandDatasetInfo(dataset, self.requestTimestamp()))
+
         return result
     
     def pileupDatasets(self):
