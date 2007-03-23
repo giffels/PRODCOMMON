@@ -60,14 +60,12 @@ class CfgMaker(dict):
         
 
 
-def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
+def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args):
     """
     _factoriseJobSpec_
 
-    Method to split a JobSpec of N total events and split it into njobs
-    jobs of N/njobs events
+    njobs is an array of globally unique run numbers
 
-    The Run Number in the job spec instance is used as an initial run.
 
     TODO: <<<<NEEDS PILEUP DETAILS>>>>
     
@@ -79,7 +77,7 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
     maxRunNumber = args.get("MaxRunNumber", None)
 
     
-    eventsPerJob = int(math.ceil(float(eventCount)/float(njobs)))
+    eventsPerJob = int(math.ceil(float(eventCount)/float(len(njobs))))
     
     result = []
 
@@ -90,25 +88,25 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs, eventCount, **args):
     currentRun = runNumber
     currentEvent = firstEvent
     
-    for i in range(0, njobs):
-        #jobName = "%s-%s" % (workflowName, currentRun)
-        jobName = jobSpecInstance.parameters['JobName']+'_jobcut-'+workflowName+'-'+str(i)
+    for run_number in njobs:
+        #jobName = "%s-%s" % (workflowName, run_number)
+        jobName = jobSpecInstance.parameters['JobName']+'_jobcut-'+workflowName+'-'+str(run_number)
         newSpec = JobSpec()
         newSpec.loadFromNode(template)
         newSpec.setJobName(jobName)
-        newSpec.parameters['RunNumber'] = currentRun
+        newSpec.parameters['RunNumber'] = run_number
         
         generator = CfgMaker(JobName = jobName,
                              MaxEvents = eventsPerJob,
                              SkipEvents = currentEvent,
-                             RunNumber = currentRun,
+                             RunNumber = run_number,
                              )
 
         newSpec.payload.operate(generator)
         createUnmergedLFNs(newSpec)
 
         newSpec.parameters['FirstEvent']=currentEvent
-        newSpec.parameters['RunNumber']=currentRun
+        newSpec.parameters['RunNumber']=run_number
         newSpec.parameters['EventCount']=eventsPerJob
 
         jobSpecLocation=jobSpecDir+'/'+newSpec.parameters['JobName']+'.xml'
