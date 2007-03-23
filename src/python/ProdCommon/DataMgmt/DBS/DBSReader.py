@@ -47,6 +47,21 @@ class DBSReader:
         result = [ x['Name'] for x in result ]
         return result
 
+    def matchProcessedDatasets(self, primary, tier, process):
+        """
+        _matchProcessedDatasets_
+
+        return a list of Processed datasets 
+        """
+        try:
+            result = self.dbs.listProcessedDatasets(primary, tier, process)
+        except DbsException, ex:
+            msg = "Error in DBSReader.listProcessedDatasets(%s)\n" % primary
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        return result
+
 
     def listProcessedDatasets(self, primary, dataTier = None):
         """
@@ -81,6 +96,17 @@ class DBSReader:
         
         print self.dbs.listFiles(datasetPath)
 
+    def getFileBlocksInfo(self, dataset):
+        """
+        """
+        try:
+             blocks = self.dbs.listBlocks(dataset)
+        except DbsException, ex:
+            msg = "Error in DBSReader.listFileBlocks(%s)\n" % dataset
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        return blocks
 
     def listFileBlocks(self, dataset, onlyClosedBlocks = False):
         """

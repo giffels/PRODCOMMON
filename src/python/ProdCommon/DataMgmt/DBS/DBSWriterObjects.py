@@ -21,6 +21,16 @@ from DBSAPI.dbsFileBlock import DbsFileBlock
 from DBSAPI.dbsStorageElement import DbsStorageElement
 
 
+def makeTierList(dataTier):
+    """
+    _makeTierList_
+ 
+    Standard tool to split data tiers if they contain - chars
+    *** Do not use outside of this module ***
+ 
+    """
+    tierList = dataTier.split("-")
+    return tierList
 
 
 def createPrimaryDataset(datasetInfo, apiRef = None):
@@ -171,13 +181,16 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     physicsGroup = datasetInfo.get("PhysicsGroup", "NoGroup")
     status = datasetInfo.get("Status", "VALID")
     dataTier = datasetInfo['DataTier']
+
+    tierList = makeTierList(datasetInfo['DataTier'])
+
     name = datasetInfo['ProcessedDataset']
-    
+   
     processedDataset = DbsProcessedDataset (
         PrimaryDataset = primaryDataset,
         AlgoList=[algorithm],
         Name = name,
-        TierList = [dataTier],
+        TierList = tierList,
         PhysicsGroup = physicsGroup,
         Status = status,
         )
@@ -209,6 +222,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             algo = createAlgorithmForInsert(dataset)
         processed = createProcessedDataset(primary, algo, dataset)
 
+
         dbsFileInstance = DbsFile(
             Checksum = checksum,
             NumberOfEvents = nEvents, 
@@ -218,7 +232,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             ValidationStatus = 'VALID',
             FileType = 'EVD',
             Dataset = processed,
-            TierList = [dataset['DataTier']],
+            TierList = makeTierList(dataset['DataTier']),
             AlgoList = [algo],
             ParentList = inputLFNs,
             BranchList = fjrFileInfo.branches,
@@ -272,7 +286,7 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
         
         
         newBlockName = dbsApiRef.insertBlock (procDataset, None ,
-                                              storage_element = [seName])
+                                              storage_element_list = [seName])
         blockRef = DbsFileBlock(
             Name = newBlockName,
             Dataset = procDataset,
