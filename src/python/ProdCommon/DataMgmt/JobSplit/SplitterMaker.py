@@ -34,8 +34,9 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
     for blockName, blockData in datasetContent.items():
         locations = blockData['StorageElements']
         newBlock = result.newFileblock(blockName, * locations)
-        for lfn, events in blockData['Files'].items():
-            newBlock.addFile(lfn, events)
+        for fileInfo in blockData['Files']:
+            newBlock.addFile(fileInfo['LogicalFileName'],
+                             fileInfo['NumberOfEvents'])
 
     return result
     

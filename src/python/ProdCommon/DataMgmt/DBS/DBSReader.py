@@ -143,18 +143,24 @@ class DBSReader:
 
         """
         try:
-            files = self.dbs.listFiles("", fileBlockName)
+            files = self.dbs.listFiles(
+                 "", # path
+                 "", #primary
+                 "", # processed
+                 [], #tier_list
+                 "", #analysisDataset
+                 fileBlockName)
+            
         except DbsException, ex:
             msg = "Error in "
             msg += "DBSReader.listFilesInBlock(%s)\n" % fileBlockName
             msg += "%s\n" % formatEx(ex)
             raise DBSReaderError(msg)
 
-        result = {}
-        [ result.__setitem__(x['LogicalFileName'], x['NumberOfEvents']) \
-            for x in files ]
+        result = []
+        [ result.append(dict(x) ) for x in files ]
         return result
-
+    
         
 
     def listFileBlockLocation(self, fileBlockName):
