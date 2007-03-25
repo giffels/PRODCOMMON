@@ -260,7 +260,6 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
     return that
 
     """
-
     allBlocks = dbsApiRef.listBlocks(procDataset, block_name = "*",
                                      storage_element_name = seName)
     
@@ -287,11 +286,33 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
         
         newBlockName = dbsApiRef.insertBlock (procDataset, None ,
                                               storage_element_list = [seName])
-        blockRef = DbsFileBlock(
-            Name = newBlockName,
-            Dataset = procDataset,
-            StorageElementList = [ seName ]
-            )
+
+        # get from DBS listBlocks API the DbsFileBlock newly inserted   
+        blocks=dbsApiRef.listBlocks(procDataset, block_name = newBlockName )
+        if len(blocks) > 1:
+          msg = "Too many blocks with the same name: %s:\n"%newBlockName
+          msg += "Using last block\n"
+          logging.warning(msg)
+          blockRef = blocks[-1]
+        elif len(blocks) == 1:
+          blockRef = blocks[0]
+        else: 
+          msg = "No FileBlock found to add files to"
+          logging.error(msg)
+          # FIXME: throw an error ?
+
+## StorageElementList below is wrong: it should be a list of dictionary [ { 'Name': seName } ] 
+## In order to define the DbsFileBlock it should be enough to specify its blockname and 
+## it shouldn't be needed to specify the SE and Dataset again,
+## however since this is not the case, it's safer to get the DbsFileBlock from listBlocks DBS API
+## rather then defining a DbsFileBlock.
+#        blockRef = DbsFileBlock(
+#            Name = newBlockName,
+#            Dataset = procDataset,
+#            StorageElementList = [ seName ] 
+#            )
+
+
     return blockRef
 
 
