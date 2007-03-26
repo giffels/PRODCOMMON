@@ -252,7 +252,6 @@ def insert(table_name,rows={},encode=[]):
            else:
                sqlStr+='"'+str(entry)+'"'
        sqlStr+=')'
-   print('test1 '+sqlStr)
    execute(sqlStr)
   
 
