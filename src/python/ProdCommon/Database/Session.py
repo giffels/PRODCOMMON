@@ -195,6 +195,12 @@ def rollback_all():
        rollback(sessionID)
 
 def convert(description=[],rows=[],oneItem=False,decode=[]):
+   global current_session
+   if description==[]:
+      cursor=get_cursor(current_session)
+      for x in cursor.description:
+          description.append(x[0]) 
+
    result=[]
    for row in rows:
       row_result={}
@@ -209,6 +215,46 @@ def convert(description=[],rows=[],oneItem=False,decode=[]):
           return result[0]
       return None
    return result
+
+def insert(table_name,rows={},encode=[]):
+   if type(rows)==dict:
+      rows=[rows]
+   if len(rows)==0:
+      return
+   column_names=rows[0].keys()
+   logging.debug("Inserting objects of type "+table_name)
+   sqlStr="INSERT INTO "+table_name+"("
+   comma=False
+   for column_name in column_names:
+       if comma:
+          sqlStr+=','
+       comma=True
+       sqlStr+=column_name
+   sqlStr+=')'
+   sqlStr+=' VALUES '
+   row_comma=False
+   for row in rows:
+       if row_comma:
+          sqlStr+=','
+       row_comma=True
+       sqlStr+='('
+       entry_comma=False
+       for column_name in column_names:
+           if column_name in encode:
+              entry=cPickle.dumps(base64.encodestring(row[column_name]))
+           else:
+              entry=row[column_name]
+           if entry_comma:
+               sqlStr+=','
+           entry_comma=True
+           if entry=="LAST_INSERT_ID()":
+               sqlStr+=entry
+           else:
+               sqlStr+='"'+str(entry)+'"'
+       sqlStr+=')'
+   print('test1 '+sqlStr)
+   execute(sqlStr)
+  
 
 ###########################################################
 ###  used only in this file most of the time.        #####
@@ -266,3 +312,4 @@ def get_cursor(sessionID=None):
    if not session[sessionID]['state']=='start_transaction':
        start_transaction(sessionID)
    return session[sessionID]['cursor']
+
