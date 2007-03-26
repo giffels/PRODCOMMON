@@ -295,15 +295,16 @@ class DBSWriter:
             msg = "Block %s already closed" % fileblockName
             logging.warning(msg)
             return False
+
+        
         
         #  //
         # // We have an open block, sum number of files and file sizes
         #//
-        files = self.reader.listFilesInBlock(fileblockName)
-        fileCount = len(files)
-        totalSize = 0
-        totalSize = sum([ x['FileSize'] for x in files ])
-
+        
+        fileCount = blockInstance.get('NumberOfFiles', 0)
+        totalSize = blockInstance.get('BlockSize', 0)
+        
         msg = "Fileblock: %s\n ==> Size: %s Files: %s\n" % (
             fileblockName, totalSize, fileCount)
         logging.warning(msg)
