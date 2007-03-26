@@ -249,6 +249,17 @@ def createDBSStorageElement(seName):
     """
     return DbsStorageElement(Name = seName)
 
+
+def createDBSFileBlock(blockName):
+    """
+    _createDBSFileBlock_
+
+    return a DbsFileBlock object with the block name provided
+
+    NOTE: This method DOES NOT create a new block in DBS
+
+    """
+    return DbsFileBlock( Name = blockName)
     
 def getDBSFileBlock(dbsApiRef, procDataset, seName):
     """
@@ -288,18 +299,18 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
                                               storage_element_list = [seName])
 
         # get from DBS listBlocks API the DbsFileBlock newly inserted   
-        blocks=dbsApiRef.listBlocks(procDataset, block_name = newBlockName )
+        blocks = dbsApiRef.listBlocks(procDataset, block_name = newBlockName )
         if len(blocks) > 1:
-          msg = "Too many blocks with the same name: %s:\n"%newBlockName
-          msg += "Using last block\n"
-          logging.warning(msg)
-          blockRef = blocks[-1]
+            msg = "Too many blocks with the same name: %s:\n" % newBlockName
+            msg += "Using last block\n"
+            logging.warning(msg)
+            blockRef = blocks[-1]
         elif len(blocks) == 1:
-          blockRef = blocks[0]
+            blockRef = blocks[0]
         else: 
-          msg = "No FileBlock found to add files to"
-          logging.error(msg)
-          # FIXME: throw an error ?
+            msg = "No FileBlock found to add files to"
+            logging.error(msg)
+            # FIXME: throw an error ?
 
 ## StorageElementList below is wrong: it should be a list of dictionary [ { 'Name': seName } ] 
 ## In order to define the DbsFileBlock it should be enough to specify its blockname and 

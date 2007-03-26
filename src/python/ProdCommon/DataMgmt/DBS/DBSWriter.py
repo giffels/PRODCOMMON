@@ -15,6 +15,7 @@ from DBSAPI.dbsApiException import *
 
 import ProdCommon.DataMgmt.DBS.DBSWriterObjects as DBSWriterObjects
 from ProdCommon.DataMgmt.DBS.DBSErrors import DBSWriterError, formatEx
+from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasetsWithPSet
@@ -120,8 +121,8 @@ class DBSWriter:
         args = { "url" : url}
         args.update(contact)
         self.dbs = DbsApi(args)
+        self.reader = DBSReader(**args)
         
-
     def createDatasets(self, workflowSpec):
         """
         _createDatasets_
@@ -260,3 +261,76 @@ class DBSWriter:
                     msg += "%s\n" % formatEx(ex)
                     raise DBSWriterError(msg)
         return
+
+
+
+    def manageFileBlock(self, fileblockName, maxFiles = 100, maxSize = None):
+        """
+        _manageFileBlock_
+
+        Check to see wether the fileblock with the provided name
+        is closeable based on number of files or total size.
+
+        If the block equals or exceeds wither the maxFiles or maxSize
+        parameters, close the block and return True, else do nothing and
+        return False
+
+        """
+        #  //
+        # // Check that the block exists, and is open before we close it
+        #//
+        blockInstance = self.dbs.listBlocks(block_name=fileblockName)
+        if len(blockInstance) > 1:
+            msg = "Multiple Blocks matching name: %s\n" % fileblockName
+            msg += "Unable to manage file block..."
+            raise DBSWriterError(msg)
+
+        if len(blockInstance) == 0:
+            msg = "Block name %s not found\n" % fileblockName
+            msg += "Cant manage a non-existent fileblock"
+            raise DBSWriterError(msg)
+        blockInstance = blockInstance[0]
+        isClosed = blockInstance.get('OpenForWriting', '1')
+        if isClosed == "0":
+            msg = "Block %s already closed" % fileblockName
+            logging.warning(msg)
+            return False
+        
+        #  //
+        # // We have an open block, sum number of files and file sizes
+        #//
+        files = self.reader.listFilesInBlock(fileblockName)
+        fileCount = len(files)
+        totalSize = 0
+        totalSize = sum([ x['FileSize'] for x in files ])
+
+        msg = "Fileblock: %s\n ==> Size: %s Files: %s\n" % (
+            fileblockName, totalSize, fileCount)
+        logging.warning(msg)
+
+        #  //
+        # // Test close block conditions
+        #//
+        closeBlock = False
+        if fileCount >= maxFiles:
+            closeBlock = True
+            msg = "Closing Block Based on files: %s" % fileblockName
+            logging.debug(msg)
+            
+        if maxSize != None:
+            if totalSize >= maxSize:
+                closeBlock = True
+                msg = "Closing Block Based on size: %s" % fileblockName
+                logging.debug(msg)
+                
+
+        if closeBlock:
+            #  //
+            # // Close the block
+            #//
+            self.dbs.closeBlock(
+                DBSWriterObjects.createDBSFileBlock(fileblockName)
+                )
+        return closeBlock
+    
+        
