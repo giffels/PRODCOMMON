@@ -335,3 +335,64 @@ class DBSWriter:
         return closeBlock
     
         
+
+    def migrateDatasetBlocks(self, inputDBSUrl, datasetPath, *blocks):
+        """
+        _migrateDatasetBlocks_
+
+        Migrate the list of fileblocks provided by blocks, belonging
+        to the dataset specified by the dataset path to this DBS instance
+        from the inputDBSUrl provided
+
+        - *inputDBSUrl* : URL for connection to input DBS
+        - *datasetPath* : Name of dataset in input DBS (must exist in input
+                          DBS)
+        - *blocks*      : list of block names to be migrated (must exist
+                          in input DBS)
+
+        """
+        if len(blocks) == 0:
+            msg = "FileBlocks not provided.\n"
+            msg += "You must provide the name of at least one fileblock\n"
+            msg += "to be migrated"
+            raise DBSWriterError(msg)
+        #  //
+        # // Hook onto input DBSUrl and verify that the dataset & blocks
+        #//  exist
+        reader = DBSReader(inputDBSUrl)
+        
+        inputBlocks = reader.listFileBlocks(datasetPath)
+        
+        for block in blocks:
+            #  //
+            # // Test block exists
+            #// 
+            if block not in inputBlocks:
+                msg = "Block name:\n ==> %s\n" % block
+                msg += "Not found in input dataset:\n ==> %s\n" % datasetPath
+                msg += "In DBS Instance:\n ==> %s\n" % inputDBSUrl
+                raise DBSWriterError(msg)
+
+            try:
+                xferData = reader.dbs.listDatasetContents(datasetPath,  block)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.migrateDatasetBlocks\n"
+                msg += "Could not read content of dataset:\n ==> %s\n" % (
+                    datasetPath,)
+                msg += "Block name:\n ==> %s\n" % block
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+            try:
+                self.dbs.insertDatasetContents(xferData)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.migrateDatasetBlocks\n"
+                msg += "Could not write content of dataset:\n ==> %s\n" % (
+                    datasetPath,)
+                msg += "Block name:\n ==> %s\n" % block
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+            del xferData
+            
+        
+        return
+    
