@@ -144,11 +144,11 @@ def execute(sqlQuery,sessionID=None):
        # the exception might not be a lost of connection
        if(ex.args) and (len(ex.args)>1):
            if ex.args[0]==0:
-               logging.warning("Connection to database with session '"+str(sessionID)+"' lost. Problem: "+str(ex))
+               logging.warning("Connection to database with session (case 1) '"+str(sessionID)+"' lost. Problem: "+str(ex))
            else:
-               raise ex
+               logging.warning("Connection to database with session (case 2)'"+str(sessionID)+"' lost. Problem: "+str(ex))
        else:
-           logging.warning("Connection to database with session '"+str(sessionID)+"' lost. Problem: "+str(ex))
+           logging.warning("Connection to database with session (case 3)'"+str(sessionID)+"' lost. Problem: "+str(ex))
        invalidate(sessionID)
        connect(sessionID)
        start_transaction(sessionID)
