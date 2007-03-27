@@ -178,9 +178,15 @@ class DBSWriter:
         Process the files in the FwkJobReport instance and insert
         them into the associated datasets
 
+        A list of affected fileblock names is returned for merged file
+        blocks to facilitate management of those blocks.
+        This list is not populated for processing jobs since we dont really
+        care about the processing job blocks.
+
         """
 
         insertLists = {}
+        affectedBlocks = set()
         for outFile in fwkJobRep.files:
             #  //
             # // Convert each file into a DBS File object
@@ -235,9 +241,11 @@ class DBSWriter:
                 #//
                 for mergedFile in fileList:
                     mergedFile['Block'] = fileBlock
+                    affectedBlocks.add(fileBlock['Name'])
                     try:
                         self.dbs.insertMergedFile(mergedFile['ParentList'],
                                                   mergedFile)
+                        
                     except DbsException, ex:
                         msg = "Error in DBSWriter.insertFiles\n"
                         msg += "Cannot insert merged file:\n"
@@ -260,7 +268,7 @@ class DBSWriter:
                     
                     msg += "%s\n" % formatEx(ex)
                     raise DBSWriterError(msg)
-        return
+        return list(affectedBlocks)
 
 
 
