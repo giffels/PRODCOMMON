@@ -115,7 +115,7 @@ class DBSReader:
         Retrieve a list of fileblock names for a dataset
 
         """
-
+        
         try:
              blocks = self.dbs.listBlocks(dataset)
         except DbsException, ex:
@@ -232,3 +232,27 @@ class DBSReader:
 
           
         
+    def blockToDatasetPath(self, blockName):
+        """
+        _blockToDatasetPath_
+
+        Given a block name, get the dataset Path associated with that
+        Block.
+
+        Returns the dataset path, or None if not found
+
+        """
+        try:
+            blocks = self.dbs.listBlocks(block_name = blockName)
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.blockToDataset(%s)\n" % blockName
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        if blocks == []:
+            return None
+        
+        pathname = blocks[-1].get('Path', None)
+        return pathname
+    
