@@ -182,15 +182,21 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     status = datasetInfo.get("Status", "VALID")
     dataTier = datasetInfo['DataTier']
 
+    parents = []
+    inputDataset = datasetInfo.get('ParentDataset', None)
+    if inputDataset != None:
+        parents.append(inputDataset)
+            
     tierList = makeTierList(datasetInfo['DataTier'])
 
     name = datasetInfo['ProcessedDataset']
-   
+    
     processedDataset = DbsProcessedDataset (
         PrimaryDataset = primaryDataset,
         AlgoList=[algorithm],
         Name = name,
         TierList = tierList,
+        ParentList = parents,
         PhysicsGroup = physicsGroup,
         Status = status,
         )
