@@ -37,3 +37,14 @@ def uuidgen():
     return hash
 
 
+def makeUUID():
+    """
+    _makeUUID_
+
+    return a UUID
+
+    """
+    guid = MCPayloadsUUID.uuidgen()
+    if guid == None:
+        guid = MCPayloadsUUID.uuid()
+    return guid

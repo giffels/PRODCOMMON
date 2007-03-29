@@ -15,6 +15,8 @@ from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
 from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads import UUID as MCPayloadsUUID
+import ProdCommon.MCPayloads.DatasetConventions as DatasetConventions
+
 from IMProv.IMProvNode import IMProvNode
 
 class NodeFinder:
@@ -87,6 +89,7 @@ def createPythonConfig(cfgFile):
         raise RuntimeError, msg
 
     return pycfgFile
+
 
 
 

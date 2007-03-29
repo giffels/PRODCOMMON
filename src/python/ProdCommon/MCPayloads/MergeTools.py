@@ -22,7 +22,7 @@ class ProcToMerge:
     def __init__(self, fastMerge = True):
         self.mergeModuleName = "Merged"
         self.appName = "cmsRun"
-        if fastMerge:
+        if fastMerge == True:
             self.mergeModuleName = "EdmFastMerge"
             self.appName = "EdmFastMerge"
         
