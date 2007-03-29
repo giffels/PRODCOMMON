@@ -153,7 +153,7 @@ def createMergeAlgorithm(datasetInfo, apiRef = None):
     exeName = datasetInfo['ApplicationName']
     version = datasetInfo['ApplicationVersion']
     family = datasetInfo.get('ApplicationFamily', None)
-    if family == None:
+    if (family == None) or not (family) :
         family = datasetInfo['OutputModuleName']
 
     
