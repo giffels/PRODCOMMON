@@ -10,6 +10,7 @@ to add details
 
 
 import time
+import os
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.Core.ProdException import ProdException
 
@@ -162,13 +163,25 @@ class WorkflowMaker:
         cfgContent = cfgFile
         if cfgType == "file":
             cfgContent = file(cfgFile).read()
-
+            
             
         pycfgContent = cfgContent
         if format == "cfg":
-            pycfgFile = WorkflowTools.createPythonConfig(cfgFile)
-            pycfgContent = file(pycfgFile).read()
-
+            if cfgType == "file":
+                pycfgFile = WorkflowTools.createPythonConfig(cfgFile)
+                pycfgContent = file(pycfgFile).read()
+            else:
+                #  //
+                # // cfg format string, needs tempfile and converted
+                #//  to python.
+                tempFile = "/tmp/%s-%s-CfgFile.cfg" % (self.workflowName,
+                                                       self.timestamp)
+                handle = open(tempFile, 'w')
+                handle.write(cfgContent)
+                handle.close()
+                pycfgFile = WorkflowTools.createPythonConfig(tempFile)
+                pycfgContent = file(pycfgFile).read()
+                os.remove(tempFile)
             
         self.configuration = pycfgContent
         self.cmsRunNode.configuration = pycfgContent
@@ -233,7 +246,12 @@ class WorkflowMaker:
         NOTE: Do we want to support a list of PhEDEx nodes? Eg CERN + FNAL
 
         """
-        pass
+        nameList = ""
+        for nodeName in phedexNodeNames:
+            nameList += "%s," % nodeName
+        nameList = nameList[:-1]
+        self.workflow.parameters['PhEDExDestination'] = nameList
+        return
     
     def addSelectionEfficiency(self, selectionEff):
         """
@@ -242,9 +260,11 @@ class WorkflowMaker:
         Do we have a selection efficiency?
 
         """
-        pass
-
-
+        
+        self.cmsRunNode.applicationControls["SelectionEfficiency"] = \
+                                                             selectionEff
+        return
+    
     def makeWorkflow(self):
         """
         _makeWorkflow_
