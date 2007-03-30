@@ -310,8 +310,8 @@ class DBSWriter:
         # // We have an open block, sum number of files and file sizes
         #//
         
-        fileCount = blockInstance.get('NumberOfFiles', 0)
-        totalSize = blockInstance.get('BlockSize', 0)
+        fileCount = float(blockInstance.get('NumberOfFiles', 0))
+        totalSize = float(blockInstance.get('BlockSize', 0))
         
         msg = "Fileblock: %s\n ==> Size: %s Files: %s\n" % (
             fileblockName, totalSize, fileCount)
