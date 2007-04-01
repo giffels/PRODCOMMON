@@ -344,7 +344,7 @@ class DBSWriter:
     
         
 
-    def migrateDatasetBlocks(self, inputDBSUrl, datasetPath, *blocks):
+    def migrateDatasetBlocks(self, inputDBSUrl, datasetPath, blocks):
         """
         _migrateDatasetBlocks_
 
