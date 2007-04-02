@@ -200,7 +200,7 @@ class WorkflowMaker:
         
 
     
-    def addInputDataset(self, datasetName):
+    def addInputDataset(self, datasetPath):
         """
         _addInputDataset_
 
@@ -216,7 +216,7 @@ class WorkflowMaker:
         datasetBits = DatasetConventions.parseDatasetPath(datasetPath)
         self.inputDataset.update(datasetBits)
         self.inputDataset['IsUsed'] = True
-        self.inputDataset['DatasetName'] = datasetName
+        self.inputDataset['DatasetName'] = datasetPath
         
         return
         
@@ -292,7 +292,7 @@ class WorkflowMaker:
                 'OnlyClosedBlocks',
                 ]:
                 if self.inputDataset[keyname] != None:
-                    spec.parameters[keyname] = self.inputDataset[keyname]
+                    self.workflow.parameters[keyname] = self.inputDataset[keyname]
                     
             
         #  //
