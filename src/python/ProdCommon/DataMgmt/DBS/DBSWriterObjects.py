@@ -69,12 +69,13 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     # HACK:  Problem with large PSets
     #
     psetContent = datasetInfo['PSetContent']
-    msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
-    msg += "TEST HACK USED FOR PSetContent\n" 
-    msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    logging.warning(msg)
-    print msg
-    psetContent = "This is not a PSet"
+    ## No more hacks
+    #msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
+    #msg += "TEST HACK USED FOR PSetContent\n" 
+    #msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    #logging.warning(msg)
+    #print msg
+    #psetContent = "This is not a PSet"
     
     #
     # HACK: 100 char limit on cfg file name
