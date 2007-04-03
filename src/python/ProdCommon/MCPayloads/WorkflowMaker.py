@@ -234,7 +234,7 @@ class WorkflowMaker:
         datasetBits = DatasetConventions.parseDatasetPath(datasetName)
         self.pileupDataset.update(datasetBits)
         self.pileupDataset['FilesPerJob'] = filesPerJob
-        self.inputDataset['IsUsed'] = True
+        self.pileupDataset['IsUsed'] = True
         return
 
     def addFinalDestination(self, *phedexNodeNames):
@@ -301,7 +301,7 @@ class WorkflowMaker:
         # // Pileup Dataset?
         #//
         if self.pileupDataset['IsUsed']:
-            puDataset = cmsRun.addPileupDataset(
+            puDataset = self.cmsRunNode.addPileupDataset(
                 self.pileupDataset['Primary'],
                 self.pileupDataset['DataTier'],
                 self.pileupDataset['Processed'])
