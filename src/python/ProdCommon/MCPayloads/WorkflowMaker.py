@@ -88,7 +88,9 @@ class WorkflowMaker:
         self.workflow.setWorkflowName(self.workflowName)
         self.workflow.setRequestCategory("mc")
         self.workflow.setRequestTimestamp(self.timestamp)
-
+        self.workflow.parameters['RequestLabel'] = self.label
+        self.workflow.parameters['PhysicsGroup'] = self.group
+        self.workflow.parameters['ProdRequestID'] = self.requestId
 
         self.cmsRunNode = self.workflow.payload
         self.cmsRunNode.name = "cmsRun1"
@@ -343,6 +345,7 @@ class WorkflowMaker:
                 outDS["ApplicationVersion"] = \
                              self.cmsRunNode.application["Version"]
                 outDS["ApplicationFamily"] = outModName
+                outDS["PhysicsGroup"] = self.group
 
                 if self.inputDataset['IsUsed']:
                     outDS['ParentDataset'] = self.inputDataset['DatasetName']
