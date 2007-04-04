@@ -42,12 +42,12 @@ class WorkflowMaker:
     Basic MC workflow maker for PR to use to create workflow spec files.
     
     """
-    def __init__(self, requestId, group, label):
+    def __init__(self, requestId, channel, label):
         self.requestId = requestId
-        self.group = group
+        self.group = None
         self.label = label
         self.timestamp = int(time.time())
-        self.channel = None
+        self.channel = channel
         self.cmsswVersion = None
         self.configuration = None
         self.psetHash = None
@@ -84,12 +84,11 @@ class WorkflowMaker:
         # // Initialise basic workflow
         #//
         self.workflow = WorkflowSpec()
-        self.workflowName = "%s-%s-%s" % (label, group, requestId)
+        self.workflowName = "%s-%s-%s" % (label, channel, requestId)
         self.workflow.setWorkflowName(self.workflowName)
         self.workflow.setRequestCategory("mc")
         self.workflow.setRequestTimestamp(self.timestamp)
         self.workflow.parameters['RequestLabel'] = self.label
-        self.workflow.parameters['PhysicsGroup'] = self.group
         self.workflow.parameters['ProdRequestID'] = self.requestId
 
         self.cmsRunNode = self.workflow.payload
@@ -125,14 +124,15 @@ class WorkflowMaker:
         self.cmsRunNode.application['Architecture'] = ""
         return
     
-    def setPhysicsChannel(self, channel):
+    def setPhysicsGroup(self, group):
         """
-        _setPhysicsChannel_
+        _setPhysicsGroup_
 
-        Main physics channel, also primary dataset name
+        Physics Group owning the workflow
 
         """
-        self.channel = channel
+        self.group = group
+        self.workflow.parameters['PhysicsGroup'] = self.group
         return
 
     
