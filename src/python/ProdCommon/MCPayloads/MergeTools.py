@@ -99,13 +99,12 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True):
 
     for dataset in mergeDatasets:
         inputDataset = dataset['ParentDataset']
-        name = "%s-%s-Merge" % (procSpecName, dataset['OutputModuleName'])
 
         newWF = WorkflowSpec()
         newWF.parameters.update(procSpec.parameters)
-        newWF.setWorkflowName(name)
+        newWF.setWorkflowName(procSpecName)
         newWF.parameters['WorkflowType'] = "Merge"
-
+        
 
         cmsRunNode = newWF.payload
         cmsRunNode.name = "cmsRun1"
