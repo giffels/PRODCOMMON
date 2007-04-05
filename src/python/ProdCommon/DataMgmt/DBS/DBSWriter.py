@@ -404,3 +404,57 @@ class DBSWriter:
         
         return
     
+    def importDataset(self, sourceDBS, sourceDatasetPath, targetDBS, onlyClosed = True):
+        """
+        _importDataset_
+
+        Import a dataset into the local scope DBS.
+
+        - *sourceDBS* : URL for input DBS instance
+
+        - *sourceDatasetPath* : Dataset Path to be imported
+        
+        - *targetDBS* : URL for DBS to have dataset imported to
+
+        """
+        reader = DBSReader(sourceDBS)
+        
+        inputBlocks = reader.listFileBlocks(sourceDatasetPath)
+        
+        for block in inputBlocks:
+
+            if onlyClosed:
+                #  //
+                # // Skip import of open blocks
+                #//
+                isOpen = blockInstance.get('OpenForWriting', '1')
+                if isOpen == "1":
+                    msg = "Block %s open and will not be imported" % block
+                    logging.warning(msg)
+                    continue
+
+            
+            try:
+                xferData = reader.dbs.listDatasetContents(sourceDatasetPath,  block)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.importDataset\n"
+                msg += "Could not read content of dataset:\n ==> %s\n" % (
+                    sourceDatasetPath,)
+                msg += "Block name:\n ==> %s\n" % block
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+            try:
+                self.dbs.insertDatasetContents(xferData)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.importDataset\n"
+                msg += "Could not write content of dataset:\n ==> %s\n" % (
+                    sourceDatasetPath,)
+                msg += "Block name:\n ==> %s\n" % block
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+            del xferData
+            
+        
+        return
+    
+    
