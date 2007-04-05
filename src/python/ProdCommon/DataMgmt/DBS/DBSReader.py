@@ -230,6 +230,24 @@ class DBSReader:
 
         return result
 
+
+    def blockIsOpen(self, blockName):
+        """
+        _blockIsOpen_
+
+        Return True if named block is open, false if not, or if block
+        doenst exist
+
+        """
+        blockInstance = self.dbs.listBlocks(block_name=blockName)
+        if len(blockInstance) == 0:
+            return False
+        blockInstance = blockInstance[0]
+        isOpen = blockInstance.get('OpenForWriting', '1')
+        if isOpen == "0":
+            return False
+        return True
+
           
         
     def blockToDatasetPath(self, blockName):
