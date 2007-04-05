@@ -404,7 +404,8 @@ class DBSWriter:
         
         return
     
-    def importDataset(self, sourceDBS, sourceDatasetPath, targetDBS, onlyClosed = True):
+    def importDataset(self, sourceDBS, sourceDatasetPath, targetDBS,
+                      onlyClosed = True):
         """
         _importDataset_
 
@@ -418,24 +419,12 @@ class DBSWriter:
 
         """
         reader = DBSReader(sourceDBS)
-        
-        inputBlocks = reader.listFileBlocks(sourceDatasetPath)
-        
+        inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
         for block in inputBlocks:
-
-            if onlyClosed:
-                #  //
-                # // Skip import of open blocks
-                #//
-                isOpen = blockInstance.get('OpenForWriting', '1')
-                if isOpen == "1":
-                    msg = "Block %s open and will not be imported" % block
-                    logging.warning(msg)
-                    continue
-
-            
             try:
-                xferData = reader.dbs.listDatasetContents(sourceDatasetPath,  block)
+                xferData = reader.dbs.listDatasetContents(
+                    sourceDatasetPath,  block
+                    )
             except DbsException, ex:
                 msg = "Error in DBSWriter.importDataset\n"
                 msg += "Could not read content of dataset:\n ==> %s\n" % (

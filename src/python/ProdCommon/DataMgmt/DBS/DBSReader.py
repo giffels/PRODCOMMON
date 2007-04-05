@@ -205,7 +205,7 @@ class DBSReader:
         result = { fileBlockName: {
             "StorageElements" : self.listFileBlockLocation(fileBlockName),
             "Files" : self.listFilesInBlock(fileBlockName),
-      
+            "IsOpen" : self.blockIsOpen(fileBlockName),
             
             }
                    }
