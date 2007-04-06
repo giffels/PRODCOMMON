@@ -328,6 +328,7 @@ class WorkflowMaker:
                     Label = self.label,
                     Group = self.group,
                     FilterName = filterName,
+                    RequestId = self.requestId,
                     Unmerged = True
                     )
                 dataTier = DatasetConventions.checkDataTier(dataTier)

@@ -50,7 +50,7 @@ def processedDatasetName(**args):
     Throws DatasetConvError if arguments are missing or invalid
     
     """
-    checkArgs = ['Version', 'Label']
+    checkArgs = ['Version', 'Label', 'RequestId']
 
     for arg in checkArgs:
         if args.get(arg, None) == None:
@@ -59,8 +59,9 @@ def processedDatasetName(**args):
             raise DatasetConvError(msg)
 
     datasetName = "%s-%s" % (args['Version'],
-                             args['Label'])
-
+                             args['Label'],
+                             args['RequestId'])
+    
     filterName = args.get("FilterName", None)
     if filterName != None:
         datasetName += "-%s" % filterName
