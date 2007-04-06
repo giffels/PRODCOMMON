@@ -373,7 +373,7 @@ class DBSWriter:
         
         for block in blocks:
             #  //
-            # // Test block exists
+            # // Test block exists at source
             #// 
             if block not in inputBlocks:
                 msg = "Block name:\n ==> %s\n" % block
@@ -381,6 +381,20 @@ class DBSWriter:
                 msg += "In DBS Instance:\n ==> %s\n" % inputDBSUrl
                 raise DBSWriterError(msg)
 
+            #  //
+            # // Test block does not exist in target
+            #//
+            if self.reader.blockExists(block):
+                #  //
+                # // block exists
+                #//  If block is closed dont attempt transfer
+                if not self.reader.blockIsOpen(block):
+                    msg = "Block already exists in target DBS and is closed:\n"
+                    msg += " ==> %s\n" % block
+                    msg += "Skipping Migration of that block"
+                    logging.warning(msg)
+                    continue
+                
             try:
                 xferData = reader.dbs.listDatasetContents(datasetPath,  block)
             except DbsException, ex:
@@ -421,6 +435,21 @@ class DBSWriter:
         reader = DBSReader(sourceDBS)
         inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
         for block in inputBlocks:
+            #  //
+            # // Test block does not exist in target
+            #//
+            if self.reader.blockExists(block):
+                #  //
+                # // block exists
+                #//  If block is closed dont attempt transfer
+                if not self.reader.blockIsOpen(block):
+                    msg = "Block already exists in target DBS and is closed:\n"
+                    msg += " ==> %s\n" % block
+                    msg += "Skipping Import of that block"
+                    logging.warning(msg)
+                    continue
+
+            
             try:
                 xferData = reader.dbs.listDatasetContents(
                     sourceDatasetPath,  block

@@ -134,6 +134,29 @@ class DBSReader:
             
         return result
 
+    def blockExists(self, fileBlockName):
+        """
+        _blockExists_
+
+        Check to see if block with name provided exists in the DBS
+        Instance.
+
+        Return True if exists, False if not
+
+        """
+        try:
+
+            blocks = self.dbs.listBlocks(block_name = fileBlockName)
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.blockExists(%s)\n" % fileBlockName
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+        
+        if len(blocks) == 0:
+            return False
+        return True
+
 
     def listFilesInBlock(self, fileBlockName):
         """
