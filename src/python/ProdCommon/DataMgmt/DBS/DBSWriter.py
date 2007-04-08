@@ -49,7 +49,13 @@ class _CreateDatasetOperator:
         except Exception, ex:
             msg = "Unable to Extract cfg data from workflow"
             msg += str(ex)
-            print msg
+            logging.error(msg)
+            return
+        #AF: temporary check before the sanity check on cfg is there
+        if not cfgMeta.has_key('Name') :
+            msg = "Unable to Extract info from the cfg. \n The missing piece is: \n"
+            msg +="   untracked PSet configurationMetadata { ... } \n " 
+            raise DBSWriterError(msg)
             return
             
         for dataset in datasets:
