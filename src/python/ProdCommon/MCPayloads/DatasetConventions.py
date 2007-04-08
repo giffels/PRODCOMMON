@@ -58,7 +58,7 @@ def processedDatasetName(**args):
             msg += "This is required for a processed dataset name"
             raise DatasetConvError(msg)
 
-    datasetName = "%s-%s" % (args['Version'],
+    datasetName = "%s-%s-%s" % (args['Version'],
                              args['Label'],
                              args['RequestId'])
     
