@@ -126,7 +126,12 @@ class DBSWriter:
     def __init__(self, url,  **contact):
         args = { "url" : url}
         args.update(contact)
-        self.dbs = DbsApi(args)
+        try:
+         self.dbs = DbsApi(args)
+        except DbsException, ex:
+            msg = "Error in DBSWriterError with DbsApi\n"
+            msg += "%s\n" % formatEx(ex)
+            raise DBSWriterError(msg)
         self.reader = DBSReader(**args)
         
     def createDatasets(self, workflowSpec):
