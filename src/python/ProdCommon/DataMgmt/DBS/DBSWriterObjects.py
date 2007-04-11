@@ -204,7 +204,8 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
 
     if apiRef != None:
         apiRef.insertProcessedDataset(processedDataset)
-        
+     
+    logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))   
     return processedDataset
 
 def createDBSFiles(fjrFileInfo, jobType = None):
@@ -330,7 +331,7 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
 #            StorageElementList = [ seName ] 
 #            )
 
-
+    logging.debug("Open FileBlock located at SE: %s to use is FileBlock: %s "%(seName,blockRef['Name']))
     return blockRef
 
 
