@@ -110,7 +110,7 @@ class XMLInjectionSpec:
         """
         result = IMProvNode("dbs")
         result.attrs['name'] = self.dbs
-        result.attrs['dls'] = self.dbs
+        result.attrs['dls'] = 'dbs'
         dataset = IMProvNode("dataset")
         dataset.attrs['name'] = self.datasetName
         dataset.attrs['is-open'] = self.datasetIsOpen
