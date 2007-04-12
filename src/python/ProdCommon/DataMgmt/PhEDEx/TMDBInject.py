@@ -91,6 +91,17 @@ def runCommand(command):
 
     return output,excode
 
+def removedropXML(xmlFile):
+    """
+      remove the dropXML file
+    """
+    try:
+      os.remove(xmlFile)
+    except:
+      logging.error("error removing XML drop file %s"%xmlFile)
+      pass
+                                                                                                                                          
+    return
 
 def tmdbInject(phedexConfig, xmlFile, *storageElements):
     """
@@ -126,11 +137,15 @@ def tmdbInject(phedexConfig, xmlFile, *storageElements):
         msg = "Exception while invoking command:\n"
         msg += "%s\n" % command
         msg += "Exception: %s\n" % str(ex)
+        removedropXML(xmlFile)
         raise TMDBInjectError(msg)
     if exitCode:
         msg = "Command :\n%s\n  exited non-zero"% command
         msg += "Command StdOut/Err: \n %s"%StdOutput
+        removedropXML(xmlFile)
         raise TMDBInjectError(msg)
+
+    removedropXML(xmlFile)
     return
 
 
