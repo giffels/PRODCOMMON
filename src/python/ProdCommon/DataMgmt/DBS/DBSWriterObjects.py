@@ -41,8 +41,11 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     If apiRef is not None, it is used to insert the dataset into the
     DBS
 
-    """
-    primary = DbsPrimaryDataset(Name = datasetInfo["PrimaryDataset"])
+    """ 
+    # hardcode the dataset type to distinguish data and mc
+    PrimaryDatasetType='mc'
+    logging.debug("Inserting PrimaryDataset %s with Type %s"%(datasetInfo["PrimaryDataset"],PrimaryDatasetType))
+    primary = DbsPrimaryDataset(Name = datasetInfo["PrimaryDataset"], Type=PrimaryDatasetType)
     if apiRef != None:
         apiRef.insertPrimaryDataset(primary)
     return primary
@@ -220,6 +223,8 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
     checksum = fjrFileInfo.checksums['cksum']
+    #checksum="cksum:%s"%checksum
+
     nEvents = int(fjrFileInfo['TotalEvents'])
     
     for dataset in fjrFileInfo.dataset:
