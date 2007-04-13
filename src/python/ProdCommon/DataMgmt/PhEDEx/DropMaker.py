@@ -47,10 +47,11 @@ class XMLFileblock(list):
         result.attrs['name'] = self.fileblockName
         result.attrs['is-open'] = self.isOpen
         for entry in self:
+            checksum="cksum:%s"%entry[1] #add cksum:
             result.addNode(
                 IMProvNode("file", None,
                            lfn = entry[0],
-                           checksum = entry[1],
+                           checksum = checksum,
                            size = entry[2])
                 )
         return result
