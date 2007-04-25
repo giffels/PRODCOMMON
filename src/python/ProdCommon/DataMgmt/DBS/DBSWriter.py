@@ -203,7 +203,20 @@ class DBSWriter:
             #  //
             # // Convert each file into a DBS File object
             #//
-            seName = outFile['SEName']
+## default to site se-name if no SE is associated to File 
+#            seName = outFile['SEName']
+            if outFile.has_key("SEName"):
+               seName = outFile['SEName']
+               logging.debug("SEname associated to file is: %s"%seName)
+            else:
+                if fwkJobRep.siteDetails.has_key("se-name"):
+                   seName = fwkJobRep.siteDetails['se-name']
+                   logging.debug("site SEname: %s"%seName) 
+                else:
+                   msg = "Error in DBSWriter.insertFiles\n"
+                   msg = "No SEname found in FrameWorkJobReport ! "
+                   raise DBSWriterError(msg)
+
 
             try:
                 dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
