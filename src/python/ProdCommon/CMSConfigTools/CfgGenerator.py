@@ -106,7 +106,7 @@ class CfgGenerator:
             # // Insert whatever maxEvents turned out to be
             #//
             newCfg.inputSource.setMaxEvents(maxEvents)
-            newcfg.hackMaxEvents(maxEvents)
+            newCfg.hackMaxEvents(maxEvents)
             
         skipEvents = args.get("skipEvents", None)
         if skipEvents != None:
