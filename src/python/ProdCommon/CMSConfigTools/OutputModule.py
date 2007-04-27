@@ -105,18 +105,32 @@ class OutputModule:
 
         """
         result = []
-        if not self.data.has_key("datasets"):
-            return result
-        for dsEntry in self.data['datasets'][2].keys():
-            content = self.data['datasets'][2][dsEntry][2]
-            output = {}
         
+        if self.data.has_key("dataset"):
+            #  //
+            # // new dataset {} approach
+            #//
+            content = self.data['dataset'][2]
+            output = {}
             for key, value in content.items():
                 output[key] = value[2].replace("\"", "")
-            result.append(output)
+            return [output]
 
-        return result
+        if self.data.has_key("datasets"):
+            #  //
+            # // old datasets { dataset1 } approach
+            #//
+            for dsEntry in self.data['datasets'][2].keys():
+                content = self.data['datasets'][2][dsEntry][2]
+                output = {}
+                
+                for key, value in content.items():
+                    output[key] = value[2].replace("\"", "")
+                result.append(output)
+                
+            return result
         
+        return []
         
     def addDataset(self, entryName, **datasetParams):
         """
