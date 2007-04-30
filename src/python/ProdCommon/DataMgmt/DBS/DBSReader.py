@@ -104,6 +104,7 @@ class DBSReader:
     def getFileBlocksInfo(self, dataset):
         """
         """
+        self.checkDatasetPath(dataset)
         try:
              blocks = self.dbs.listBlocks(dataset)
         except DbsException, ex:
@@ -120,7 +121,7 @@ class DBSReader:
         Retrieve a list of fileblock names for a dataset
 
         """
-        
+        self.checkDatasetPath(dataset)
         try:
              blocks = self.dbs.listBlocks(dataset)
         except DbsException, ex:
@@ -149,6 +150,7 @@ class DBSReader:
         Return True if exists, False if not
 
         """
+        self.checkBlockName(fileBlockName)
         try:
 
             blocks = self.dbs.listBlocks(block_name = fileBlockName)
@@ -198,6 +200,7 @@ class DBSReader:
         Get a list of fileblock locations
 
         """
+        self.checkBlockName(fileBlockName)
         try:
 
             blocks = self.dbs.listBlocks(block_name = fileBlockName)
@@ -251,7 +254,6 @@ class DBSReader:
 
         """
         result = {}
-        
         blocks = self.listFileBlocks(dataset, onlyClosedBlocks)
 
         [ result.update(self.getFileBlock(x)) for x in blocks ]
@@ -267,6 +269,7 @@ class DBSReader:
         doenst exist
 
         """
+        self.checkBlockName(blockName)
         blockInstance = self.dbs.listBlocks(block_name=blockName)
         if len(blockInstance) == 0:
             return False
@@ -288,6 +291,7 @@ class DBSReader:
         Returns the dataset path, or None if not found
 
         """
+        self.checkBlockName(blockName)
         try:
             blocks = self.dbs.listBlocks(block_name = blockName)
         except DbsException, ex:
@@ -301,4 +305,19 @@ class DBSReader:
         
         pathname = blocks[-1].get('Path', None)
         return pathname
-    
+ 
+
+    def checkDatasetPath(self,pathName):
+        """
+         _checkDatasetPath_
+        """ 
+        if pathName in ("", None):
+           raise DBSReaderError( "Invalid Dataset Path name: => %s <=" % pathName)  
+
+    def checkBlockName(self,blockName):
+        """
+         _checkBlockName_
+        """
+        if blockName in ("", "*", None):
+           raise DBSReaderError( "Invalid Block name: => %s <=" % blockName)
+
