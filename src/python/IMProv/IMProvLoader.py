@@ -8,7 +8,7 @@ converting it into a tree of IMProvNodes
 
 """
 __version__ = "$Revision: 1.2 $"
-__revision__ = "$Id: IMProvLoader.py,v 1.2 2006/11/06 20:08:02 evansde Exp $"
+__revision__ = "$Id: IMProvLoader.py,v 1.2 2006/11/06 20:16:11 fvlingen Exp $"
 
 
 from xml.sax.handler import ContentHandler
@@ -39,14 +39,16 @@ class IMProvHandler(ContentHandler):
 
         Override SAX startElement handler
         """
-        if self._ParentDoc == None:
-            self._ParentDoc = IMProvDoc(str(name))
-            self._NodeStack.append(self._ParentDoc)
-            return
         plainAttrs = {}
-        self._CharCache = ""
         for key, value in attrs.items():
             plainAttrs[str(key)] = str(value)
+        if self._ParentDoc == None:
+            self._ParentDoc = IMProvDoc(str(name))
+            self._ParentDoc.attrs.update(plainAttrs)
+            self._NodeStack.append(self._ParentDoc)
+            return
+        
+        self._CharCache = ""
         newnode = IMProvNode(str(name))
         for key, value in attrs.items():
             newnode.attrs[key] = value
