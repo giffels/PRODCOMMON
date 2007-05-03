@@ -45,6 +45,7 @@ class CMSSWConfig:
         # // Source related parameters and seeds
         #//
         self.sourceParams = {}
+        self.sourceType = None
         self.inputFiles = []
         self.requiredSeeds = 0
         self.seeds = []
@@ -146,6 +147,9 @@ class CMSSWConfig:
                 sourceNode.addNode(
                     IMProvNode("Parameter", str(value), Name = str(key))
                     )
+        if self.sourceType != None:
+            sourceNode.addNode(
+                IMProvNode("SourceType", None, Value = self.sourceType))
         result.addNode(sourceNode)
         
         seedNode = IMProvNode("Seeds")
@@ -240,8 +244,12 @@ class CMSSWConfig:
                 continue
             parVal = str(srcParam.chardata)
             self.sourceParams[str(parName)] = parVal
-            
-
+        srcTypeQ = IMProvQuery(
+            "/CMSSWConfig/Source/SourceType[attribute(\"Value\")]")
+        srcTypeData = srcTypeQ(improvNode)
+        if len(srcTypeData) > 0:
+            self.sourceType = str(srcTypeData[-1])
+        
         #  //
         # // seeds
         #//
@@ -292,7 +300,7 @@ class CMSSWConfig:
         if origCfg == "":
             self.originalCfg = ""
         else:
-            self.oringinalCfg = base64.decodestring(origCfg)
+            self.originalCfg = base64.decodestring(origCfg)
         return
     
     def pack(self):
@@ -381,7 +389,7 @@ class CMSSWConfig:
             self.inputFiles = sourceParams['fileNames']
             del sourceParams['fileNames']
         self.sourceParams.update(sourceParams)
-
+        self.sourceType = cfgInterface.inputSource.sourceType
         #  //
         # // Output Module data
         #//
