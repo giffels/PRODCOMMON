@@ -8,7 +8,7 @@ N/j events
 """
 import math
 
-from ProdCommon.CMSConfigTools.CfgGenerator import CfgGenerator
+from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 from ProdCommon.MCPayloads.JobSpec import JobSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import createUnmergedLFNs
 
@@ -52,7 +52,7 @@ class CfgMaker(dict):
             args['skipEvents'] = self['SkipEvents']
         jobCfg = generator(self['JobName'], **args)
 
-        jobSpecNode.configuration = jobCfg.cmsConfig.asPythonString()
+        jobSpecNode.configuration = jobCfg.pack()
         jobSpecNode.loadConfiguration()
         return
 
