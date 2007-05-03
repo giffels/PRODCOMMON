@@ -40,7 +40,7 @@ class CMSSWConfig:
     """
     def __init__(self):
         self.rawCfg = None
-
+        self.originalCfg = ""
         #  //
         # // Source related parameters and seeds
         #//
@@ -112,7 +112,16 @@ class CMSSWConfig:
         newModule.setdefault("filterName", None)
         self.outputModules[moduleName] = newModule
         return newModule
-    
+
+
+    def originalContent(self):
+        """
+        _originalContent_
+
+        Return the original cfg file content
+
+        """
+        return self.originalCfg
 
     def save(self):
         """
@@ -198,6 +207,13 @@ class CMSSWConfig:
             data = base64.encodestring(self.rawCfg)
         configNode = IMProvNode("ConfigData", data, Encoding="base64")
         result.addNode(configNode)
+
+        origData = base64.encodestring(self.originalCfg)
+        origCfgNode = IMProvNode("OriginalCfg", origData, Encoding="base64")
+        result.addNode(origCfgNode)
+
+        
+
         return result
 
 
@@ -253,7 +269,7 @@ class CMSSWConfig:
         outMods = outModQ(improvNode)
         for outMod in outMods:
             modName = outMod.attrs['Name']
-            newMod = self.getOutputModule(modName)
+            newMod = self.getOutputModule(str(modName))
             for childNode in outMod.children:
                 key = str(childNode.name)
                 value = str(childNode.chardata)
@@ -269,8 +285,16 @@ class CMSSWConfig:
             self.rawCfg = None
         else:
             self.rawCfg = base64.decodestring(data)
+
+        origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
+        origCfg = origQ(improvNode)[0]
+        origCfg = origCfg.strip()
+        if origCfg == "":
+            self.originalCfg = ""
+        else:
+            self.oringinalCfg = base64.decodestring(origCfg)
         return
-        
+    
     def pack(self):
         """
         _pack_

@@ -20,7 +20,7 @@ class InputSource:
     """
     def __init__(self, sourceRef):
         self.data = sourceRef
-        
+        self.sourceType = sourceRef.type_()
 
     def __str__(self):
         return self.data.dumpConfig()
