@@ -13,7 +13,6 @@ import time
 
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads import UUID as MCPayloadsUUID
 import ProdCommon.MCPayloads.DatasetConventions as DatasetConventions
 
@@ -92,70 +91,6 @@ def createPythonConfig(cfgFile):
 
 
 
-
-
-def populateCMSRunNode(payloadNode, nodeName, version, pyCfgFileContent,
-                       hashValue, timestamp, prodName, physicsGroup , 
-                       processingLabel, fakeHash = False, usePrimaryDataset = None):
-    """
-    _populateCMSRunNode_
-
-    Fill in the details for a standard cmsRun node based on the
-    contents of the configuration
-    """
-    payloadNode.name = nodeName
-    payloadNode.type = "CMSSW"   
-    payloadNode.application["Project"] = "CMSSW" # project
-    payloadNode.application["Version"] = version # version
-    payloadNode.application["Architecture"] = "slc3_ia32_gcc323" # obsolete
-    payloadNode.application["Executable"] = "cmsRun" # binary name
-    payloadNode.configuration = pyCfgFileContent # Python PSet file
-    
-    cfgInt = CfgInterface(payloadNode.configuration, True)
-    
-    for outModName, val in cfgInt.outputModules.items():
-        datasets = val.datasets()
-        for outDataset in datasets:
-            dataTier = outDataset['dataTier']
-            filterName = outDataset.get("filterName", None)
-            processedDS = "%s-%s-%s-%s-unmerged" % (
-                payloadNode.application['Version'], processingLabel, physicsGroup, timestamp)
-            if filterName != None:
-                processedDS = "%s-%s-%s-%s-%s-unmerged" % (
-                    payloadNode.application['Version'], processingLabel, physicsGroup,
-                    filterName, timestamp)
-
-            if outDataset.has_key("processedDataset"):
-                processedDS = outDataset['processedDataset']
-
-            if usePrimaryDataset != None:
-                primaryName = usePrimaryDataset
-            else:
-                primaryName = prodName
-                
-            if outDataset.has_key("primaryDataset"):
-                primaryName = outDataset['primaryDataset']
-                
-                
-            outDS = payloadNode.addOutputDataset(primaryName, 
-                                            processedDS,
-                                            outModName)
-                                        
-            outDS['DataTier'] = dataTier
-            outDS["ApplicationName"] = payloadNode.application["Executable"]
-            outDS["ApplicationProject"] = payloadNode.application["Project"]
-            outDS["ApplicationVersion"] = payloadNode.application["Version"]
-            outDS["ApplicationFamily"] = outModName
-            if fakeHash:
-                guid = MCPayloadsUUID.uuidgen()
-                if guid == None:
-                    guid = MCPayloadsUUID.uuid()
-                outDS['PSetHash'] = "hash=%s;guid=%s" % (hashValue, guid)
-            else:
-                outDS['PSetHash'] = hashValue
-
-    return
-    
 
             
 def addStageOutNode(cmsRunNode, nodeName):

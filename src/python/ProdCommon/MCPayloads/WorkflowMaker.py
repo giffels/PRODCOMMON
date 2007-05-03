@@ -17,7 +17,7 @@ from ProdCommon.Core.ProdException import ProdException
 import ProdCommon.MCPayloads.DatasetConventions as DatasetConventions
 import ProdCommon.MCPayloads.WorkflowTools as WorkflowTools
 from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 from ProdCommon.MCPayloads.UUID import makeUUID
 
 from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
@@ -148,19 +148,13 @@ class WorkflowMaker:
 
         The format & type can be specified using args:
 
-        - Format : must be "python" or "cfg"
-        - Type   : must be "file" or "string"
-
+        - Type   : must be "file" or "string" or "instance"
+        
         """
-        format = args.get("Format", "python")
-        cfgType = args.get("Type", "string")
-
-        if format not in ("python", "cfg"):
-            msg = "Illegal Format for cfg file: %s\n" % format
-            msg += "Should be \"python\" or \"cfg\"\n"
-            raise RuntimeError, msg
-
-        if cfgType not in ("file", "string"):
+        cfgType = args.get("Type", "instance")
+        
+        
+        if cfgType not in ("file", "string", "instance"):
             msg = "Illegal Type for cfg file: %s\n" % cfgType
             msg += "Should be \"file\" or \"string\"\n"
             raise RuntimeError, msg
@@ -168,28 +162,16 @@ class WorkflowMaker:
         cfgContent = cfgFile
         if cfgType == "file":
             cfgContent = file(cfgFile).read()
+            cfgType = "string"
             
-            
-        pycfgContent = cfgContent
-        if format == "cfg":
-            if cfgType == "file":
-                pycfgFile = WorkflowTools.createPythonConfig(cfgFile)
-                pycfgContent = file(pycfgFile).read()
-            else:
-                #  //
-                # // cfg format string, needs tempfile and converted
-                #//  to python.
-                tempFile = "/tmp/%s-%s-CfgFile.cfg" % (self.workflowName,
-                                                       self.timestamp)
-                handle = open(tempFile, 'w')
-                handle.write(cfgContent)
-                handle.close()
-                pycfgFile = WorkflowTools.createPythonConfig(tempFile)
-                pycfgContent = file(pycfgFile).read()
-                os.remove(tempFile)
-            
-        self.configuration = pycfgContent
-        self.cmsRunNode.configuration = pycfgContent
+        if cfgType == "string":
+            cfgData = cfgContent
+            cfgContent = CMSSWConfig()
+            cfgContent.unpack(cfgData)
+        
+                
+        self.configuration = cfgContent
+        self.cmsRunNode.configuration = cfgContent.pack()
         return
     
         
@@ -314,53 +296,47 @@ class WorkflowMaker:
         #  //
         # // Extract dataset info from cfg
         #//
-        cfgInt = CfgInterface(self.cmsRunNode.configuration, True)
-        for outModName, val in cfgInt.outputModules.items():
-            datasets = val.datasets()
-            for outDataset in datasets:
-                dataTier = outDataset['dataTier']
-                filterName = outDataset.get("filterName", None)
+        for outModName in self.configuration.outputModules.keys():
+            moduleInstance = self.configuration.getOutputModule(outModName)
+            dataTier = moduleInstance['dataTier']
+            filterName = moduleInstance["filterName"]
+            primaryName = DatasetConventions.primaryDatasetName(
+                                    PhysicsChannel = self.channel,
+                                    )
+            processedName = DatasetConventions.processedDatasetName(
+                Version = self.cmsswVersion,
+                Label = self.label,
+                Group = self.group,
+                FilterName = filterName,
+                RequestId = self.requestId,
+                Unmerged = True
+                )
+            dataTier = DatasetConventions.checkDataTier(dataTier)
 
+            moduleInstance['primaryDataset'] = primaryName
+            moduleInstance['processedDataset'] = processedName
 
-                primaryName = DatasetConventions.primaryDatasetName(
-                    PhysicsChannel = self.channel,
-                    )
+            outDS = self.cmsRunNode.addOutputDataset(primaryName, 
+                                                     processedName,
+                                                     outModName)
+            
+            outDS['DataTier'] = dataTier
+            outDS["ApplicationName"] = \
+                                     self.cmsRunNode.application["Executable"]
+            outDS["PhysicsGroup"] = self.group
 
-                processedName = DatasetConventions.processedDatasetName(
-                    Version = self.cmsswVersion,
-                    Label = self.label,
-                    Group = self.group,
-                    FilterName = filterName,
-                    RequestId = self.requestId,
-                    Unmerged = True
-                    )
-                dataTier = DatasetConventions.checkDataTier(dataTier)
-
+            if self.inputDataset['IsUsed']:
+                outDS['ParentDataset'] = self.inputDataset['DatasetName']
                 
-                outDS = self.cmsRunNode.addOutputDataset(primaryName, 
-                                                         processedName,
-                                                         outModName)
-                                        
-                outDS['DataTier'] = dataTier
-                outDS["ApplicationName"] = \
-                             self.cmsRunNode.application["Executable"]
-                outDS["ApplicationProject"] = \
-                             self.cmsRunNode.application["Project"]
-                outDS["ApplicationVersion"] = \
-                             self.cmsRunNode.application["Version"]
-                outDS["ApplicationFamily"] = outModName
-                outDS["PhysicsGroup"] = self.group
+            if self.options['FakeHash']:
+                guid = makeUUID()
+                outDS['PSetHash'] = "hash=%s;guid=%s" % (self.psetHash,
+                                                         guid)
+            else:
+                outDS['PSetHash'] = self.psetHash
 
-                if self.inputDataset['IsUsed']:
-                    outDS['ParentDataset'] = self.inputDataset['DatasetName']
-                
-                if self.options['FakeHash']:
-                    guid = makeUUID()
-                    outDS['PSetHash'] = "hash=%s;guid=%s" % (self.psetHash,
-                                                             guid)
-                else:
-                    outDS['PSetHash'] = self.psetHash
-
+            
+            
                     
         #  //
         # // Add Stage Out node

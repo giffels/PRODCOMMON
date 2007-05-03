@@ -9,7 +9,7 @@ JobSpecNodes
 """
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 
 def getOutputDatasets(payloadNode):
     """
@@ -55,8 +55,9 @@ def getOutputDatasetsWithPSet(payloadNode):
         resultEntry["ApplicationVersion"] = payloadNode.application['Version']
 
         try:
-            config = CfgInterface(payloadNode.configuration, True)
-            psetStr = config.cmsConfig.asConfigurationString()
+            config = CMSSWConfig()
+            config.unpack(payloadNode.configuration)
+            psetStr = config.originalContent()
             resultEntry['PSetContent'] = psetStr
         except Exception, ex:
             resultEntry['PSetContent'] = None
@@ -64,6 +65,8 @@ def getOutputDatasetsWithPSet(payloadNode):
         result.append(resultEntry)
         
     return result
+
+
 def getPileupDatasets(payloadNode):
     """
     _getPileupDatasets_

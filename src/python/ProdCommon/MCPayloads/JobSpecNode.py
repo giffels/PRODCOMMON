@@ -17,7 +17,7 @@ from IMProv.IMProvQuery import IMProvQuery
 
 from ProdCommon.MCPayloads.PayloadNode import PayloadNode
 
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
+from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 
         
 class JobSpecNode(PayloadNode):
@@ -82,7 +82,8 @@ class JobSpecNode(PayloadNode):
         """
         if self.configuration not in (None, ""):
             try:
-                self.cfgInterface = CfgInterface(self.configuration, True)
+                self.cfgInterface = CMSSWConfig()
+                self.cfgInterface.unpack(self.configuration)
             except StandardError:
                 #  //
                 # // Isnt a python config
@@ -166,7 +167,7 @@ class JobSpecNode(PayloadNode):
         if self.cfgInterface == None:
             return None
         
-        self.inputModule = self.cfgInterface.inputSource.sourceType
+        self.inputModule = self.cfgInterface.sourceType
         return self.inputModule
     
         

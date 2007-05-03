@@ -21,7 +21,7 @@ from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
+
 
 def intersection(list1, list2):
     """fast intersection of two lists"""
@@ -265,38 +265,7 @@ class PayloadNode:
             raise RuntimeError, msg
         
         
-        #  //
-        # // Verify input node has an output module of the requested
-        #//  name
-        if not skipCfgCheck:
-            nodeInstance = getNodeByName(self, nodeName)
-            try:
-                inputCfg = CfgInterface(nodeInstance.configuration, True)
-            except Exception, ex:
-                msg = "Unable to read configuration from input node\n"
-                msg += "Error adding input link %s.%s -> %s\n " % (
-                    nodeName, nodeOutputModName, self.name)
-                raise RuntimeError, msg
             
-            knownMods = inputCfg.outputModules.keys()
-            if nodeOutputModName not in knownMods:
-                msg = "Output Modulename %s not known in cfg for %s\n" % (
-                     nodeOutputModName , nodeName)
-                msg += "Output Modules are %s\n" % knownMods
-                msg += "Error adding input link %s.%s -> %s\n " % (
-                    nodeName, nodeOutputModName, self.name)
-                raise RuntimeError, msg
-        
-            #  //
-            # // verify that this cfg has an input source
-            #//
-            try:
-                outputCfg = CfgInterface(self.configuration, True)
-            except Exception, ex:
-                msg = "Unable to read configuration from this node\n"
-                msg += "Error adding input link %s.%s -> %s\n " % (
-                    nodeName, nodeOutputModName, self.name)
-                raise RuntimeError, msg
 
         #  //
         # // TODO: Check if named source is present
