@@ -40,7 +40,6 @@ class CMSSWConfig:
     """
     def __init__(self):
         self.rawCfg = None
-        self.originalCfg = ""
         #  //
         # // Source related parameters and seeds
         #//
@@ -122,7 +121,7 @@ class CMSSWConfig:
         Return the original cfg file content
 
         """
-        return self.originalCfg
+        return ""
 
     def save(self):
         """
@@ -212,9 +211,9 @@ class CMSSWConfig:
         configNode = IMProvNode("ConfigData", data, Encoding="base64")
         result.addNode(configNode)
 
-        origData = base64.encodestring(self.originalCfg)
-        origCfgNode = IMProvNode("OriginalCfg", origData, Encoding="base64")
-        result.addNode(origCfgNode)
+        #origData = base64.encodestring(self.originalCfg)
+        #origCfgNode = IMProvNode("OriginalCfg", origData, Encoding="base64")
+        #result.addNode(origCfgNode)
 
         
 
@@ -294,13 +293,13 @@ class CMSSWConfig:
         else:
             self.rawCfg = base64.decodestring(data)
 
-        origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
-        origCfg = origQ(improvNode)[0]
-        origCfg = origCfg.strip()
-        if origCfg == "":
-            self.originalCfg = ""
-        else:
-            self.originalCfg = base64.decodestring(origCfg)
+        #origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
+        #origCfg = origQ(improvNode)[0]
+        #origCfg = origCfg.strip()
+        #if origCfg == "":
+        #    self.originalCfg = ""
+        #else:
+        #    self.originalCfg = base64.decodestring(origCfg)
         return
     
     def pack(self):
