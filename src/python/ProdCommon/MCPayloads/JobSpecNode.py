@@ -36,7 +36,7 @@ class JobSpecNode(PayloadNode):
         self.parameters = []
         self.inputModule = None
         self.outputModules = []
-        self.cfgInterface = None
+
         
 
     def addNode(self, nodeInstance):
@@ -67,6 +67,7 @@ class JobSpecNode(PayloadNode):
         self._InputDatasets = genericPayload._InputDatasets
         self._OutputDatasets = genericPayload._OutputDatasets
         self.configuration = genericPayload.configuration
+        self.cfgInterface = genericPayload.cfgInterface
         self._InputLinks = genericPayload._InputLinks
         self.userSandbox = genericPayload.userSandbox
         self.loadConfiguration()
@@ -80,16 +81,8 @@ class JobSpecNode(PayloadNode):
         load it up and populate the data members related to it
 
         """
-        if self.configuration not in (None, ""):
-            try:
-                self.cfgInterface = CMSSWConfig()
-                self.cfgInterface.unpack(self.configuration)
-            except StandardError:
-                #  //
-                # // Isnt a python config
-                #//
-                self.cfgInterface = None
-                return
+        if self.cfgInterface == None:
+            return
         #  //
         # // Pull info out of the config if available
         #//

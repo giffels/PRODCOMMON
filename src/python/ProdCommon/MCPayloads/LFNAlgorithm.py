@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.5 2006/10/27 13:58:19 evansde Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.3 2006/12/04 13:29:31 evansde Exp $"
+__version__ = "$Revision: 1.3 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -147,20 +147,13 @@ class JobSpecLFNMaker:
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
-        for dataTier in node.extractOutputModules():
+        if node.cfgInterface == None:
+            return
+        for modName, outModule in node.cfgInterface.outputModules.items():
+            dataTier = outModule['dataTier']
             lfn = generateLFN(base, self.lfnGroup, self.jobName, dataTier)
-            outModule = node.cfgInterface.outputModules[dataTier]
-            outModule.setCatalog("%s-%s-OutputCatalog.xml" % (
-                self.jobName, dataTier,
-                )
-                                 )
-            outModule.setFileName(os.path.basename(lfn))
-            outModule.setLogicalFileName(lfn)
-        #  //
-        # // Save changes in the configuration
-        #//
-        if node.cfgInterface != None:
-            node.configuration = str(node.cfgInterface)
+            outModule['fileName']  = os.path.basename(lfn)
+            outModule['logicalFileName'] = lfn
         return
 
 def createUnmergedLFNs(jobSpecInstance):

@@ -171,7 +171,7 @@ class WorkflowMaker:
         
                 
         self.configuration = cfgContent
-        self.cmsRunNode.configuration = cfgContent.pack()
+        self.cmsRunNode.cfgInterface = cfgContent
         return
     
         

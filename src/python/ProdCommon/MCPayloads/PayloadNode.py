@@ -21,6 +21,7 @@ from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 
 
 def intersection(list1, list2):
@@ -157,6 +158,7 @@ class PayloadNode:
         self._OutputDatasets = []
         self._PileupDatasets = []
         self.configuration = ""
+        self.cfgInterface = None
         self.userSandbox = None
         
         #  //
@@ -351,9 +353,12 @@ class PayloadNode:
             inpLinksNode.addNode(iLink.save())
             
 
-        configNode = IMProvNode("Configuration",
-                                base64.encodestring(self.configuration),
-                                Encoding="base64")
+        if self.cfgInterface == None:
+            configNode = IMProvNode("Configuration",
+                                    base64.encodestring(self.configuration),
+                                    Encoding="base64")
+        else:
+            configNode = self.cfgInterface.save()
         
         node.addNode(appNode)
         node.addNode(appConNode)
@@ -502,9 +507,18 @@ class PayloadNode:
         # // Configuration
         #//
         configQ = IMProvQuery("/%s/Configuration" % self.__class__.__name__)
-        configNode = configQ(improvNode)[0]
-        self.configuration = base64.decodestring(str(configNode.chardata))
-        
+        configNodes = configQ(improvNode)
+        if len(configNodes) > 0:
+            configNode = configNodes[0]
+            self.configuration = base64.decodestring(str(configNode.chardata))
+
+        cfgIntQ = IMProvQuery("/%s/CMSSWConfig" % self.__class__.__name__)
+        cfgNodes = cfgIntQ(improvNode)
+        if len(cfgNodes) > 0:
+            cfgNode = cfgNodes[0]
+            self.cfgInterface = CMSSWConfig()
+            self.cfgInterface.load(cfgNode)
+            
         #  //
         # // User sandbox
         #//
