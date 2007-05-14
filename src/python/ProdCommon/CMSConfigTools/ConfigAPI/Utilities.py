@@ -187,7 +187,6 @@ def checkOutputModule(outModInstance):
         msg += "All Output Modules should contain a dataset PSet for"
         msg += " production requests"
         raise CMSConfigError( msg, OutputModule = str(outModInstance))
-
     dataTier = getattr(datasetPSet, "dataTier", None)
     if dataTier == None:
         msg = "Output Module %s dataset PSet does not contain " % (

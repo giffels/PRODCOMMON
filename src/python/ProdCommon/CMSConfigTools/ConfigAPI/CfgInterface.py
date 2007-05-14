@@ -68,8 +68,25 @@ class CfgInterface:
         """
         result = []
 	return result
-                
-            
+
+    def insertSeeds(self, *seeds):
+        """
+        _insertSeeds_
+
+        Insert the list of seeds into the RandomNumber Service
+
+        """
+        seedList = list(seeds)
+        if "RandomNumberGeneratorService" not in self.data.services.keys():
+            return
+        svc = self.data.services["RandomNumberGeneratorService"]
+        svc.sourceSeed = CfgTypes.untracked(CfgTypes.int32(seedList.pop(0)))
+        modSeeds = getattr(svc, "moduleSeeds", Utilities._CfgNoneType()).value()
+        if modSeeds != None:
+            for param in modSeeds.parameterNames_():
+                setattr(modSeeds, param, CfgTypes.untracked(CfgTypes.int32(seedList.pop(0))))
+        return
+    
     def configMetadata(self):
         """
         _configMetadata_
@@ -79,7 +96,7 @@ class CfgInterface:
 
         """
         result = {}
-        if "configurationMetadata" not in  cfgInstance.psets.keys():
+        if "configurationMetadata" not in  self.data.psets.keys():
             return result
         cfgMeta = self.data.psets['configurationMetadata']
         for pname in cfgMeta.parameterNames_():
@@ -111,8 +128,8 @@ class CfgInterface:
         Utilities.checkConfigMetadata(self.data)
 
         for outMod in self.outputModules.values():
-            checkOutputModule(outMod)
-
+            Utilities.checkOutputModule(outMod.data)
+            
         return
         
 

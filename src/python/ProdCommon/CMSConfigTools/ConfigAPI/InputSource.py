@@ -53,7 +53,7 @@ class InputSource:
     
     def setFirstRun(self, firstRun):
         """set first run number"""
-        self.data.firstRun = CfgTypes.untracked(CfgTypes.uint32(firstRun))
+        self.data.firstRun = CfgTypes.untracked(CfgTypes.uint32(int(firstRun)))
 
     def setNumberEventsInRun(self, numEvents):
         """
@@ -75,7 +75,8 @@ class InputSource:
     def setFileNames(self, *fileNames):
         """set fileNames vector"""
         self.data.fileNames = CfgTypes.untracked(CfgTypes.vstring())
-        self.data.fileNames.extend(fileNames)
+        for entry in fileNames:
+            self.data.fileNames.append(CfgTypes.untracked(CfgTypes.string(entry)))
         return
         
     def setFileMatchMode(self, matchMode):

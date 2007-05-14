@@ -348,11 +348,42 @@ class CMSSWConfig:
         cfgInstance = pickle.loads(self.rawCfg)
         cfg = CfgInterface(cfgInstance)
 
-        
-        
+        #  //
+        # //  Source params
+        #//
+        cfg.inputSource.setFileNames(*self.inputFiles)
 
-        
+        firstRun = self.sourceParams.get("firstRun", None)
+        if firstRun != None:
+            cfg.inputSource.setFirstRun(firstRun)
+            
+        skipEv = self.sourceParams.get("skipEvents", None)
+        if skipEv != None:
+            cfg.inputSource.setSkipEvents(skipEv)
 
+
+        #  //
+        # // maxEvents PSet
+        #//
+        for key, value in self.maxEvents.items():
+            if key == "input":
+                if value != None:
+                    cfg.maxEvents.setMaxEventsInput(int(value))
+            elif key == "output":
+                if value != None:
+                    cfg.maxEvents.setMaxEventsOutput(int(value))
+            else:
+                cfg.maxEvents.setMaxEventsOutput(int(value), key)
+
+        #  //
+        # // Random seeds
+        #//
+        seedslist = [ int(x) for x in self.seeds ]
+        cfg.insertSeeds(*seedslist)
+
+        return cfg.data
+        
+                
     def loadConfiguration(self, cfgInstance):
         """
         _loadConfiguration_
@@ -398,3 +429,4 @@ class CMSSWConfig:
             newMod.update(modParams)
 
         
+        return cfgInterface
