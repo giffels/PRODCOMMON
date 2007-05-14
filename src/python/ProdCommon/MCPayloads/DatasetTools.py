@@ -197,9 +197,9 @@ def getOutputDatasetDetails(jobSpecNode):
         if modName not in outMods:
             continue
         outputModule = jobSpecNode.cfgInterface.outputModules[modName]
-        dataset['Catalog'] = outputModule.catalog()
-        dataset['LogicalFileName'] = outputModule.logicalFileName()
-        dataset['PhysicalFileName'] = outputModule.fileName()
+        dataset['Catalog'] = outputModule['catalog']
+        dataset['LogicalFileName'] = outputModule['logicalFileName']
+        dataset['PhysicalFileName'] = outputModule['fileName']
     return datasets
 
         
