@@ -103,7 +103,7 @@ def removedropXML(xmlFile):
                                                                                                                                           
     return
 
-def tmdbInject(phedexConfig, xmlFile, *storageElements):
+def tmdbInject(phedexConfig, xmlFile, nodes, *storageElements):
     """
     _tmdbInject_
 
@@ -115,12 +115,16 @@ def tmdbInject(phedexConfig, xmlFile, *storageElements):
 
     command = "TMDBInject -db %s " % phedexConfig
 
-    seList = ""
-    for se in storageElements:
+    if nodes:
+      command +=" -nodes=%s " % nodes 
+    else:
+      seList = ""
+      for se in storageElements:
         seList += "%s," % se
-    seList = seList[:-1]
-    
-    command +=" -storage-elements=%s " % seList
+      seList = seList[:-1]
+      command +=" -storage-elements=%s " % seList
+
+
     command += " -filedata %s" % xmlFile
 
     logging.info("Calling: %s" % command)
@@ -150,7 +154,7 @@ def tmdbInject(phedexConfig, xmlFile, *storageElements):
 
 
 def tmdbInjectBlock(dbsUrl, datasetPath, blockName, phedexConfig,
-                    workingDir="/tmp"):
+                    workingDir="/tmp", nodes=None):
     """
     _tmdbInjectBlock_
 
@@ -172,6 +176,6 @@ def tmdbInjectBlock(dbsUrl, datasetPath, blockName, phedexConfig,
     reader = DBSReader(dbsUrl)
     storageElements = reader.listFileBlockLocation(blockName)
     
-    tmdbInject(phedexConfig, dropXML, *storageElements )
+    tmdbInject(phedexConfig, dropXML, nodes, *storageElements )
 
     return
