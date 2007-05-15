@@ -17,7 +17,6 @@ import ProdCommon.DataMgmt.DBS.DBSWriterObjects as DBSWriterObjects
 from ProdCommon.DataMgmt.DBS.DBSErrors import DBSWriterError, formatEx
 from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 
-from ProdCommon.CMSConfigTools.CfgInterface import CfgInterface
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasetsWithPSet
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasets
 from ProdCommon.MCPayloads.MergeTools import createMergeDatasetWorkflow
@@ -43,19 +42,13 @@ class _CreateDatasetOperator:
         datasets = getOutputDatasetsWithPSet(pnode)
         cfgMeta = None
         try:
-            cfgInt = CfgInterface(pnode.configuration, True)
-            cfgMeta = cfgInt.configMetadata()
+            cfgInt = pnode.cfgInterface
+            cfgMeta = cfgInt.configMetadata
             cfgMeta['Type'] = self.workflow.parameters["RequestCategory"]      
         except Exception, ex:
             msg = "Unable to Extract cfg data from workflow"
             msg += str(ex)
             logging.error(msg)
-            return
-        #AF: temporary check before the sanity check on cfg is there
-        if not cfgMeta.has_key('Name') :
-            msg = "Unable to Extract info from the cfg. \n The missing piece is: \n"
-            msg +="   untracked PSet configurationMetadata { ... } \n " 
-            raise DBSWriterError(msg)
             return
             
         for dataset in datasets:
@@ -86,6 +79,7 @@ class _CreateMergeDatasetOperator:
         for dataset in pnode._OutputDatasets:
             mergeAlgo = DBSWriterObjects.createMergeAlgorithm(dataset,
                                                               self.apiRef)
+
             inputDataset = dataset.get('ParentDataset', None)
             if inputDataset == None:
                 continue

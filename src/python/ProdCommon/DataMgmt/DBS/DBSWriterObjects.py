@@ -72,6 +72,8 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     # HACK:  Problem with large PSets
     #
     psetContent = datasetInfo['PSetContent']
+    if psetContent == None:
+        psetContent = "PSET CONTENT NOT AVAILABLE"
     ## No more hacks
     #msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
     #msg += "TEST HACK USED FOR PSetContent\n" 
@@ -83,21 +85,21 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     #
     # HACK: 100 char limit on cfg file name
     if configMetadata != None:
-        cfgName = configMetadata['Name']
+        cfgName = configMetadata['name']
         if len(cfgName) > 100:
             msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
             msg += "TEST HACK USED FOR Config File Name"
             msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             logging.warning(msg)
             print msg
-            configMetadata['Name'] = cfgName[-99]
+            configMetadata['name'] = cfgName[-99]
     
         psetInstance = DbsQueryableParameterSet(
             Hash = psetHash,
-            Name = configMetadata['Name'],
-            Version = configMetadata['Version'],
+            Name = configMetadata['name'],
+            Version = configMetadata['version'],
             Type = configMetadata['Type'],
-            Annotation = configMetadata['Annotation'],
+            Annotation = configMetadata['annotation'],
             Content = psetContent, 
             )
 
