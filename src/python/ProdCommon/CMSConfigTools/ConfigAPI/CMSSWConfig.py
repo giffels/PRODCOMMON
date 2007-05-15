@@ -63,7 +63,10 @@ class CMSSWConfig:
         #//
         self.pileupFiles = []
 
-
+        #  //
+        # // cfg metadata used for creating datasets
+        #//
+        self.configMetadata = {}
 
     def setInputMaxEvents(self, maxEvents):
         """
@@ -201,6 +204,18 @@ class CMSSWConfig:
             
         result.addNode(maxEvNode)
 
+
+        #  //
+        # // Save config metadata
+        #//
+        cfgMetaNode = IMProvNode("ConfigMetadata")
+
+        [ cfgMetaNode.addNode(
+            IMProvNode(x[0], None, Value = str(x[1])))
+          for x in self.configMetadata.items() if x[1] != None ]
+        
+        result.addNode(cfgMetaNode)
+
         #  //
         # // Save & Encode the raw configuration
         #//
@@ -281,6 +296,15 @@ class CMSSWConfig:
                 key = str(childNode.name)
                 value = str(childNode.chardata)
                 newMod[key] = value
+        #  //
+        # // cfg metadata
+        #//
+        cfgMetaQ = IMProvQuery("/CMSSWConfig/ConfigMetadata/*")
+        [ self.configMetadata.__setitem__(str(x.name), str(x.attrs['Value']))
+          for x in cfgMetaQ(improvNode)]
+
+
+        
 
         #  //
         # // data
@@ -428,5 +452,9 @@ class CMSSWConfig:
             modParams = outMod.moduleParameters()
             newMod.update(modParams)
 
+        #  //
+        # // ConfigMetadata 
+        #//
+        self.configMetadata.update(cfgInterface.configMetadata())
         
         return cfgInterface
