@@ -53,10 +53,10 @@ def getOutputDatasetsWithPSet(payloadNode):
         resultEntry["ApplicationName"] = payloadNode.application['Executable']
         resultEntry["ApplicationProject"] = payloadNode.application['Project']
         resultEntry["ApplicationVersion"] = payloadNode.application['Version']
-
+        resultEntry["ApplicationFamily"] = item.get("OutputModuleName", "AppFamily")
+        
         try:
-            config = CMSSWConfig()
-            config.unpack(payloadNode.configuration)
+            config = payloadNode.cfgInterface
             psetStr = config.originalContent()
             resultEntry['PSetContent'] = psetStr
         except Exception, ex:

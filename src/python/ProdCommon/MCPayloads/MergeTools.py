@@ -46,6 +46,7 @@ class ProcToMerge:
             newDataset.update(dataset)
             newDataset["ApplicationFamily"] = self.mergeModuleName
             newDataset["ApplicationName"] = self.appName
+            newDataset["ApplicationVersion"] = node.application['Version']
             procName = dataset["ProcessedDataset"]
             if procName.endswith("-unmerged"):
                 procName = procName.replace("-unmerged", "")
