@@ -20,6 +20,7 @@ attribute
 """
 
 import base64
+import zlib
 import pickle
 
 
@@ -222,7 +223,9 @@ class CMSSWConfig:
         if self.rawCfg == None:
             data = ""
         else:
-            data = base64.encodestring(self.rawCfg)
+            zipData = zlib.compress(self.rawCfg)
+            data = base64.encodestring(zipData)
+            
         configNode = IMProvNode("ConfigData", data, Encoding="base64")
         result.addNode(configNode)
 
@@ -315,7 +318,8 @@ class CMSSWConfig:
         if data == "":
             self.rawCfg = None
         else:
-            self.rawCfg = base64.decodestring(data)
+            decodeData = base64.decodestring(data)
+            self.rawCfg = zlib.decompress(decodeData)
 
         #origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
         #origCfg = origQ(improvNode)[0]
