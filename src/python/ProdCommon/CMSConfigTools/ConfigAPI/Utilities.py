@@ -217,10 +217,25 @@ def seedCount(cfgInstance):
     if "RandomNumberGeneratorService" not in cfgInstance.services.keys():
         return 0
     svc = cfgInstance.services["RandomNumberGeneratorService"]
+
+    sourceSeeds = 1
+    #  //
+    # // How many source seeds are present?
+    #//  If vector sourceSeedsVector present, then it is the length
+    #  //of that vector
+    # //
+    #//
+    srcSeedVec = getattr(svc, "sourceSeedVector", _CfgNoneType()).value()
+    if srcSeedVec != None:
+        sourceSeeds = len(srcSeedVec)
+        
     modSeeds = getattr(svc, "moduleSeeds", _CfgNoneType()).value()
     if modSeeds == None:
-        seedsReq = 1
+        seedsReq = sourceSeeds
     else:
-        seedsReq = len(modSeeds.parameterNames_()) + 1
+        seedsReq = len(modSeeds.parameterNames_()) + sourceSeeds
 
-    return seedsReq
+    #  //
+    # // spares never hurt either...
+    #// 
+    return seedsReq +2

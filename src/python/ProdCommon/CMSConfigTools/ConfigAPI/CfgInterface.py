@@ -80,11 +80,22 @@ class CfgInterface:
         if "RandomNumberGeneratorService" not in self.data.services.keys():
             return
         svc = self.data.services["RandomNumberGeneratorService"]
-        svc.sourceSeed = CfgTypes.untracked(CfgTypes.int32(seedList.pop(0)))
+
+        srcSeedVec = getattr(svc, "sourceSeedVector", Utilities._CfgNoneType()).value()
+        if srcSeedVec != None:
+            numReq = len(srcSeedVec)
+            seedsReq = seedList[0:numReq]
+            seedList = seedList[numReq+1:]
+            svc.sourceSeedVector = CfgTypes.untracked( CfgTypes.vuint32(seedsReq))
+            
+            
+
+        else:
+            svc.sourceSeed = CfgTypes.untracked(CfgTypes.uint32(seedList.pop(0)))
         modSeeds = getattr(svc, "moduleSeeds", Utilities._CfgNoneType()).value()
         if modSeeds != None:
             for param in modSeeds.parameterNames_():
-                setattr(modSeeds, param, CfgTypes.untracked(CfgTypes.int32(seedList.pop(0))))
+                setattr(modSeeds, param, CfgTypes.untracked(CfgTypes.uint32(seedList.pop(0))))
         return
     
     def configMetadata(self):

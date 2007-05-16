@@ -68,7 +68,7 @@ class CfgGenerator:
             if evMultiplier != None:
                 maxEvents = int(maxEvents) * int(evMultiplier)
             
-            newCfg.setOutputMaxEvents(maxEvents)
+            newCfg.setInputMaxEvents(maxEvents)
 
         
            

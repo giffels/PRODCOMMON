@@ -409,6 +409,21 @@ class CMSSWConfig:
         seedslist = [ int(x) for x in self.seeds ]
         cfg.insertSeeds(*seedslist)
 
+
+        #  //
+        # //  output modules
+        #//
+        for outModName, outModData in self.outputModules.items():
+            modRef = cfg.outputModules.get(outModName, None)
+            if modRef == None:
+                continue
+            if outModData["fileName"] != None:
+                modRef.setFileName(outModData["fileName"])
+            if outModData["logicalFileName"] != None:
+                modRef.setLogicalFileName(outModData["logicalFileName"])
+            if outModData["catalog"] !=  None:
+                modRef.setCatalog(outModData["catalog"])
+
         return cfg.data
         
                 
