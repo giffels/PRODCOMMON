@@ -35,6 +35,7 @@ class RequestSpec:
         self.workflow = None
         self.requestDetails = {}
         self.policies = {}
+        self.preferredPAs = {}
 
 
 
@@ -78,16 +79,21 @@ class RequestSpec:
 
         policyQuery = IMProvQuery("/RequestSpec/Policies/*")
         detailQuery = IMProvQuery("/RequestSpec/RequestDetails/*")
+        preferredPAQuery = IMProvQuery("/RequestSpec/PreferredPA")
 
         policies = policyQuery(improvNode)
         details = detailQuery(improvNode)
+        preferredPAs = preferredPAQuery(improvNode)
 
         for policy in policies:
             self.policies[str(policy.name)] = str(policy.chardata)
 
         for detail in improvNode.attrs.keys():
             self.requestDetails[detail] = str(improvNode.attrs[detail])
-            
+ 
+        for preferredPA in preferredPAs:
+            self.preferredPAs[str(preferredPA.attrs['id'])] = \
+                str(preferredPA.attrs['priority'])
 
         return
         
