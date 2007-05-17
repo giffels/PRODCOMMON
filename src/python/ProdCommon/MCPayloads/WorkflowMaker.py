@@ -323,6 +323,7 @@ class WorkflowMaker:
             outDS['DataTier'] = dataTier
             outDS["ApplicationName"] = \
                                      self.cmsRunNode.application["Executable"]
+            outDS["ApplicationFamily"] = outModName
             outDS["PhysicsGroup"] = self.group
 
             if self.inputDataset['IsUsed']:
