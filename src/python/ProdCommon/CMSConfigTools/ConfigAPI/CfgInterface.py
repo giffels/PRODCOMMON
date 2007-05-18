@@ -63,11 +63,57 @@ class CfgInterface:
         """
         _mixingModules_
 
-        return refs to all mixing modules in the cfg
+        return refs to MixingModules if present.
+        Otherwise return None.
         
         """
         result = []
+        
+        prods = self.data.producers
+        for key, value in prods.items():
+            if value.type_() == "MixingModule":
+                result.append(value)
+                
 	return result
+
+
+    def pileupFileList(self):
+        """
+        _pileupFilesList_
+
+        return a list of pileup files from all mixing modules
+
+        """
+        result = set()
+        for mixMod in self.mixingModules():
+            secSource = getattr(mixMod, "secsource", None)
+            if secSource == None: continue
+            fileList = getattr(secSource, "fileNames",
+                               Utilities._CfgNoneType()).value()
+            if fileList == None: continue
+            for entry in fileList:
+                result.add(entry)
+        return list(result)
+
+    def insertPileupFiles(self, *fileList):
+        """
+        _insertPileupFiles_
+
+        Insert the files provided into all mixing modules
+
+        """
+        for mixMod in self.mixingModules():
+            secSource = getattr(mixMod, "secsource", None)
+            if secSource == None: continue
+            fileList = getattr(secSource, "fileNames", None)
+            if fileList == None: continue
+            mixMod.secsource.fileNames = CfgTypes.untracked(
+                CfgTypes.vstring())
+            for fileName in fileList:
+                mixMod.secsource.fileNames.append(str(fileName))
+
+                
+        return
 
     def insertSeeds(self, *seeds):
         """

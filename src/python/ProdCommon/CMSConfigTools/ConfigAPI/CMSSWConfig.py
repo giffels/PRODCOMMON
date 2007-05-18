@@ -41,6 +41,7 @@ class CMSSWConfig:
     """
     def __init__(self):
         self.rawCfg = None
+        self.originalCfg = None
         #  //
         # // Source related parameters and seeds
         #//
@@ -125,7 +126,9 @@ class CMSSWConfig:
         Return the original cfg file content
 
         """
-        return ""
+        if self.originalCfg == None:
+            return "NO CONFIG CONTENT AVAILABLE"
+        return self.originalCfg
 
     def save(self):
         """
@@ -229,10 +232,12 @@ class CMSSWConfig:
         configNode = IMProvNode("ConfigData", data, Encoding="base64")
         result.addNode(configNode)
 
-        #origData = base64.encodestring(self.originalCfg)
-        #origCfgNode = IMProvNode("OriginalCfg", origData, Encoding="base64")
-        #result.addNode(origCfgNode)
-
+        if self.originalCfg != None:
+            origData = base64.encodestring(self.originalCfg)
+            origCfgNode = IMProvNode("OriginalCfg",
+                                     origData, Encoding="base64")
+            result.addNode(origCfgNode)
+            
         
 
         return result
@@ -321,13 +326,14 @@ class CMSSWConfig:
             decodeData = base64.decodestring(data)
             self.rawCfg = zlib.decompress(decodeData)
 
-        #origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
-        #origCfg = origQ(improvNode)[0]
-        #origCfg = origCfg.strip()
-        #if origCfg == "":
-        #    self.originalCfg = ""
-        #else:
-        #    self.originalCfg = base64.decodestring(origCfg)
+        origQ = IMProvQuery("/CMSSWConfig/OriginalCfg[text()]")
+        origR = origQ(improvNode)
+        if len(origR) > 0:
+            origCfg = origQ(improvNode)[0]
+            origCfg = origCfg.strip()
+            self.originalCfg = base64.decodestring(origCfg)
+        else:
+            self.originalCfg = None
         return
     
     def pack(self):
@@ -424,6 +430,13 @@ class CMSSWConfig:
             if outModData["catalog"] !=  None:
                 modRef.setCatalog(outModData["catalog"])
 
+
+        #  //
+        # // Pileup Files
+        #//
+        cfg.insertPileupFiles(*self.pileupFiles)
+        
+        
         return cfg.data
         
                 
@@ -475,5 +488,10 @@ class CMSSWConfig:
         # // ConfigMetadata 
         #//
         self.configMetadata.update(cfgInterface.configMetadata())
+
+        #  //
+        # // Pileup Files
+        #//
+        self.pileupFiles = cfgInterface.pileupFileList()
         
         return cfgInterface
