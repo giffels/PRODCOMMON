@@ -193,6 +193,11 @@ class DBSWriter:
 
         insertLists = {}
         affectedBlocks = set()
+
+        if len(fwkJobRep.files)<=0:
+           msg = "No files found in FrameWorkJobReport ! "
+           raise DBSWriterError(msg)
+
         for outFile in fwkJobRep.files:
             #  //
             # // Convert each file into a DBS File object
@@ -221,7 +226,11 @@ class DBSWriter:
                 msg += "%s\n" % outFile['LFN']
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-            
+
+            if len(dbsFiles)<=0:
+               msg="No DbsFile instances created. Not enough info in the FrameWorkJobReport !"
+               raise DBSWriterError(msg)  
+
             for f in dbsFiles:
                 datasetName = makeDBSDSName(f)
                 hashName = "%s-%s" % (seName, datasetName)

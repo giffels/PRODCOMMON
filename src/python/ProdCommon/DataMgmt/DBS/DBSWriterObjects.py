@@ -229,6 +229,10 @@ def createDBSFiles(fjrFileInfo, jobType = None):
 
     nEvents = int(fjrFileInfo['TotalEvents'])
     
+    if len(fjrFileInfo.dataset)<=0:
+       logging.error("No dataset info found in FWJobReport!")
+       return results
+
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
         if jobType == "Merge":
