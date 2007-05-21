@@ -184,10 +184,12 @@ class DBSWriter:
         Process the files in the FwkJobReport instance and insert
         them into the associated datasets
 
-        A list of affected fileblock names is returned for merged file
-        blocks to facilitate management of those blocks.
-        This list is not populated for processing jobs since we dont really
-        care about the processing job blocks.
+        A list of affected fileblock names is returned both for merged 
+        and unmerged fileblocks. Only merged blocks will have to be managed. 
+        #for merged file
+        #blocks to facilitate management of those blocks.
+        #This list is not populated for processing jobs since we dont really
+        #care about the processing job blocks.
 
         """
 
@@ -203,7 +205,6 @@ class DBSWriter:
             # // Convert each file into a DBS File object
             #//
 ## default to site se-name if no SE is associated to File 
-#            seName = outFile['SEName']
             if outFile.has_key("SEName"):
                seName = outFile['SEName']
                logging.debug("SEname associated to file is: %s"%seName)
@@ -290,6 +291,7 @@ class DBSWriter:
                 #  //
                 # // Processing files
                 #//
+                affectedBlocks.add(fileBlock['Name'])
                 try:
                     self.dbs.insertFiles(procDataset, list(fileList),
                                          fileBlock)
