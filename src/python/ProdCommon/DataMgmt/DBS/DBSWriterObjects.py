@@ -41,9 +41,8 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     If apiRef is not None, it is used to insert the dataset into the
     DBS
 
-    """ 
-    # hardcode the dataset type to distinguish data and mc
-    PrimaryDatasetType='mc'
+    """
+    PrimaryDatasetType = 'mc' 
     logging.debug("Inserting PrimaryDataset %s with Type %s"%(datasetInfo["PrimaryDataset"],PrimaryDatasetType))
     primary = DbsPrimaryDataset(Name = datasetInfo["PrimaryDataset"], Type=PrimaryDatasetType)
     if apiRef != None:
@@ -134,7 +133,9 @@ def createAlgorithmForInsert(datasetInfo):
     appVersion = datasetInfo['ApplicationVersion']
     appFamily = datasetInfo["ApplicationFamily"]
     psetHash = datasetInfo['PSetHash']
+    logging.debug("algo AF1")
     if psetHash.find(";"):
+        logging.debug("algo AF2")
         # no need for fake hash in new schema
         psetHash = psetHash.split(";")[0]
         psetHash = psetHash.replace("hash=", "")
@@ -228,10 +229,18 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     #checksum="cksum:%s"%checksum
 
     nEvents = int(fjrFileInfo['TotalEvents'])
-    
+
     if len(fjrFileInfo.dataset)<=0:
        logging.error("No dataset info found in FWJobReport!")
        return results
+
+    if fjrFileInfo.has_key('FileType'):
+        fileType = fjrFileInfo['FileType']
+    else:
+        fileType = 'EDM'
+    logging.debug("fileType %s"%fileType)
+
+
 
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
@@ -240,8 +249,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
         else:
             algo = createAlgorithmForInsert(dataset)
         processed = createProcessedDataset(primary, algo, dataset)
-
-
+ 
         dbsFileInstance = DbsFile(
             Checksum = checksum,
             NumberOfEvents = nEvents, 
@@ -249,7 +257,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             FileSize = int(fjrFileInfo['Size']),
             Status = "VALID",
             ValidationStatus = 'VALID',
-            FileType = 'EDM',
+            FileType = fileType,
             Dataset = processed,
             TierList = makeTierList(dataset['DataTier']),
             AlgoList = [algo],
