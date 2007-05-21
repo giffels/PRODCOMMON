@@ -42,7 +42,11 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     DBS
 
     """
-    PrimaryDatasetType = 'mc' 
+    if datasetInfo.has_key('PrimaryDatasetType'):
+      PrimaryDatasetType = datasetInfo['PrimaryDatasetType']
+    else:
+      PrimaryDatasetType = 'mc' 
+
     logging.debug("Inserting PrimaryDataset %s with Type %s"%(datasetInfo["PrimaryDataset"],PrimaryDatasetType))
     primary = DbsPrimaryDataset(Name = datasetInfo["PrimaryDataset"], Type=PrimaryDatasetType)
     if apiRef != None:
