@@ -76,7 +76,9 @@ class InputSource:
         """set fileNames vector"""
         self.data.fileNames = CfgTypes.untracked(CfgTypes.vstring())
         for entry in fileNames:
-            self.data.fileNames.append(CfgTypes.untracked(CfgTypes.string(entry)))
+            #self.data.fileNames.append(CfgTypes.untracked(CfgTypes.string(entry)))
+            self.data.fileNames.append(entry)
+
         return
         
     def setFileMatchMode(self, matchMode):
