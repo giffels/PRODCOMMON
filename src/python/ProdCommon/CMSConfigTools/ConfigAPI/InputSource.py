@@ -43,8 +43,7 @@ class InputSource:
 
     def setSkipEvents(self, skipEv):
         "set SkipEvents value"""
-        self.data.skipEvents = CfgTypes.untracked( CfgTypes.uint32(skipEv))
-        
+        self.data.skipEvents = CfgTypes.untracked( CfgTypes.uint32(int(skipEv)))
 
     def firstRun(self):
         """get firstRun value of None if not set"""
@@ -74,8 +73,10 @@ class InputSource:
 
     def setFileNames(self, *fileNames):
         """set fileNames vector"""
+        print "PC AF: %s"%fileNames
         self.data.fileNames = CfgTypes.untracked(CfgTypes.vstring())
         for entry in fileNames:
+            print "PC AF entry: %s"%entry
             #self.data.fileNames.append(CfgTypes.untracked(CfgTypes.string(entry)))
             self.data.fileNames.append(entry)
 
