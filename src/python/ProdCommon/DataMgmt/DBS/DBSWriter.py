@@ -218,7 +218,12 @@ class DBSWriter:
 
 
             try:
-                dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
+                fileType = outFile.get('FileType','EDM')
+                if fileType == 'STREAMER':
+                   dbsFiles = DBSWriterObjects.createDBSStreamerFiles(outFile,
+                                                           fwkJobRep.jobType)
+                else:
+                   dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
                                                            fwkJobRep.jobType)
             except DbsException, ex:
                 msg = "Error in DBSWriter.insertFiles:\n"

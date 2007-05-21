@@ -32,7 +32,6 @@ def makeTierList(dataTier):
     tierList = dataTier.split("-")
     return tierList
 
-
 def createPrimaryDataset(datasetInfo, apiRef = None):
     """
     _createPrimaryDataset_
@@ -114,12 +113,14 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
             ParameterSetID = psetInstance
             )
     else:
+        psetInstance = DbsQueryableParameterSet(
+                    Hash = psetHash)
         algorithmInstance = DbsAlgorithm(
             ExecutableName = exeName,
             ApplicationVersion = appVersion,
             ApplicationFamily = appFamily,
+            ParameterSetID = psetInstance
             )
-        
         
     if apiRef != None:
         apiRef.insertAlgorithm(algorithmInstance)
@@ -216,6 +217,71 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))   
     return processedDataset
 
+def createRun(fileinfo, apiRef = None):
+    """
+    _createRun_
+                                                                                                                        
+    Create DbsRun instances and insert them.
+    Return a list of DbsRun object.
+    """
+    runList=[]
+                                                                                                                        
+    #Fixme: are the following value required?
+    nLumiSections=0
+    TotLumi=0
+    StoreNumber=0
+    #Fixme
+                                                                                                                        
+    nEvts=int(fileinfo['TotalEvents'])
+                                                                                                                        
+    for runinfo in fileinfo.runs:
+                                                                                                                        
+      run = DbsRun (
+            RunNumber=runinfo['Run'],
+            NumberOfEvents=nEvts,
+            NumberOfLumiSections= nLumiSections,
+            TotalLuminosity= TotLumi,
+            StoreNumber= StoreNumber,
+            StartOfRun= 'now',
+            EndOfRun= 'never',
+            )
+                                                                                                                        
+      if apiRef != None:
+         apiRef.insertRun(run)
+                                                                                                                        
+      runList.append(run)
+                                                                                                                        
+    return runList
+
+def createLumi(fileinfo, apiRef = None):
+    """
+    _createLumi_
+                                                                                                                        
+    Create DbsLumiSection and insert them.
+    Return a list of DbsLumiSection object.
+    """
+    lumiList=[]
+    
+    for lumiinfo in fileinfo.lumisections:
+
+      lumi = DbsLumiSection (
+             LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+             StartEventNumber=lumiinfo['StartEventNumber'],
+             EndEventNumber=lumiinfo['EndEventNumber'],
+             LumiStartTime=lumiinfo['LumiStartTime'],
+             LumiEndTime=lumiinfo['LumiEndTime'],
+             RunNumber=lumiinfo['RunNumber'],
+           )
+           
+      if apiRef != None:
+         apiRef.insertLumiSection(lumi)
+
+      lumiList.append(lumi)
+
+    return lumiList
+
+                                                                                                                        
+
 def createDBSFiles(fjrFileInfo, jobType = None):
     """
     _createDBSFiles_
@@ -225,6 +291,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     Does not insert files, returns as list of DbsFile objects
     
     """
+    print "AF DBS StreamerFiles"
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
     checksum = fjrFileInfo.checksums['cksum']
@@ -240,8 +307,6 @@ def createDBSFiles(fjrFileInfo, jobType = None):
         fileType = fjrFileInfo['FileType']
     else:
         fileType = 'EDM'
-
-
 
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
@@ -266,6 +331,74 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             BranchList = fjrFileInfo.branches,
             )
         
+        results.append(dbsFileInstance)
+    return results
+
+
+def createDBSStreamerFiles(fjrFileInfo, jobType = None):
+    """
+    _createDBSStreamerFiles_
+                                                                                                                        
+    Create a list of DBS File instances from the file details contained
+    in a FwkJobRep.FileInfo instance describing an output file
+    Does not insert files, returns as list of DbsFile objects
+                                                                                                                        
+    """
+    print "AF DBS StreamerFiles"
+    results = []
+    inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
+    checksum = fjrFileInfo.checksums['cksum']
+                                                                                                                        
+    nEvents = int(fjrFileInfo['TotalEvents'])
+                              
+    #  //
+    # // insert runs
+    #//                                                                                          
+    runList = createRun(fjrFileInfo)
+
+    #  //
+    # // insert lumisections
+    #//        
+    lumiList = createLumi(fjrFileInfo)
+
+
+    #  //
+    # // insert Files with lumiList information
+    #//
+    if fjrFileInfo.has_key('FileType'):
+        fileType = fjrFileInfo['FileType']
+    else:
+        fileType = 'EDM'
+
+    if len(fjrFileInfo.dataset)<=0:
+       logging.error("No dataset info found in FWJobReport!")
+       return results
+                                                                                                                        
+    for dataset in fjrFileInfo.dataset:
+        primary = createPrimaryDataset(dataset)
+        if jobType == "Merge":
+            algo = createMergeAlgorithm(dataset)
+        else:
+            algo = createAlgorithmForInsert(dataset)
+        processed = createProcessedDataset(primary, algo, dataset)
+                            
+                                                                                            
+        dbsFileInstance = DbsFile(
+            Checksum = checksum,
+            NumberOfEvents = nEvents,
+            LogicalFileName = fjrFileInfo['LFN'],
+            FileSize = int(fjrFileInfo['Size']),
+            Status = "VALID",
+            ValidationStatus = 'VALID',
+            FileType = fileType,
+            Dataset = processed,
+            TierList = makeTierList(dataset['DataTier']),
+            AlgoList = [algo],
+            LumiList= lumiList,
+            ParentList = inputLFNs,
+            BranchList = fjrFileInfo.branches,
+            )
+                                                                                                                        
         results.append(dbsFileInstance)
     return results
 
