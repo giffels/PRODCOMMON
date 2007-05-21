@@ -133,9 +133,7 @@ def createAlgorithmForInsert(datasetInfo):
     appVersion = datasetInfo['ApplicationVersion']
     appFamily = datasetInfo["ApplicationFamily"]
     psetHash = datasetInfo['PSetHash']
-    logging.debug("algo AF1")
     if psetHash.find(";"):
-        logging.debug("algo AF2")
         # no need for fake hash in new schema
         psetHash = psetHash.split(";")[0]
         psetHash = psetHash.replace("hash=", "")
@@ -238,7 +236,6 @@ def createDBSFiles(fjrFileInfo, jobType = None):
         fileType = fjrFileInfo['FileType']
     else:
         fileType = 'EDM'
-    logging.debug("fileType %s"%fileType)
 
 
 
