@@ -228,29 +228,20 @@ def createRun(fileinfo, apiRef = None):
     runobjList=[]
     runList=[]
 
-    #fixme
-    nLumiSections=0
-    TotLumi=0
-    StoreNumber=0
-    #Fixme
-                                                                                                                        
     nEvts=int(fileinfo['TotalEvents'])
 
     for runinfo in fileinfo.runs:
 
       run = DbsRun (
-            RunNumber=runinfo)
+            RunNumber=runinfo,
+            NumberOfEvents = 0,
+            NumberOfLumiSections = 0,
+            TotalLuminosity = 0,
+            StoreNumber = 0,
+            StartOfRun = 'WhyIsThisString',
+            EndOfRun = 'WhyIsThisString',
+             )
 
-      #run = DbsRun (
-      #      RunNumber=runinfo,
-      #      NumberOfEvents=nEvts,
-      #      NumberOfLumiSections= nLumiSections,
-      #      TotalLuminosity= TotLumi,
-      #      StoreNumber= StoreNumber,
-      #      StartOfRun= 'now',
-      #      EndOfRun= 'never',
-      #      )
-                                                                                                                        
       if apiRef != None:
          apiRef.insertRun(run)
                                                                                                                         
@@ -271,13 +262,16 @@ def createLumi(fileinfo, apiRef = None):
     for lumiinfo in fileinfo.lumisections:
 
       lumi = DbsLumiSection (
-             LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
-             StartEventNumber=long(lumiinfo['StartEventNumber']),
-             EndEventNumber=long(lumiinfo['EndEventNumber']),
-             LumiStartTime=str(lumiinfo['LumiStartTime']),
-             LumiEndTime=str(lumiinfo['LumiEndTime']),
-             RunNumber=long(lumiinfo['RunNumber']),
+             LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+             StartEventNumber=lumiinfo['StartEventNumber'],
+             EndEventNumber=lumiinfo['EndEventNumber'],
+             #LumiStartTime=lumiinfo['LumiStartTime'],
+             #LumiEndTime=lumiinfo['LumiEndTime'],
+             LumiStartTime='WhyIsThisString',
+             LumiEndTime='WhyIsThisString',
+             RunNumber=lumiinfo['RunNumber'],
            )
+
            
       if apiRef != None:
          apiRef.insertLumiSection(lumi)
@@ -340,7 +334,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     return results
 
 
-def createDBSStreamerFiles(fjrFileInfo, jobType = None):
+def createDBSStreamerFiles(fjrFileInfo, jobType = None, apiRef = None):
     """
     _createDBSStreamerFiles_
                                                                                                                         
@@ -358,11 +352,11 @@ def createDBSStreamerFiles(fjrFileInfo, jobType = None):
     #  //
     # // insert runs
     #//                                                                                          
-    runList = createRun(fjrFileInfo)
+    runList = createRun(fjrFileInfo, apiRef)
     #  //
     # // insert lumisections
     #//        
-    lumiList = createLumi(fjrFileInfo)
+    lumiList = createLumi(fjrFileInfo, apiRef)
 
 
     #  //

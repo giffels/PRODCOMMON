@@ -222,7 +222,8 @@ class DBSWriter:
                 fileType = outFile.get('FileType','EDM')
                 if fileType == 'STREAMER':
                    dbsFiles = DBSWriterObjects.createDBSStreamerFiles(outFile,
-                                                           fwkJobRep.jobType)
+                                                           fwkJobRep.jobType,
+                                                           self.dbs)
                 else:
                    dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
                                                            fwkJobRep.jobType)
