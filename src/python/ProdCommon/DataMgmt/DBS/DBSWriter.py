@@ -54,10 +54,10 @@ class _CreateDatasetOperator:
         #AF: temporary check before the sanity check on cfg is there
         if not cfgMeta.has_key('Name') :
             msg = "Unable to Extract info from the cfg. \n The missing piece is: \n"
-            msg +="   untracked PSet configurationMetadata { ... } \n " 
+            msg +="   untracked PSet configurationMetadata { ... } \n "
             raise DBSWriterError(msg)
             return
-            
+    
         for dataset in datasets:
             primary = DBSWriterObjects.createPrimaryDataset(
                 dataset, self.apiRef)
@@ -86,6 +86,7 @@ class _CreateMergeDatasetOperator:
         for dataset in pnode._OutputDatasets:
             mergeAlgo = DBSWriterObjects.createMergeAlgorithm(dataset,
                                                               self.apiRef)
+
             inputDataset = dataset.get('ParentDataset', None)
             if inputDataset == None:
                 continue
@@ -190,21 +191,27 @@ class DBSWriter:
         Process the files in the FwkJobReport instance and insert
         them into the associated datasets
 
-        A list of affected fileblock names is returned for merged file
-        blocks to facilitate management of those blocks.
-        This list is not populated for processing jobs since we dont really
-        care about the processing job blocks.
+        A list of affected fileblock names is returned both for merged 
+        and unmerged fileblocks. Only merged blocks will have to be managed. 
+        #for merged file
+        #blocks to facilitate management of those blocks.
+        #This list is not populated for processing jobs since we dont really
+        #care about the processing job blocks.
 
         """
 
         insertLists = {}
         affectedBlocks = set()
+
+        if len(fwkJobRep.files)<=0:
+           msg = "No files found in FrameWorkJobReport ! "
+           raise DBSWriterError(msg)
+
         for outFile in fwkJobRep.files:
             #  //
             # // Convert each file into a DBS File object
             #//
 ## default to site se-name if no SE is associated to File 
-#            seName = outFile['SEName']
             if outFile.has_key("SEName"):
                seName = outFile['SEName']
                logging.debug("SEname associated to file is: %s"%seName)
@@ -219,7 +226,13 @@ class DBSWriter:
 
 
             try:
-                dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
+                fileType = outFile.get('FileType','EDM')
+                if fileType == 'STREAMER':
+                   dbsFiles = DBSWriterObjects.createDBSStreamerFiles(outFile,
+                                                           fwkJobRep.jobType,
+                                                           self.dbs)
+                else:
+                   dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
                                                            fwkJobRep.jobType)
             except DbsException, ex:
                 msg = "Error in DBSWriter.insertFiles:\n"
@@ -227,7 +240,11 @@ class DBSWriter:
                 msg += "%s\n" % outFile['LFN']
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-            
+
+            if len(dbsFiles)<=0:
+               msg="No DbsFile instances created. Not enough info in the FrameWorkJobReport !"
+               raise DBSWriterError(msg)  
+
             for f in dbsFiles:
                 datasetName = makeDBSDSName(f)
                 hashName = "%s-%s" % (seName, datasetName)
@@ -282,6 +299,7 @@ class DBSWriter:
                 #  //
                 # // Processing files
                 #//
+                affectedBlocks.add(fileBlock['Name'])
                 try:
                     self.dbs.insertFiles(procDataset, list(fileList),
                                          fileBlock)
