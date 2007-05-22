@@ -19,7 +19,8 @@ from DBSAPI.dbsProcessedDataset import DbsProcessedDataset
 from DBSAPI.dbsFile import DbsFile
 from DBSAPI.dbsFileBlock import DbsFileBlock
 from DBSAPI.dbsStorageElement import DbsStorageElement
-
+from DBSAPI.dbsRun import DbsRun
+from DBSAPI.dbsLumiSection import DbsLumiSection 
 
 def makeTierList(dataTier):
     """
@@ -213,7 +214,7 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
 
     if apiRef != None:
         apiRef.insertProcessedDataset(processedDataset)
-     
+    # 
     logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))   
     return processedDataset
 
@@ -222,35 +223,40 @@ def createRun(fileinfo, apiRef = None):
     _createRun_
                                                                                                                         
     Create DbsRun instances and insert them.
-    Return a list of DbsRun object.
+    Return a list of run numbers.
     """
+    runobjList=[]
     runList=[]
-                                                                                                                        
-    #Fixme: are the following value required?
+
+    #fixme
     nLumiSections=0
     TotLumi=0
     StoreNumber=0
     #Fixme
                                                                                                                         
     nEvts=int(fileinfo['TotalEvents'])
-                                                                                                                        
+
     for runinfo in fileinfo.runs:
-                                                                                                                        
+
       run = DbsRun (
-            RunNumber=runinfo['Run'],
-            NumberOfEvents=nEvts,
-            NumberOfLumiSections= nLumiSections,
-            TotalLuminosity= TotLumi,
-            StoreNumber= StoreNumber,
-            StartOfRun= 'now',
-            EndOfRun= 'never',
-            )
+            RunNumber=runinfo)
+
+      #run = DbsRun (
+      #      RunNumber=runinfo,
+      #      NumberOfEvents=nEvts,
+      #      NumberOfLumiSections= nLumiSections,
+      #      TotalLuminosity= TotLumi,
+      #      StoreNumber= StoreNumber,
+      #      StartOfRun= 'now',
+      #      EndOfRun= 'never',
+      #      )
                                                                                                                         
       if apiRef != None:
          apiRef.insertRun(run)
                                                                                                                         
-      runList.append(run)
-                                                                                                                        
+      runobjList.append(run)
+                 
+    runList = [ x['RunNumber'] for x in runobjList]
     return runList
 
 def createLumi(fileinfo, apiRef = None):
@@ -265,12 +271,12 @@ def createLumi(fileinfo, apiRef = None):
     for lumiinfo in fileinfo.lumisections:
 
       lumi = DbsLumiSection (
-             LumiSectionNumber=lumiinfo['LumiSectionNumber'],
-             StartEventNumber=lumiinfo['StartEventNumber'],
-             EndEventNumber=lumiinfo['EndEventNumber'],
-             LumiStartTime=lumiinfo['LumiStartTime'],
-             LumiEndTime=lumiinfo['LumiEndTime'],
-             RunNumber=lumiinfo['RunNumber'],
+             LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
+             StartEventNumber=long(lumiinfo['StartEventNumber']),
+             EndEventNumber=long(lumiinfo['EndEventNumber']),
+             LumiStartTime=str(lumiinfo['LumiStartTime']),
+             LumiEndTime=str(lumiinfo['LumiEndTime']),
+             RunNumber=long(lumiinfo['RunNumber']),
            )
            
       if apiRef != None:
@@ -291,7 +297,6 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     Does not insert files, returns as list of DbsFile objects
     
     """
-    print "AF DBS StreamerFiles"
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
     checksum = fjrFileInfo.checksums['cksum']
@@ -344,7 +349,6 @@ def createDBSStreamerFiles(fjrFileInfo, jobType = None):
     Does not insert files, returns as list of DbsFile objects
                                                                                                                         
     """
-    print "AF DBS StreamerFiles"
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
     checksum = fjrFileInfo.checksums['cksum']
@@ -355,7 +359,6 @@ def createDBSStreamerFiles(fjrFileInfo, jobType = None):
     # // insert runs
     #//                                                                                          
     runList = createRun(fjrFileInfo)
-
     #  //
     # // insert lumisections
     #//        
