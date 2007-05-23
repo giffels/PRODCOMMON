@@ -82,8 +82,8 @@ class CfgGenerator:
 
         fileNames = args.get("fileNames", None)
         if fileNames != None:
-            newCfg.inputFiles.extend(fileNames)
-
+            #newCfg.inputFiles.extend(fileNames)
+            newCfg.inputFiles = fileNames
 
         
         for i in range(0, newCfg.requiredSeeds+1):
