@@ -301,12 +301,35 @@ def createDBSFiles(fjrFileInfo, jobType = None):
     if len(fjrFileInfo.dataset)<=0:
        logging.error("No dataset info found in FWJobReport!")
        return results
-
+    #  //
+    # // Set FileType 
+    #//
     if fjrFileInfo.has_key('FileType'):
         fileType = fjrFileInfo['FileType']
     else:
         fileType = 'EDM'
 
+    #  //
+    # // Lumi info associated to files if any 
+    #//  (Note that run/lumi has to be already registered in DBS)
+    lumiList=[]
+    if len(fjrFileInfo.lumisections)>0:
+      lumiList=[]
+      for lumiinfo in fjrFileInfo.lumisections:
+        lumi = DbsLumiSection (
+               LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+               StartEventNumber=lumiinfo['StartEventNumber'],
+               EndEventNumber=lumiinfo['EndEventNumber'],
+               LumiStartTime='WhyIsThisString',
+               LumiEndTime='WhyIsThisString',
+               RunNumber=lumiinfo['RunNumber'],
+              )
+        lumiList.append(lumi)
+      logging.debug("Lumi associated to file is: %s"%([x for x in lumiList]))
+
+    #  //
+    # // Dataset info related to files and creation of DbsFile object
+    #// 
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
         if jobType == "Merge":
@@ -326,6 +349,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             Dataset = processed,
             TierList = makeTierList(dataset['DataTier']),
             AlgoList = [algo],
+            LumiList= lumiList,
             ParentList = inputLFNs,
             BranchList = fjrFileInfo.branches,
             )
