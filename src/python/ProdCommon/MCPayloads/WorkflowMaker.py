@@ -173,7 +173,19 @@ class WorkflowMaker:
         self.configuration = cfgContent
         self.cmsRunNode.cfgInterface = cfgContent
         return
-    
+
+
+    def setOriginalCfg(self, honkingGreatString):
+        """
+        _setOriginalCfg_
+
+        Set the original cfg file content that is to be recorded in DBS
+
+        CALL THIS METHOD AFTER setConfiguration
+        
+        """
+        self.cmsRunNode.cfgInterface.originalCfg = honkingGreatString
+        return
         
     def setPSetHash(self, hashValue):
         """
@@ -325,6 +337,8 @@ class WorkflowMaker:
                                      self.cmsRunNode.application["Executable"]
             outDS["ApplicationFamily"] = outModName
             outDS["PhysicsGroup"] = self.group
+            outDS["ApplicationFamily"] = outModName
+
 
             if self.inputDataset['IsUsed']:
                 outDS['ParentDataset'] = self.inputDataset['DatasetName']
