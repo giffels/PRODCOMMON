@@ -40,6 +40,8 @@ def primaryDatasetName(**args):
     #channel = channel.lower()
     return channel
 
+    
+
 
 def processedDatasetName(**args):
     """
@@ -71,7 +73,34 @@ def processedDatasetName(**args):
         datasetName += "-unmerged"
     return datasetName
 
+
+def tier0ProcessedDatasetName(**args):
+    """
+    _tier0ProcessedDatasetName_
+
+    Create a Tier 0 Convention Processed Dataset name
+ 
+    Throws DatasetConvError if arguments are missing or invalid
     
+    """
+    checkArgs = ['Version', 
+                 'InputProcessedDataset']
+    
+    for arg in checkArgs:
+        if args.get(arg, None) == None:
+            msg = "%s Not Specified\n" % arg
+            msg += "This is required for a processed dataset name"
+            raise DatasetConvError(msg)
+
+    datasetName = "%s-%s" % (args['InputProcessedDataset'],
+                                args['Version'])
+    
+
+    isUnmerged = args.get("Unmerged", False)
+    if isUnmerged:
+        datasetName += "-unmerged"
+    return datasetName
+
 
 
 def checkDataTier(dataTier):
