@@ -62,6 +62,7 @@ class Tier0WorkflowMaker(WorkflowMaker):
         """
         self.runNumber = runNumber
 
+
     def makeWorkflow(self):
         """
         _makeWorkflow_
@@ -92,8 +93,6 @@ class Tier0WorkflowMaker(WorkflowMaker):
                 self.workflow.parameters[keyname] = self.inputDataset[keyname]
                 
         
-        
-        
         #  //
         # // Extract dataset info from cfg
         #//
@@ -120,7 +119,6 @@ class Tier0WorkflowMaker(WorkflowMaker):
                 InputProcessedDataset = self.inputDataset['Processed'],
                 Label = self.label,
                 Group = self.group,
-                FilterName = filterName,
                 RequestId = self.requestId,
                 Unmerged = self.unmergedDataset
                 )
@@ -153,8 +151,6 @@ class Tier0WorkflowMaker(WorkflowMaker):
                 outDS['PSetHash'] = self.psetHash
 
             
-            
-                    
         #  //
         # // Add Stage Out node
         #//
@@ -183,10 +179,14 @@ class Tier0WorkflowMaker(WorkflowMaker):
         # // Remove stream name from primary dataset name
         #//
         primaryDataset = self.inputDataset['Primary']
-        primaryDataset = primaryDataset.split("-")[0]
-        streamName = primaryDataset.aplit("-")[1]
-        lfn = "/store/data/%s" % primaryDataset
-        lfn += "/%s" % streamName
+        primaryDatasetElements = primaryDataset.rsplit("-",1)
+        if ( len(primaryDatasetElements) > 1 ):
+            datasetName =  primaryDatasetElements[0]
+            streamName = primaryDatasetElements[1]
+            lfn = "/store/data/%s" % datasetName
+            lfn += "/%s" % streamName
+        else:
+            lfn = "/store/data/%s" % primaryDataset
 
         runString = str(self.runNumber).zfill(9)
         runFragment = "/%s/%s/%s" % (runString[0:3],
