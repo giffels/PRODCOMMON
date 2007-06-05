@@ -233,7 +233,7 @@ def createRun(fileinfo, apiRef = None):
     for runinfo in fileinfo.runs:
 
       run = DbsRun (
-            RunNumber=runinfo,
+            RunNumber=long(runinfo),
             NumberOfEvents = 0,
             NumberOfLumiSections = 0,
             TotalLuminosity = 0,
@@ -269,7 +269,7 @@ def createLumi(fileinfo, apiRef = None):
              #LumiEndTime=lumiinfo['LumiEndTime'],
              LumiStartTime='WhyIsThisString',
              LumiEndTime='WhyIsThisString',
-             RunNumber=lumiinfo['RunNumber'],
+             RunNumber=long(lumiinfo['RunNumber']),
            )
 
            
@@ -322,7 +322,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
                #EndEventNumber=lumiinfo['EndEventNumber'],
                #LumiStartTime='WhyIsThisString',
                #LumiEndTime='WhyIsThisString',
-               RunNumber=lumiinfo['RunNumber'],
+               RunNumber=long(lumiinfo['RunNumber']),
               )
         lumiList.append(lumi)
       logging.debug("Lumi associated to file is: %s"%([x for x in lumiList]))
