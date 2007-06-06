@@ -9,8 +9,35 @@ CMSSW versions APIs
 
 import os
 import sys
+import __builtin__
 
+class RollbackImporter:
+    """
+    _RollbackImporter_
 
+    Safe way to clean up FWCore modules when they are imported
+
+    """
+    def __init__(self):
+        "Creates an instance and installs as the global importer"
+        self.previousModules = sys.modules.copy()
+        self.realImport = __builtin__.__import__
+        __builtin__.__import__ = self._import
+        self.newModules = {}
+        
+    def _import(self, name, globals=None, locals=None, fromlist=[]):
+        result = apply(self.realImport, (name, globals, locals, fromlist))
+        self.newModules[name] = 1
+        return result
+        
+    def uninstall(self):
+        for modname in self.newModules.keys():
+            if not self.previousModules.has_key(modname):
+                # Force reload when modname next imported
+                if sys.modules.has_key(modname):
+                    del(sys.modules[modname])
+        __builtin__.__import__ = self.realImport
+    
 
 class CMSSWAPILoader:
     """
@@ -88,6 +115,7 @@ class CMSSWAPILoader:
             ]
         self.cmsswSearchPath = ":".join(searchPaths)
         
+        self.rollbackImporter = None
 
     def load(self):
         """
@@ -97,6 +125,7 @@ class CMSSWAPILoader:
         of the libraries
 
         """
+        self.rollbackImporter = RollbackImporter()
         sys.path.append(self.pythonLib)
         try:
             import FWCore.ParameterSet
@@ -116,10 +145,9 @@ class CMSSWAPILoader:
 
         """
         sys.path.remove(self.pythonLib)
-        for modName in sys.modules.keys():
-            if modName.startswith("FWCore"):
-                sys.modules.pop(modName)
         os.environ.pop("CMSSW_SEARCH_PATH")
+        self.rollbackImporter.uninstall()
+        self.rollbackImporter = None
         self.loaded = False
         return
         
