@@ -262,7 +262,7 @@ def createLumi(fileinfo, apiRef = None):
     for lumiinfo in fileinfo.lumisections:
 
       lumi = DbsLumiSection (
-             LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+             LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
              StartEventNumber=lumiinfo['StartEventNumber'],
              EndEventNumber=lumiinfo['EndEventNumber'],
              #LumiStartTime=lumiinfo['LumiStartTime'],
@@ -317,7 +317,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
       lumiList=[]
       for lumiinfo in fjrFileInfo.lumisections:
         lumi = DbsLumiSection (
-               LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+               LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
                #StartEventNumber=lumiinfo['StartEventNumber'],
                #EndEventNumber=lumiinfo['EndEventNumber'],
                #LumiStartTime='WhyIsThisString',
