@@ -197,8 +197,12 @@ class DBSWriter:
         affectedBlocks = set()
 
         if len(fwkJobRep.files)<=0:
-           msg = "No files found in FrameWorkJobReport ! "
+           msg = "Error in DBSWriter.insertFiles\n"
+           msg += "No files found in FrameWorkJobReport for:\n"
+           msg += "==> JobSpecId: %s"%fwkJobRep.jobSpecId
+           msg += " Workflow: %s"%fwkJobRep.workflowSpecId
            raise DBSWriterError(msg)
+
 
         for outFile in fwkJobRep.files:
             #  //
@@ -214,7 +218,9 @@ class DBSWriter:
                    logging.debug("site SEname: %s"%seName) 
                 else:
                    msg = "Error in DBSWriter.insertFiles\n"
-                   msg = "No SEname found in FrameWorkJobReport ! "
+                   msg += "No SEname found in FrameWorkJobReport for "
+                   msg += "==> JobSpecId: %s"%fwkJobRep.jobSpecId
+                   msg += " Workflow: %s"%fwkJobRep.workflowSpecId
                    raise DBSWriterError(msg)
 
 
@@ -235,7 +241,9 @@ class DBSWriter:
                 raise DBSWriterError(msg)
 
             if len(dbsFiles)<=0:
-               msg="No DbsFile instances created. Not enough info in the FrameWorkJobReport !"
+               msg="No DbsFile instances created. Not enough info in the FrameWorkJobReport for"
+               msg += "==> JobSpecId: %s"%fwkJobRep.jobSpecId
+               msg += " Workflow: %s"%fwkJobRep.workflowSpecId
                raise DBSWriterError(msg)  
 
             for f in dbsFiles:
