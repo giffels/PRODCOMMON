@@ -179,7 +179,7 @@ class DBSReader:
                  "", # processed
                  [], #tier_list
                  "", #analysisDataset
-                 fileBlockName)
+                 fileBlockName, details="True")
             
         except DbsException, ex:
             msg = "Error in "
