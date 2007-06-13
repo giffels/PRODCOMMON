@@ -413,7 +413,8 @@ class CMSSWConfig:
         # // Random seeds
         #//
         seedslist = [ int(x) for x in self.seeds ]
-        cfg.insertSeeds(*seedslist)
+        if len(seedslist) > 0:
+            cfg.insertSeeds(*seedslist)
 
 
         #  //
