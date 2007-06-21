@@ -20,8 +20,9 @@ class CfgMaker(dict):
     and job information when factorising a job spec
     
     """
-    def __init__(self, **args):
+    def __init__(self, generators, **args):
         dict.__init__(self)
+        self.generators = generators
         self.setdefault("JobName", None)
         self.setdefault("RunNumber", None)
         self.setdefault("MaxEvents", None)
@@ -30,18 +31,9 @@ class CfgMaker(dict):
 
     def __call__(self, jobSpecNode):
 
-        if jobSpecNode.configuration in ("", None):
-            #  //
-            # // Isnt a config file
-            #//
+        if jobSpecNode.name not in self.generators.keys():
             return
-        try:
-            generator = CfgGenerator(jobSpecNode.configuration, True)
-        except StandardError, ex:
-            #  //
-            # // Cant read config file => not a config file
-            #//
-            return
+        generator = self.generators[jobSpecNode.name]
 
         args = {}
         if self['MaxEvents'] != None:
@@ -52,12 +44,53 @@ class CfgMaker(dict):
             args['skipEvents'] = self['SkipEvents']
         jobCfg = generator(self['JobName'], **args)
 
-        jobSpecNode.configuration = jobCfg.pack()
-        jobSpecNode.loadConfiguration()
+        jobSpecNode.cfgInterface = jobCfg
+        
         return
 
         
         
+
+class GeneratorMaker(dict):
+    """
+    _GeneratorMaker_
+
+    Operate on a workflow spec and create a map of node name
+    to CfgGenerator instance
+
+    """
+    def __init__(self):
+        dict.__init__(self)
+
+
+    def __call__(self, payloadNode):
+        if payloadNode.type != "CMSSW":
+            return
+        
+        if payloadNode.cfgInterface != None:
+            generator = CfgGenerator(payloadNode.cfgInterface, False,
+                                     payloadNode.applicationControls)
+            self[payloadNode.name] = generator
+            return
+            
+        if payloadNode.configuration in ("", None):
+            #  //
+            # // Isnt a config file
+            #//
+            return
+        try:
+            generator = CfgGenerator(payloadNode.configuration, True,
+                                         payloadNode.applicationControls)
+            self[payloadNode.name] = generator
+        except StandardError, ex:
+            #  //
+            # // Cant read config file => not a config file
+            #//
+            return
+
+
+
+
 
 
 def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args):
@@ -70,6 +103,8 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
     TODO: <<<<NEEDS PILEUP DETAILS>>>>
     
     """
+    generators = GeneratorMaker()
+    generators(jobSpecInstance.payload)
     
     runNumber = int(args.get("RunNumber",
                          int(jobSpecInstance.parameters['RunNumber'])))
@@ -96,13 +131,11 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
         newSpec.setJobName(jobName)
         newSpec.parameters['RunNumber'] = run_number
         
-        generator = CfgMaker(JobName = jobName,
-                             MaxEvents = eventsPerJob,
-                             SkipEvents = currentEvent,
-                             RunNumber = run_number,
-                             )
-
-        newSpec.payload.operate(generator)
+        maker = CfgMaker(generators, JobName = jobName,
+                         RunNumber = run_number,
+                         MaxEvents = eventsPerJob,
+                         SkipEvents = currentEvent)
+        newSpec.payload.operate(maker)
         createUnmergedLFNs(newSpec)
 
         newSpec.parameters['FirstEvent']=currentEvent
