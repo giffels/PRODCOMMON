@@ -68,6 +68,7 @@ class DBSReader:
         return result
 
 
+
     def listProcessedDatasets(self, primary, dataTier = None):
         """
         _listProcessedDatasets_
@@ -137,6 +138,30 @@ class DBSReader:
 
         else:
             result = [ x['Name'] for x in blocks ]
+            
+        return result
+
+    def listOpenFileBlocks(self, dataset):
+        """
+        _listOpenFileBlocks_
+
+        Retrieve a list of open fileblock names for a dataset
+
+        """
+        self.checkDatasetPath(dataset)
+        try:
+             blocks = self.dbs.listBlocks(dataset)
+        except DbsException, ex:
+            msg = "Error in DBSReader.listFileBlocks(%s)\n" % dataset
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+        
+        
+        result = [
+            x['Name'] for x in blocks \
+            if str(x['OpenForWriting']) == "1"
+        ]
+        
             
         return result
 
