@@ -29,7 +29,7 @@ class BlockManager:
         self.dataset = datasetPath
         self.localDbs = DBSWriter(localDbsUrl)
         self.localUrl = localDbsUrl
-        self.globalDbs = DBSWriter(globalDBSUrl)
+        self.globalDbs = DBSWriter(globalDbsUrl)
         self.globalUrl = globalDbsUrl
         
     def closeBlock(self):
@@ -42,7 +42,7 @@ class BlockManager:
         #  //
         # // Close block if it has > 0 files in it. IE, force closure of block
         #//
-        self.localDbs.manageFileBlock(self, self.block, maxFiles = 0)
+        self.localDbs.manageFileBlock(self.block, maxFiles=1)
         return
     
 
