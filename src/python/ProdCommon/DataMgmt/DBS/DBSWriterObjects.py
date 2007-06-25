@@ -238,8 +238,8 @@ def createRun(fileinfo, apiRef = None):
             NumberOfLumiSections = 0,
             TotalLuminosity = 0,
             StoreNumber = 0,
-            StartOfRun = 'WhyIsThisString',
-            EndOfRun = 'WhyIsThisString',
+            StartOfRun = '',
+            EndOfRun = '',
              )
 
       if apiRef != None:
@@ -267,8 +267,8 @@ def createLumi(fileinfo, apiRef = None):
              EndEventNumber=lumiinfo['EndEventNumber'],
              #LumiStartTime=lumiinfo['LumiStartTime'],
              #LumiEndTime=lumiinfo['LumiEndTime'],
-             LumiStartTime='WhyIsThisString',
-             LumiEndTime='WhyIsThisString',
+             LumiStartTime='',
+             LumiEndTime='',
              RunNumber=long(lumiinfo['RunNumber']),
            )
 
