@@ -111,6 +111,24 @@ def addStageOutNode(cmsRunNode, nodeName):
 
     return
 
+def addLogArchNode(cmsRunNode, nodeName):
+    """
+    _addLogArchNode_
+
+    Given a cmsRun Node add a LogArch node to it with the name provided
+
+    """
+    
+    stageOut = cmsRunNode.newNode(nodeName)
+    stageOut.type = "LogArchive"
+    stageOut.application["Project"] = ""
+    stageOut.application["Version"] = ""
+    stageOut.application["Architecture"] = ""
+    stageOut.application["Executable"] = "RuntimeLogArch.py" # binary name
+    stageOut.configuration = ""
+    
+    return
+
 def addCleanUpNode(cmsRunNode, nodeName):
     """
     _addCleanUpNode_
