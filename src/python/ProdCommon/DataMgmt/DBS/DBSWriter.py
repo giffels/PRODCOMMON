@@ -522,4 +522,46 @@ class DBSWriter:
         
         return
     
-    
+
+    def importDatasetWithParentage(self, sourceDBS, sourceDatasetPath, targetDBS,
+                      onlyClosed = True):
+        """
+        _importDataset_
+                                                                                                                                      
+        Import a dataset into the local scope DBS with full parentage hierarchy
+                                                                                                                                      
+        - *sourceDBS* : URL for input DBS instance
+                                                                                                                                      
+        - *sourceDatasetPath* : Dataset Path to be imported
+                                                                                                                                      
+        - *targetDBS* : URL for DBS to have dataset imported to
+                                                                                                                                      
+        """
+        reader = DBSReader(sourceDBS)
+        inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
+        for block in inputBlocks:
+            #  //
+            # // Test block does not exist in target
+            #//
+            if self.reader.blockExists(block):
+                #  //
+                # // block exists
+                #//  If block is closed dont attempt transfer
+                if not self.reader.blockIsOpen(block):
+                    msg = "Block already exists in target DBS and is closed:\n"
+                    msg += " ==> %s\n" % block
+                    msg += "Skipping Import of that block"
+                    logging.warning(msg)
+                    continue
+                                                                               
+            try:                                                       
+                self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, force=False)
+            except DbsException, ex:
+                msg = "Error in DBSWriter.importDatasetWithParentage\n"
+                msg += "Could not write content of dataset:\n ==> %s\n" % (
+                    sourceDatasetPath,)
+                msg += "Block name:\n ==> %s\n" % block
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+
+        return    
