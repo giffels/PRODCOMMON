@@ -21,6 +21,7 @@ class ServiceCallTest(unittest.TestCase):
        """setup for tests"""
        self.prodagents=20
        self.components=10
+       logging.getLogger().setLevel(logging.DEBUG)
 
    def testA(self):
        job_parameters={'numberOfJobs':20,
