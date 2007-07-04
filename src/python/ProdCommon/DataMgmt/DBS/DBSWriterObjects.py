@@ -238,8 +238,8 @@ def createRun(fileinfo, apiRef = None):
             NumberOfLumiSections = 0,
             TotalLuminosity = 0,
             StoreNumber = 0,
-            StartOfRun = '',
-            EndOfRun = '',
+            StartOfRun = 0,
+            EndOfRun = 0,
              )
 
       if apiRef != None:
@@ -265,10 +265,8 @@ def createLumi(fileinfo, apiRef = None):
              LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
              StartEventNumber=lumiinfo['StartEventNumber'],
              EndEventNumber=lumiinfo['EndEventNumber'],
-             #LumiStartTime=lumiinfo['LumiStartTime'],
-             #LumiEndTime=lumiinfo['LumiEndTime'],
-             LumiStartTime='',
-             LumiEndTime='',
+             LumiStartTime=lumiinfo['LumiStartTime'],
+             LumiEndTime=lumiinfo['LumiEndTime'],
              RunNumber=long(lumiinfo['RunNumber']),
            )
 
@@ -318,10 +316,6 @@ def createDBSFiles(fjrFileInfo, jobType = None):
       for lumiinfo in fjrFileInfo.lumisections:
         lumi = DbsLumiSection (
                LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
-               #StartEventNumber=lumiinfo['StartEventNumber'],
-               #EndEventNumber=lumiinfo['EndEventNumber'],
-               #LumiStartTime='WhyIsThisString',
-               #LumiEndTime='WhyIsThisString',
                RunNumber=long(lumiinfo['RunNumber']),
               )
         lumiList.append(lumi)
