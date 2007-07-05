@@ -5,6 +5,7 @@ Unittest for ProdCommon.QueryObject.Request class
 
 """
 import time
+import logging
 import unittest
 
 from ProdCommon.WebServices import serviceCall
