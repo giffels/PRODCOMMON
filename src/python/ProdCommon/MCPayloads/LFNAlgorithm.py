@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.3 2006/12/04 13:29:31 evansde Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.4 2007/05/09 15:19:48 evansde Exp $"
+__version__ = "$Revision: 1.4 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -87,36 +87,6 @@ def mergedLFNBase(workflowSpecInstance, lfnGroup = None):
     #//
     workflowSpecInstance.parameters['MergedLFNBase'] = result
     return result
-    
-
-def generateLFN(requestBase, lfnGroup, jobName, dataTier):
-    """
-    _generateLFN_
-
-    Create the LFN using:
-
-    - *requestBase* output of merged or unmergedLFNBase method for
-                    workflow spec
-
-    - *lfnGroup* integer counter used to partition lfn namespace
-
-    - *jobName* The JobSpec ID
-
-    - *dataTier* The Data Tier of the file being produced
-                 (usually same as output module name)
-
-    Note that this is a temporary LFN: When stage out is performed,
-    the GUID of the file will be used as the basename instead. But we
-    dont know the GUID until after the file has been created.
-
-    """
-    result = os.path.join(requestBase, dataTier, str(lfnGroup))
-    result += "/"
-    result += jobName
-    result += "-"
-    result += dataTier
-    result += ".root"
-    return result
 
 
 class JobSpecLFNMaker:
@@ -126,7 +96,16 @@ class JobSpecLFNMaker:
     Util class to traverse a JobSpec's nodes and generate and
     insert Unmerged LFNs for each node that requires them
 
-    We derive the lfn group value from the run number
+    Create the LFN using:
+
+    - *base* output of unmergedLFNBase method for workflow spec
+
+    - *lfnGroup* integer counter used to partition lfn namespace
+                  (derived from run number)
+
+    - *dataTier* Data Tier of the file being produced
+
+    - *fileName* file name as defined in the JobSpec
 
     """
     def __init__(self, jobName, runNumber):
@@ -140,20 +119,27 @@ class JobSpecLFNMaker:
 
         Act on each JobSpec node
         """
+
+        # should throw an error
+        if node.cfgInterface == None:
+            return
+
         #  //
         # // Extract LFN base from included WorkflowSpec parameters
         #//
         base = node.getParameter("UnmergedLFNBase")[0]
+
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
-        if node.cfgInterface == None:
-            return
         for modName, outModule in node.cfgInterface.outputModules.items():
-            dataTier = outModule['dataTier']
-            lfn = generateLFN(base, self.lfnGroup, self.jobName, dataTier)
-            outModule['fileName']  = os.path.basename(lfn)
-            outModule['logicalFileName'] = lfn
+            if ( not outModule.has_key('fileName') ):
+                msg = "OutputModule %s does not contain a fileName entry" % modName
+                raise RuntimeError, msg
+            outModule['logicalFileName'] = os.path.join(base, outModule['dataTier'], str(self.lfnGroup))
+            outModule['logicalFileName'] += '/'
+            outModule['logicalFileName'] += outModule['fileName']
+
         return
 
 def createUnmergedLFNs(jobSpecInstance):
