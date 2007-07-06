@@ -357,6 +357,7 @@ class WorkflowMaker:
         # // Add Stage Out node
         #//
         WorkflowTools.addStageOutNode(self.cmsRunNode, "stageOut1")
+        WorkflowTools.addLogArchNode(self.cmsRunNode, "logArchive")
         WorkflowTools.generateFilenames(self.workflow)
         
         

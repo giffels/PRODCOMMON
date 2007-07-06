@@ -155,7 +155,7 @@ class Tier0WorkflowMaker(WorkflowMaker):
         # // Add Stage Out node
         #//
         WorkflowTools.addStageOutNode(self.cmsRunNode, "stageOut1")
-
+        WorkflowTools.addLogArchNode(self.cmsRunNode, "logArchive")
 
         #  //
         # // generate tier0 LFN bases for this workflow
