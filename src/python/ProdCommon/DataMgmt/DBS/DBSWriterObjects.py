@@ -231,13 +231,13 @@ def createRun(fileinfo, apiRef = None):
     for runinfo in fileinfo.runs:
 
       run = DbsRun (
-            RunNumber=runinfo,
+            RunNumber=long(runinfo),
             NumberOfEvents = 0,
             NumberOfLumiSections = 0,
             TotalLuminosity = 0,
             StoreNumber = 0,
-            StartOfRun = 'WhyIsThisString',
-            EndOfRun = 'WhyIsThisString',
+            StartOfRun = 0,
+            EndOfRun = 0,
              )
 
       if apiRef != None:
@@ -260,14 +260,12 @@ def createLumi(fileinfo, apiRef = None):
     for lumiinfo in fileinfo.lumisections:
 
       lumi = DbsLumiSection (
-             LumiSectionNumber=lumiinfo['LumiSectionNumber'],
+             LumiSectionNumber=long(lumiinfo['LumiSectionNumber']),
              StartEventNumber=lumiinfo['StartEventNumber'],
              EndEventNumber=lumiinfo['EndEventNumber'],
-             #LumiStartTime=lumiinfo['LumiStartTime'],
-             #LumiEndTime=lumiinfo['LumiEndTime'],
-             LumiStartTime='WhyIsThisString',
-             LumiEndTime='WhyIsThisString',
-             RunNumber=lumiinfo['RunNumber'],
+             LumiStartTime=lumiinfo['LumiStartTime'],
+             LumiEndTime=lumiinfo['LumiEndTime'],
+             RunNumber=long(lumiinfo['RunNumber']),
            )
 
            
@@ -300,11 +298,31 @@ def createDBSFiles(fjrFileInfo, jobType = None):
        logging.error("No dataset info found in FWJobReport!")
        return results
 
+    #  // 
+    # // Set FileType  
+    #// 
     if fjrFileInfo.has_key('FileType'):
         fileType = fjrFileInfo['FileType']
     else:
         fileType = 'EDM'
 
+    #  // 
+    # // Lumi info associated to files if any  
+    #//  (Note that run/lumi has to be already registered in DBS) 
+    lumiList=[] 
+    if len(fjrFileInfo.lumisections)>0: 
+      lumiList=[] 
+      for lumiinfo in fjrFileInfo.lumisections: 
+        lumi = DbsLumiSection ( 
+               LumiSectionNumber=long(lumiinfo['LumiSectionNumber']), 
+               RunNumber=long(lumiinfo['RunNumber']), 
+              ) 
+        lumiList.append(lumi) 
+      logging.debug("Lumi associated to file is: %s"%([x for x in lumiList])) 
+
+    #  // 
+    # // Dataset info related to files and creation of DbsFile object 
+    #//  
     for dataset in fjrFileInfo.dataset:
         primary = createPrimaryDataset(dataset)
         if jobType == "Merge":
@@ -324,6 +342,7 @@ def createDBSFiles(fjrFileInfo, jobType = None):
             Dataset = processed,
             TierList = makeTierList(dataset['DataTier']),
             AlgoList = [algo],
+            LumiList= lumiList,
             ParentList = inputLFNs,
             BranchList = fjrFileInfo.branches,
             )
