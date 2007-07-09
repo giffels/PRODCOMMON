@@ -12,6 +12,10 @@ from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 import ProdCommon.MCPayloads.DatasetConventions as DatasetConventions
 import ProdCommon.MCPayloads.WorkflowTools as WorkflowTools
 
+
+#_FastMergeBinary = "edmFastMerge"
+_FastMergeBinary = "EdmFastMerge"
+
 class ProcToMerge:
     """
     _ProcToMerge_
@@ -25,7 +29,7 @@ class ProcToMerge:
         self.appName = "cmsRun"
         if fastMerge == True:
             self.mergeModuleName = "EdmFastMerge"
-            self.appName = "EdmFastMerge"
+            self.appName = _FastMergeBinary
         
                  
     def __call__(self, node):
@@ -62,7 +66,7 @@ class ProcToMerge:
         return
 
 
-def createMergeDatasetWorkflow(procSpec, isFastMerge = True):
+def createMergeDatasetWorkflow(procSpec, isFastMerge = True, littleE = False):
     """
     _createMergeDatasetWorkflow_
 
@@ -73,12 +77,14 @@ def createMergeDatasetWorkflow(procSpec, isFastMerge = True):
     """
     newSpec = copy.deepcopy(procSpec)
     operator = ProcToMerge(isFastMerge)
+    if littleE:
+        operator.appName = "edmFastMerge"
     newSpec.payload.operate(operator)
     return newSpec
 
 
 
-def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True):
+def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littleE = False):
     """
     _createMergeJobWorkflow_
 
@@ -115,7 +121,10 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True):
         cmsRunNode.application["Architecture"] = "slc3_ia32_gcc323"
 
         if isFastMerge == True:
-            cmsRunNode.application["Executable"] = "EdmFastMerge"
+            if littleE:
+                cmsRunNode.application["Executable"] = "edmFastMerge"
+            else:
+                cmsRunNode.application["Executable"] = _FastMergeBinary
             outputModuleName = "EdmFastMerge"
         else:
             cmsRunNode.application["Executable"] = "cmsRun"
