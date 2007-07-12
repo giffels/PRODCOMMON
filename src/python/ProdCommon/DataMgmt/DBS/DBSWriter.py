@@ -209,21 +209,21 @@ class DBSWriter:
             # // Convert each file into a DBS File object
             #//
 ## default to site se-name if no SE is associated to File 
+            seName = None
             if outFile.has_key("SEName"):
-               seName = outFile['SEName']
-               logging.debug("SEname associated to file is: %s"%seName)
-            else:
+               if outFile['SEName'] :
+                  seName = outFile['SEName']
+                  logging.debug("SEname associated to file is: %s"%seName)
+            if not seName:
                 if fwkJobRep.siteDetails.has_key("se-name"):
                    seName = fwkJobRep.siteDetails['se-name']
                    logging.debug("site SEname: %s"%seName) 
-                else:
-                   msg = "Error in DBSWriter.insertFiles\n"
-                   msg += "No SEname found in FrameWorkJobReport for "
-                   msg += "==> JobSpecId: %s"%fwkJobRep.jobSpecId
-                   msg += " Workflow: %s"%fwkJobRep.workflowSpecId
-                   raise DBSWriterError(msg)
-
-
+            if not seName:
+                msg = "Error in DBSWriter.insertFiles\n"
+                msg += "No SEname found in FrameWorkJobReport for "
+                msg += "==> JobSpecId: %s"%fwkJobRep.jobSpecId
+                msg += " Workflow: %s"%fwkJobRep.workflowSpecId
+                raise DBSWriterError(msg)
             try:
                 fileType = outFile.get('FileType','EDM')
                 if fileType == 'STREAMER':
