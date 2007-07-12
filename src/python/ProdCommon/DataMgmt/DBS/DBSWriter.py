@@ -12,7 +12,7 @@ from DBSAPI.dbsApi import DbsApi
 from DBSAPI.dbsException import *
 from DBSAPI.dbsApiException import *
 
-
+import string
 import ProdCommon.DataMgmt.DBS.DBSWriterObjects as DBSWriterObjects
 from ProdCommon.DataMgmt.DBS.DBSErrors import DBSWriterError, formatEx
 from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
@@ -212,14 +212,17 @@ class DBSWriter:
             # // Convert each file into a DBS File object
             #//
 ## default to site se-name if no SE is associated to File 
+            seName = None 
             if outFile.has_key("SEName"):
-               seName = outFile['SEName']
-               logging.debug("SEname associated to file is: %s"%seName)
-            else:
-                if fwkJobRep.siteDetails.has_key("se-name"):
+               if outFile['SEName'] :
+                 seName = outFile['SEName']
+                 logging.debug("SEname associated to file is: %s"%seName)
+            if not seName:
+               if fwkJobRep.siteDetails.has_key("se-name"):
                    seName = fwkJobRep.siteDetails['se-name']
-                   logging.debug("site SEname: %s"%seName) 
-                else:
+                   seName = str(seName)
+                   logging.debug("site SEname: %s"%seName)
+            if not seName: 
                    msg = "Error in DBSWriter.insertFiles\n"
                    msg = "No SEname found in FrameWorkJobReport ! "
                    raise DBSWriterError(msg)
