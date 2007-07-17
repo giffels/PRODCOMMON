@@ -10,7 +10,7 @@ import math
 
 from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 from ProdCommon.MCPayloads.JobSpec import JobSpec
-from ProdCommon.MCPayloads.LFNAlgorithm import createUnmergedLFNs
+from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 
 class CfgMaker(dict):
     """
@@ -130,14 +130,15 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
         newSpec.loadFromNode(template)
         newSpec.setJobName(jobName)
         newSpec.parameters['RunNumber'] = run_number
-        
+
+        newSpec.payload.operate(DefaultLFNMaker(jobSpec))
         maker = CfgMaker(generators, JobName = jobName,
                          RunNumber = run_number,
                          MaxEvents = eventsPerJob,
                          SkipEvents = currentEvent)
         newSpec.payload.operate(maker)
-        createUnmergedLFNs(newSpec)
 
+        
         newSpec.parameters['FirstEvent']=currentEvent
         newSpec.parameters['RunNumber']=run_number
         newSpec.parameters['EventCount']=eventsPerJob

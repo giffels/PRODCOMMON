@@ -6,7 +6,7 @@ _CreateEventBasedJobSpec_
 
 
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
-from ProdCommon.MCPayloads.LFNAlgorithm import createUnmergedLFNs
+from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 
 
@@ -38,15 +38,14 @@ def createJobSpec(jobSpecId,workflowSpecFile, filename, runNumber, eventCount,  
     jobSpec.setJobType("Processing")
     jobSpec.parameters['RunNumber'] = runNumber
     jobSpec.parameters['EventCount'] = eventCount
+
+    jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
+
     if firstEvent != None:
         jobSpec.parameters['FirstEvent'] = firstEvent
 
     cfgMaker = ConfigGenerator(jobSpec)
     jobSpec.payload.operate(cfgMaker)
-    #  //
-    # // generate LFNs for output modules
-    #//
-    createUnmergedLFNs(jobSpec)
 
             
     if saveString:    
