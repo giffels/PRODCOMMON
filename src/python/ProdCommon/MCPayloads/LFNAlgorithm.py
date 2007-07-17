@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.4 2007/05/09 15:19:48 evansde Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.5 2007/07/06 15:00:57 hufnagel Exp $"
+__version__ = "$Revision: 1.5 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -87,6 +87,63 @@ def mergedLFNBase(workflowSpecInstance, lfnGroup = None):
     #//
     workflowSpecInstance.parameters['MergedLFNBase'] = result
     return result
+
+
+
+class DefaultLFNMaker:
+    """
+    _DefaultLFNMaker_
+
+    Generate and add in an LFN base setting for each output module
+    that this operator acts on
+
+    """
+    def __init__(self, jobSpecInstance):
+        self.jobSpecInstance = jobSpecInstance
+        self.unmerged = True
+        if self.jobSpecInstance.parameters['JobType'] == "Merge":
+            self.unmerged = False
+        self.jobname = jobSpecInstance.parameters['JobName']
+        self.run = jobSpecInstance.parameters['RunNumber']
+        self.lfnGroup = str(self.run // 1000).zfill(4)
+
+    def __call__(self, node):
+        """
+        _operator(JobSpecNode)_
+
+        Act on each JobSpec node
+        """
+
+        # should throw an error
+        if node.cfgInterface == None:
+            return
+
+        #  //
+        # // Extract LFN base from included WorkflowSpec parameters
+        #//
+        if self.unmerged:
+            base = node.getParameter("UnmergedLFNBase")[0]
+        else:
+            base = node.getParameter("MergedLFNBase")[0]
+            
+        #  //
+        # // iterate over outputmodules/data tiers
+        #//  Generate LFN, PFN and Catalog for each module
+        for modName, outModule in node.cfgInterface.outputModules.items():
+            if ( not outModule.has_key('fileName') ):
+                msg = "OutputModule %s does not contain a fileName entry" % modName
+                raise RuntimeError, msg
+            if outModule.has_key("LFNBase"):
+                # already has a custom LFN base set
+                # dont overwrite it
+                continue
+            
+            outModule['LFNBase'] = os.path.join(base,
+                                                outModule['dataTier'],
+                                                str(self.lfnGroup))
+            
+        return
+
 
 
 class JobSpecLFNMaker:
