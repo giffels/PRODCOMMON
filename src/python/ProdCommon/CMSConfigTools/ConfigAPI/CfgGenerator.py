@@ -11,12 +11,15 @@ import copy
 from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 from ProdCommon.CMSConfigTools.SeedService import randomSeed
 
+
+
+
 class CfgGenerator:
     """
     _CfgGenerator_
 
     """
-    def __init__(self, cmsswConfigData, isString = False, appControls = {}):
+    def __init__(self, cmsswConfigData, isString = False, appControls = {} ):
         self.template = cmsswConfigData
         self.appControls = appControls
         if isString == True:
@@ -48,7 +51,11 @@ class CfgGenerator:
             outModule['catalog'] = "%s-%s-Output.xml" % (jobName, modName)
             outModule['fileName'] = "%s-%s.root" % (jobName, modName)
             outModule['logicalFileName'] = "%s-%s.root" % (jobName, modName)
-
+            if outModule.has_key('LFNBase'):
+                outModule['logicalFileName'] = "%s/%s" % (
+                    outModule['LFNBase'], outModule['logicalFileName']
+                    )
+            
         
         maxEvents = args.get("maxEvents", None)
         if maxEvents != None:
@@ -91,3 +98,7 @@ class CfgGenerator:
             
 
         return newCfg
+
+
+
+
