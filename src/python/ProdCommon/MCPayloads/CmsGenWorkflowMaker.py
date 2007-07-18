@@ -141,10 +141,6 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         """
 
         
-        if self.cmsGenNode.applicationControls.get("executable", None) == None:
-            msg = "No cmsGen executable option provided"
-            raise RuntimeError, msg
-
         if self.cmsGenNode.applicationControls.get("generator", None) == None:
             msg = "No cmsGen generator option provided"
             raise RuntimeError, msg
