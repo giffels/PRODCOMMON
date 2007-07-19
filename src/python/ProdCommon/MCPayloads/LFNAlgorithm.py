@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.5 2007/07/06 15:00:57 hufnagel Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.6 2007/07/17 14:53:00 evansde Exp $"
+__version__ = "$Revision: 1.6 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -104,7 +104,7 @@ class DefaultLFNMaker:
         if self.jobSpecInstance.parameters['JobType'] == "Merge":
             self.unmerged = False
         self.jobname = jobSpecInstance.parameters['JobName']
-        self.run = jobSpecInstance.parameters['RunNumber']
+        self.run = int(jobSpecInstance.parameters['RunNumber'])
         self.lfnGroup = str(self.run // 1000).zfill(4)
 
     def __call__(self, node):

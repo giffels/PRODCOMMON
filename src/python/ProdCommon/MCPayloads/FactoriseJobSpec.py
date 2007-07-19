@@ -131,7 +131,7 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
         newSpec.setJobName(jobName)
         newSpec.parameters['RunNumber'] = run_number
 
-        newSpec.payload.operate(DefaultLFNMaker(jobSpec))
+        newSpec.payload.operate(DefaultLFNMaker(newSpec))
         maker = CfgMaker(generators, JobName = jobName,
                          RunNumber = run_number,
                          MaxEvents = eventsPerJob,
