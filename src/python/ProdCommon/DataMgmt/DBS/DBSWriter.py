@@ -10,6 +10,7 @@ Interface object for writing data to DBS
 
 from DBSAPI.dbsApi import DbsApi
 from DBSAPI.dbsException import *
+from DBSAPI.dbsStorageElement import *
 from DBSAPI.dbsApiException import *
 
 
@@ -494,6 +495,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    logging.info("Update block locations to:")
+                    BlockList=reader.dbs.listBlocks(block_name=block)
+                    for fileblock in BlockList:
+                        for sename in fileblock["StorageElementList"]:
+                            self.dbs.addReplicaToBlock(block,sename)
+                            #logging.info("Block %s updated to location %s"%(block,sename['Name'])) 
+                            logging.info(" -> %s"%sename['Name'])
                     continue
 
             
