@@ -77,6 +77,10 @@ class CfgGenerator:
             
             newCfg.setInputMaxEvents(maxEvents)
 
+        maxOutputEvents = args.get("maxEventsWritten", None)
+        if maxOutputEvents != None:
+            newCfg.setOutputMaxEvents(maxOutputEvents)
+            
         
            
         skipEvents = args.get("skipEvents", None)
