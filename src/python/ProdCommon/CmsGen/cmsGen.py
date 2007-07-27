@@ -10,44 +10,28 @@ def alpGen():
     """
     Generator dependent from here
     """
-    #alpPath	 = "http://cmsdoc.cern.ch/cms/PRS/gentools/www/alpgen"
-    #alpTgz	 = "AlpgenV205CMSDefault.tgz"
-    #alpPath	 = "http://mlm.web.cern.ch/mlm/alpgen/V2.1"
-    alpPath	 = "http://cern.ch/ceballos/alpgen/code"
-    alpTgz	 = "v212.tgz"
-    alpGridPath  = "http://cern.ch/ceballos/alpgen/psgrids"
-    """
-    Download and install alpgen
-    """
-    msg="wget %s/%s" % (alpPath, alpTgz)
-    os.system(msg)
-    msg="tar fzx  %s" % alpTgz
-    os.system(msg)
-    #msg="cd `echo alpgen*`; make validate"
-    #os.system(msg)
-    """
-    Download and install alpgen grid (with option 1)
-    """
-    msg="echo Download and install alpgen grid"
-    os.system(msg)
-
-    # First line in the config file is the generator
+    # First line in the config file is the generator name
     # Second line in the config file is the executable
-    # Third line in the config file is the name of the grid file
+    # Third line in the config file is the name of the grid2 file
     file      = open(cfgFile, 'r')
     generatorLine  = file.readline() # Not used
     executableLine = file.readline()
     executableString = executableLine.split('\n')
     gridLabelLine  = file.readline()
     alpGridLabel  = gridLabelLine.split('\n')
+
     global outputFile
     outputFile = "%s" % alpGridLabel[0]
 
+    """
+    Copy alpgen grid2 files
+    """
     try:
-        msg="wget %s/%s.grid2 -O %s.grid2" % (alpGridPath,alpGridLabel[0],alpGridLabel[0])
+        msg="cp $CMSSW_RELEASE_BASE/src/GeneratorInterface/AlpgenInterface/data/%s.grid2 %s.grid2" % (alpGridLabel[0],alpGridLabel[0])
         os.system(msg)
     except Exception, ex:
     	return 1
+
     """
     Splitting the cfg file into two files
     """
@@ -130,26 +114,6 @@ def alpGen():
         os.system(msg)
     except Exception, ex:
     	return 4
-
-    """
-    Links are not needed anymore in Alpgen
-
-    try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s_unw.par .;" % alpGridLabel[0]
-        os.system(msg)
-    except Exception, ex:
-    	return 5
-    try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.unw .;" % alpGridLabel[0]
-        os.system(msg)
-    except Exception, ex:
-    	return 5
-    try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.wgt .;" % alpGridLabel[0]
-        os.system(msg)
-    except Exception, ex:
-    	return 5
-    """
 
     return 0
 
@@ -373,7 +337,7 @@ valid = ['generator=', 'executable=', 'number-of-events=',
          'job-report=', 'output-file=', 'run=', 'seeds=', 'cfg=', 'help']
 
 usage =  "Usage: cmsGen.py --generator=<alpgen>\n"
-usage += "                 --executable=<zjetgen>\n"
+usage += "                 --executable=<NOT USAGE>\n"
 usage += "                 --number-of-events=<nEvents>\n"
 usage += "                 --job-report=<name_job_report_file>\n"
 usage += "                 --output-file=<name_output_file>\n"
@@ -389,7 +353,6 @@ except getopt.GetoptError, ex:
     sys.exit(1)
 
 generator   = None
-executable  = None
 nEvents     = 0
 jobReport   = "test-job-report.txt"
 outputFile  = "myOutput"
@@ -403,8 +366,6 @@ for opt, arg in opts:
         sys.exit(1)
     if opt == "--generator":
         generator  = arg
-    #if opt == "--executable":
-    #    executable = arg
     if opt == "--number-of-events":
         nEvents    = arg
     if opt == "--job-report":
@@ -421,10 +382,6 @@ for opt, arg in opts:
 if generator == None:
     msg = "--generator option not provided: This is required"
     raise RuntimeError, msg
-
-#if executable == None:
-#    msg = "--executable option not provided: This is required"
-#    raise RuntimeError, msg
 
 if nEvents == 0:
     msg = "--number-of-events option not provided: This is required"
