@@ -115,6 +115,28 @@ def alpGen():
     except Exception, ex:
     	return 4
 
+    try:
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s_unw.par .;" % alpGridLabel[0]
+        os.system(msg)
+    except Exception, ex:
+    	return 5
+    try:
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.unw .;" % alpGridLabel[0]
+        os.system(msg)
+    except Exception, ex:
+    	return 5
+    try:
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.wgt .;" % alpGridLabel[0]
+        os.system(msg)
+    except Exception, ex:
+    	return 5
+
+    try:
+        msg = "ls -l ../cmsRun1/;"
+        os.system(msg)
+    except Exception, ex:
+    	return 5
+
     return 0
 
 """
@@ -324,7 +346,8 @@ def processFrameworkJobReport():
     newFile = theJobReport.newFile()
     newFile["LFN"]  	   = "None" 
     if generator == "alpgen":
-        newFile["PFN"]         = "%s/%s" % (os.getcwd(),outputFile)
+        #newFile["PFN"]         = "%s/%s" % (os.getcwd(),outputFile)
+        newFile["PFN"]         = "%s" % outputFile
     elif generator == "comphep":
         newFile["PFN"]         = "%s" % outputFile
     newFile["Size"] 	   = totalSize
