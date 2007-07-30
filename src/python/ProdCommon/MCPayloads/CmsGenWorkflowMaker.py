@@ -101,7 +101,7 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         return
         
         
-    def addSelectionEfficiency(self, selectionEff):
+    def addCmsGenSelectionEfficiency(self, selectionEff):
         """
         _addSelectionEfficiency_
                                                                                                            
@@ -109,7 +109,7 @@ class CmsGenWorkflowMaker(WorkflowMaker):
                                                                                                            
         """
                                                                                                            
-        self.cmsRunNode.applicationControls["SelectionEfficiency"] = \
+        self.cmsGenNode.applicationControls["SelectionEfficiency"] = \
                                                              selectionEff
         return
 
