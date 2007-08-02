@@ -126,6 +126,17 @@ class WorkflowMaker:
         self.cmsRunNode.application['Project'] = "CMSSW"
         self.cmsRunNode.application['Architecture'] = ""
         return
+
+
+    def setUserSandbox(self,sandboxloc):
+        """
+        _setSandbox_
+        Sets the location of the user sandbox
+
+        """
+        self.cmsRunNode.userSandbox=sandboxloc
+        return
+    
     
     def setPhysicsGroup(self, group):
         """
