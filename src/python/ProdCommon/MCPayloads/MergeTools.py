@@ -169,6 +169,11 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littl
         if doCleanUp == True:
             WorkflowTools.addCleanUpNode(cmsRunNode, "cleanUp1")
 
+        #  //
+        # // Add log archive node
+        #//
+        WorkflowTools.addLogArchNode(cmsRunNode, "logArchive")
+
         WorkflowTools.generateFilenames(newWF)
 
         
