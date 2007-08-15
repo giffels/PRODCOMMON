@@ -44,7 +44,7 @@ def makeUUID():
     return a UUID
 
     """
-    guid = MCPayloadsUUID.uuidgen()
+    guid = uuidgen()
     if guid == None:
-        guid = MCPayloadsUUID.uuid()
+        guid = uuid()
     return guid
