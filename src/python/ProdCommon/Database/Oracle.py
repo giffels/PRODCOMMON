@@ -29,9 +29,14 @@ def connect(dbName,dbHost,dbUser,dbPasswd,socketLocation,portNr=""):
    """
    for attempt in range(__maxConnectionAttempts):
        try:
-           conn=cx_Oracle.connect(dbUser+'/'+dbPasswd+'@'+dbHost+':'+portNr)
+           conn_str=dbUser+'/'+dbPasswd+'@'+dbHost
+           if(portNr):
+               conn_str=conn_str+":"+portNr
+           print conn_str
+           conn=cx_Oracle.connect(conn_str)
            return conn
        except Exception, v:
+           print v
            logging.debug("Error connecting to the database: "+str(v))
            # wait and try again.
            time.sleep(__dbWaitingTime)
