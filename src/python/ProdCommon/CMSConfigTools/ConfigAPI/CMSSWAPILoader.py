@@ -8,7 +8,7 @@ CMSSW versions APIs
 """
 
 import os
-import sysxs
+import sys
 import __builtin__
 
 class RollbackImporter:
