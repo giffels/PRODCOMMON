@@ -8,7 +8,7 @@ CMSSW versions APIs
 """
 
 import os
-import sys
+import sysxs
 import __builtin__
 
 class RollbackImporter:
@@ -36,8 +36,17 @@ class RollbackImporter:
                 # Force reload when modname next imported
                 if sys.modules.has_key(modname):
                     del(sys.modules[modname])
+
+        #
+        # Safety net for FWCore modules
+        #
+        for modname in sys.modules.keys():
+            if modname.startswith("FWCore"):
+                del sys.modules[modname]
+                    
+                    
         __builtin__.__import__ = self.realImport
-    
+        
 
 class CMSSWAPILoader:
     """
