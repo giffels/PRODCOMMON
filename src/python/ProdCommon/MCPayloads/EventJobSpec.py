@@ -47,7 +47,6 @@ def createJobSpec(jobSpecId,workflowSpecFile, filename, runNumber, eventCount,  
     cfgMaker = ConfigGenerator(jobSpec)
     jobSpec.payload.operate(cfgMaker)
 
-            
     if saveString:    
        return jobSpec.saveString()
     jobSpec.save(filename)
@@ -73,6 +72,9 @@ class ConfigGenerator:
         config file into a JobSpecific Config File
         
         """
+        if jobSpecNode.type != "CMSSW":
+           return 
+
         if jobSpecNode.configuration in ("", None):
             #  //
             # // Isnt a config file
@@ -89,13 +91,12 @@ class ConfigGenerator:
                            maxEvents = self.jobSpec.parameters['EventCount'],
                            firstRun =  self.jobSpec.parameters['RunNumber'],
                            skipEvents = self.jobSpec.parameters.get("FirstEvent", None))
-        
         jobSpecNode.configuration = jobCfg.pack()
         jobSpecNode.loadConfiguration()
         
         return
-    
+
 
 if __name__== '__main__':
     wf = "/home/evansde/work/PRODAGENT/work/RequestInjector/WorkflowCache/RelVal120pre310MuonsPt10-evansde-TEST1-Workflow.xml"
-    createJobSpec(wf,  "/tmp/TestJobSpec.xml", 10000, 100, 200)
+    createJobSpec(wf, "/tmp/TestJobSpec.xml", 10000, 100, 200)

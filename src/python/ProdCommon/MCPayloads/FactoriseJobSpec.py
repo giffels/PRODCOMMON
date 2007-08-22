@@ -12,6 +12,8 @@ from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 from ProdCommon.MCPayloads.JobSpec import JobSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 
+from ProdCommon.CMSConfigTools.SeedService import randomSeed
+
 class CfgMaker(dict):
     """
     _CfgMaker_
@@ -48,6 +50,26 @@ class CfgMaker(dict):
         
         return
 
+    def generateCmsGenConfig(self,jobSpecNode):
+        """
+        _generateCmsGenConfig_
+                                                                                                                      
+        Process CmsGen type nodes to insert maxEvents and run numbers
+        for cmsGen jobs
+                                                                                                                      
+        """
+        if jobSpecNode.type != "CmsGen":
+            return
+        if self['RunNumber'] != None:
+           jobSpecNode.applicationControls['firstRun'] = self['RunNumber']
+        if self['MaxEvents'] != None: 
+           jobSpecNode.applicationControls['maxEvents'] = self['MaxEvents']
+        jobSpecNode.applicationControls['randomSeed'] = randomSeed()
+        jobSpecNode.applicationControls['fileName'] = "%s-%s.root" % (
+            jobSpecNode.jobName, jobSpecNode.name)
+        jobSpecNode.applicationControls['logicalFileName'] = "%s-%s.root" % (
+            jobSpecNode.jobName, jobSpecNode.name)
+        return
         
         
 
@@ -104,8 +126,9 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
     
     """
     generators = GeneratorMaker()
-    generators(jobSpecInstance.payload)
-    
+    jobSpecInstance.payload.operate(generators)
+    #AFgenerators(jobSpecInstance.payload)
+
     runNumber = int(args.get("RunNumber",
                          int(jobSpecInstance.parameters['RunNumber'])))
     firstEvent = int(args.get("FirstEvent",0))
@@ -137,6 +160,7 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
                          MaxEvents = eventsPerJob,
                          SkipEvents = currentEvent)
         newSpec.payload.operate(maker)
+        newSpec.payload.operate(maker.generateCmsGenConfig)
 
         
         newSpec.parameters['FirstEvent']=currentEvent
