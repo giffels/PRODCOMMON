@@ -38,6 +38,7 @@ class WorkflowSpec:
         self.parameters.setdefault("RequestTimestamp", int(time.time()))
         self.parameters.setdefault("RequestCategory", "PreProd")
         self.parameters.setdefault("WorkflowType", "Processing")
+        self.parameters.setdefault("UseLumiserverUrl", "")
         self._NodeMap = {}
 
     def workflowName(self):
@@ -100,6 +101,28 @@ class WorkflowSpec:
         """
         self.parameters['RequestCategory'] = category
         return
+
+
+    def lumiserverUrl(self):
+        """
+         _lumiserverUrl_
+
+         Get the Lumiserver URL, if any. If it's not set, then lumiserver
+         will not be used
+         
+        """
+        return self.parameters['UseLumiserverUrl']
+
+    def setLumiserverUrl(self,url):
+        """
+        _setLumiserverUrl_
+
+        Sets the lumiserver Url, which also triggers T0 code to request the
+        LumiServer and add LumiData into config file
+        """
+        self.parameters['UseLumiserverUrl']=url
+        return
+    
     
     def makeIMProv(self):
         """
