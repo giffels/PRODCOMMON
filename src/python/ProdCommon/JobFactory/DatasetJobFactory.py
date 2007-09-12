@@ -163,18 +163,19 @@ class DatasetJobFactory:
         ### Need to test these still work OK
         ###TODO:self.loadPileupDatasets()
         ###TODO:self.loadPileupSites()
-
+        
         result = []
         for jobDef in self.processDataset():
             newJobSpec = self.createJobSpec(jobDef)
-            self.count += 1
             jobDict = {
                 "JobSpecId" : self.currentJob,
                 "JobSpecFile": newJobSpec,
                 "JobType" : "Processing",
                 "WorkflowSpecId" : self.workflowSpec.workflowName(),
-
+                "WorkflowPriority" : 10,
                 }
+            result.append(jobDict)
+            self.count += 1
             
         return result
 
