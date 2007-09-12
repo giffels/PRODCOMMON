@@ -16,6 +16,7 @@ setup (name='prodcommon',
                  'ProdCommon.DataMgmt.DBS',
                  'ProdCommon.DataMgmt.PhEDEx',
                  'ProdCommon.DataMgmt.JobSplit',
+                 'ProdCommon.JobFactory',
 		 'ProdCommon.MCPayloads',
                  'ProdCommon.WebServiceClient',
                  'ProdCommon.WebServices'],)
