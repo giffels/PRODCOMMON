@@ -29,8 +29,7 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
     result = JobSplitter(dataset)
 
     datasetContent = reader.getFiles(dataset, onlyClosedBlocks)
-    
-    
+
     for blockName, blockData in datasetContent.items():
         locations = blockData['StorageElements']
         newBlock = result.newFileblock(blockName, * locations)
@@ -42,7 +41,8 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
     
     
 def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
-                         onlyClosedBlocks = False):
+                         onlyClosedBlocks = False,
+                         siteWhitelist = [], blockWhitelist = []):
 
     """
     _splitDatasetByEvents_
@@ -50,6 +50,9 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
     API to split a dataset into eventsPerJob sized jobs
 
     """
+    filterSites = len(siteWhitelist) > 0
+    filterBlocks = len(blockWhitelist) > 0
+    
     splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks)
     allJobs = []
     for block in splitter.listFileblocks():
@@ -59,19 +62,41 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
             msg += "Contains either no files or no SE Names\n"
             logging.warning(msg)
             continue
+
+        if filterSites:
+            siteMatches = filter(
+                lambda x:x in blockInstance.seNames, siteWhitelist
+                )
+            if len(siteMatches) == 0:
+                msg = "Excluding block %s based on sites: %s \n" % (
+                    block, blockInstance.seNames,
+                    )
+                logging.debug(msg)
+                continue
+        if filterBlocks:
+            if block not in blockWhitelist:
+                msg = "Excluding block %s based on block whitelist: %s\n" % (
+                    block, blockWhitelist)
+                continue
+            
+                
         jobDefs = splitter.splitByEvents(block, eventsPerJob)
         allJobs.extend(jobDefs)
     return allJobs
         
 
 def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
-                        onlyClosedBlocks = False):
+                        onlyClosedBlocks = False,
+                        siteWhitelist = [], blockWhitelist = []):
     """
     _splitDatasetByFiles_
 
     API to split a dataset into filesPerJob sized jobs
 
     """
+    filterSites = len(siteWhitelist) > 0
+    filterBlocks = len(blockWhitelist) > 0
+
     splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks)
     allJobs = []
     
@@ -82,6 +107,25 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
             msg += "Contains either no files or no SE Names\n"
             logging.warning(msg)
             continue
+
+        if filterSites:
+            siteMatches = filter(
+                lambda x:x in blockInstance.seNames, siteWhitelist
+                )
+            if len(siteMatches) == 0:
+                msg = "Excluding block %s based on sites: %s \n" % (
+                    block, blockInstance.seNames,
+                    )
+                logging.debug(msg)
+                continue
+        if filterBlocks:
+            if block not in blockWhitelist:
+                msg = "Excluding block %s based on block whitelist: %s\n" % (
+                    block, blockWhitelist)
+                continue
+            
+            
+
         jobDefs = splitter.splitByFiles(block, filesPerJob)
         allJobs.extend(jobDefs)
     return allJobs
