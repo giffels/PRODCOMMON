@@ -176,7 +176,7 @@ class DatasetJobFactory:
 
                 }
             
-        return newJobSpec
+        return result
 
 
     def loadPileupDatasets(self):
