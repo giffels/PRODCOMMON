@@ -47,7 +47,7 @@ class ProcToMerge:
                 #//  can add a NoMerge key and this will ignore it
                 continue
             newDataset = DatasetInfo()
-            newDataset.update(dataset)
+            newDataset.update(dataset)                
             newDataset["ApplicationFamily"] = self.mergeModuleName
             newDataset["ApplicationName"] = self.appName
             newDataset["ApplicationVersion"] = node.application['Version']
@@ -59,11 +59,75 @@ class ProcToMerge:
             newDataset["ProcessedDataset"] = procName
             newDataset["ParentDataset"] = dataset.name()
 
+
             newDatasets.append(newDataset)
 
         node._OutputDatasets = []
         node._OutputDatasets = newDatasets
         return
+
+class SizeBasedMerge:
+    """
+    _SizeBasedMerge_
+
+    Functor that operates on all datasets in a payload node
+    to convert them into merged datasets
+
+    """
+    def __init__(self, fastMerge = True):
+        self.mergeModuleName = "Merged"
+        self.appName = "cmsRun"
+        if fastMerge == True:
+            self.mergeModuleName = "EdmFastMerge"
+            self.appName = _FastMergeBinary
+
+        self.result = []
+        
+                 
+    def __call__(self, node):
+        """
+        _operator(node)_
+
+        Operate on all output datasets in a Payload Node
+
+        """
+        for dataset in node._OutputDatasets:
+            if dataset.has_key("NoMerge"):
+                #  //
+                # // If we need to avoid merging some datasets we
+                #//  can add a NoMerge key and this will ignore it
+                continue
+            newDataset = DatasetInfo()
+            newDataset.update(dataset)                
+            newDataset["ApplicationFamily"] = self.mergeModuleName
+            newDataset["ApplicationName"] = self.appName
+            newDataset["ApplicationVersion"] = node.application['Version']
+            procName = dataset["ProcessedDataset"]
+            if procName.endswith("-unmerged"):
+                procName = procName.replace("-unmerged", "")
+            else:
+                procName = "%s-merged" % procName
+            newDataset["ProcessedDataset"] = procName
+            newDataset["ParentDataset"] = dataset.name()
+            newDataset['OutputModuleName'] = "%s-Merged" % (
+                newDataset['OutputModuleName'],)
+            self.result.append(newDataset)
+
+        return
+
+
+def getSizeBasedMergedDatasets(procSpec, isFastMerge = True):
+    """
+    _getSizeBasedMergedDatasets_
+
+    Get a list of potential merge datasets from the processing workflow
+    spec provided. 
+
+    """
+    operator = SizeBasedMerge(isFastMerge)
+    operator.appName = "edmFastMerge"
+    procSpec.payload.operate(operator)
+    return operator.result
 
 
 def createMergeDatasetWorkflow(procSpec, isFastMerge = True, littleE = False):
