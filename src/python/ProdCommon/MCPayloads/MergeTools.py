@@ -129,6 +129,18 @@ def getSizeBasedMergedDatasets(procSpec, isFastMerge = True):
     procSpec.payload.operate(operator)
     return operator.result
 
+def getSizeBasedMergeDatasetsFromNode(procSpecNode, isFastMerge = True):
+    """
+    _getSizeBasedMergeDatasetsFromNode_
+
+    Util that gets size based merge dataset matching info for
+    a single node
+
+    """
+    operator = SizeBasedMerge(isFastMerge)
+    operator.appName = "edmFastMerge"
+    operator(procSpecNode)
+    return operator.result
 
 def createMergeDatasetWorkflow(procSpec, isFastMerge = True, littleE = False):
     """
