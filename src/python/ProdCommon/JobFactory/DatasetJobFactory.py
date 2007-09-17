@@ -16,7 +16,7 @@ from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 from PileupTools.PileupDataset import PileupDataset, createPileupDatasets, getPileupSites
-from ProdAgentCore.Configuration import loadProdAgentConfiguration
+
 
 
 from ProdCommon.DataMgmt.JobSplit.SplitterMaker import splitDatasetByEvents
