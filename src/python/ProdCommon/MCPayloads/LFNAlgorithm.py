@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.6 2007/07/17 14:53:00 evansde Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.7 2007/07/19 08:03:28 evansde Exp $"
+__version__ = "$Revision: 1.7 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -125,7 +125,8 @@ class DefaultLFNMaker:
             base = node.getParameter("UnmergedLFNBase")[0]
         else:
             base = node.getParameter("MergedLFNBase")[0]
-            
+        mergedBase = node.getParameter("MergedLFNBase")[0]
+        
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
@@ -141,6 +142,9 @@ class DefaultLFNMaker:
             outModule['LFNBase'] = os.path.join(base,
                                                 outModule['dataTier'],
                                                 str(self.lfnGroup))
+            outModule['MergedLFNBase'] = os.path.join(mergedBase,
+                                                      outModule['dataTier'],
+                                                      str(self.lfnGroup))
             
         return
 
