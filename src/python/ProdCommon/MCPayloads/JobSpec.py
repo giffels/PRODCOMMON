@@ -10,6 +10,7 @@ concrete job definition
 import time
 
 from ProdCommon.MCPayloads.JobSpecNode import JobSpecNode
+from ProdCommon.MCPayloads.PayloadNode import getNodeByName
 import ProdCommon.MCPayloads.DatasetTools as DatasetTools
 import ProdCommon.MCPayloads.AppVersionTools as AppVersionTools
 
@@ -187,8 +188,16 @@ class JobSpec:
         return
     
             
-        
-      
+
+    def findNode(self, nodeName):
+        """
+        _findNode_
+
+        Find the JobSpec node with the name provided in this instance
+
+        """
+        return getNodeByName(self.payload, nodeName)
+    
     def makeIMProv(self):
         """
         _makeIMProv_
