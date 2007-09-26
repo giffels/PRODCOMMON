@@ -8,9 +8,9 @@ without destroying interfaces
 
 """
 
-from ProdCommon.Core.ProdException import ProdException
+#from ProdCommon.Core.ProdException import ProdException
 
-class DatasetConvError(ProdException):
+class DatasetConvError(Exception):
     """
     _DatasetConvError_
 
