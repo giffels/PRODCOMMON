@@ -19,5 +19,6 @@ setup (name='prodcommon',
                  'ProdCommon.JobFactory',
 		 'ProdCommon.MCPayloads',
                  'ProdCommon.WebServiceClient',
-                 'ProdCommon.WebServices'],)
+                 'ProdCommon.WebServices',
+                 'ProdCommon.ThreadTools'],)
 
