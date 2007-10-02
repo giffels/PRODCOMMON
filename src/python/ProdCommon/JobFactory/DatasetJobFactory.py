@@ -83,7 +83,7 @@ class DatasetJobFactory:
     """
     def __init__(self, workflowSpec, workingDir, dbsUrl, **args):
         self.workingDir = workingDir
-        
+        self.useInputDataset = None
         self.workflowSpec = workflowSpec
         self.dbsUrl = dbsUrl
         self.count = args.get("InitialRun", 0)
@@ -92,7 +92,9 @@ class DatasetJobFactory:
         self.currentJob = None
         self.currentJobDef = None
         
-        
+        if args.has_key("InputDataset"):
+            self.useInputDataset = args['InputDataset']
+            
         self.onlyClosedBlocks = False
         if  self.workflowSpec.parameters.has_key("OnlyClosedBlocks"):
             onlyClosed =  str(
@@ -151,6 +153,8 @@ class DatasetJobFactory:
         if not os.path.exists(self.specCache):
             os.makedirs(self.specCache)
             
+
+
         
     def __call__(self):
         """
@@ -179,6 +183,17 @@ class DatasetJobFactory:
             
         return result
 
+
+    def overrideInputDataset(self, inputDataset):
+        """
+        _overrideInputDataset_
+
+        Set the name of the dataset in the workflow spec instance
+        and override it
+
+        """
+        self.useInputDataset = imputDataset
+        return
 
     def loadPileupDatasets(self):
         """
@@ -225,19 +240,23 @@ class DatasetJobFactory:
         logging.debug("SplitSize = %s" % self.splitSize)
         logging.debug("SplitType = %s" % self.splitType)
 
+        logging.debug("AllowedSites = %s" % self.allowedSites)
+        logging.debug("AllowedBlocks = %s" % self.allowedBlocks)
+        
         if self.splitType == "event":
             jobDefs = splitDatasetByEvents(self.inputDataset(),
                                            self.dbsUrl, self.splitSize,
                                            self.onlyClosedBlocks,
                                            self.allowedSites,
                                            self.allowedBlocks)
+            logging.debug("Retrieved %s job definitions split by event" % len(jobDefs))
         else:
             jobDefs = splitDatasetByFiles(self.inputDataset(),
                                           self.dbsUrl, self.splitSize,
                                           self.onlyClosedBlocks,
                                           self.allowedSites,
                                           self.allowedBlocks)
-            
+            logging.debug("Retrieved %s job definitions split by file" % len(jobDefs))
         return jobDefs
     
         
@@ -250,6 +269,8 @@ class DatasetJobFactory:
         Extract the input Dataset from this workflow
 
         """
+        if self.useInputDataset != None:
+            return self.useInputDataset
         topNode = self.workflowSpec.payload
         try:
             inputDataset = topNode._InputDatasets[-1]
@@ -269,12 +290,13 @@ class DatasetJobFactory:
         Load the WorkflowSpec object and generate a JobSpec from it
 
         """
-        
         jobSpec = self.workflowSpec.createJobSpec()
         jobName = "%s-%s" % (
             self.workflowSpec.workflowName(),
             self.count,
             )
+
+        logging.debug("Creating Job Spec: %s" % jobName)
         self.currentJob = jobName
         self.currentJobDef = jobDef
         jobSpec.setJobName(jobName)
