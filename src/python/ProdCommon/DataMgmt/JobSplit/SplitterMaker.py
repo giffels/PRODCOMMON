@@ -33,9 +33,16 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
     for blockName, blockData in datasetContent.items():
         locations = blockData['StorageElements']
         newBlock = result.newFileblock(blockName, * locations)
+        totalEvents = 0
+        fileList = set()
         for fileInfo in blockData['Files']:
+            totalEvents += fileInfo['NumberOfEvents']
+            fileList.add(fileInfo['LogicalFileName'])
             newBlock.addFile(fileInfo['LogicalFileName'],
                              fileInfo['NumberOfEvents'])
+        logging.debug("Block %s contains %s events in %s files" %(
+            blockName, totalEvents, len(fileList),
+            ))
 
     return result
     
@@ -56,6 +63,7 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
     splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks)
     allJobs = []
     for block in splitter.listFileblocks():
+        logging.debug("Processing Block: %s" % block)
         blockInstance = splitter.fileblocks[block]
         if blockInstance.isEmpty():
             msg = "Fileblock is empty: \n%s\n" % block
@@ -77,6 +85,7 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
             if block not in blockWhitelist:
                 msg = "Excluding block %s based on block whitelist: %s\n" % (
                     block, blockWhitelist)
+                logging.debug(msg)
                 continue
             
                 
@@ -102,6 +111,9 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
     
     for block in splitter.listFileblocks():
         blockInstance = splitter.fileblocks[block]
+        logging.debug("Processing Block: %s" % block)
+        
+
         if blockInstance.isEmpty():
             msg = "Fileblock is empty: \n%s\n" % block
             msg += "Contains either no files or no SE Names\n"
@@ -122,10 +134,12 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
             if block not in blockWhitelist:
                 msg = "Excluding block %s based on block whitelist: %s\n" % (
                     block, blockWhitelist)
+                logging.debug(msg)
                 continue
             
-            
 
+        
+            
         jobDefs = splitter.splitByFiles(block, filesPerJob)
         allJobs.extend(jobDefs)
     return allJobs
