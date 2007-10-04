@@ -99,8 +99,38 @@ class DBSReader:
         Get list of files for dataset
 
         """
+        return [ x['LogicalFileName'] for x in self.dbs.listFiles(datasetPath)]
+
+
+    def crossCheck(self, datasetPath, *lfns):
+        """
+        _crossCheck_
+
+        For the dataset provided, check that the lfns listed all exist
+        in the dataset.
+
+        Return the list of lfns that are in the dataset
+
+        """
+        allLfns = self.listDatasetFiles(datasetPath)
+        setOfAllLfns = set(allLfns)
+        setOfKnownLfns = set(lfns)
+        return list(setOfAllLfns.intersection(setOfKnownLfns))
         
-        print self.dbs.listFiles(datasetPath)
+    def crossCheckMissing(self, datasetPath, *lfns):
+        """
+        _crossCheckMissing_
+
+        As cross check, but return value is a list of files that
+        are *not* known by DBS
+
+        """
+        allLfns = self.listDatasetFiles(datasetPath)
+        setOfAllLfns = set(allLfns)
+        setOfKnownLfns = set(lfns)
+        knownFiles = setOfAllLfns.intersection(setOfKnownLfns)
+        unknownFiles = setOfKnownLfns.difference(knownFiles)
+        return list(unknownFiles)
 
     def getFileBlocksInfo(self, dataset):
         """
@@ -345,4 +375,6 @@ class DBSReader:
         """
         if blockName in ("", "*", None):
            raise DBSReaderError( "Invalid Block name: => %s <=" % blockName)
+
+
 
