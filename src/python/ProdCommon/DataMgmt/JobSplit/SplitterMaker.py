@@ -75,12 +75,15 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
             siteMatches = filter(
                 lambda x:x in blockInstance.seNames, siteWhitelist
                 )
+
             if len(siteMatches) == 0:
                 msg = "Excluding block %s based on sites: %s \n" % (
                     block, blockInstance.seNames,
                     )
                 logging.debug(msg)
                 continue
+            else:
+                blockInstance.seNames = siteMatches
         if filterBlocks:
             if block not in blockWhitelist:
                 msg = "Excluding block %s based on block whitelist: %s\n" % (
@@ -90,6 +93,7 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
             
                 
         jobDefs = splitter.splitByEvents(block, eventsPerJob)
+            
         allJobs.extend(jobDefs)
     return allJobs
         
@@ -130,6 +134,8 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
                     )
                 logging.debug(msg)
                 continue
+            else:
+                blockInstance.seNames = siteMatches
         if filterBlocks:
             if block not in blockWhitelist:
                 msg = "Excluding block %s based on block whitelist: %s\n" % (
