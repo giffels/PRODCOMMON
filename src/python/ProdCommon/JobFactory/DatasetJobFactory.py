@@ -125,6 +125,7 @@ class DatasetJobFactory:
             #//
             msg = "Site restriction provided in Workflow Spec:\n"
             msg += "%s\n" % siteRestriction
+            logging.info(msg)
             siteList = siteRestriction.split(",")
             for site in siteList:
                 if len(site.strip() ) > 0:
@@ -138,6 +139,7 @@ class DatasetJobFactory:
             #//
             msg = "Block restriction provided in Workflow Spec:\n"
             msg += "%s\n" % blockRestriction
+            logging.info(msg)
             blockList = blockRestriction.split(",")
             for block in blockList:
                 if len(block.strip() ) > 0:
@@ -177,6 +179,7 @@ class DatasetJobFactory:
                 "JobType" : "Processing",
                 "WorkflowSpecId" : self.workflowSpec.workflowName(),
                 "WorkflowPriority" : 10,
+                "Sites" : jobDef['SENames'],
                 }
             result.append(jobDict)
             self.count += 1
@@ -250,6 +253,7 @@ class DatasetJobFactory:
                                            self.allowedSites,
                                            self.allowedBlocks)
             logging.debug("Retrieved %s job definitions split by event" % len(jobDefs))
+            
         else:
             jobDefs = splitDatasetByFiles(self.inputDataset(),
                                           self.dbsUrl, self.splitSize,
