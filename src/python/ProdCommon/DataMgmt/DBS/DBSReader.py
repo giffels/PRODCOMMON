@@ -245,9 +245,34 @@ class DBSReader:
         result = []
         [ result.append(dict(x) ) for x in files ]
         return result
+
+    def lfnsInBlock(self, fileBlockName):
+        """
+        _lfnsInBlock_
+
+        LFN list only for block, details = False => faster query
+        
+        """
+        try:
+            files = self.dbs.listFiles(
+                "", # path
+                "", #primary
+                "", # processed
+                [], #tier_list
+                "", #analysisDataset
+                fileBlockName, details="False")
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.lfnsInBlock(%s)\n" % fileBlockName
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        result = []
+        [ result.append(x['LogicalFileName'] ) for x in files ]
+        return result
+    
     
         
-
     def listFileBlockLocation(self, fileBlockName):
         """
         _listFileBlockLocation_
