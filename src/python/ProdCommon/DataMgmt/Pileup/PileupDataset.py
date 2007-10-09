@@ -130,11 +130,12 @@ def createPileupDatasets(workflowSpec):
 
     """
     result = {}
+    wfdbsUrl = workflowSpec.parameters.get("DBSURL", None)
     puDatasets = workflowSpec.pileupDatasets()
     for puDataset in puDatasets:
-        dbsUrl =  puDataset.get("DBSURL", None)
+        dbsUrl =  puDataset.get("DBSURL", wfdbsUrl)
         pudInstance = PileupDataset(puDataset.name(), dbsUrl)
-
+        
         if puDataset.has_key("FilesPerJob"):
             pudInstance.maxFilesPerJob = int(puDataset['FilesPerJob'])
             pudInstance()
