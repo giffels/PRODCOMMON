@@ -19,7 +19,7 @@ from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
 from ProdCommon.CMSConfigTools.SeedService import randomSeed
 
 
-from PileupTools.PileupDataset import PileupDataset, createPileupDatasets, getPileupSites
+from ProdCommon.DataMgmt.Pileup.PileupDataset import createPileupDatasets
 
 
 
@@ -118,22 +118,6 @@ class RequestJobFactory:
             self.pileupDatasets = createPileupDatasets(self.workflowSpec)
         return
 
-    def loadPileupSites(self):
-        """
-        _loadPileupSites_
-                                                                                                              
-        Are we dealing with pileup? If so pull in the site list
-                                                                                                              
-        """
-        sites = []
-        puDatasets = self.workflowSpec.pileupDatasets()
-        if len(puDatasets) > 0:
-            logging.info("Found %s Pileup Datasets for Workflow: %s" % (
-                len(puDatasets), self.workflowSpec.workflowName(),
-                ))
-            sites = getPileupSites(self.workflowSpec)
-        return sites
-                                                                                                              
 
 
             
@@ -145,9 +129,8 @@ class RequestJobFactory:
         generic workflow and return it.
 
         """
-        ### Need to test these
-        ###TODO:self.loadPileupDatasets()
-        ###TODO:self.loadPileupSites()
+        
+        self.loadPileupDatasets()
         
         result = []
         numberOfJobs = (self.totalEvents/self.eventsPerJob) + 1
@@ -215,7 +198,7 @@ class RequestJobFactory:
         
         Operator to act on a JobSpecNode tree to convert the template
         config file into a JobSpecific Config File
-                
+        
         """
         if jobSpecNode.name not in self.generators.keys():
             return
@@ -244,7 +227,14 @@ class RequestJobFactory:
             logging.debug("Node: %s has a pileup dataset: %s" % (
                 jobSpecNode.name,  puDataset.dataset,
                 ))
-            fileList = puDataset.getPileupFiles()
+            
+            #  //
+            # // In event of being no site whitelist, should we
+            #//  restrict the site whitelist to the list of sites
+            #  //containing the PU sample?
+            # // 
+            #//
+            fileList = puDataset.getPileupFiles(*self.sites)
             jobCfg.pileupFiles = fileList
 
             

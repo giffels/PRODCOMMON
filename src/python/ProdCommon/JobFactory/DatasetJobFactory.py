@@ -15,7 +15,7 @@ import logging
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
-from PileupTools.PileupDataset import PileupDataset, createPileupDatasets, getPileupSites
+from ProdCommon.DataMgmt.Pileup.PileupDataset import createPileupDatasets
 
 
 
@@ -166,9 +166,9 @@ class DatasetJobFactory:
         workflow and settings in the file
 
         """
-        ### Need to test these still work OK
-        ###TODO:self.loadPileupDatasets()
-        ###TODO:self.loadPileupSites()
+
+        self.loadPileupDatasets()
+
         
         result = []
         for jobDef in self.processDataset():
@@ -213,21 +213,7 @@ class DatasetJobFactory:
             self.pileupDatasets = createPileupDatasets(self.workflowSpec)
         return
 
-    def loadPileupSites(self):
-        """
-        _loadPileupSites_
-                                                                                                              
-        Are we dealing with pileup? If so pull in the site list
-                                                                                                              
-        """
-        sites = []
-        puDatasets = self.workflowSpec.pileupDatasets()
-        if len(puDatasets) > 0:
-            logging.info("Found %s Pileup Datasets for Workflow: %s" % (
-                len(puDatasets), self.workflowSpec.workflowName(),
-                ))
-            sites = getPileupSites(self.workflowSpec)
-        return sites
+    
 
     def processDataset(self):
         """
@@ -349,7 +335,7 @@ class DatasetJobFactory:
         
         maxEvents = self.currentJobDef.get("MaxEvents", None)
         skipEvents = self.currentJobDef.get("SkipEvents", None)
-
+        
         args = {
             'fileNames' : self.currentJobDef['LFNS'],
             }
@@ -371,7 +357,9 @@ class DatasetJobFactory:
                 jobSpecNode.name,  puDataset.dataset,
                 ))
             
-            fileList = puDataset.getPileupFiles()
+            fileList = puDataset.getPileupFiles(
+                *self.currentJobDef.get("SENames", [])
+                )
             jobCfg.pileupFiles = fileList
             
 
