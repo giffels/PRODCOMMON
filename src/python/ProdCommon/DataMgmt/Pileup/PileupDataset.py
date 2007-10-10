@@ -50,8 +50,10 @@ class PileupDataset(dict):
         runs out of files, it will throw an exception
 
         """
+        logging.debug("Max PU Files: %s" % self.maxFilesPerJob)
         possibleFiles = []
         if len(sites) > 0:
+            logging.debug("Pileup Site Limit: %s" % sites)
             #  //
             # // Site limit
             #//
@@ -59,14 +61,16 @@ class PileupDataset(dict):
             for site in sites:
                 if self.sites.has_key(site):
                     [ matchedBlocks.add(x) for x in self.sites[site] ]
-
+            logging.debug("Matched Pileup Block: %s" % list(matchedBlocks))
             
             for block in matchedBlocks:
+                logging.debug("Pileup Available: %s" % block)
                 possibleFiles.extend(self[block])
         else:
             #  //
             # // no site limit => all files
             #//
+            logging.debug("No Site Limit on Pileup")
             for block in self.keys():
                 possibleFiles.extend(self[block])
             
