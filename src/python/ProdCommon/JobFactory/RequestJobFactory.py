@@ -236,7 +236,8 @@ class RequestJobFactory:
             #//
             fileList = puDataset.getPileupFiles(*self.sites)
             jobCfg.pileupFiles = fileList
-
+            logging.debug("Pileup Files Added: %s" % fileList)
+            
             
             
         
