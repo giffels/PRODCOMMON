@@ -178,7 +178,7 @@ class DBSWriter:
         
 
 
-    def insertFiles(self, fwkJobRep):
+    def insertFiles(self, fwkJobRep, insertDetectorData = False):
         """
         _insertFiles_
 
@@ -230,14 +230,13 @@ class DBSWriter:
                 msg += " Workflow: %s"%fwkJobRep.workflowSpecId
                 raise DBSWriterError(msg)
             try:
-                fileType = outFile.get('FileType','EDM')
-                if fileType == 'STREAMER':
-                   dbsFiles = DBSWriterObjects.createDBSStreamerFiles(outFile,
-                                                           fwkJobRep.jobType,
-                                                           self.dbs)
+                if ( insertDetectorData ):
+                    dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
+                                                               fwkJobRep.jobType,
+                                                               self.dbs)
                 else:
-                   dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
-                                                           fwkJobRep.jobType)
+                    dbsFiles = DBSWriterObjects.createDBSFiles(outFile,
+                                                               fwkJobRep.jobType)
             except DbsException, ex:
                 msg = "Error in DBSWriter.insertFiles:\n"
                 msg += "Error creating DbsFile instances for file:\n"
