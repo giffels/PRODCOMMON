@@ -16,7 +16,8 @@ from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 
 
 
-def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
+def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False,
+                      siteWhitelist = [], blockWhitelist = []):
     """
     _createJobSplitter_
 
@@ -27,12 +28,37 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False):
     """
     reader = DBSReader(dbsUrl)
     result = JobSplitter(dataset)
+    filterSites = len(siteWhitelist) > 0
+    filterBlocks = len(blockWhitelist) > 0
+    
+    for blockName in reader.listFileBlocks(dataset, onlyClosedBlocks):
+        locations = reader.listFileBlockLocation(blockName)
 
-    datasetContent = reader.getFiles(dataset, onlyClosedBlocks)
+        if filterBlocks:
+            if blockName not in blockWhitelist:
+                msg = "Excluding block %s based on block whitelist: %s\n" % (
+                    blockName, blockWhitelist)
+                logging.debug(msg)
+                continue
 
-    for blockName, blockData in datasetContent.items():
-        locations = blockData['StorageElements']
+        if filterSites:
+            siteMatches = filter(
+                lambda x:x in locations, siteWhitelist
+                )
+
+            if len(siteMatches) == 0:
+                msg = "Excluding block %s based on sites: %s \n" % (
+                    blockName, locations,
+                    )
+                logging.debug(msg)
+                continue
+            else:
+                locations = siteMatches
+
+            
         newBlock = result.newFileblock(blockName, * locations)
+
+        blockData = reader.getFileBlock(blockName)[blockName]
         totalEvents = 0
         fileList = set()
         for fileInfo in blockData['Files']:
@@ -60,7 +86,7 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
     filterSites = len(siteWhitelist) > 0
     filterBlocks = len(blockWhitelist) > 0
     
-    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks)
+    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks, siteWhitelist, blockWhitelist)
     allJobs = []
     for block in splitter.listFileblocks():
         logging.debug("Processing Block: %s" % block)
@@ -71,26 +97,7 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
             logging.warning(msg)
             continue
 
-        if filterSites:
-            siteMatches = filter(
-                lambda x:x in blockInstance.seNames, siteWhitelist
-                )
-
-            if len(siteMatches) == 0:
-                msg = "Excluding block %s based on sites: %s \n" % (
-                    block, blockInstance.seNames,
-                    )
-                logging.debug(msg)
-                continue
-            else:
-                blockInstance.seNames = siteMatches
-        if filterBlocks:
-            if block not in blockWhitelist:
-                msg = "Excluding block %s based on block whitelist: %s\n" % (
-                    block, blockWhitelist)
-                logging.debug(msg)
-                continue
-            
+        
                 
         jobDefs = splitter.splitByEvents(block, eventsPerJob)
             
@@ -110,7 +117,8 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
     filterSites = len(siteWhitelist) > 0
     filterBlocks = len(blockWhitelist) > 0
 
-    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks)
+    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks,
+                                 siteWhitelist, blockWhitelist)
     allJobs = []
     
     for block in splitter.listFileblocks():
@@ -124,26 +132,7 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
             logging.warning(msg)
             continue
 
-        if filterSites:
-            siteMatches = filter(
-                lambda x:x in blockInstance.seNames, siteWhitelist
-                )
-            if len(siteMatches) == 0:
-                msg = "Excluding block %s based on sites: %s \n" % (
-                    block, blockInstance.seNames,
-                    )
-                logging.debug(msg)
-                continue
-            else:
-                blockInstance.seNames = siteMatches
-        if filterBlocks:
-            if block not in blockWhitelist:
-                msg = "Excluding block %s based on block whitelist: %s\n" % (
-                    block, blockWhitelist)
-                logging.debug(msg)
-                continue
-            
-
+        
         
             
         jobDefs = splitter.splitByFiles(block, filesPerJob)
