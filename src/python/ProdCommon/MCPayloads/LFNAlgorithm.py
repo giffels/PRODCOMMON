@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.7 2007/07/19 08:03:28 evansde Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.8 2007/09/17 08:29:00 evansde Exp $"
+__version__ = "$Revision: 1.8 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -106,6 +106,7 @@ class DefaultLFNMaker:
         self.jobname = jobSpecInstance.parameters['JobName']
         self.run = int(jobSpecInstance.parameters['RunNumber'])
         self.lfnGroup = str(self.run // 1000).zfill(4)
+        
 
     def __call__(self, node):
         """
@@ -126,26 +127,34 @@ class DefaultLFNMaker:
         else:
             base = node.getParameter("MergedLFNBase")[0]
         mergedBase = node.getParameter("MergedLFNBase")[0]
+
+
+        
         
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
         for modName, outModule in node.cfgInterface.outputModules.items():
+
+            
+            
             if ( not outModule.has_key('fileName') ):
                 msg = "OutputModule %s does not contain a fileName entry" % modName
                 raise RuntimeError, msg
-            if outModule.has_key("LFNBase"):
-                # already has a custom LFN base set
-                # dont overwrite it
-                continue
+
+            filterName = outModule.get("filterName", None)
+            if filterName not in ("None", "none", None):
+                lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
+            else:
+                lfnGroup = str(self.lfnGroup)
             
             outModule['LFNBase'] = os.path.join(base,
                                                 outModule['dataTier'],
-                                                str(self.lfnGroup))
+                                                lfnGroup)
             outModule['MergedLFNBase'] = os.path.join(mergedBase,
                                                       outModule['dataTier'],
-                                                      str(self.lfnGroup))
-            
+                                                      lfnGroup)
+
         return
 
 
