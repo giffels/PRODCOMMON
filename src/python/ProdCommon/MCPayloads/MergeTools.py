@@ -111,6 +111,8 @@ class SizeBasedMerge:
             newDataset["ParentDataset"] = dataset.name()
             newDataset['OutputModuleName'] = "%s-Merged" % (
                 newDataset['OutputModuleName'],)
+            if node.userSandbox != None:
+                newDataset['UserSandbox'] = node.userSandbox
             self.result.append(newDataset)
 
         return
@@ -195,6 +197,13 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littl
         cmsRunNode.application["Project"] = "CMSSW"
         cmsRunNode.application["Version"] = dataset['ApplicationVersion']
         cmsRunNode.application["Architecture"] = "slc3_ia32_gcc323"
+
+        #  //
+        # // Hack to forward UserSandbox to Merge Jobs
+        #//
+        userSandbox = dataset.get("UserSandbox", None)
+        if userSandbox != None:
+            cmsRunNode.userSandbox = userSandbox
 
         if isFastMerge == True:
             if littleE:
