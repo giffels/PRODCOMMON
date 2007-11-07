@@ -58,7 +58,8 @@ class ProcToMerge:
                 procName = "%s-merged" % procName
             newDataset["ProcessedDataset"] = procName
             newDataset["ParentDataset"] = dataset.name()
-
+            if node.userSandbox != None:
+                newDataset['UserSandbox'] = node.userSandbox
 
             newDatasets.append(newDataset)
 
@@ -265,3 +266,6 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littl
         results[inputDataset] = newWF
 
     return results
+
+
+
