@@ -251,6 +251,9 @@ class WorkflowSpec:
         
         """
         newNode = JobSpecNode()
+        if node.cfgInterface != None:
+            node.cfgInterface.rawCfg = None
+            node.cfgInterface.originalCfg = None
         newNode.loadPayloadNode(node)
         for key, val in self.parameters.items():
             newNode.addParameter(key, val)
