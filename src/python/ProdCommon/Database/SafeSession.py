@@ -8,8 +8,8 @@ Implements a DB session which:
     * deals with different database types.
 """
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: SafeSession.py,v 1.1 2007/12/05 14:53:14 ckavka Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 ##############################################################################
@@ -220,7 +220,7 @@ class SafeSession(object):
 
         # close or release connection
         if self.pool is None:
-            self.dbInstance.close(self.conn)
+            self.dbInstance.closeConnection(self.conn)
         else:
             self.pool.releaseConnection(self.conn)
 
