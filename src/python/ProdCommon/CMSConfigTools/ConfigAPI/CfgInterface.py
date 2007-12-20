@@ -67,13 +67,14 @@ class CfgInterface:
         Otherwise return None.
         
         """
-        result = []
-        
-        prods = self.data.producers
-        for key, value in prods.items():
+        result = []        
+        prodsAndFilters = {}
+        prodsAndFilters.update(self.data.producers)
+        prodsAndFilters.update(self.data.filters)
+        for key, value in prodsAndFilters.items():
             if value.type_() == "MixingModule":
                 result.append(value)
-                
+
 	return result
 
 
@@ -103,15 +104,28 @@ class CfgInterface:
 
         """
         for mixMod in self.mixingModules():
-            secSource = getattr(mixMod, "secsource", None)
-            if secSource == None: continue
-            fileList = getattr(secSource, "fileNames", None)
-            if fileList == None: continue
-            mixMod.secsource.fileNames = CfgTypes.untracked(
-                CfgTypes.vstring())
-            for fileName in fileList:
-                mixMod.secsource.fileNames.append(str(fileName))
+            print "Processing MixingModule: %s " % mixMod
+            secSource = getattr(mixMod, "input", None)
+            if secSource == None:
+                secSource = gettattr(mixMod, "secsource", None)
+            if secSource == None:
+                msg = "==============WARNING================\n"
+                msg += "No Input PoolRASource found for mixing module:\n"
+                msg += mixMod.dumpConfig()
+                msg += "\nCannot add Pileup Files...\n"
+                msg += "======================================\n"
+                print msg
+                continue
+            oldfileList = getattr(secSource, "fileNames", None)
+            if oldfileList == None:
+                print "No existing file list"
+                continue
+            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+                CfgTypes.vstring()))
 
+            for fileName in fileList:
+                secSource.fileNames.append(str(fileName))
+                print "PileupFile: %s " % str(fileName)
                 
         return
 
