@@ -7,10 +7,10 @@ Utilities for generating cleanup jobs
 """
 
 import time
-
-
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.MCPayloads.UUID import makeUUID
+import ProdCommon.MCPayloads.WorkflowTools as WorkflowTools
+
 
 
 def createCleanupWorkflowSpec():
@@ -23,21 +23,26 @@ def createCleanupWorkflowSpec():
     """
     timestamp = str(time.asctime(time.localtime(time.time())))
     timestamp = timestamp.replace(" ", "-")
+    timestamp = timestamp.replace(":", "_")
     workflow = WorkflowSpec()
     workflow.setWorkflowName("CleanUp-%s" % timestamp)
+    
     workflow.setRequestCategory("mc-cleanup")
     workflow.setRequestTimestamp(timestamp)
+    workflow.parameters['WorkflowType']="CleanUp"
     
 
     cleanUp = workflow.payload
     cleanUp.name = "cleanUp1"
-    cleanUp.type = "CleanUp"
+    cleanUp.type = "CleanUp" 
+    
     cleanUp.application["Project"] = ""
     cleanUp.application["Version"] = ""
     cleanUp.application["Architecture"] = ""
     cleanUp.application["Executable"] = "RuntimeCleanUp.py" # binary name
     cleanUp.configuration = ""
     cleanUp.cfgInterface = None
+
 
     return workflow
 
@@ -55,8 +60,8 @@ def createCleanupJobSpec(workflowSpec, site, *lfns):
     jobSpec = workflowSpec.createJobSpec()
     jobName = "%s-%s" % (workflowSpec.workflowName(), makeUUID())
     jobSpec.setJobName(jobName)
-    jobSpec.setJobType("Processing")
-    jobSpec.parameters['RunNumber'] = int(time.time())
+    jobSpec.setJobType("CleanUp") 
+    
     jobSpec.addWhitelistSite(site)
 
     
