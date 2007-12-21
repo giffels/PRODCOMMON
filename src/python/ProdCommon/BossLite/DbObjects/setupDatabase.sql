@@ -29,7 +29,6 @@ CREATE TABLE bl_job
     input_files TEXT,
     output_files TEXT,
     submission_number INT default 0,
-    sched_attr TEXT,
     PRIMARY KEY(id),
     UNIQUE(job_id, task_id),
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
@@ -63,6 +62,7 @@ CREATE TABLE bl_runningjob
     execution_user VARCHAR(255),
     application_return_code INT,
     wrapper_return_code INT,
+    sched_attr TEXT,
     closed CHAR default "N",
     PRIMARY KEY(id),
     UNIQUE(submission, job_id, task_id),

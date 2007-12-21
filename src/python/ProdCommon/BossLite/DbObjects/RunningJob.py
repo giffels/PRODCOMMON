@@ -42,6 +42,7 @@ class RunningJob(DbObject):
                'executionUser' : 'execution_user',
                'applicationReturnCode' : 'application_return_code',
                'wrapperReturnCode' : 'wrapper_return_code',
+               'schedulerAttributes' : 'sched_attr',
                'closed' : 'closed'
              }
 
@@ -74,6 +75,7 @@ class RunningJob(DbObject):
                  'executionUser' : None,
                  'applicationReturnCode' : None,
                  'wrapperReturnCode' : None,
+                 'schedulerAttributes' : None,
                  'closed' : None
                }
 

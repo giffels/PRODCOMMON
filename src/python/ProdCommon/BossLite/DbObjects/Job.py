@@ -32,8 +32,7 @@ class Job(DbObject):
                'logFile' : 'log_file',
                'inputFiles' : 'input_files',
                'outputFiles' : 'output_files',
-               'submissionNumber' : 'submission_number',
-               'schedulerAttributes' : 'sched_attr'
+               'submissionNumber' : 'submission_number'
               }
 
     # mapping between field names and database fields
@@ -56,8 +55,7 @@ class Job(DbObject):
                  'logFile' : None,
                  'inputFiles' : [],
                  'outputFiles' : [],
-                 'submissionNumber' : 0,
-                 'schedulerAttributes' : None
+                 'submissionNumber' : 0
               }
 
     # database properties

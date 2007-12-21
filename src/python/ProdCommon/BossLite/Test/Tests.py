@@ -457,7 +457,7 @@ class jobUnitTests(unittest.TestCase):
 
         # update all jobs
         for job in task.jobs:
-            job['schedulerAttributes'] = 'attr1 = 22'
+            job['standardError'] = 'output.err'
 
         # update information about task in database
         try:
@@ -489,7 +489,7 @@ class jobUnitTests(unittest.TestCase):
 
         # update all jobs
         for job in task.jobs:
-            if job['schedulerAttributes'] != 'attr1 = 22':
+            if job['standardError'] != 'output.err':
                 self.fail("Wrong update for scheduler attributes")
 
         logging.info("    took " + str(time() - start) + " seconds")
