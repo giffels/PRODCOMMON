@@ -107,7 +107,7 @@ class CfgInterface:
             print "Processing MixingModule: %s " % mixMod
             secSource = getattr(mixMod, "input", None)
             if secSource == None:
-                secSource = gettattr(mixMod, "secsource", None)
+                secSource = getattr(mixMod, "secsource", None)
             if secSource == None:
                 msg = "==============WARNING================\n"
                 msg += "No Input PoolRASource found for mixing module:\n"
