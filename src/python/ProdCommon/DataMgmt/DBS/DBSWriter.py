@@ -23,7 +23,7 @@ from ProdCommon.MCPayloads.DatasetTools import getOutputDatasets
 from ProdCommon.MCPayloads.MergeTools import createMergeDatasetWorkflow
 
 
-
+import logging
 
 
 class _CreateDatasetOperator:
@@ -551,10 +551,14 @@ class DBSWriter:
         """
         reader = DBSReader(sourceDBS)
         inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
+        blkCounter=0
         for block in inputBlocks:
             #  //
             # // Test block does not exist in target
             #//
+            blkCounter=blkCounter+1
+            msg="Importing block %s of %s: %s " % (blkCounter,len(inputBlocks),block)
+            logging.debug(msg)
             if self.reader.blockExists(block):
                 #  //
                 # // block exists
@@ -574,6 +578,7 @@ class DBSWriter:
                     continue
 
             try:
+
                 self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, noParentsReadOnly = False)
             except DbsException, ex:
                 msg = "Error in DBSWriter.importDataset\n"
