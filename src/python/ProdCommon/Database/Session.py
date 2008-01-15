@@ -194,66 +194,159 @@ def rollback_all():
    for sessionID in session.keys():
        rollback(sessionID)
 
-def convert(description=[],rows=[],oneItem=False,decode=[]):
+def convert(description=[],rows=[],oneItem=False,decode=[],decodeb64=[]):
    global current_session
    if description==[]:
       cursor=get_cursor(current_session)
       for x in cursor.description:
-          description.append(x[0]) 
+          description.append(x[0])
 
    result=[]
    for row in rows:
       row_result={}
       for i in xrange(0,len(description)):
-          if description[i] in decode:
-              row_result[description[i]]=cPickle.loads(base64.decodestring(row[i]))
-          else:
-              row_result[description[i]]=row[i]
+         if description[i] in decode:
+            row_result[description[i]]=cPickle.loads(base64.decodestring(row[i]))
+         elif description[i] in decodeb64:
+            row_result[description[i]]=base64.decodestring(row[i])
+         else:
+            row_result[description[i]]=row[i]
       result.append(row_result)
    if oneItem:
       if len(result)>0:
           return result[0]
       return None
+
    return result
 
-def insert(table_name,rows={},encode=[]):
-   if type(rows)==dict:
-      rows=[rows]
-   if len(rows)==0:
+def insert(table_name,rows,columns=[],encode=[],encodeb64=[],duplicate=False):
+   """
+   _insert_
+
+   Generic way of inserting rows into a table. The column names
+   are based on the keys of the rows dictionary or list.
+
+   """
+
+   # make sure everything is in the right format
+   if type(rows) == dict:
+      rows = [rows]
+   # if nothing to do return
+   if len(rows) == 0:
       return
-   column_names=rows[0].keys()
-   logging.debug("Inserting objects of type "+table_name)
-   sqlStr="INSERT INTO "+table_name+"("
-   comma=False
+
+   if type(rows[0]) == dict:
+      column_names = rows[0].keys()
+   if type(rows[0]) == list:
+      column_names = columns
+
+   logging.debug("Inserting objects of type %s" % table_name)
+
+   sqlStr = "INSERT INTO %s (" % table_name
+   comma = False
    for column_name in column_names:
-       if comma:
-          sqlStr+=','
-       comma=True
-       sqlStr+=column_name
-   sqlStr+=')'
-   sqlStr+=' VALUES '
-   row_comma=False
+      if comma:
+         sqlStr += ', '
+      comma = True
+      sqlStr += column_name
+   sqlStr += ')'
+   sqlStr += ' VALUES '
+
+   row_comma = False
    for row in rows:
-       if row_comma:
-          sqlStr+=','
-       row_comma=True
-       sqlStr+='('
-       entry_comma=False
-       for column_name in column_names:
-           if column_name in encode:
-              entry=cPickle.dumps(base64.encodestring(row[column_name]))
-           else:
-              entry=row[column_name]
-           if entry_comma:
-               sqlStr+=','
-           entry_comma=True
-           if entry=="LAST_INSERT_ID()":
-               sqlStr+=entry
-           else:
-               sqlStr+='"'+str(entry)+'"'
-       sqlStr+=')'
+      if row_comma:
+         sqlStr += ', '
+      row_comma = True
+      sqlStr += '('
+      entry_comma = False
+      if type(rows[0]) == dict:
+         for column_name in column_names:
+            if column_name in encode:
+               entry = base64.encodestring(cPickle.dumps(row[column_name]))
+            elif column_name in encodeb64:
+               entry = base64.encodestring(row[column_name])
+            else:
+               entry = row[column_name]
+               if entry_comma:
+                  sqlStr += ', '
+               entry_comma = True
+               if entry == "LAST_INSERT_ID()":
+                  sqlStr += entry
+               else:
+                  sqlStr += "'%s'" % str(entry)
+         sqlStr += ')'
+      else:
+         i=0
+         for column_name in column_names:
+            if column_name in encode:
+               entry = base64.encodestring(cPickle.dumps(row[i]))
+            elif column_name in encodeb64:
+               entry = base64.encodestring(row[i])
+            else:
+               entry = row[i]
+            if entry_comma:
+               sqlStr += ', '
+            entry_comma = True
+            if entry == "LAST_INSERT_ID()":
+               sqlStr += str(entry)
+            else:
+               sqlStr += "'%s'" % str(entry)
+            i += 1
+         sqlStr += ')'
+   if duplicate:
+      sqlStr += " ON DUPLICATE KEY UPDATE "
+      comma = False
+      for column_name in column_names:
+         if comma:
+            sqlStr += ', '
+         elif not comma :
+            comma=True
+         sqlStr += "%s = '%s'" % (column_name,str(row[column_name]))
+
    execute(sqlStr)
-  
+
+def retrieve(table_name,values,columns=[],decode=[],decodeb64=[]):
+   """
+   __retrieve__
+
+   Generic retrieve table rows as dictionaries, where it is
+   assumed that the key of tabe is labeled "id"
+   """
+
+   # if nothing to do return
+   if len(values) == 0:
+      return
+
+   logging.debug("Retrieving objects of type %s" % table_name)
+
+   sqlStr = 'SELECT '
+   if ( len(columns) == 0 ):
+      sqlStr+= '*'
+   else:
+      comma = False
+      for column_name in columns.iterkeys():
+         if comma:
+            sqlStr += ', '
+         comma = True
+         sqlStr += column_name
+   sqlStr += ' FROM %s WHERE ' % table_name
+
+   entry_comma=False
+   for value_name in values.keys():
+      if entry_comma:
+         sqlStr += ', '
+      entry_comma=True
+      sqlStr += value_name
+      if type(values[value_name]) == list:
+         sqlStr += " in %s" % str(tuple(values[value_name]))
+      else:
+         sqlStr += " = '%s'" % values[value_name]
+
+   execute(sqlStr)
+
+   return convert(description=[],rows=fetchall(),oneItem=False,decode=[],decodeb64=[])
+
+
 
 ###########################################################
 ###  used only in this file most of the time.        #####
