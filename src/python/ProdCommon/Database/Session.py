@@ -331,11 +331,11 @@ def retrieve(table_name,values,columns=[],decode=[],decodeb64=[]):
          sqlStr += column_name
    sqlStr += ' FROM %s WHERE ' % table_name
 
-   entry_comma=False
+   entry_and=False
    for value_name in values.keys():
-      if entry_comma:
-         sqlStr += ', '
-      entry_comma=True
+      if entry_and:
+         sqlStr += 'and '
+      entry_and=True
       sqlStr += value_name
       if type(values[value_name]) == list:
          sqlStr += " in %s" % str(tuple(values[value_name]))
