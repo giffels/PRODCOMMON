@@ -187,6 +187,25 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
+    def updateDB( self, obj ) :
+        """
+        update any object table in the DB
+        works for tasks, jobs, runningJobs
+        """
+
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # update
+        obj.update(self.db)
+        self.session.commit()
+
+
+    ##########################################################################
+
+        
     def loadTask( self, taskId, jobAttributes=None ) :
         """
         retrieve task information from db using task id
@@ -277,27 +296,6 @@ class BossLiteAPI(object):
         taskList = self.db.select(task)
         
         return taskList
-    
-    ##########################################################################
-
-        
-    def loadJob( self, taskId, jobId ) :
-        """
-        retrieve job information from db using task and job id
-        """
-        
-        return self.loadTask( taskId, {'id' : jobId} )
-
-
-    ##########################################################################
-
-        
-    def loadJobByName( self, taskId, jobName ) :
-        """
-        retrieve job information from db for job 'name' of task taskId
-        """
-
-        return self.loadTask( taskId, {'name' : jobName} )
 
     ##########################################################################
 
@@ -369,19 +367,110 @@ class BossLiteAPI(object):
                 taskList.append( task )
 
         return taskList
+    
+    ##########################################################################
+
+        
+    def loadJob( self, taskId, jobId ) :
+        """
+        retrieve job information from db using task and job id
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating job
+        jobAttributes = { 'taskid' : taskId, jobId : 'id'}
+        job = Job( jobAttributes )
+
+        # load job from db
+        job.load(self.db)
+
+        return job
 
     ##########################################################################
 
-    def loadSubmitted( self, taskRange="all", jobRange="all" ) :
+    def loadJobsByAttr( self, jobAttributes ) :
         """
-        retrieve information from db for jobs submitted using:
-        - range of tasks
-        - range of jobs inside a task
-        
-        Takes the highest submission number for each job
+        retrieve job information from db for job matching attributes
         """
 
-        return self.load( taskRange, jobRange, {'closed' : None} )
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating jobs
+        job = Job( jobAttributes )
+
+        # load job from db        
+        jobList = self.db.select(job)
+
+        return jobList
+
+
+
+    ##########################################################################
+
+    def getRunningInstance( self, job, runningAttrs = None ) :
+        """
+        retrieve RunningInstance where existing or create it
+        """
+
+
+        # check whether the running instance is still loaded
+        if job.runningJob is not None :
+            return
+
+        # set eventual attributes
+        if runningAttrs is None :
+            runningAttrs = {}
+
+        # load if exixts, create it otherwise
+        if job.getRunningInstance(self.db) is None :
+            run = RunningJob(runningAttrs)
+            job.newRunningInstance( run, self.db )
+        
+
+    ##########################################################################
+
+    def loadJobsByRunningAttr( self, runningAttrs ) :
+        """
+        retrieve job information from db for job
+        whose running instance match attributes
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating jobs
+        run = RunningJob( runningAttrs )
+
+        # load job from db        
+        runJobList = self.db.select(run)
+
+        # new job list
+        jobList = []
+
+        # recall jobs
+        for rJob in  runJobList :
+            job = Job(
+                { 'id' : rJob['jobId'] , 'taskId' : rJob['taskId'] }
+                )
+            job.runningJob = rJob
+            jobList.append( job )
+
+        return jobList
+
+    ##########################################################################
+
+    def loadJobByName( self, jobName ) :
+        """
+        retrieve job information from db for jobs with name 'name'
+        """
+
+        return self.loadJobsByAttr( { 'name' : jobName } )
 
     ##########################################################################
 
@@ -395,17 +484,33 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
-        # db connect
-        if self.db is None :
-            self.connect()
+        retJobList = []
 
-        # creating jobs
-        job = Job()
-        job['status'] = 'W'
-        jobList = self.db.select(job)
+        # load all jobs from task
+        jobList =  self.loadJobsByAttr( {} )
 
-        return jobList
+        # evaluate just jobs without running instances or with status W
+        for job in jobList :
+            job.getRunningInstance()
+            if job.runningJob is None or job.runningJob == [] \
+                   or job.runningJob['status'] == 'W' :
+                retJobList.append( job )
 
+        return retJobList
+
+
+    ##########################################################################
+
+    def loadSubmitted( self, taskRange="all", jobRange="all" ) :
+        """
+        retrieve information from db for jobs submitted using:
+        - range of tasks
+        - range of jobs inside a task
+        
+        Takes the highest submission number for each job
+        """
+
+        return self.loadJobsByRunningAttr( { 'closed' : None } )
 
     ##########################################################################
 
@@ -418,8 +523,8 @@ class BossLiteAPI(object):
         
         Takes the highest submission number for each job
         """
-        
-        return self.load( taskRange, jobRange, {'status' : 'SD'} )
+
+        return self.loadJobsByRunningAttr( { 'status' : 'SD' } )
 
     ##########################################################################
 
@@ -433,17 +538,11 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # creating jobs
-        job = Job()
-        job['status'] = 'SA'
-        jobList = self.db.select(job)
-
-        job['status'] = 'SK'
-        jobList.extend( self.db.select(job) )
+        # load aborted
+        jobList = self.loadJobsByRunningAttr( { 'status' : 'SA' } )
+        
+        # load killed
+        jobList.extend( self.loadJobsByRunningAttr( { 'status' : 'SK' } ) )
         
         return jobList
 
@@ -461,7 +560,7 @@ class BossLiteAPI(object):
 
         for job in task.jobs:
             if jobList is None or job['id'] in jobList:
-                job.runningJob['closed'] = 'Y'
+                job.closeRunningInstance( self.db )
 
         # update
         task.update(self.db)
@@ -473,31 +572,11 @@ class BossLiteAPI(object):
 
     def submit( self, task, jobRange='all', requirements='', jobAttributes=None ):
         """
-        first task submission
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        for job in task.jobs:
-            if jobRange == 'all' or job['id'] in jobRange:
-                run = RunningJob()
-                run['schedulerAttributes'] = jobAttributes
-                job.newRunningInstance(run, self.db)
-
-        # scheduler submit
-        self.scheduler.submit( task, requirements )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-
-
-    def resubmit( self, taskId, jobRange='all', requirements='' ):
-        """
+        works for Task objects
+        
+        just create running instances and submit to the scheduler
+        in case of first submission
+        
         archive existing submission an create a new entry for the next
         submission (i.e. duplicate the entry with an incremented
         submission number)
@@ -507,23 +586,64 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
+        # load and close eventual running instances
+        for job in task.jobs:
+            if jobRange != 'all' and job['id'] in jobRange:
+                job.closeRunningInstance( self.db )
+
+        # update changes
+        task.update(self.db)
+        self.session.commit()
+
+        # create or recreate running instances
+        for job in task.jobs:
+            if jobRange == 'all' or job['id'] in jobRange:
+                self.getRunningInstance(
+                    job, { 'schedulerAttributes' : jobAttributes }
+                    )
+
+        # scheduler submit
+        self.scheduler.submit( task, requirements )
+
+        # update
+        task.update(self.db)
+        self.session.commit()
+
+
+    ##########################################################################
+
+
+    def resubmit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
+        """
+        unlike previous method, works using taskId
+        and load itself the Task object
+        
+        archive existing submission an create a new entry for the next
+        submission (i.e. duplicate the entry with an incremented
+        submission number)
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # load and close running instances
         task = self.load( taskId, jobRange )[0]
 
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                run = job.getRunningInstance( self.db )
-                run['closed'] = 'Y'
+                job.closeRunningInstance( self.db )
 
-        # update
+        # update changes
         task.update(self.db)
         self.session.commit()
 
         # get new running instance
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                run = RunningJob()
-                run['schedulerAttributes'] = requirements
-                job.newRunningInstance(run, self.db)
+                self.getRunningInstance(
+                    job, { 'schedulerAttributes' : jobAttributes }
+                    )
 
         # scheduler submit
         self.scheduler.submit( task, requirements )
@@ -533,7 +653,6 @@ class BossLiteAPI(object):
         self.session.commit()
 
     ##########################################################################
-    
 
     def query( self, taskId, jobRange='all', queryType='node' ):
         """
@@ -549,7 +668,7 @@ class BossLiteAPI(object):
         # retrieve running instances
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                job.getRunningInstance( self.db )
+                self.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.query( task, queryType )
@@ -575,7 +694,7 @@ class BossLiteAPI(object):
         # retrieve running instances
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                job.getRunningInstance( self.db )
+                self.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.query( task, outdir )
@@ -596,7 +715,7 @@ class BossLiteAPI(object):
         # retrieve running instances
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                job.getRunningInstance( self.db )
+                self.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.kill( task )
@@ -608,7 +727,7 @@ class BossLiteAPI(object):
     ##########################################################################
 
 
-    def matchResources( self, taskId, jobRange='all', requirements='' ) :
+    def matchResources( self, taskId, jobRange='all', requirements='', jobAttributes=None ) :
         """
         perform a resources discovery
         """
@@ -623,7 +742,9 @@ class BossLiteAPI(object):
         # retrieve running instances
         for job in task.jobs:
             if jobRange != 'all' and job['id'] in jobRange:
-                job.getRunningInstance( self.db )
+                self.getRunningInstance(
+                    job, { 'schedulerAttributes' : jobAttributes }
+                    )
 
         # scheduler query
         return self.scheduler.matchResources( task, requirements )
@@ -643,7 +764,9 @@ class BossLiteAPI(object):
         task = self.load( taskId, jobRange )[0]
 
         for job in task.jobs:
-            job.getRunningInstance( self.db )
+            self.getRunningInstance(
+                job, { 'schedulerAttributes' : jobAttributes }
+                )
 
         return self.scheduler.jobDescription ( task, requirements )
 
@@ -683,7 +806,7 @@ class BossLiteAPI(object):
 
         # retrieve running instances
         for job in task.jobs:
-            job.getRunningInstance( self.db )
+            self.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.postMortem( task, outfile )
