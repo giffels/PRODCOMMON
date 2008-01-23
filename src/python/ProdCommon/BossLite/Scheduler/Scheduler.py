@@ -8,8 +8,8 @@ from BossLite.DbObjects.Task import Task
 from BossLite.DbObjects.RunningJob import RunningJob
 from BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: Scheduler.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
+__revision__ = "$Revision: 1.1 $"
 
 class Scheduler(object):
     """
@@ -102,6 +102,8 @@ class Scheduler(object):
         # the object passed is a runningJob: query and update
         if type(obj) == RunningJob :
             schedId = obj['schedulerId']
+            if obj['schedulerId'] is None:
+                return
             jobAttributes = self.schedObj.query( schedId, \
                                            self.parameters['service'], 'node' )
             for key, value in jobAttributes[schedId].iteritems() :
@@ -109,6 +111,9 @@ class Scheduler(object):
 
         # the object passed is a Job: query and update
         elif type(obj) == Job :
+            if obj.runningJob is None \
+                   or obj.runningJob['schedulerId'] is None:
+                return
             schedId = obj.runningJob['schedulerId']
             jobAttributes = self.schedObj.query( schedId, \
                                            self.parameters['service'], 'node' )
@@ -124,7 +129,8 @@ class Scheduler(object):
             # query performed through single job ids
             if objType == 'node' :
                 for job in obj.jobs :
-                    if job.runningJob is None:
+                    if job.runningJob is None\
+                           or job.runningJob['schedulerId'] is None:
                         continue
                     schedIds.append( job.runningJob['schedulerId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
@@ -142,7 +148,10 @@ class Scheduler(object):
 
             # update
             for job in obj.jobs :
-                valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
+                try:
+                    valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
+                except:
+                    continue
                 for key, value in valuesMap.iteritems() :
                     job.runningJob[key] = value
 
@@ -180,9 +189,9 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = []
             for job in obj.jobs:
-                if job.runningJob is None:
-                    continue
-                schedIdList.append( job.runningJob['schedulerId'] )
+                if job.runningJob is not None \
+                       and job.runningJob['schedulerId'] is not  None:
+                    schedIdList.append( job.runningJob['schedulerId'] )
 
             # perform actual getoutput
             self.schedObj.getOutput( schedIdList, outdir, \
@@ -226,9 +235,9 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = []
             for job in obj.jobs:
-                if job.runningJob is None:
-                    continue
-                schedIdList.append( job.runningJob['schedulerId'] )
+                if job.runningJob is not None \
+                       and job.runningJob['schedulerId'] is not  None:
+                    schedIdList.append( job.runningJob['schedulerId'] )
 
             # perform actual kill
             self.schedObj.kill( schedIdList, self.parameters['service'] )
@@ -308,10 +317,10 @@ class Scheduler(object):
 
             # retrieve scheduler id list
             schedIdList = []
-            for job in obj.jobs:              
-                if job.runningJob is None:
-                    continue
-                schedIdList.append( job.runningJob['schedulerId'] )
+            for job in obj.jobs:
+                if job.runningJob is not None \
+                       and job.runningJob['schedulerId'] is not  None:
+                    schedIdList.append( job.runningJob['schedulerId'] )
 
             # perform actual kill
             self.schedObj.purgeService( schedIdList )
