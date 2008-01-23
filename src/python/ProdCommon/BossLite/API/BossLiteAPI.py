@@ -224,7 +224,7 @@ class BossLiteAPI(object):
         task = Task()
         task['id'] = taskId
 
-        # create template for jobs with particular logFile
+        # create template for jobs with particular jobAttributes
         job = Job(jobAttributes)
         task.addJob(job)
 
@@ -430,7 +430,7 @@ class BossLiteAPI(object):
         if job.getRunningInstance(self.db) is None :
             run = RunningJob(runningAttrs)
             job.newRunningInstance( run, self.db )
-        
+            run.save(self.db)
 
     ##########################################################################
 
@@ -587,13 +587,13 @@ class BossLiteAPI(object):
             self.connect()
 
         # load and close eventual running instances
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                job.closeRunningInstance( self.db )
+        #for job in task.jobs:
+        #    if jobRange != 'all' and job['id'] in jobRange:
+        #        job.closeRunningInstance( self.db )
 
         # update changes
-        task.update(self.db)
-        self.session.commit()
+        #task.update(self.db)
+        #self.session.commit()
 
         # create or recreate running instances
         for job in task.jobs:
@@ -847,6 +847,7 @@ updating the database server:
         session = SafeSession( dbInstance = dbInstance )
 
         # check if db exists
+        create = True
         query = "show databases like '" + self.dbConfig['dbName'] + "'"
         try:
             session.execute( query )
@@ -854,18 +855,21 @@ updating the database server:
             results = session.fetchall()
             if results[0][0] == self.dbConfig['dbName'] :
                 print "DB ", self.dbConfig['dbName'], "already exists.\n"
+                create = False
         except IndexError :
             pass
         except Exception, msg:
             raise DbError(str(msg))
 
         # create db
-        query = 'create database ' + self.dbConfig['dbName']
-        try:
-            session.execute( query )
-            session.commit()
-        except Exception, msg:
-            raise DbError(str(msg))
+        if create :
+            query = 'create database ' + self.dbConfig['dbName']
+            try:
+                session.execute( query )
+                session.commit()
+            except Exception, msg:
+                raise DbError(str(msg))
+        
 
         # create tables
         queries = open(schemaLocation).read()
