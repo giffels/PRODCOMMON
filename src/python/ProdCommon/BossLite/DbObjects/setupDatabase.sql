@@ -43,6 +43,7 @@ CREATE TABLE bl_runningjob
     job_id INT NOT NULL,
     submission_path TEXT,
     scheduler TEXT,
+    service TEXT,
     scheduler_id VARCHAR(255),
     scheduler_parent_id VARCHAR(255),
     status_scheduler VARCHAR(255),

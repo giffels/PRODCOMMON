@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: RunningJob.py,v 1.2 2007/12/21 11:08:55 ckavka Exp $"
+__revision__ = "$Revision: 1.2 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -23,6 +23,7 @@ class RunningJob(DbObject):
                'submission' : 'submission',
                'submissionPath' : 'submission_path',
                'scheduler' : 'scheduler',
+               'service' : 'service',
                'schedulerId' : 'scheduler_id',
                'schedulerParentId' : 'scheduler_parent_id',
                'statusScheduler' : 'status_scheduler',
@@ -56,6 +57,7 @@ class RunningJob(DbObject):
                  'submission' : None,
                  'submissionPath' : None,
                  'scheduler' : None,
+                 'service' : None,
                  'schedulerId' : None,
                  'schedulerParentId' : None,
                  'statusScheduler' : None,
