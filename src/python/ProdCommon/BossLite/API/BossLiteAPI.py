@@ -84,7 +84,6 @@ class BossLiteAPI(object):
             dbConfig['socketFileLocation']
             )
         self.dbConfig.update( dbConfig )
-        print self.dbConfig['socketFileLocation']
 
         # update scheduler config
         self.schedConfig = {'user_proxy' : '', 'service' : '', 'config' : '' }
@@ -928,10 +927,6 @@ updating the database server:
         except StandardError:
             pass
 
-
-        # execute query
-        query = open(schemaLocation).read()
-
         try:
             # if bl_task exists, no further operations are needed
             session.execute("select count(*) from bl_task")
@@ -940,8 +935,12 @@ updating the database server:
         except StandardError:
             pass
 
+
+        # execute query
+        queries = open(schemaLocation).read()
         try:
-            session.execute(query)
+            for query in queries.split(';') :
+                session.execute(query)
         except Exception, msg:
             raise DbError(str(msg))
 
