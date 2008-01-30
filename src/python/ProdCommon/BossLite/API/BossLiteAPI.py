@@ -1071,6 +1071,8 @@ updating the database server:
             node.appendChild(subNode)
             
         root.appendChild(node)
+        cfile.appendChild(root)
+
         return cfile.toxml()
 
 
