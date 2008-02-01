@@ -144,7 +144,7 @@ class Connection:
         Commits the transaction for a particular connection (connection)
         """
         
-        return
+        
         if connectionID == None:
             connectionID = self.currentConnection
         if cursorID == None:
