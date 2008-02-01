@@ -111,6 +111,7 @@ class Operation:
             else:
                 i=0
                 for column_name in column_names:
+                     
                     if column_name in encode:
                         entry = base64.encodestring(cPickle.dumps(row[i]))
                     elif column_name in encodeb64:
@@ -129,13 +130,17 @@ class Operation:
         if duplicate:
             sqlStr+=" ON DUPLICATE KEY UPDATE "
             comma=False
+            i = 0
             for column_name in column_names:
                 if comma:
                    sqlStr+=','
                 elif not comma :
                    comma=True
-                sqlStr+= column_name + '="'+ str(row[column_name]) + '"'
-        
+                if type(row) == dict:
+                   sqlStr+= column_name + '="'+ str(row[column_name]) + '"'
+                else:
+                   sqlStr+= column_name + '="'+ str(row[i]) + '"'
+                i += 1        
         
         self.connection.execute(sqlStr)
       
