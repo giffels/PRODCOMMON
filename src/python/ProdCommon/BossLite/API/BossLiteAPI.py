@@ -100,6 +100,7 @@ class BossLiteAPI(object):
         else:
             # update db config
             self.dbConfig =  {'dbName':'BossLiteDB'}
+            dbConfig['dbName'] = expandvars( dbConfig['dbName'] )
             self.dbConfig.update( dbConfig )
 
             # create DB instance
