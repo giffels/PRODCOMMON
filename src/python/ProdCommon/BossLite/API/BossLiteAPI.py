@@ -55,7 +55,7 @@ class BossLiteAPI(object):
             'service' : 'https://wms104.cern.ch:7443/glite_wms_wmproxy_server',
             'config' : '/etc/glite_wms.conf' }
 
-        - dbConfig is a dictionary with the format
+        - dbConfig can be a dictionary with the format
            {'dbName':'BossLiteDB',
                'host':'localhost',
                'user':'BossLiteUser',
@@ -69,22 +69,6 @@ class BossLiteAPI(object):
             
         """
 
-        # update db config
-        self.dbConfig =  {'dbName':'BossLiteDB',
-                          'user':'BossLiteUser',
-                          'passwd':'BossLitePass',
-                          'socketFileLocation':'',
-                          'host':'',
-                          'portNr':'',
-                          'refreshPeriod' : 4*3600 ,
-                          'maxConnectionAttempts' : 5,
-                          'dbWaitingTime' : 10 
-                          }
-        dbConfig['socketFileLocation'] = expandvars( 
-            dbConfig['socketFileLocation']
-            )
-        self.dbConfig.update( dbConfig )
-
         # update scheduler config
         self.schedConfig = {'user_proxy' : '', 'service' : '', 'config' : '' }
         self.schedConfig.update( schedulerConfig )
@@ -94,11 +78,29 @@ class BossLiteAPI(object):
 
         # MySQL: get DB configuration from config file
         if self.database == "MySQL":
+            # update db config
+            self.dbConfig =  {'dbName':'BossLiteDB',
+                              'user':'BossLiteUser',
+                              'passwd':'BossLitePass',
+                              'socketFileLocation':'',
+                              'host':'',
+                              'portNr':'',
+                              'refreshPeriod' : 4*3600 ,
+                              'maxConnectionAttempts' : 5,
+                              'dbWaitingTime' : 10 
+                              }
+            dbConfig['socketFileLocation'] = expandvars( 
+                dbConfig['socketFileLocation']
+                )
+            self.dbConfig.update( dbConfig )
+
+            # create DB instance
             self.dbInstance = MysqlInstance(self.dbConfig)
 
         else:
-            dbName = self.dbConfig['dbName']
-            self.dbConfig = { 'dbName' : dbName }
+            # update db config
+            self.dbConfig =  {'dbName':'BossLiteDB'}
+            self.dbConfig.update( dbConfig )
 
             # create DB instance
             self.dbInstance = SqliteInstance(self.dbConfig)
