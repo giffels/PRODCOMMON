@@ -314,3 +314,55 @@ class FileInfo(dict):
               for x in  lumiSect.children ]
 
         return
+
+
+class AnalysisFile(dict):
+    """
+    _AnalysisFile_
+
+    Object to represent an analysis file in the job report
+
+
+    """
+    def __init__(self):
+        dict.__init__(self)
+        self.setdefault("FileName", None)
+
+
+    def save(self):
+        """
+        _save_
+
+        Serialise to IMProvNode
+
+        """
+        result = IMProvNode("AnalysisFile")
+
+        for key, val in self.items():
+            if key == "FileName":
+                result.addNode(IMProvNode("FileName", val))
+            else:
+                result.addNode(IMProvNode(key, None, Value = str(val)))
+        return result
+
+
+    def load(self, improvNode):
+        """
+        _load_
+
+        Deserialize from node into self
+
+        """
+        for child in improvNode.children:
+            if child.name == "FileName":
+                self['FileName'] = str(child.chardata)
+            else:
+                attr = child.attrs.get("Value", None)
+                if attr != None:
+                    attr = str(attr)
+                self[str(child.name)] = attr
+
+        return
+                
+
+
