@@ -4,13 +4,13 @@ _SchedulerInterface_
 
 """
 
-from BossLite.Common.Exceptions import SchedulerError
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 from os import getuid
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: SchedulerInterface.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
+__revision__ = "$Revision: 1.1 $"
 
 class SchedulerInterface(object):
     """

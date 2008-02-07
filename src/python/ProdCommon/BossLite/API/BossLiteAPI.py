@@ -25,13 +25,13 @@ except ImportError :
     print "Warning: missing pysqlite2\n"
     
 # Task and job objects
-from BossLite.DbObjects.Job import Job
-from BossLite.DbObjects.Task import Task
-from BossLite.DbObjects.RunningJob import RunningJob
-from BossLite.Common.Exceptions import *
+from ProdCommon.BossLite.DbObjects.Job import Job
+from ProdCommon.BossLite.DbObjects.Task import Task
+from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+from ProdCommon.BossLite.Common.Exceptions import *
 
 # Scheduler interaction
-from BossLite.Scheduler import Scheduler
+from ProdCommon.BossLite.Scheduler import Scheduler
 
 from os.path import expandvars
 

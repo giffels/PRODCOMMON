@@ -3,13 +3,13 @@
 _Scheduler_
 
 """
-from BossLite.DbObjects.Job import Job
-from BossLite.DbObjects.Task import Task
-from BossLite.DbObjects.RunningJob import RunningJob
-from BossLite.Common.Exceptions import SchedulerError
+from ProdCommon.BossLite.DbObjects.Job import Job
+from ProdCommon.BossLite.DbObjects.Task import Task
+from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.2 2008/01/23 19:46:12 gcodispo Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: Scheduler.py,v 1.3 2008/02/07 10:51:23 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 
 class Scheduler(object):
     """
@@ -32,7 +32,7 @@ class Scheduler(object):
         # load scheduler plugin
         try:
             module =  __import__(
-                'BossLite.Scheduler.' + self.scheduler, globals(), locals(),
+                'ProdCommon.BossLite.Scheduler.' + self.scheduler, globals(), locals(),
                 [self.scheduler]
                 )
             schedClass = vars(module)[self.scheduler]

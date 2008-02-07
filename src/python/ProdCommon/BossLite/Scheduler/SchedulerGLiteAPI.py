@@ -3,24 +3,24 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.2 2008/02/07 10:51:23 gcodispo Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import sys
 import os
 import random
 import traceback
-from BossLite.Scheduler.SchedulerInterface import SchedulerInterface
-from BossLite.Common.Exceptions import SchedulerError
-from BossLite.DbObjects.Job import Job
-from BossLite.DbObjects.Task import Task
-from BossLite.DbObjects.RunningJob import RunningJob
+from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
+from ProdCommon.BossLite.DbObjects.Job import Job
+from ProdCommon.BossLite.DbObjects.Task import Task
+from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 #
 # Import gLite specific modules
 try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
-    from BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
+    from ProdCommon.BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
          groupByWMS
 except:
     err = \
