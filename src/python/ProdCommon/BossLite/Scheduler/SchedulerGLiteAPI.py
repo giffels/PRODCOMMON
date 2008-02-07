@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id$"
-__version__ = "$Revision$"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import sys
 import os
@@ -15,29 +15,20 @@ from BossLite.Common.Exceptions import SchedulerError
 from BossLite.DbObjects.Job import Job
 from BossLite.DbObjects.Task import Task
 from BossLite.DbObjects.RunningJob import RunningJob
-
-# import glite modules
+#
+# Import gLite specific modules
 try:
-    gliteLocation = os.environ['GLITE_LOCATION']
-    libPath = os.path.join(gliteLocation, "lib")
-    sys.path.insert(0, libPath)
-except StandardError :
-    print "GLITE_LOCATION variable not set. "
-
-try:
-    gliteWmsLocation = os.environ['GLITE_WMS_LOCATION']
-    libPath = os.path.join(gliteWmsLocation, "lib")
-    sys.path.insert(0, libPath)
-except StandardError :
-    print "Warning: the GLITE_LOCATION variable is not set.\n"
-
-from wmproxymethods import Wmproxy
-from wmproxymethods import BaseException
-from BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
-     groupByWMS
-
-
-
+    from wmproxymethods import Wmproxy
+    from wmproxymethods import BaseException
+    from BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
+         groupByWMS
+except:
+    err = \
+        """
+        missing glite environment.
+        Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
+        """
+    raise ImportError(err)
 #
 # defining handler for timeout kill
 #

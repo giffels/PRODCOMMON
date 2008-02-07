@@ -8,8 +8,8 @@ from BossLite.DbObjects.Task import Task
 from BossLite.DbObjects.RunningJob import RunningJob
 from BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: Scheduler.py,v 1.2 2008/01/23 19:46:12 gcodispo Exp $"
+__revision__ = "$Revision: 1.2 $"
 
 class Scheduler(object):
     """
@@ -39,10 +39,10 @@ class Scheduler(object):
             self.schedObj = schedClass( self.parameters['user_proxy'])
         except KeyError:
             msg = 'Scheduler interface' + self.scheduler + 'not found'
-            raise SchedulerError(msg)
+            raise SchedulerError('missing', msg)
         except ImportError, e:
-            msg = 'Cannot create scheduler ' + self.scheduler + ' ' + str(e)
-            raise SchedulerError(msg)
+            msg = 'Cannot create scheduler ' + self.scheduler
+            raise SchedulerError(msg, str(e))
 
     ##########################################################################
 
