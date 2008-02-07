@@ -151,6 +151,14 @@ class PayloadNode:
         self.outputDatasets = []
         
 
+        self.scriptControls = {}
+        self.scriptControls.setdefault("PreTask", [])
+        self.scriptControls.setdefault("PreExe", [])
+        self.scriptControls.setdefault("PostExe", [])
+        self.scriptControls.setdefault("PostTask", [])
+        
+            
+
         #  //
         # // Dataset information is stored as DatasetInfo objects
         #//   
@@ -351,8 +359,14 @@ class PayloadNode:
         inpLinksNode = IMProvNode("InputLinks")
         for iLink in self._InputLinks:
             inpLinksNode.addNode(iLink.save())
-            
 
+        scriptsNode = IMProvNode("ScriptControls")
+        for key, scriptList in self.scriptControls.items():
+            scriptListNode = IMProvNode("ScriptList", None, Name = key)
+            [ scriptListNode.addNode(IMProvNode("Script", None, Value = x))
+              for x in scriptList ]
+            scriptsNode.addNode(scriptListNode)
+            
         if self.cfgInterface == None:
             configNode = IMProvNode("Configuration",
                                     base64.encodestring(self.configuration),
@@ -362,6 +376,7 @@ class PayloadNode:
         
         node.addNode(appNode)
         node.addNode(appConNode)
+        node.addNode(scriptsNode)
         node.addNode(inputNode)
         node.addNode(outputNode)
         node.addNode(pileupNode)
@@ -458,7 +473,22 @@ class PayloadNode:
             field = str(appConField.name)
             value = str(appConField.attrs['Value'])
             self.applicationControls[field] = value
-            
+
+        #  //
+        # // Script Controls
+        #//
+        scriptConQ = IMProvQuery("/%s/ScriptControls/ScriptList" % self.__class__.__name__)
+        scriptLists = scriptConQ(improvNode)
+        for scriptList in scriptLists:
+            listName = scriptList.attrs.get("Name", None)
+            if listName == None: continue
+            listName = str(listName)
+            for script in scriptList.children:
+                scriptName = script.attrs.get("Value", None)
+                if scriptName == None: continue
+                self.scriptControls[listName].append(str(scriptName))
+                
+        
         #  //
         # // Dataset details
         #//  Input Datasets
