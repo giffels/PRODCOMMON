@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.1 2008/01/17 14:58:38 gcodispo Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.2 2008/02/07 14:57:47 spiga Exp $"
+__revision__ = "$Revision: 1.2 $"
 
 class SchedulerInterface(object):
     """
@@ -80,7 +80,7 @@ class SchedulerInterface(object):
     
     ##########################################################################
 
-    def decode ( self, obj ) :
+    def decode ( self, obj, requirements='' ) :
         """
         prepare scheduler specific job description
 
