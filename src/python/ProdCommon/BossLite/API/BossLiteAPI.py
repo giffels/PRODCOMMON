@@ -30,30 +30,21 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import *
 
-# Scheduler interaction
-from ProdCommon.BossLite.Scheduler import Scheduler
-
 from os.path import expandvars
 
 ##########################################################################
 
 class BossLiteAPI(object):
     """
-    High level API class for DBObjcets and Scheduler interaction.
+    High level API class for DBObjets.
     It allows load/operate/update jobs and taks using just id ranges
     
     """
 
-    def __init__(self, database, dbConfig, schedulerConfig):
+    def __init__(self, database, dbConfig):
         """
         initialize the API instance
         - database can be both MySQl or SQLite
-        - dbConfig is in the form ....
-        - schedulerConfig is a dictionary with the format
-           {'name' : 'SchedulerGLiteAPI',
-            'user_proxy' : '/proxy/path',
-            'service' : 'https://wms104.cern.ch:7443/glite_wms_wmproxy_server',
-            'config' : '/etc/glite_wms.conf' }
 
         - dbConfig can be a dictionary with the format
            {'dbName':'BossLiteDB',
@@ -68,10 +59,6 @@ class BossLiteAPI(object):
               }
             
         """
-
-        # update scheduler config
-        self.schedConfig = {'user_proxy' : '', 'service' : '', 'config' : '' }
-        self.schedConfig.update( schedulerConfig )
 
         # database
         self.database = database       # "MySQL" or "SQLite"
@@ -106,11 +93,6 @@ class BossLiteAPI(object):
             # create DB instance
             self.dbInstance = SqliteInstance(self.dbConfig)
 
-        # scheduler
-        self.scheduler = Scheduler.Scheduler(
-            schedulerConfig['name'], self.schedConfig
-            )
-
         # create a session and db access
         self.session = SafeSession(dbInstance = self.dbInstance)
         self.db = TrackingDB(self.session)
@@ -144,6 +126,7 @@ class BossLiteAPI(object):
         """
         
         task = self.deserialize( xml )
+        task.updateInternalData()
         self.saveTask( task )
 
         return task
@@ -161,6 +144,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # save task
+        task.updateInternalData()
         task.save(self.db)
         self.session.commit()
 
@@ -568,250 +552,6 @@ class BossLiteAPI(object):
         task.update(self.db)
         self.session.commit()
 
-
-    ##########################################################################
-
-
-    def submit( self, task, jobRange='all', requirements='', jobAttributes=None ):
-        """
-        works for Task objects
-        
-        just create running instances and submit to the scheduler
-        in case of first submission
-        
-        archive existing submission an create a new entry for the next
-        submission (i.e. duplicate the entry with an incremented
-        submission number)
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # load and close eventual running instances
-        #for job in task.jobs:
-        #    if jobRange != 'all' and job['id'] in jobRange:
-        #        job.closeRunningInstance( self.db )
-
-        # update changes
-        #task.update(self.db)
-        #self.session.commit()
-
-        # create or recreate running instances
-        for job in task.jobs:
-            if jobRange == 'all' or job['id'] in jobRange:
-                self.getRunningInstance(
-                    job, { 'schedulerAttributes' : jobAttributes }
-                    )
-
-        # scheduler submit
-        self.scheduler.submit( task, requirements )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-
-    ##########################################################################
-
-
-    def resubmit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
-        """
-        unlike previous method, works using taskId
-        and load itself the Task object
-        
-        archive existing submission an create a new entry for the next
-        submission (i.e. duplicate the entry with an incremented
-        submission number)
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # load and close running instances
-        task = self.load( taskId, jobRange )[0]
-
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                job.closeRunningInstance( self.db )
-
-        # update changes
-        task.update(self.db)
-        self.session.commit()
-
-        # get new running instance
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.getRunningInstance(
-                    job, { 'schedulerAttributes' : jobAttributes }
-                    )
-
-        # scheduler submit
-        self.scheduler.submit( task, requirements )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-
-    def query( self, taskId, jobRange='all', queryType='node' ):
-        """
-        query status and eventually other scheduler related information
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        task = self.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.getRunningInstance( job )
-
-        # scheduler query
-        self.scheduler.query( task, queryType )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-
-
-    def getOutput( self, taskId, jobRange='all', outdir='' ):
-        """
-        retrieve output or just put it in the destination directory
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        task = self.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.getRunningInstance( job )
-
-        # scheduler query
-        self.scheduler.query( task, outdir )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-    
-    def kill( self, taskId, jobRange='all' ):
-        """
-        kill the job instance
-        """
-
-        task = self.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.getRunningInstance( job )
-
-        # scheduler query
-        self.scheduler.kill( task )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-
-
-    def matchResources( self, taskId, jobRange='all', requirements='', jobAttributes=None ) :
-        """
-        perform a resources discovery
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create a session and db access
-        task = self.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.getRunningInstance(
-                    job, { 'schedulerAttributes' : jobAttributes }
-                    )
-
-        # scheduler query
-        return self.scheduler.matchResources( task, requirements )
-
-
-    ##########################################################################
-        
-    def jobDescription ( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
-        """
-        query status and eventually other scheduler related information
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        task = self.load( taskId, jobRange )[0]
-
-        for job in task.jobs:
-            self.getRunningInstance(
-                job, { 'schedulerAttributes' : jobAttributes }
-                )
-
-        return self.scheduler.jobDescription ( task, requirements )
-
-    ##########################################################################
-
-    def purgeService( self, taskId, jobRange='all') :
-        """
-        purge the service used by the scheduler from job files
-        not available for every scheduler
-        """
-        
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # retrieve and purge task
-        task = self.load( taskId, jobRange )[0]
-        self.scheduler.purgeService( task )
-
-        # update
-        task.update(self.db)
-        self.session.commit()
-
-    ##########################################################################
-
-    def postMortem ( self, taskId, jobId, outfile ) :
-        """
-        execute any post mortem command such as logging-info
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create a session and db access
-        task = self.loadTask( taskId, {'id' : jobId} )
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.getRunningInstance( job )
-
-        # scheduler query
-        self.scheduler.postMortem( task, outfile )
 
     ##########################################################################
 
