@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.2 2008/02/07 10:51:23 gcodispo Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.3 2008/02/07 14:57:47 spiga Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import sys
 import os
@@ -155,7 +155,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         parse config files, merge jdl and retrieve wms list
         """
+        
         try:
+            gliteLocation = os.environ['GLITE_LOCATION']
             schedClassad = ""
             endpoints = []
             if len( wms ) == 0:
@@ -648,20 +650,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # input files handling
         infiles = ''
         filelist = ''
-        for infile in job.inFiles() :
-            if infile == '' :
-                continue
-            infiles += '"file://' + self.fullPath( infile ) + '",'
-            filelist += self.fullPath( infile ) + ' '
+        for infile in job['fullPathInputFiles'] :
+            if infile != '' :
+                infiles += '"file://' + infile + '",'
+            filelist += infile + ' '
         if len( infiles ) != 0 :
             jdl += 'InputSandbox = {%s};\n'% infiles[:-1]
 
         # output files handling
         outfiles = ''
-        for outfile in job.outFiles() :
-            if outfile == '' :
-                continue
-            outfiles += '"' + self.fullPath( outfile ) + '",'
+        for outfile in job['fullPathOutputFiles'] :
+            if outfile != '' :
+                outfiles += '"' + outfile + '",'
         if len( outfiles ) != 0 :
             jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
 
@@ -671,7 +671,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             jdl += job.runningJob[ 'schedulerAttributes' ]
 
         # blindly append user requirements
-        jdl += requirements
+        jdl += requirements + '\n]\n'
         
         # return values
         return jdl, filelist
@@ -740,7 +740,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # job output files handling
             outfiles = ''
             for filePath in job['fullPathOutputFiles'] :
-                outfiles += '"' + filePath + '",'
+                if filePath != '' :
+                    outfiles += '"' + filePath + '",'
             if len( outfiles ) != 0 :
                 jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
 
@@ -751,18 +752,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                    or task['startDirectory'][0] == '/':
                 # files are stored locally, compose with 'file://'
                 for filePath in job['fullPathInputFiles']:
-                    if filePath == '' :
-                        continue
-                    localfiles += "root.inputsandbox[%d]," % ISBindex
+                    if filePath != '' :
+                        localfiles += "root.inputsandbox[%d]," % ISBindex
                     GlobalSandbox += '"file://' + filePath + '",'
                     filelist += filePath + ' '
                     ISBindex += 1
             else :
                 # files are elsewhere, just add their composed path
                 for filePath in job['fullPathInputFiles']:
-                    if filePath == '' :
-                        continue
-                    localfiles += "root.inputsandbox[%d]," % ISBindex
+                    if filePath != '' :
+                        localfiles += "root.inputsandbox[%d]," % ISBindex
                     GlobalSandbox += filePath
                     ISBindex += 1
                 
