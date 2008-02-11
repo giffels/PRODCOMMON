@@ -170,7 +170,7 @@ def factoriseJobSpec(jobSpecInstance, jobSpecDir,njobs=[], eventCount=0, **args)
         jobSpecLocation=jobSpecDir+'/'+newSpec.parameters['JobName']+'.xml'
         newSpec.save(jobSpecLocation)
 
-        result.append({'id':newSpec.parameters['JobName'],'spec':jobSpecLocation})
+        result.append({'id':newSpec.parameters['JobName'],'spec':jobSpecLocation,'events':eventsPerJob})
 
         currentRun += 1
         currentEvent += eventsPerJob
