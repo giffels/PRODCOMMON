@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.3 2008/02/07 14:57:47 spiga Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.4 2008/02/08 13:49:58 gcodispo Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import sys
 import os
@@ -22,13 +22,13 @@ try:
     from wmproxymethods import BaseException
     from ProdCommon.BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
          groupByWMS
-except:
+except StandardError, e:
     err = \
         """
         missing glite environment.
         Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
         """
-    raise ImportError(err)
+    raise ImportError(err + str(e))
 #
 # defining handler for timeout kill
 #
@@ -107,7 +107,7 @@ def processClassAd(  ClassAd ):
     return cladDict, endpoints, configfile
 
 
-def parseConfig ( configfile, gliteLocation, vo='cms' ):
+def parseConfig ( configfile, vo='cms' ):
     """
     Utility fuction
     
@@ -116,11 +116,12 @@ def parseConfig ( configfile, gliteLocation, vo='cms' ):
 
     cladAddDict = {}
     endpoints = []
+    print "using config file", configfile
     try:
         if ( len(configfile) == 0 ):
             configfile = "%s/etc/%s/glite_wms.conf" \
-                         % ( gliteLocation, vo )
-        # print "using config file", configfile
+                         % ( os.environ['GLITE_LOCATION'], vo )
+
         fileh = open( configfile, "r" )
         configClad = fileh.read().strip()
         cladAddDict, endpoints, dummyfile = processClassAd( configClad )
@@ -157,7 +158,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         
         try:
-            gliteLocation = os.environ['GLITE_LOCATION']
             schedClassad = ""
             endpoints = []
             if len( wms ) == 0:
@@ -168,11 +168,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 endpoints = wms
                 
             if len( endpoints ) == 0 :
-                endpoints, schedClassad = \
-                           parseConfig ( configfile, gliteLocation )
+                endpoints, schedClassad = parseConfig ( configfile )
             else :
-                tmp, schedClassad = \
-                     parseConfig ( configfile, gliteLocation )
+                tmp, schedClassad = parseConfig ( configfile )
                 
             begin = ''
             jdl.strip()
@@ -181,6 +179,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 jdl = begin + schedClassad + jdl[1:]
         except SchedulerError, err:
             print err
+            print traceback.format_exc()
             raise err
         except :
             error = str ( traceback.format_exception(sys.exc_info()[0],
