@@ -24,5 +24,6 @@ setup (name='prodcommon',
 		 'ProdCommon.MCPayloads',
                  'ProdCommon.WebServiceClient',
                  'ProdCommon.WebServices',
-                 'ProdCommon.ThreadTools'],)
+                 'ProdCommon.ThreadTools',
+                 'ProdCommon.BossLite'],)
 
