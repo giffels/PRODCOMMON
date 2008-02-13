@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.3 2008/02/07 10:51:23 gcodispo Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: Scheduler.py,v 1.4 2008/02/07 14:57:47 spiga Exp $"
+__revision__ = "$Revision: 1.4 $"
 
 class Scheduler(object):
     """
@@ -53,8 +53,8 @@ class Scheduler(object):
 
         # delegate submission to scheduler plugin
         jobAttributes, bulkId, service = self.schedObj.submit(
-            obj, self.parameters['config'], self.parameters['service'], \
-            requirements
+            obj, requirements, \
+            self.parameters['config'], self.parameters['service']
             )
 
         # update single job
