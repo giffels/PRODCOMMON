@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.5 2008/02/13 15:08:53 gcodispo Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.6 2008/02/15 12:12:41 gcodispo Exp $"
+__version__ = "$Revision: 1.6 $"
 
 import sys
 import os
@@ -641,7 +641,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += 'Type = "job";\n'
         jdl += 'Executable = "%s";\n' % job[ 'executable' ]
         jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
-        if job[ 'standardInput' ] is not None:
+        if job[ 'standardInput' ] != '':
             jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
         jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
         jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
@@ -726,7 +726,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
             jdl += 'Executable = "%s";\n'% job[ 'executable' ]
             jdl += 'Arguments  = "%s";\n'% job[ 'arguments' ]
-            if job[ 'standardInput' ] is not None:
+            if job[ 'standardInput' ] != '':
                 jdl += 'StdInput = "%s";\n'% job[ 'standardInput' ]
             jdl += 'StdOutput  = "%s";\n'% job[ 'standardOutput' ]
             jdl += 'StdError   = "%s";\n'% job[ 'standardError' ]
@@ -763,13 +763,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                         localfiles += "root.inputsandbox[%d]," % ISBindex
                     GlobalSandbox += filePath
                     ISBindex += 1
-                
-            jdl += 'InputSandbox = {%s};\n'% localfiles[:-1]
+
+            if localfiles != '' :
+                jdl += 'InputSandbox = {%s};\n'% localfiles[:-1]
             jdl += '],\n'
         jdl  = jdl[:-2] + "\n};\n"
         
         # global sandbox definition
-        jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
+        if GlobalSandbox != '' :
+            jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
         jdl += \
             'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"}; \n'
         
