@@ -4,14 +4,14 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id$"
-__version__ = "$Revision$"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.1 2008/01/17 15:27:55 gcodispo Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import sys
 import os
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
-import Job
+import Job as lbJob
 
 
 def config():
@@ -133,7 +133,7 @@ def checkJobs( job_list, user_proxy='' ):
     status =   Status()
 
     # Loading dictionary with available parameters list    
-    jobStatus = Job.JobStatus (status)
+    jobStatus = lbJob.JobStatus (status)
     states = jobStatus.states_names
 
     for jobid in jobs:
@@ -183,7 +183,7 @@ def checkJobsBulk( job_list, user_proxy='' ):
 
     print "Loading dictionary with available parameters list"
     # Loading dictionary with available parameters list
-    jobStatus = Job.JobStatus (status)
+    jobStatus = lbJob.JobStatus (status)
     print "Loaded dictionary with available parameters list"
     states = jobStatus.states_names
     attrNumber = jobStatus.ATTR_MAX
