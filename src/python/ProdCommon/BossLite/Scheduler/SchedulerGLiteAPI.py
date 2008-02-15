@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.4 2008/02/08 13:49:58 gcodispo Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.5 2008/02/13 15:08:53 gcodispo Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import sys
 import os
@@ -20,8 +20,6 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
-    from ProdCommon.BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
-         groupByWMS
 except StandardError, e:
     err = \
         """
@@ -578,6 +576,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         query status and eventually other scheduler related information
         """
         
+        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
+             checkJobs, checkJobsBulk
         if objType == 'node':
             return checkJobs( schedIdList )
         elif objType == 'parent' :
