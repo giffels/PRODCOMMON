@@ -345,7 +345,7 @@ class BossLiteAPI(object):
                 if jobRange != 'all' :
                     for jobId in jobList:
                         job = Job( jobAttributes )
-                        job['id'] = str( jobId )
+                        job['jobId'] = str( jobId )
                         task.addJob(job)
 
                 # load task
@@ -367,7 +367,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # creating job
-        jobAttributes = { 'taskId' : taskId, "id" : jobId }
+        jobAttributes = { 'taskId' : taskId, "jobId" : jobId}
         job = Job( jobAttributes )
 
         # load job from db
@@ -442,7 +442,7 @@ class BossLiteAPI(object):
         # recall jobs
         for rJob in  runJobList :
             job = Job(
-                { 'id' : rJob['jobId'] , 'taskId' : rJob['taskId'] }
+                { 'jobId' : rJob['jobId'] , 'taskId' : rJob['taskId'] }
                 )
             job.runningJob = rJob
             jobList.append( job )
