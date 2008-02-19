@@ -11,10 +11,10 @@ __author__ = "Giuseppe.Codispoti@bo.infn.it"
 import logging
 
 # db interaction
-from BossLite.API.BossLiteAPI import BossLiteAPI
+from ProdCommon.BossLite.API.BossLiteAPI import BossLiteAPI
 
 # Scheduler interaction
-from BossLite.Scheduler import Scheduler
+from ProdCommon.BossLite.Scheduler import Scheduler
 
 ##########################################################################
 
