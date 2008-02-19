@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os,sys,getopt
 import random
-from FwkJobRep.FwkJobReport import FwkJobReport
+from ProdCommon.FwkJobRep.FwkJobReport import FwkJobReport
 
 """
 AlpGen generator
