@@ -367,7 +367,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # creating job
-        jobAttributes = { 'taskid' : taskId, jobId : 'id'}
+        jobAttributes = { 'taskId' : taskId, "id" : jobId }
         job = Job( jobAttributes )
 
         # load job from db
