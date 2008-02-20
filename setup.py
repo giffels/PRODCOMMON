@@ -25,5 +25,9 @@ setup (name='prodcommon',
                  'ProdCommon.WebServiceClient',
                  'ProdCommon.WebServices',
                  'ProdCommon.ThreadTools',
-                 'ProdCommon.BossLite'],)
+                 'ProdCommon.BossLite',
+                 'ProdCommon.BossLite.API',
+                 'ProdCommon.BossLite.Common',
+                 'ProdCommon.BossLite.DbObjects',
+                 'ProdCommon.BossLite.Scheduler'],)
 
