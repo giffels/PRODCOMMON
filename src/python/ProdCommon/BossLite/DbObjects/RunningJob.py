@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.2 2007/12/21 11:08:55 ckavka Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: RunningJob.py,v 1.3 2008/01/23 19:41:50 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -31,8 +31,6 @@ class RunningJob(DbObject):
                'statusReason' : 'status_reason',
                'statusHistory' : 'status_history',
                'destination' : 'destination',
-               'fileBlock' : 'file_block',
-               'dlsDestination' : 'dls_destination',
                'lbTimestamp' : 'lb_timestamp',
                'submissionTime' : 'submission_time',
                'startTime' : 'start_time',
@@ -66,8 +64,6 @@ class RunningJob(DbObject):
                  'statusHistory' : [],
                  'destination' : None,
                  'fileBlock' : None,
-                 'dlsDestination' : None,
-                 'lbTimestamp' : None,
                  'submissionTime' : None,
                  'startTime' : None,
                  'stopTime' : None,

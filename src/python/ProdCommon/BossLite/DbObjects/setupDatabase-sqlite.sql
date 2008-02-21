@@ -6,6 +6,10 @@ CREATE TABLE bl_task
     start_dir TEXT,
     output_dir TEXT,
     global_sanbox TEXT,
+    cfg_name TEXT,
+    server_name TEXT,
+    job_type TEXT,
+    script_name TEXT,
     unique(name)
   );
 
@@ -23,6 +27,8 @@ CREATE TABLE bl_job
     log_file TEXT,
     input_files TEXT,
     output_files TEXT,
+    file_block TEXT,
+    dls_destination TEXT,
     submission_number INT default 0,
     UNIQUE(job_id, task_id),
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
@@ -44,8 +50,6 @@ CREATE TABLE bl_runningjob
     status_reason TEXT,
     status_history TEXT,
     destination TEXT,
-    file_block TEXT,
-    dls_destination TEXT,
     lb_timestamp TIMESTAMP,
     submission_time TIMESTAMP,
     start_time TIMESTAMP,

@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: Task.py,v 1.1 2007/12/21 09:09:29 ckavka Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -25,6 +25,10 @@ class Task(DbObject):
                'startDirectory' : 'start_dir',
                'outputDirectory' : 'output_dir',
                'globalSandbox' : 'global_sanbox',
+               'cfgName' : 'cfg_name',
+               'serverName' : 'server_name',
+               'jobType' : 'job_type',
+               'scriptName' : 'script_name'
              }
 
     # mapping between field names and database fields
@@ -36,6 +40,10 @@ class Task(DbObject):
                  'startDirectory' : None,
                  'outputDirectory' : None,
                  'globalSandbox' : None,
+                 'cfgName' : None,
+                 'serverName' : None,
+                 'jobType' : None,
+                 'scriptName' : None
               }
 
     # database properties
