@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.2 2007/12/21 11:08:55 ckavka Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: Job.py,v 1.3 2008/02/21 16:27:34 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -57,8 +57,8 @@ class Job(DbObject):
                  'logFile' : None,
                  'inputFiles' : [],
                  'outputFiles' : [],
+                 'fileBlock' : None,
                  'dlsDestination' : None,
-                 'lbTimestamp' : None,
                  'submissionNumber' : 0
               }
 
