@@ -28,6 +28,58 @@ from IMProv.IMProvDoc import IMProvDoc
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 from IMProv.IMProvLoader import loadIMProvString
+    
+
+class CMSSWConfigExtension:
+    """
+    _CMSSWConfigExtension_
+
+    Wrapper class to provide pickle/unpickle of extension objects
+
+    """
+    def __init__(self, name, data = None):
+        self.data = data
+        self.pickledData = None
+        self.name = name
+        self.unpickled = True
+
+    def save(self):
+        """
+        _save_
+
+        Pack the data object into an IMProvNode
+
+        """
+        pickleData = pickle.dumps(self.data)
+        zipData = zlib.compress(pickleData)
+        packedData = base64.encodestring(zipData)
+        result = IMProvNode("Extension", packedData, Name = self.name)
+        return result
+
+
+    def load(self, improvNode):
+        """
+        _load_
+
+        Unpack the pickled data object from the IMProvNode.
+        Will keep the raw pickled data if there is a problem
+
+        """
+        self.unpickled = False
+        decodeData = base64.decodestring(improvNode.chardata)
+        unzipData = zlib.decompress(decodeData)
+        try:
+            self.data = pickle.loads(unzipData)
+            self.unpickled = False
+        except Exception, ex:
+            msg = "Error unpickling data member"
+            print msg
+            self.pickledData = unzipData
+        return
+        
+        
+        
+        
 
 
 class CMSSWConfig:
@@ -69,6 +121,35 @@ class CMSSWConfig:
         # // cfg metadata used for creating datasets
         #//
         self.configMetadata = {}
+
+        #  //
+        # // Rather than building in lots of extra attrs for
+        #//  adding more information, provide a generic way to
+        #  //include blocks of information such as run, lumi
+        # // etc as extension objects.
+        #//  Objects added to this will be pickled and zipped to pack
+        #  //them in an XML node.
+        # // Keep these things small, or performance will start to stink
+        #//
+        self.extensions = {}
+
+
+
+    def addExtension(self, extName, dataObject):
+        """
+        _addExtension_
+
+        Add a data structure that will be stored as part of this
+        object in the job spec
+
+        dataObject must be pickleable.
+
+        """
+        newExt = CMSSWConfigExtension(extName, dataObject)
+        self.extensions[extName] = newExt
+        return
+        
+
 
     def setInputMaxEvents(self, maxEvents):
         """
@@ -238,8 +319,14 @@ class CMSSWConfig:
                                      origData, Encoding="base64")
             result.addNode(origCfgNode)
             
+        #  //
+        # // Extensions
+        #//
+        extNode = IMProvNode("Extensions")
+        for extName, extInstance in self.extensions.items():
+            extNode.addNode(extInstance.save())
+        result.addNode(extNode)
         
-
         return result
 
 
@@ -334,6 +421,21 @@ class CMSSWConfig:
             self.originalCfg = base64.decodestring(origCfg)
         else:
             self.originalCfg = None
+
+        #  //
+        # // Extensions
+        #//
+        extQ = IMProvQuery("/CMSSWConfig/Extensions/Extension")
+        extNodes = extQ(improvNode)
+        for extNode in extNodes:
+            nodeName = extNode.attrs.get("Name", None)
+            if nodeName == None: continue
+            newExt = CMSSWConfigExtension(nodeName)
+            newExt.load(extNode)
+            self.extensions[nodeName] = newExt
+            
+            
+
         return
     
     def pack(self):
@@ -496,3 +598,6 @@ class CMSSWConfig:
         self.pileupFiles = cfgInterface.pileupFileList()
         
         return cfgInterface
+
+
+
