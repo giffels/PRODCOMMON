@@ -21,13 +21,13 @@ def alpGen():
     alpGridLabel  = gridLabelLine.split('\n')
 
     global outputFile
-    outputFile = "%s" % alpGridLabel[0]
+    outputFile = "%s" % alpGridLabel[0].strip()
 
     """
     Copy alpgen grid2 files
     """
     try:
-        msg="cp $CMSSW_RELEASE_BASE/src/GeneratorInterface/AlpgenInterface/data/%s.grid2 %s.grid2" % (alpGridLabel[0],alpGridLabel[0])
+        msg="cp $CMSSW_RELEASE_BASE/src/GeneratorInterface/AlpgenInterface/data/%s.grid2 %s.grid2" % (alpGridLabel[0].strip(),alpGridLabel[0].strip())
         os.system(msg)
     except Exception, ex:
     	return 1
@@ -46,7 +46,7 @@ def alpGen():
     file_uw = open(cfgFile_uw, 'w')
 
     msg =  "1	 ! imode\n"
-    msg += "%s	 ! label for files\n" % alpGridLabel[0]
+    msg += "%s	 ! label for files\n" % alpGridLabel[0].strip()
     msg += "2    ! start with: 0=new grid, 1=previous warmup grid, 2=previous generation grid\n"
     msg += "0 0  ! Nevents/iteration,  N(warm-up iterations)\n"
     msg += "%d	 ! Nevents generated after warm-up\n" % int(nEvents)
@@ -72,7 +72,7 @@ def alpGen():
     file_we.write(msg)
 
     msg =  "2	 ! imode\n"
-    msg += "%s	 ! label for files\n" % alpGridLabel[0]
+    msg += "%s	 ! label for files\n" % alpGridLabel[0].strip()
     msg += "*** The above 2 lines provide mandatory inputs for all processes\n"
     msg += "*** (Comment lines are introduced by the three asteriscs)\n"
     msg += "*** The lines below modify existing defaults for the hard process under study\n"
@@ -110,23 +110,23 @@ def alpGen():
     """
     try:
         msg = "rm -f nCmsGenEvents.txt;"
-        msg+= "echo `tail -1 %s_unw.par | awk '{print$1}'` > nCmsGenEvents.txt;" % alpGridLabel[0]
+        msg+= "echo `tail -1 %s_unw.par | awk '{print$1}'` > nCmsGenEvents.txt;" % alpGridLabel[0].strip()
         os.system(msg)
     except Exception, ex:
     	return 4
 
     try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s_unw.par .;" % alpGridLabel[0]
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s_unw.par .;" % alpGridLabel[0].strip()
         os.system(msg)
     except Exception, ex:
     	return 5
     try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.unw .;" % alpGridLabel[0]
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.unw .;" % alpGridLabel[0].strip()
         os.system(msg)
     except Exception, ex:
     	return 5
     try:
-        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.wgt .;" % alpGridLabel[0]
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/%s.wgt .;" % alpGridLabel[0].strip()
         os.system(msg)
     except Exception, ex:
     	return 5
