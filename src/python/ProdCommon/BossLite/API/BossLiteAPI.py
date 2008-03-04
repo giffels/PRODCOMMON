@@ -220,7 +220,24 @@ class BossLiteAPI(object):
         return task
 
     ##########################################################################
+    ###### Added By DanieleS. 
+    def loadTaskByID( self, ID ) :
+        """
+        retrieve task information from db for task 'name'
+        """
 
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # create template for task
+        task = Task()
+        task['id'] = ID
+
+        # load task
+        task.load(self.db)
+        
+        return task
         
     def loadTaskByName( self, name ) :
         """
