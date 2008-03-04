@@ -1,96 +1,102 @@
-
 from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
+from SElement import SElement
+from Exceptions import MissingDestination, ProtocolUnknown, ProtocolMismatch
 
 
 class SBinterface:
-    def __init__(self, protocol, SEname, port = None):
-        protocol = str.lower(protocol).strip()
-        if protocol == "srmv1":
-            if port is None:
-                self._proto = ProtocolSrmv1(SEname)
-            else:
-                self._proto = ProtocolSrmv1(SEname, port)
-        elif protocol == "srmv2":
-            if port is None:
-                self._proto = ProtocolSrmv2(SEname)
-            else:
-                self._proto = ProtocolSrmv2(SEname, port)
-        elif protocol == "local":
-            self._proto = ProtocolLocal(SEname, protocol)
-        else:
-            raise "Not yet supported protocol"
+    """
+    kind of simple stupid interface to generic Protocol operations
+    """
 
+    def __init__(self, storel1, storel2 = None):
+        self.storage1 = storel1
+        self.storage2 = storel2
+        self.mono     = False
+        self.useProxy = True
+        if self.storage2 != None:
+            self.mono = True
+        if self.storage1.protocol == 'local':
+            self.useProxy = False
+        if self.mono:
+            if storel1.protocol != storel2.protocol:
+                if storel1.protocol != 'local' and storel2.protocol != 'local':
+                    raise ProtocolMismatch('Mismatch between protocol %s - %s' \
+                                          %(storel1.protocol, storel2.protocol))
         
-    def copy( self, source, dest, type = None, \
-              SEhost = None, port = None, protocol = None):
-        if type is None:
-            return self._proto.copy(source, dest)
-        elif SEhost is None:
-            return self._proto.copy(source, dest, type)
-        elif port is None:
-            return self._proto.copy(source, dest, type, SEhost)
-        elif protocol is None:
-            return self._proto.copy(source, dest, type, SEhost, port)
+    def copy( self, source, dest, proxy = None ):
+        if not self.mono:
+            raise MissingDestination()
         else:
-            return self._proto.copy(source, dest, type, SEhost, port, protocol)
+            self.storage1.workon = source
+            self.storage2.workon = dest
+            if self.useProxy:
+                self.storage1.action.copy(self.storage1, self.storage2, proxy)
+            elif self.storage2.protocol != 'local':
+                self.storage2.action.copy(self.storage1, self.storage2)
+            else:
+                self.storage1.action.copy(self.storage1, self.storage2)
+            self.storage1.workon = ""
+            self.storage2.workon = ""
 
-    def move( self, source, dest, type = None, \
-              SEhost = None, port = None, protocol = None):
-        if type is None:
-            return self._proto.copy(source, dest)
-        elif SEhost is None:
-            return self._proto.move(source, dest, type)
-        elif port is None:
-            return self._proto.move(source, dest, type, SEhost)
-        elif protocol is None:
-            return self._proto.move(source, dest, type, SEhost, port)
+    def move( self, source, dest, proxy = None ):
+        if not self.mono:
+            raise MissingDestination()
         else:
-            return self._proto.move(source, dest, type, SEhost, port, protocol)
+            self.storage1.workon = source
+            self.storage2.workon = dest
+            if self.useProxy:
+                self.storage1.action.move(self.storage1, self.storage2, proxy)
+            elif self.storage2.protocol != 'local':
+                self.storage2.action.move(self.storage1, self.storage2)
+            else:
+                self.storage1.action.move(self.storage1, self.storage2)
+            self.storage1.workon = ""
+            self.storage2.workon = ""
 
-    def checkExists(self, filePath, SEhost = None, port = None):
-        if SEhost is None:
-            return self._proto.checkExists(filePath)
-        elif port is None:
-            return self._proto.checkExists(filePath, SEhost)
+    def checkExists( self, source, proxy = None ):
+        self.storage1.workon = source
+        resval = False
+        if self.useProxy:
+            resval = self.storage1.action.checkExists(self.storage1, proxy)
         else:
-            return self._proto.checkExists(filePath, SEhost, port)
+            resval = self.storage1.action.checkExists(self.storage1)
+        self.storage1.workon = ""
+        return resval
 
-    def getPermission(self, filePath, SEhost = None, port = None):
-        if SEhost is None:
-            return self._proto.checkPermission(filePath)
-        elif port is None:
-            return self._proto.checkPermission(filePath, SEhost)
+    def getPermission( self, source, proxy = None ):
+        self.storage1.workon = source
+        resval = None
+        if self.useProxy:
+            resval = self.storage1.action.checkPermission(self.storage1, proxy)
         else:
-            return self._proto.checkPermission(filePath, SEhost, port)
+            resval = self.storage1.action.checkPermission(self.storage1)
+        self.storage1.workon = ""
+        return resval
 
-    def getList(self, filePath, SEhost = None, port = None):
-        if SEhost is None:
-            return self._proto.listPath(filePath)
-        elif port is None:
-            return self._proto.listPath(filePath, SEhost)
+    def getList( self, source, proxy = None ):
+        pass
+
+    def delete( self, source, proxy = None ):
+        self.storage1.workon = source
+        if self.useProxy:
+            self.storage1.action.delete(self.storage1, proxy)
         else:
-            return self._proto.listPath(filePath, SEhost, port)
+            self.storage1.action.delete(self.storage1)
+        self.storage1.workon = ""
 
-    def delete(self, filePath, SEhost = None, port = None):
-        if SEhost is None:
-            return self._proto.delete(filePath)
-        elif port is None:
-            return self._proto.delete(filePath, SEhost)
+    def getSize( self, source, proxy = None ):
+        self.storage1.workon = source
+        if self.useProxy:
+            size = self.storage1.action.getFileSize(self.storage1, proxy)
         else:
-            return self._proto.delete(filePath, SEhost, port)
+            size = self.storage1.action.getFileSize(self.storage1)
+        self.storage1.workon = ""
+        return size
 
-    def getSize(self, filePath, SEhost = None, port = None):
-        if SEhost is None:
-            return self._proto.getFileSize(filePath)
-        elif port is None:
-            return self._proto.getFileSize(filePath, SEhost)
-        else:
-            return self._proto.getFileSize(filePath, SEhost, port)
- 
-    def getDirSpace(self, fullPath):
-        return self._proto.getDirSize(fullPath)
+    def getDirSpace( self, source, proxy = None ):
+        pass
 
-    def getGlobalSpace(self):
-        return self._proto.getGlobalQuota()
+    def getGlobalSpace( self, source, proxy = None ):
+        pass

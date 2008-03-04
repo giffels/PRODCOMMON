@@ -1,130 +1,169 @@
 from Protocol import Protocol
+from Exceptions import *
 
 class ProtocolSrmv2(Protocol):
+    """
+    implementing the srm protocol version 2.*
+    """
 
-    def __init__(self, SEname, port = "8443", name = "srmv2"):
-        Protocol.__init__(self, SEname, port, name)
-        self._SEpath = "srm://"+self._SEname+":"+self._port
-        self._option = " -2 -debug=true -retry_timeout 480000 -retry_num 3 "
+    def __init__(self):
+        super(ProtocolSrmv2, self).__init__()
+        self._options = " -2 -debug=true " 
 
-    def getProtocol(self):
-        return self._name
-
-    def move(self, source, dest, type = 1, SEhost = None, port = "8443", protocol = "srm"):
+    def simpleOutputCheck(self, outLines):
         """
-        srmmv
+        parse line by line the outLines text lookng for Exceptions
         """
-        fullSource = ""
-        fullDest = ""
+        problems = []
+        lines = outLines.split("\n")
+        for line in lines:
+            if line.find("Exception") != -1:
+                cacheP = line.split(":")[-1]
+                if cacheP not in problems:
+                    problems.append(cacheP)
+        return problems
 
-        exit_code = -1
-        exit_msg = ""
-
-        if type == 1:
-            #transf:  this -> remoteSE
-            fullSource = self._SEpath + source
-            if SEhost != None and port != None and protocol != None:
-                fullDest = protocol +"://"+ SEhost +":"+ port + dest
-            else:
-                exit_msg  = "Missing the SEhost parameters"
-        elif type == 2:
-            #transf:  remoteSE -> this
-            fullSource = protocol +"://"+ SEhost +":"+ port + source
-            fullDest = self._SEpath + source
-        else:
-            exit_msg  = "Type of transfer not supported (choose between 1-2)"
-
-        option = self._option + ""
-
-        cmd = "srmmv " +option +" "+ fullSource +" "+ fullDest
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
-
-        ### need to parse the output of the commands ###
-
-        return exit_code, exit_msg
-
-
-    def copy(self, source, dest, type = 1, SEhost = None, port = "8443", protocol = "srm"):
+    def copy(self, source, dest, proxy = None):
         """
         srmcp
         """
-        fullSource = ""
-        fullDest = ""
+        fullSource = source.getLynk()
+        fullDest = dest.getLynk()
 
-        exit_code = -1
-        exit_msg = ""
-
-        if type == 1:
-            #transf:  this -> remoteSE
-            fullSource = self._SEpath + source
-            if SEhost != None and port != None and protocol != None:
-                fullDest = protocol +"://"+ SEhost +":"+ port + dest
-            else:
-                exit_msg  = "Missing the SEhost parameters"
-        elif type == 2:
-            #transf:  remoteSE -> this
-            fullSource = protocol +"://"+ SEhost +":"+ port + source
-            fullDest = self._SEpath + source
-        elif type == 3:
-            #transf:  path -> this
-            fullSource = "file:///"+ source
-            fullDest = self._SEpath + dest
-        elif type == 4:
-            #transf: this -> path
-            fullSource = self._SEpath + source
-            fullDest = "file:///"+ dest
-        else:
-            exit_msg  = "Type of transfer not supported (choose between 1-4)"
-
-        option = self._option + ""
-
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+        
         cmd = "srmcp " +option +" "+ fullSource +" "+ fullDest
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise TransferException("Error copying [" +source.workon+ "] to [" \
+                                    + dest.workon + "]", problems, outputs )
 
-        ### need to parse the output of the commands ###
+    def move(self, source, dest, proxy = None):
+        """
+        srmmv
+        """
+        fullSource = source.getLynk()
+        fullDest = dest.getLynk()
 
-        return exit_code, exit_msg
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
 
+        cmd = "srmmv " +option +" "+ fullSource +" "+ fullDest
+        exitcode, outputs = self.executeCommand(cmd)
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise TransferException("Error moving [" +source.workon+ "] to [" \
+                                    + dest.workon + "]", problems, outputs )
 
-    def delete(self, filePath):
+    def delete(self, source, proxy = None):
         """
         srmrm
         """
+        fullSource = source.getLynk()
 
-    def checkPermission(self, filePath):
-        return
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
 
-    def getFileSize(self, filePath):
-        return
+        cmd = "srmrm " +option +" "+ fullSource
+        exitcode, outputs = self.executeCommand(cmd)
 
-    def getDirSize(self, fullPath):
-        return
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
 
-    def listPath(self, fullPath, SEhost, port = "8443"):
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error deleting [" +source.workon+ "]", \
+                                      problems, outputs )
+
+    def createDir(self, source, proxy = None):
+        """
+        srmmkdir
+        """
+        fullSource = source.getLynk()
+
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+
+        cmd = "srmmkdir " +option +" "+ fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error creating [" +source.workon+ "]", \
+                                      problems, outputs )
+
+    def checkPermission(self, source, proxy = None):
+        """
+        return file/dir permission
+        """
+        return int(self.listPath(source, proxy)[3])
+
+    def getFileSize(self, source, proxy = None):
+        """
+        file size
+        """
+        ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
+        size = self.listPath(source, proxy)[0]
+        return int(size)
+
+    def listPath(self, source, proxy = None):
         """
         srmls
+
+        returns size, owner, group, permMode of the file-dir
         """
-        fullSource = self._SEpath + fullPath
-        option = self._option + ""
+        fullSource = source.getLynk()
+
+        option = self._options + " -retry_num=0 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+
         cmd = "srmls " +option +" "+ fullSource
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
+
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
 
         ### need to parse the output of the commands ###
+        size, owner, group, permMode = "", "", "", ""
+        for line in outputs.split("\n"):
+            if line.find("    size ") != -1:
+                size = line.split(":")[1].strip()
+            elif line.find("    owner ") != -1:
+                owner = line.split(":")[1].strip()
+            elif line.find("    group ") != -1:
+                group = line.split(":")[1].strip()
+            elif line.find("    permMode ") != -1:
+                permMode = line.split(":")[1].strip()
+        if size == "" or owner == "" or group == "" or permMode == "":
+            raise NotExistsException("Path [" + source.workon + \
+                                     "] does not exists.")
+        return int(size), owner, group, permMode
+        
 
-        return exit_code, outputStr
-
-    def checkExists(self, filePath, SEhost, port = "8443"):
+    def checkExists(self, source, proxy = None):
         """
         file exists?
         """
-        exit_code, outputStr = self.listPath(self, filePath, SEhost, port)
-
-        ### need to parse the output of the commands ###
-        if exit_code != 0:
+        try:
+            size, owner, group, permMode = self.listPath(source, proxy)
+            if size is not "" and owner is not "" and\
+               group is not "" and permMode is not "":
+                return True
+        except NotExistsException:
             return False
-        return True
+        except OperationException:
+            return False
 
 # srm-reserve-space srm-release-space srmrmdir srmmkdir srmping srm-bring-online

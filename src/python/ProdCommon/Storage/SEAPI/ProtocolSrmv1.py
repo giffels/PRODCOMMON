@@ -1,116 +1,119 @@
 from Protocol import Protocol
+from Exceptions import *
 
 class ProtocolSrmv1(Protocol):
+    """
+    implementing the srm protocol version 1.*
+    """
 
-    def __init__(self, SEname, port = "8443", name = "srmv1"):
-        Protocol.__init__(self, SEname, port, name)
-        self._SEpath = "srm://"+self._SEname+":"+self._port
-        self._option = " -debug=true -retry_timeout 480000 -retry_num 3 "
+    def __init__(self):
+        super(ProtocolSrmv1, self).__init__()
+        self._options = "-debug=true" 
 
-    def getProtocol(self):
-        return self._name
+    def simpleOutputCheck(self, outLines):
+        """
+        parse line by line the outLines text lookng for Exceptions
+        """
+        problems = []
+        lines = outLines.split("\n")
+        for line in lines:
+            if line.find("Exception") != -1:
+                cacheP = line.split(":")[-1]
+                if cacheP not in problems:
+                    problems.append(cacheP)
+        return problems
 
-    def copy(self, source, dest, type = 1, SEhost = None, port = "8443", protocol = "srm"):
+    def copy(self, source, dest, proxy = None):
         """
         srmcp
         """
-        fullSource = ""
-        fullDest = ""
+        fullSource = source.getLynk()
+        fullDest = dest.getLynk()
 
-        exit_code = -1
-        exit_msg = ""
-
-        if type == 1:
-            #transf:  this -> remoteSE
-            fullSource = self._SEpath + source
-            if SEhost != None and port != None and protocol != None:
-                fullDest = protocol +"://"+ SEhost +":"+ port + dest
-            else:
-                exit_msg  = "Missing the SEhost parameters"
-        elif type == 2:
-            #transf:  remoteSE -> this
-            fullSource = protocol +"://"+ SEhost +":"+ port + source
-            fullDest = self._SEpath + source
-        elif type == 3:
-            #transf:  path -> this
-            fullSource = "file:///"+ source
-            fullDest = self._SEpath + dest
-        elif type == 4:
-            #transf: this -> path
-            fullSource = self._SEpath + source
-            fullDest = "file:///"+ dest
-        else:
-            exit_msg  = "Type of transfer not supported (choose between 1-4)"
-
-        option = self._option + ""
-
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+        
         cmd = "srmcp " +option +" "+ fullSource +" "+ fullDest
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise TransferException("Error copying [" +source.workon+ "] to [" \
+                                    + dest.workon + "]", problems, outputs )
 
-        ### need to parse the output of the commands ###
-        if exit_code == 0:
-            exit_msg = outputStr
+    def move(self, source, dest, proxy = None):
+        """
+        srmcp + delete()
+        """
+        if self.checkExists(dest, proxy):
+            problems = ["destination file already existing", dest.workon]
+            raise TransferException("Error moving [" +source.workon+ "] to [" \
+                                    + dest.workon + "]", problems)
+        self.copy(source, dest, proxy)
+        if self.checkExists(dest, proxy):
+            self.delete(source, proxy)
+        else:
+            raise TransferException("Error deleting [" +source.workon+ "]", \
+                                     ["Uknown Problem"] )
 
-        return exit_code, exit_msg
-
-
-    def delete(self, filePath, SEhost = None, port = "8443"):
+    def delete(self, source, proxy = None):
         """
         srm-advisory-delete
         """
-        fullSource = ""
-        if SEhost is None:
-            fullSource = self._SEpath + filePath
-        else:
-            fullSource = "srm://"+ SEhost +":"+ port + filePath
-        option = " -debug=true -retry_num=0"
+        fullSource = source.getLynk()
+
+        option = self._options + " -retry_num=1 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+
         cmd = "srm-advisory-delete " +option +" "+ fullSource
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
-        ### need to parse the output of the commands ###
-        print outputStr
-        pass
+        exitcode, outputs = self.executeCommand(cmd)
 
-    def checkPermission(self, filePath, SEhost = None, port = "8443"):
-        """
-        file permission
-        """
-        size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        return permMode
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
 
-    def getFileSize(self, filePath, SEhost = None, port = "8443"):
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error deleting [" +source.workon+ "]", \
+                                      problems, outputs )
+
+    def checkPermission(self, source, proxy = None):
+        """
+        return file/dir permission
+        """
+        return int(self.listPath(source, proxy)[3])
+
+    def getFileSize(self, source, proxy = None):
         """
         file size
         """
         ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        size = self.listPath(filePath, SEhost, port)[0]
+        size = self.listPath(source, proxy)[0]
         return int(size)
 
-    def getDirSize(self, fullPath):
-        """
-        recursively get dir size
-        """
-        return
-
-    def listPath(self, fullPath, SEhost = None, port = "8443"):
+    def listPath(self, source, proxy = None):
         """
         srm-get-metadata
 
         returns size, owner, group, permMode of the file-dir
         """
-        fullSource = ""
-        if SEhost is None:
-            fullSource = self._SEpath + fullPath
-        else:
-            fullSource = "srm://"+ SEhost +":"+ port + fullPath
-        option = " -debug=true -retry_num=0"
+        fullSource = source.getLynk()
+
+        option = self._options + " -retry_num=0 "
+        if proxy is not None:
+            option += " -x509_user_proxy=%s " % proxy
+
         cmd = "srm-get-metadata " +option +" "+ fullSource
-        print "executing command: " +str(cmd)
-        exit_code, outputStr = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
+
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
+
         ### need to parse the output of the commands ###
         size, owner, group, permMode = "", "", "", ""
-        for line in outputStr:
+        for line in outputs.split("\n"):
             if line.find("    size ") != -1:
                 size = line.split(":")[1].strip()
             elif line.find("    owner ") != -1:
@@ -119,18 +122,24 @@ class ProtocolSrmv1(Protocol):
                 group = line.split(":")[1].strip()
             elif line.find("    permMode ") != -1:
                 permMode = line.split(":")[1].strip()
-        
+        if size == "" or owner == "" or group == "" or permMode == "":
+            raise NotExistsException("Path [" + source.workon + \
+                                     "] does not exists.")
         return int(size), owner, group, permMode
         
 
-    def checkExists(self, filePath, SEhost = None, port = "8443"):
+    def checkExists(self, source, proxy = None):
         """
         file exists?
         """
-        size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        if size is not "" and owner is not "" and\
-           group is not "" and permMode is not "":
-            return True
-        return False
+        try:
+            size, owner, group, permMode = self.listPath(source, proxy)
+            if size is not "" and owner is not "" and\
+               group is not "" and permMode is not "":
+                return True
+        except NotExistsException:
+            return False
+        except OperationException:
+            return False
 
 # srm-reserve-space srm-release-space srmrmdir srmmkdir srmping srm-bring-online

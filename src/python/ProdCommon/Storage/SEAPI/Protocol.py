@@ -2,77 +2,75 @@
 class Protocol(object):
     '''Represents any Protocol'''
 
-    def __init__(self, SEname, port, name):
-        self._name = str.lower(name)
-        self._SEname = str.lower(SEname)
-        self._port = port
+    def __init__(self):
+        pass
 
-    def move(self, source, dest):
+    def move(self, source, sest):
         """
         move a file from a source to a dest
- 
-        return string
         """
-        return
+        raise NotImplementedError
 
     def copy(self, source, dest):
         """
         copy a file from a source to a dest
- 
-        return string
         """
         raise NotImplementedError
 
-    def delete(self, filePath):
+    def delete(self, source):
         """
         delete a file (or a path)
- 
-        return string
         """
         raise NotImplementedError
 
-    def checkPermission(self, filePath):
+    def checkPermission(self, source):
         """
         get the permission of a file/path in number value
  
         return int
         """
-        return
+        raise NotImplementedError
 
-    def getFileSize(self, filePath):
+    def createDir(self, source):
+        """
+        create a directory
+        """
+        raise NotImplementedError
+
+    def getFileSize(self, source):
         """
         get the file size
  
         return int
         """
-        return
+        raise NotImplementedError
  
-    def getDirSize(self, fullPath):
+    def getDirSize(self, source):
         """
         get the directory size
         (considering subdirs and files)
  
         return int
         """
-        return
+        raise NotImplementedError
  
-    def listPath(self, fullPath):
+    def listPath(self, source):
         """
         list the content of a path
  
         return list[string]
         """
-        return
+        raise NotImplementedError
  
-    def checkExists(self, filePath):
+    def checkExists(self, source):
         """
         check if a file exists
  
         return bool
         """
-        return
+        raise NotImplementedError
  
-    def getGlobalQuota(self):
+    def getGlobalQuota(self, source):
         """
         get the global occupated space %,
                        free quota,
@@ -80,16 +78,15 @@ class Protocol(object):
  
         return [int, int, int]
         """
-        return
+        raise NotImplementedError
  
-    def executeCommand(self, command ):
+    def executeCommand(self, command):
         """
         common method to execute commands
  
         return exit_code, cmd_out
         """
         import commands
- 
         status, output = commands.getstatusoutput( command )
         return status, output
 
