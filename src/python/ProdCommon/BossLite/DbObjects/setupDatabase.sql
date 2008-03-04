@@ -13,6 +13,7 @@ CREATE TABLE bl_task
     server_name TEXT,
     job_type TEXT,
     script_name TEXT,
+    user_proxy TEXT,
     primary key(id),
     unique(name)
   )

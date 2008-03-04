@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.1 2007/12/21 09:09:29 ckavka Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: Task.py,v 1.2 2008/02/21 16:27:34 gcodispo Exp $"
+__revision__ = "$Revision: 1.2 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -28,7 +28,8 @@ class Task(DbObject):
                'cfgName' : 'cfg_name',
                'serverName' : 'server_name',
                'jobType' : 'job_type',
-               'scriptName' : 'script_name'
+               'scriptName' : 'script_name',
+               'user_proxy' : 'user_proxy'
              }
 
     # mapping between field names and database fields
@@ -43,7 +44,8 @@ class Task(DbObject):
                  'cfgName' : None,
                  'serverName' : None,
                  'jobType' : None,
-                 'scriptName' : None
+                 'scriptName' : None,
+                 'user_proxy' : None
               }
 
     # database properties
