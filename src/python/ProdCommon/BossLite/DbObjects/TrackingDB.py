@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: TrackingDB.py,v 1.1 2007/12/21 09:09:29 ckavka Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -145,7 +145,6 @@ class TrackingDB:
         """
         _update_
         """
-
         # get template information
         tableName = template.__class__.tableName
         tableIndex = template.__class__.tableIndex
@@ -162,19 +161,21 @@ class TrackingDB:
 
         # define update list (does not include keys)
         fields = self.getFields(template)
-        listOfFields = ','.join(['%s="%s"' % (key, value)
+
+        #listOfFields = ','.join(['%s="%s"' % (key, value)
+        ## Added replace DanieleS.
+        listOfFields = ','.join(['%s="%s"' % (key, value.replace('"','""'))
                                      for key, value in fields
                                      if key not in tableIndex
                                 ])
-
+        
         # return if there are no fields to update
         if listOfFields == "":
             return 0
-
+         
         # prepare query
         query = 'update ' + tableName + ' set  ' + listOfFields + \
                 keysSpec
-
         # execute query
         try:
             rows = self.session.execute(query)
