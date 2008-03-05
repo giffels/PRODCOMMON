@@ -551,6 +551,25 @@ class BossLiteAPI(object):
 
     ##########################################################################
 
+    ## DanieleS.    
+    def loadJobDistAttr( self, taskId, value ) :
+        """
+        retrieve job distinct job attribute 
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating job
+        jobAttributes = { 'taskId' : taskId}
+        job = Job( jobAttributes )
+
+        # load job from db
+        jobList = self.db.distinct(job, value)
+
+        return jobList
+    ##########################################################################
   
     def archive( self, task, jobList=None ):
         """
