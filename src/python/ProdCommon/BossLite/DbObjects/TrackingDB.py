@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.1 2007/12/21 09:09:29 ckavka Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: TrackingDB.py,v 1.2 2008/03/04 15:40:41 spiga Exp $"
+__revision__ = "$Revision: 1.2 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -235,6 +235,87 @@ class TrackingDB:
 
         # return it
         return fields
+
+    ### DanieleS 
+    def distinct(self, template, valueMMM , strict = True):
+        """
+        _select_
+        """
+        # get template information
+        mapping = template.__class__.fields.items()
+        tableName = template.__class__.tableName
+
+        # get field mapping in order
+        fieldMapping = [(key, value) for key, value in mapping]
+       # objectFields = [key[0] for key in fieldMapping]
+       # dbFields = [key[1] for key in fieldMapping]
+
+        #DanieleS
+        for key, val in fieldMapping:
+            if key == valueMMM:
+                dbFields = [val]
+                objectFields = [key]
+                break
+        # get matching information from template
+        fields = self.getFields(template)
+
+        # determine if comparison is strict or not
+        if strict:
+            operator = '='
+        else:
+            operator = ' like '
+        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value)
+                                     for key, value in fields
+                                ])
+
+        # check for general query for all objects
+        if listOfFields != "":
+            listOfFields = " where " + listOfFields
+
+        # DanieleS.
+        # prepare query
+        query = 'select distinct (' + ', '.join(dbFields) + ') from ' +  tableName + \
+                ' ' + listOfFields
+        # execute query
+        try:
+            self.session.execute(query)
+        except Exception, msg:
+            raise DbError(msg)
+
+        # get all information
+        results = self.session.fetchall()
+        
+        # build objects
+        theList = []
+        for row in results:
+
+            # create a single object
+            template = deepcopy(template)
+            obj = type(template)()
+
+            # fill fields
+            for key, value in zip(objectFields, row):
+
+                # check for NULLs
+                if value is None:
+                    obj[key] = template.defaults[key]
+
+                # check for lists
+                elif type(template.defaults[key]) == list:
+                    obj[key] = eval(value)
+
+                # other objects get casted automatically
+                else:
+                    obj[key] = value
+
+                # mark them as existing in database
+                obj.existsInDataBase = True
+
+            # add to list 
+            theList.append(obj)
+
+        # return the list
+        return theList
 
     ##########################################################################
 
