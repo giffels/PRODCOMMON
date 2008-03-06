@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.2 2008/03/04 15:40:41 spiga Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: TrackingDB.py,v 1.3 2008/03/05 10:03:07 spiga Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -236,8 +236,89 @@ class TrackingDB:
         # return it
         return fields
 
+    ##DanieleS NOTE: ToBeRevisited 
+    def distinctAttr(self, template, value_1 , value_2, list ,  strict = True):
+
+        # get template information
+        mapping = template.__class__.fields.items()
+        tableName = template.__class__.tableName
+
+        # get field mapping in order
+        fieldMapping = [(key, value) for key, value in mapping]
+       # objectFields = [key[0] for key in fieldMapping]
+       # dbFields = [key[1] for key in fieldMapping]
+
+        #DanieleS
+        for key, val in fieldMapping:
+            if key == value_1:
+                dbFields = [val]
+                objectFields = [key]
+            if key == value_2:
+                field= val 
+        #        break
+        # get matching information from template
+     #   fields = self.getFields(template)
+        # determine if comparison is strict or not
+        if strict:
+            operator = '='
+        else:
+            operator = ' like '
+        listOfFields = ' or '.join([('%s'+ operator +'"%s"') % (field, value)
+                                     for value in list
+                                ])
+        # check for general query for all objects
+        if listOfFields != "":
+            listOfFields = " where " + listOfFields
+
+        # DanieleS.
+        # prepare query
+        query = 'select distinct (' + ', '.join(dbFields) + ') from ' +  tableName + \
+                ' ' + listOfFields
+        # execute query
+        try:
+            self.session.execute(query)
+        except Exception, msg:
+            raise DbError(msg)
+
+        # get all information
+        results = self.session.fetchall()
+        
+        # build objects
+        theList = []
+        for row in results:
+
+            # create a single object
+            template = deepcopy(template)
+            obj = type(template)()
+
+            # fill fields
+            for key, value in zip(objectFields, row):
+
+                # check for NULLs
+                if value is None:
+                    obj[key] = template.defaults[key]
+
+                # check for lists
+                elif type(template.defaults[key]) == list:
+                    obj[key] = eval(value)
+
+                # other objects get casted automatically
+                else:
+                    obj[key] = value
+
+                # mark them as existing in database
+                obj.existsInDataBase = True
+
+            # add to list 
+            theList.append(obj)
+
+        # return the list
+        return theList
+
+
+
     ### DanieleS 
-    def distinct(self, template, valueMMM , strict = True):
+    def distinct(self, template, value_1 , strict = True):
         """
         _select_
         """
@@ -252,7 +333,7 @@ class TrackingDB:
 
         #DanieleS
         for key, val in fieldMapping:
-            if key == valueMMM:
+            if key == value_1:
                 dbFields = [val]
                 objectFields = [key]
                 break
