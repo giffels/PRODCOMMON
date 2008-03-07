@@ -179,7 +179,6 @@ class BossLiteAPI(object):
         works for tasks, jobs, runningJobs
         """
 
-
         # db connect
         if self.db is None :
             self.connect()
