@@ -99,4 +99,10 @@ class SBinterface:
         pass
 
     def getGlobalSpace( self, source, proxy = None ):
-        pass
+        if self.storage1.protocol == 'local':
+            self.storage1.workon = source
+            val = self.storage1.action.getGlobalQuota(self.storage1)
+            self.storage1.workon = ""
+            return val
+        else:
+            return None
