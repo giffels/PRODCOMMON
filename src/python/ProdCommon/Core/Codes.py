@@ -12,6 +12,9 @@ exceptions={4001:'General database error',\
             4009:'Error when binding the DBS interface: ',\
             4010:'Error when binding the DLS interface: ',\
             4011:'Exception for getDatasetFileBlocks: ',\
+            4012:'Invalid parameter list: ',\
+            4013:'Engine creation failed',\
+            4014:'No connection found when trying to close it',\
            }
 
 
