@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.7 2008/02/15 14:18:23 gcodispo Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.1 2008/03/12 15:10:48 ewv Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import sys
 import os
@@ -140,6 +140,68 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
       filelist = ''
       return jdl, filelist
+
+  def query(self, schedIdList, service='', objType='node') :
+    """
+    query status of jobs
+    """
+    jobIds = {}
+    bossIds = {}
+
+    for id in schedIdList:
+      boss_ids[service+'//'+id] = 'SD' # Done by default?
+        # extract schedd and id from bossId
+      schedd = service     # id.split('//')[0]
+        #id     = id.split('//')[1]
+        # fill dictionary
+      if schedd in job_ids.keys() :
+        jobIds[schedd].append(id)
+      else :
+        jobIds[schedd] = [id]
+
+    for schedd in jobIds.keys() :
+
+      #if logFile :
+          #logFile.write(schedd+'\n')
+
+      # call condor_q
+      cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
+      (input_file, output_file) = os.popen4(cmd)
+
+      # parse output and store Condor status in dictionary { 'id' : 'status' , ... }
+      condor_status = {}
+      for line in output_file.readlines() :
+        line = line.strip()
+        #if logFile :
+          #logFile.write(line+'\n')
+        try:
+          line_array = line.split()
+          if line_array[1].strip() == os.environ['USER'] :
+            condor_status[line_array[0].strip()] = line_array[5].strip()
+        except:
+          pass
+
+      # go through job_ids[schedd] and save status in boss_ids
+      for id in job_ids[schedd] :
+        for condor_id in condor_status.keys() :
+          if condor_id.find(id) != -1 :
+            status = condor_status[condor_id]
+            #if logFile :
+                #logFile.write(status+'\n')
+            if ( status == 'I' ):
+              bossIds[schedd+'//'+id] = 'I'
+            elif ( status == 'U' ) :
+              bossIds[schedd+'//'+id] = 'RE'
+            elif ( status == 'H' ) :
+              bossIds[schedd+'//'+id] = 'SA'
+            elif ( status == 'R' ) :
+              bossIds[schedd+'//'+id] = 'R'
+            elif ( status == 'X' ) :
+              bossIds[schedd+'//'+id] = 'SK'
+            elif ( status == 'C' ) :
+              bossIds[schedd+'//'+id] = 'SD'
+            else :
+              bossIds[schedd+'//'+id] = 'UN'
 
   def kill( self, schedIdList, service):
     """
