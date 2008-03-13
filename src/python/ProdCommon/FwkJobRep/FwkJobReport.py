@@ -8,7 +8,7 @@ manipulating the bits and pieces of it.
 
 """
 
-from ProdCommon.FwkJobRep.FileInfo import FileInfo, AnalysisFile
+from ProdCommon.FwkJobRep.FileInfo import FileInfo
 from ProdCommon.FwkJobRep.PerformanceReport import PerformanceReport
 
 from IMProv.IMProvNode import IMProvNode
@@ -43,7 +43,7 @@ class FwkJobReport:
         self.dashboardId = None
         self.performance = PerformanceReport()
         self.removedFiles = {}
-        self.analysisFiles = []
+        self.unremovedFiles = {} 
 
     def wasSuccess(self):
         """
@@ -91,19 +91,6 @@ class FwkJobReport:
         self.inputFiles.append(fileInfo)
         return fileInfo
 
-    def newAnalysisFile(self):
-        """
-        _newAnalysisFile_
-
-        Add a description for a new analysis file (non EDM file)
-        to this report. Returns the dictionary to be populated
-
-        """
-        analysisFile = AnalysisFile()
-        self.analysisFiles.append(analysisFile)
-        return analysisFile
-        
-
     def addSkippedEvent(self, runNumber, eventNumber):
         """
         _addSkippedEvent_
@@ -150,9 +137,18 @@ class FwkJobReport:
         and the SEName where the file was removed
 
         """
+        
         self.removedFiles[lfn] = seName
         return
     
+    def addUnremovedFile (self, lfn, seName):
+       """
+       _addUnRemovedFile_
+       """
+       
+       self.unremovedFiles[lfn] = seName 
+       
+       return
 
     def save(self):
         """
@@ -209,12 +205,6 @@ class FwkJobReport:
             result.addNode(infileInfo.save())
 
         #  //
-        # // Save Analysis Files
-        #//
-        for aFileInfo in self.analysisFiles:
-            result.addNode(aFileInfo.save())
-
-        #  //
         # // Save Skipped Events
         #//
         for skipped in self.skippedEvents:
@@ -235,6 +225,13 @@ class FwkJobReport:
         for remLfn, remSE in self.removedFiles.items():
             result.addNode(IMProvNode("RemovedFile", remLfn, SEName=remSE))
         
+        #  //
+        # // Save Unremoved Files
+        #//
+        for unremLfn, unremSE in self.unremovedFiles.items():
+            
+            result.addNode(IMProvNode("UnremovedFile", unremLfn, SEName=unremSE))
+
         
         #  //
         # // Save Errors
@@ -336,14 +333,6 @@ class FwkJobReport:
         for infileEntry in infileQ(improvNode):
             newInFile = self.newInputFile()
             newInFile.load(infileEntry)
-
-        #  //
-        # // analysis files
-        #//
-        afileQ = IMProvQuery("/FrameworkJobReport/AnalysisFile")
-        for afileEntry in afileQ(improvNode):
-            newAFile = self.newAnalysisFile()
-            newAFile.load(afileEntry)
         
         #  //
         # // Skipped Events & Files
@@ -365,6 +354,14 @@ class FwkJobReport:
         remFileQ = IMProvQuery("/FrameworkJobReport/RemovedFile")
         [ self.addRemovedFile(str(remF.chardata), remF.attrs['SEName'])
           for remF in remFileQ(improvNode) ]
+
+        #  //
+        # // unremoved files
+        #//
+        unremFileQ = IMProvQuery("/FrameworkJobReport/UnremovedFile")
+        [ self.addUnremovedFile(str(remF.chardata), remF.attrs['SEName'])
+          for remF in unremFileQ(improvNode) ]
+
         
         #  //
         # // Timing, Storage and generator info
@@ -402,6 +399,3 @@ class FwkJobReport:
 
 
 
-
-
-    
