@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.1 2008/03/12 15:10:48 ewv Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.2 2008/03/12 15:32:15 ewv Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import sys
 import os
@@ -94,7 +94,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     return ret_map, taskId, success
 
-  def decode  ( self, obj, requirements='' ) :
+  def decode  ( self, obj, requirements='' ):
       """
       prepare file for submission
       """
@@ -103,7 +103,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       elif type(obj) == Task :
           return self.collectionApiJdl ( obj, requirements='' )
 
-  def singleApiJdl( self, job, requirements='' ) :
+  def singleApiJdl( self, job, requirements='' ):
       """
       build a job jdl easy to be handled by the wmproxy API interface
       and gives back the list of input files for a better handling
@@ -141,12 +141,14 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       filelist = ''
       return jdl, filelist
 
-  def query(self, schedIdList, service='', objType='node') :
+  def query(self, schedIdList, service='', objType='node'):
     """
     query status of jobs
     """
     jobIds = {}
     bossIds = {}
+
+    #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
       boss_ids[service+'//'+id] = 'SD' # Done by default?
@@ -182,25 +184,26 @@ class SchedulerCondorGAPI(SchedulerInterface) :
           pass
 
       # go through job_ids[schedd] and save status in boss_ids
+      # Would should do this with a map
       for id in job_ids[schedd] :
         for condor_id in condor_status.keys() :
           if condor_id.find(id) != -1 :
             status = condor_status[condor_id]
             #if logFile :
                 #logFile.write(status+'\n')
-            if ( status == 'I' ):
+            if status == 'I':
               bossIds[schedd+'//'+id] = 'I'
-            elif ( status == 'U' ) :
+            elif status == 'U':
               bossIds[schedd+'//'+id] = 'RE'
-            elif ( status == 'H' ) :
+            elif status == 'H':
               bossIds[schedd+'//'+id] = 'SA'
-            elif ( status == 'R' ) :
+            elif status == 'R':
               bossIds[schedd+'//'+id] = 'R'
-            elif ( status == 'X' ) :
+            elif status == 'X':
               bossIds[schedd+'//'+id] = 'SK'
-            elif ( status == 'C' ) :
+            elif status == 'C':
               bossIds[schedd+'//'+id] = 'SD'
-            else :
+            else:
               bossIds[schedd+'//'+id] = 'UN'
 
   def kill( self, schedIdList, service):
@@ -208,11 +211,14 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     Kill jobs submitted to a given WMS. Does not perform status check
     """
 
+    # Do killCheck too?
+
     host = service
 
     if len(host) == 0 :
         return
     for jobId in schedIdList:
+      # Use ExecuteCommand?
       killer = popen2.Popen4("condor_rm -name  %s %s " % (service,jobId))
       exitStatus = killer.wait()
       content = killer.fromchild.read()
