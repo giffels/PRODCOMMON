@@ -24,7 +24,7 @@ class JobDefinition(dict):
         self.setdefault("LFNS", [])
         self.setdefault("MaxEvents", None)
         self.setdefault("SkipEvents", None)
-
+        self.setdefault("ParentLFNS", [])
 
 
 class Fileblock(list):
@@ -41,14 +41,14 @@ class Fileblock(list):
 
 
 
-    def addFile(self, lfn, numEvents):
+    def addFile(self, lfn, numEvents, parents = None):
         """
         _addFile_
 
         Add a file to this fileblock
 
         """
-        self.append( (lfn, numEvents) )
+        self.append( (lfn, numEvents, parents) )
         return
 
     def isEmpty(self):
@@ -139,6 +139,8 @@ class JobSplitter:
         
         for file in fileblock:
             currentJob['LFNS'].append(file[0])
+            if file[2] != None:
+                currentJob['ParentLFNS'].extend(file[2])
             counter += 1
             if counter == filesPerJob:
                 result.append(currentJob)

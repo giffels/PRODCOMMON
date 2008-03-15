@@ -17,7 +17,8 @@ from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 
 
 def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False,
-                      siteWhitelist = [], blockWhitelist = []):
+                      siteWhitelist = [], blockWhitelist = [],
+                      withParents = False):
     """
     _createJobSplitter_
 
@@ -33,7 +34,6 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False,
     
     for blockName in reader.listFileBlocks(dataset, onlyClosedBlocks):
         locations = reader.listFileBlockLocation(blockName)
-
         if filterBlocks:
             if blockName not in blockWhitelist:
                 msg = "Excluding block %s based on block whitelist: %s\n" % (
@@ -55,17 +55,32 @@ def createJobSplitter(dataset, dbsUrl, onlyClosedBlocks = False,
             else:
                 locations = siteMatches
 
-            
+
         newBlock = result.newFileblock(blockName, * locations)
 
-        blockData = reader.getFileBlock(blockName)[blockName]
+
+        if withParents == True:
+            blockData = reader.getFileBlockWithParents(blockName)[blockName]
+        else:
+            blockData = reader.getFileBlock(blockName)[blockName]
+
+        
         totalEvents = 0
         fileList = set()
         for fileInfo in blockData['Files']:
             totalEvents += fileInfo['NumberOfEvents']
             fileList.add(fileInfo['LogicalFileName'])
-            newBlock.addFile(fileInfo['LogicalFileName'],
-                             fileInfo['NumberOfEvents'])
+            if withParents:
+                parList = [ x['LogicalFileName']
+                            for x in fileInfo['ParentList'] ]
+            
+                newBlock.addFile(fileInfo['LogicalFileName'],
+                                 fileInfo['NumberOfEvents'],
+                                 parList)
+            else:
+                newBlock.addFile(fileInfo['LogicalFileName'],
+                                 fileInfo['NumberOfEvents'])
+                
         logging.debug("Block %s contains %s events in %s files" %(
             blockName, totalEvents, len(fileList),
             ))
@@ -136,6 +151,41 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
         
             
         jobDefs = splitter.splitByFiles(block, filesPerJob)
+        allJobs.extend(jobDefs)
+    return allJobs
+
+
+def splitDatasetForReReco(dataset, dbsUrl,
+                          onlyClosedBlocks = False,
+                          siteWhitelist = [], blockWhitelist = []):
+    """
+    _splitDatasetByFiles_
+
+    API to split a dataset into filesPerJob sized jobs
+
+    """
+    filterSites = len(siteWhitelist) > 0
+    filterBlocks = len(blockWhitelist) > 0
+
+    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks,
+                                 siteWhitelist, blockWhitelist, True)
+    allJobs = []
+    
+    for block in splitter.listFileblocks():
+        blockInstance = splitter.fileblocks[block]
+        logging.debug("Processing Block: %s" % block)
+        
+
+        if blockInstance.isEmpty():
+            msg = "Fileblock is empty: \n%s\n" % block
+            msg += "Contains either no files or no SE Names\n"
+            logging.warning(msg)
+            continue
+
+        
+        
+            
+        jobDefs = splitter.splitByFiles(block, 1)
         allJobs.extend(jobDefs)
     return allJobs
 
