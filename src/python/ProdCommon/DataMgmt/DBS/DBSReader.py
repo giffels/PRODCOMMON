@@ -246,6 +246,37 @@ class DBSReader:
         [ result.append(dict(x) ) for x in files ]
         return result
 
+    def listFilesInBlockWithParents(self, fileBlockName):
+        """
+        _listFilesInBlockWithParents_
+
+        Get a list of files in the named fileblock including
+        the parents of that file.
+
+        """
+        try:
+            files = self.dbs.listFiles(
+                 "", # path
+                 "", #primary
+                 "", # processed
+                 [], #tier_list
+                 "", #analysisDataset
+                 fileBlockName,
+                 details = None,
+                 retriveList = ['retrive_parent' ])
+              
+        except DbsException, ex:
+            msg = "Error in "
+            msg += "DBSReader.listFilesInBlockWithParents(%s)\n" % (
+                fileBlockName, )
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+
+        result = []
+        [ result.append(dict(x) ) for x in files ]
+        return result
+    
+
     def lfnsInBlock(self, fileBlockName):
         """
         _lfnsInBlock_
@@ -270,6 +301,7 @@ class DBSReader:
         result = []
         [ result.append(x['LogicalFileName'] ) for x in files ]
         return result
+
     
     
         
@@ -312,10 +344,36 @@ class DBSReader:
              "Files" : { LFN : Events },
              }
         }
+
+        
         """
         result = { fileBlockName: {
             "StorageElements" : self.listFileBlockLocation(fileBlockName),
             "Files" : self.listFilesInBlock(fileBlockName),
+            "IsOpen" : self.blockIsOpen(fileBlockName),
+            
+            }
+                   }
+        return result
+        
+    def getFileBlockWithParents(self, fileBlockName):
+        """
+        _getFileBlockWithParents_
+
+        return a dictionary:
+        { blockName: {
+             "StorageElements" : [<se list>],
+             "Files" : dictionaries representing each file
+             }
+        }
+
+        files
+        
+        """
+        
+        result = { fileBlockName: {
+            "StorageElements" : self.listFileBlockLocation(fileBlockName),
+            "Files" : self.listFilesInBlockWithParents(fileBlockName),
             "IsOpen" : self.blockIsOpen(fileBlockName),
             
             }
