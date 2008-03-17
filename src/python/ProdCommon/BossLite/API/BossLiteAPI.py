@@ -31,6 +31,7 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import *
 
 from os.path import expandvars
+import copy
 
 ##########################################################################
 
@@ -120,16 +121,46 @@ class BossLiteAPI(object):
 
     ##########################################################################
         
-    def declare( self, xml ) :
+    def declare( self, xml, proxyFile=None ) :
         """
         register job related informations in the db
         """
-        
-        task = self.deserialize( xml )
+
+        taskInfo, jobInfos, rjAttrs = self.deserialize( xml )
+       
+        # reconstruct task
+        task = Task( {'name' : taskInfo['name'], 'user_proxy' : proxyFile} ) 
         task.updateInternalData()
         self.saveTask( task )
+        for key in taskInfo:
+            task[key] = taskInfo[key] 
+        self.updateDB( task )
+        
+        # reconstruct jobs and fill the data
+        jobs = []
+        for jI in jobInfos:
+            job = Job( jI )
+            jobs.append(job)
 
-        return task
+        task.addJobs(jobs)
+        self.updateDB( task )
+        del jobs
+
+        # reconstruct running jobs
+        task = self.loadTaskByName(taskInfo['name'])
+        
+        for i in xrange(len(task.jobs)):
+            attrs = rjAttrs[ str(task.jobs[i]['name']) ]
+            self.getRunningInstance(task.jobs[i]) 
+
+            for key in attrs:
+                if not attrs[key] or attrs[key] == 'None':
+                    continue 
+                task.jobs[i].runningJob[key] = str(attrs[key])
+        self.updateDB( task )
+
+        # all done
+        return self.loadTaskByName(taskInfo['name'])
 
 
     ##########################################################################
@@ -325,7 +356,7 @@ class BossLiteAPI(object):
             jobAttributes = {}
 
         taskList = []
-        
+        jobList= jobRange
         # identify jobRange
         if jobRange != 'all' :
             jobSubRanges = jobRange.split(',')
@@ -568,6 +599,7 @@ class BossLiteAPI(object):
         jobList = self.db.distinct(job, value)
 
         return jobList
+
     ## DanieleS. NOTE: ToBeRevisited
     def loadJobDistAttr( self, taskId, value_1, value_2, list ) :
         """
@@ -749,132 +781,105 @@ updating the database server:
 
     ##########################################################################
 
-    def deserialize( self, xmlString ) :
+
+    def deserialize( self, xmlFilePath ) :
         """
         obtain task object from XML object
         """
-        
         from xml.dom import minidom
-
-        # get the doc root
-        doc = minidom.parseString(xmlString)
-        root = doc.documentElement
+        doc = minidom.parse( xmlFilePath )
 
         # parse the task general attributes
-        node = root.getElementsByTagName("TaskAttributes")
-        taskInfo =  \
-                 { 'name' : node.getAttribute('name'),
-                   'startDirectory' : node.getAttribute('startDirectory'),
-                   'outputDirectory' : node.getAttribute('outputDirectory'),
-                   'globalSandbox' : list( node.getAttribute('globalSandbox') )
-                   }
+        taskNode = doc.getElementsByTagName("TaskAttributes")[0]
+        taskInfo =  {}
+        for i in range(taskNode.attributes.length):
+            key = str(taskNode.attributes.item(i).name)
+            val = str(taskNode.attributes.item(i).value)
+            if val is None or val == 'None':
+                continue
+            taskInfo[key] = val
 
         # run over the task jobs and parse the structure
-        node = root.getElementsByTagName("TaskJobs")
+        jnodes = doc.getElementsByTagName("Job")
         jobs = []
+        runningJobsAttribs = {}
+        for jobNode in jnodes:
+            jobInfo = {}
+            for i in range(jobNode.attributes.length):
+                key = str(jobNode.attributes.item(i).name)
+                val = str(jobNode.attributes.item(i).value)
+                if val is None or val == 'None':
+                    continue
+                jobInfo[key] = val
 
-        for jobNode in node.childNodes:
-            jobInfo = \
-                    { 'jobId' : jobNode.getAttribute('jobId'),
-                      'name' : jobNode.getAttribute('name'),
-                      'executable' : jobNode.getAttribute('executable'),
-                      'arguments' : jobNode.getAttribute('arguments'),
-                      'taskId' : jobNode.getAttribute('taskId'),
-                      'standardInput' : jobNode.getAttribute('standardInput'),
-                      'standardOutput' : jobNode.getAttribute('standardOutput'),
-                      'standardError' : jobNode.getAttribute('standardError'),
-                      'logFile' : jobNode.getAttribute('logFile'),
-                      'inputFiles' : list(jobNode.getAttribute('inputFiles')),
-                      'outputFiles' : list(jobNode.getAttribute('outputFiles')),
-                      'submissionNumber' : int(jobNode.getAttribute('submissionNumber'))
-                      }
-            job = Job( jobInfo )
+            jobInfo['inputFiles'] = jobInfo['inputFiles'].split(',')
+            jobInfo['outputFiles'] = jobInfo['outputFiles'].split(',')
+            jobInfo['dlsDestination'] = jobInfo['dlsDestination'].split(',')
+            jobs.append(jobInfo)
 
-            if jobNode.childNodes.lenght > 0:
-                # db connect
-                if self.db is None :
-                    self.connect()
-
-                # the RunningJob Section exists
-                run = {}
-                rjNode = jobNode.childNodes[0]
-    
+            rjAttrs = {}
+            rjl = jobNode.getElementsByTagName("RunningJob") 
+            if len(rjl) > 0:
+                rjNode = rjl[0]
                 for i in range(rjNode.attributes.length):
-                    run[str(rjNode.attributes.item(i).name)] = str(rjNode.attributes.item(i).value)
-                    
-                job.newRunningInstance(run, self.db )
-
-                self.close()
-            
-            jobs.append(job)
-
-        # deserializartion completed:
-        # // create the actual task ad add its own (running)jobs
-        task = Task(taskInfo)    
-        task.addJobs(jobs)
-        return task
-    
+                    key = str(rjNode.attributes.item(i).name)
+                    val = str(rjNode.attributes.item(i).value)
+                    rjAttrs[key] = val
+            runningJobsAttribs[ jobInfo['name'] ] = copy.deepcopy(rjAttrs)
+       
+        return taskInfo, jobs, runningJobsAttribs
 
     ##########################################################################
 
-
-    def serialize( self, task ) :
-        """
-        obtain XML object from task object
-
-        <Task>!
-            <TaskAttributes ... >!
-            <TaskJobs>
-                <Job ...>
-                <RunningJob ...>!
-                </Job >+
-            </TaskJobs>!
-        </Task>
-        """
-        
+    def serialize( self, task ):
         from xml.dom import minidom
 
         cfile = minidom.Document()
-        
         root = cfile.createElement("Task")
-        node = root.createElement("TaskAttributes")
-        node.setAttribute('id', task['id'])
-        node.setAttribute('name', task['name'])
-        node.setAttribute('startDirectory', task['startDirectory'] )
-        node.setAttribute('outputDirectory', task['outputDirectory'] )
-        node.setAttribute('globalSandbox',  ','.join( task['globalSandbox'] ) )
+
+        node = cfile.createElement("TaskAttributes")
+        node.setAttribute('name', str(task['name']) )
+        node.setAttribute('startDirectory', str(task['startDirectory']) )
+        node.setAttribute('outputDirectory', str(task['outputDirectory']) )
+        node.setAttribute('globalSandbox', str(task['globalSandbox']) )
+        node.setAttribute('cfgName', str(task['cfgName']) )
+        node.setAttribute('serverName', str(task['serverName']) )
+        node.setAttribute('jobType', str(task['jobType']) )
+        node.setAttribute('scriptName', str(task['scriptName']) )
         root.appendChild(node)
 
-        node = root.createElement("TaskJobs")        
+        node = cfile.createElement("TaskJobs")
         for job in task.jobs:
-            subNode = node.createElement("Job")
-            subNode.setAttribute('jobId', job['jobId'])
-            subNode.setAttribute('name', job['name'])
-            subNode.setAttribute('executable', job['executable'])
-            subNode.setAttribute('arguments', job['arguments'])
-            subNode.setAttribute('taskId', job['taskId'])
-            subNode.setAttribute('standardInput', job['standardInput'])
-            subNode.setAttribute('standardOutput', job['standardOutput']) 
-            subNode.setAttribute('standardError', job['standardError'])
-            subNode.setAttribute('logFile', job['logFile'])
-            subNode.setAttribute('inputFiles', ','.join( job['inputFiles']))
-            subNode.setAttribute('outputFiles', ','.join( job['outputFiles']))
-            subNode.setAttribute('submissionNumber',  job['submissionNumber'])
-            
+            subNode = cfile.createElement("Job")
+            subNode.setAttribute('name', str(job['name']) )
+            subNode.setAttribute('executable', str(job['executable']) )
+            subNode.setAttribute('arguments', str(job['arguments']) )
+            subNode.setAttribute('standardInput', str(job['standardInput']) )
+            subNode.setAttribute('standardOutput', str(job['standardOutput']) )
+            subNode.setAttribute('standardError', str(job['standardError']) )
+            subNode.setAttribute('logFile', str(job['logFile']) )
+            subNode.setAttribute('inputFiles', str( ','.join(job['inputFiles'])) )
+            subNode.setAttribute('outputFiles', str( ','.join(job['outputFiles'])) )
+            subNode.setAttribute('fileBlock', str( job['fileBlock']) )
+            subNode.setAttribute('submissionNumber',  str(job['submissionNumber']) )
+            #
+            dlsD = ','.join(eval(job['dlsDestination']))
+            subNode.setAttribute('dlsDestination', dlsD )
+            node.appendChild(subNode)
+
             if job.runningJob is not None:
-                subSubNode = subNode.createElement("RunningJob")
-                for key, val in job.runningJob :
-                    subSubNode.setAttribute(key, val)
+                subSubNode = cfile.createElement("RunningJob")
+                for key in job.runningJob.fields:
+                    if not job.runningJob[key] or key in ['id', 'jobId', 'taskId', 'submission'] :
+                        continue
+                    subSubNode.setAttribute(key, str(job.runningJob[key]) )
                 subNode.appendChild(subSubNode)
 
-            node.appendChild(subNode)
-            
         root.appendChild(node)
         cfile.appendChild(root)
 
-        return cfile.toxml()
-
-
+        # print cfile.toprettyxml().replace('\&quot;','') 
+        return cfile.toprettyxml().replace('\&quot;','')
 
 
 
