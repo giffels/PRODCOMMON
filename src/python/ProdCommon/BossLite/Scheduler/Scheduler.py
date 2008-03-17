@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.5 2008/02/13 15:07:08 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: Scheduler.py,v 1.6 2008/03/07 17:25:38 slacapra Exp $"
+__revision__ = "$Revision: 1.6 $"
 
 class Scheduler(object):
     """
@@ -31,7 +31,6 @@ class Scheduler(object):
 
         # load scheduler plugin
         try:
-            print [self.scheduler]
             module =  __import__(
                 'ProdCommon.BossLite.Scheduler.' + self.scheduler, globals(), locals(),
                 [self.scheduler]
@@ -53,9 +52,9 @@ class Scheduler(object):
         """
 
         # delegate submission to scheduler plugin
-        jobAttributes, bulkId, service = self.schedObj.submit(
-            obj, requirements, 
-            self.parameters['config'], self.parameters['service']
+        jobAttributes, bulkId, service = self.schedObj.submit(\
+            obj, requirements, \
+            self.parameters['config'], self.parameters['service']\
             )
 
         # update single job

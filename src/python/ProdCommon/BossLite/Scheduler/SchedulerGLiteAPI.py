@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.6 2008/02/15 12:12:41 gcodispo Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.7 2008/02/15 14:18:23 gcodispo Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import sys
 import os
@@ -114,7 +114,7 @@ def parseConfig ( configfile, vo='cms' ):
 
     cladAddDict = {}
     endpoints = []
-    print "using config file", configfile
+ #   print "using config file", configfile
     try:
         if ( len(configfile) == 0 ):
             configfile = "%s/etc/%s/glite_wms.conf" \
@@ -328,7 +328,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wms = service
         configfile = config
         # decode obj
-        jdl, sandboxFileList = self.decode( obj, requirements='' )
+        jdl, sandboxFileList = self.decode( obj, requirements )
 
         # return values
         taskId = ''
@@ -514,7 +514,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         resources list match
         """
-        jdl = self.decode( obj, requirements='' )
+        jdl = self.decode( obj, requirements)
         configfile = config
         wms = service
         matchingCEs = []
@@ -522,7 +522,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile)
 
         # jdl ready!
-        print "Using jdl : \n" + jdl
+      #  print "Using jdl : \n" + jdl
 
         seen = []
         random.shuffle(endpoints)
@@ -607,7 +607,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
 
         # decode obj
-        jdl, sandboxFileList = self.decode( obj, requirements='' )
+        jdl, sandboxFileList = self.decode( obj, requirements )
 
         # return values
         taskId = ''
@@ -623,9 +623,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         prepare file for submission
         """
         if type(obj) == RunningJob or type(obj) == Job :
-            return self.singleApiJdl ( obj, requirements='' ) 
+            return self.singleApiJdl ( obj, requirements ) 
         elif type(obj) == Task :
-            return self.collectionApiJdl ( obj, requirements='' ) 
+            return self.collectionApiJdl ( obj, requirements ) 
 
 
     ##########################################################################
@@ -702,7 +702,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # files are stored locally, compose with 'file://'
             if task['globalSandbox'] is not None :
                 for files in task['globalSandbox'].split(','):
-                    print files
+                   # print files
                     if files == '' :
                         continue
                     filename = os.path.abspath( files )
@@ -773,7 +773,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if GlobalSandbox != '' :
             jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
         jdl += \
-            'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"}; \n'
+            'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
         
         # blindly append user requirements
         try :
@@ -787,7 +787,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += "]"
         
         # return values
-        print jdl, filelist
+   #     print jdl, filelist
         return jdl, filelist
 
 

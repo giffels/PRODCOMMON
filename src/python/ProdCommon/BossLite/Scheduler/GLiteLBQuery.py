@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.1 2008/01/17 15:27:55 gcodispo Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.2 2008/02/15 12:11:00 gcodispo Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import sys
 import os
@@ -137,6 +137,8 @@ def checkJobs( job_list, user_proxy='' ):
     states = jobStatus.states_names
 
     for jobid in jobs:
+        if type( jobid ) != str :  
+           jobid=str(jobid)
         try:
             jobid = jobid.strip()
             if len(jobid) == 0 :
