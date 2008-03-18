@@ -232,17 +232,15 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
-        # defining default
-        if jobAttributes is None:
-            jobAttributes = {}
-
         # create template for task
         task = Task()
         task['id'] = taskId
 
+
         # create template for jobs with particular jobAttributes
-        job = Job(jobAttributes)
-        task.addJob(job)
+        if jobAttributes is not None:
+            job = Job(jobAttributes)
+            task.addJob(job)
 
         # load task
         task.load(self.db)
