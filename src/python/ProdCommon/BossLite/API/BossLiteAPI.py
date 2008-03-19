@@ -442,7 +442,8 @@ class BossLiteAPI(object):
             return
 
         # load if exixts
-        job.getRunningInstance(self.db)
+        if job['taskId'] is not None :
+            job.getRunningInstance(self.db)
 
         # create it otherwise
         if job.runningJob is None or job.runningJob == [] :
