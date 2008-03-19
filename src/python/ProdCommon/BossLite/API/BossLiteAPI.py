@@ -333,7 +333,7 @@ class BossLiteAPI(object):
         """
         retrieve information from db for:
         - range of tasks
-        - range of jobs inside a task
+        - range of jobs inside a task or a python list of id's
         - various job attributes (logic and)
 
         In some way these shuold be the option to build the query.
@@ -354,7 +354,9 @@ class BossLiteAPI(object):
         jobList= jobRange
 
         # identify jobRange
-        if jobRange != 'all' :
+        if type( jobRange ) == list :
+            jobList = jobRange
+        elif jobRange != 'all' :
             jobList = parseRange( jobRange )
 
         # loop over tasks
