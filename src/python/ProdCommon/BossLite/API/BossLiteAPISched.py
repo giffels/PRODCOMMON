@@ -74,12 +74,14 @@ class BossLiteAPISched(object):
         if self.bossLiteSession.db is None :
             self.bossLiteSession.connect()
 
+        taskId = task['id']
+        task = self.bossLiteSession.load( taskId, jobRange )[0]
+
         # create or recreate running instances
         for job in task.jobs:
-            if jobRange == 'all' or job['id'] in parseRange( jobRange ):
-                self.bossLiteSession.getRunningInstance(
-                    job, { 'schedulerAttributes' : jobAttributes }
-                    )
+            self.bossLiteSession.getRunningInstance(
+                job, { 'schedulerAttributes' : jobAttributes }
+                )
 
         # scheduler submit
         self.scheduler.submit( task, requirements )
@@ -110,8 +112,7 @@ class BossLiteAPISched(object):
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                job.closeRunningInstance( self.bossLiteSession.db )
+            job.closeRunningInstance( self.bossLiteSession.db )
 
         # update changes
         task.update(self.bossLiteSession.db)
@@ -226,6 +227,16 @@ class BossLiteAPISched(object):
 
         # scheduler query
         return self.scheduler.matchResources( task, requirements )
+
+    ##########################################################################
+
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+
+        return self.scheduler.lcgInfo( tags, seList, blacklist, whitelist, vo )
 
 
     ##########################################################################
