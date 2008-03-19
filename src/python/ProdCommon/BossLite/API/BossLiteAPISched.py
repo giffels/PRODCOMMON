@@ -12,6 +12,7 @@ import logging
 
 # db interaction
 from ProdCommon.BossLite.API.BossLiteAPI import BossLiteAPI
+from ProdCommon.BossLite.API.BossLiteAPI import parseRange
 
 # Scheduler interaction
 from ProdCommon.BossLite.Scheduler import Scheduler
@@ -73,18 +74,9 @@ class BossLiteAPISched(object):
         if self.bossLiteSession.db is None :
             self.bossLiteSession.connect()
 
-        # load and close eventual running instances
-        #for job in task.jobs:
-        #    if jobRange != 'all' and job['id'] in jobRange:
-        #        job.closeRunningInstance( self.bossLiteSession.db )
-
-        # update changes
-        #task.update(self.bossLiteSession.db)
-        #self.bossLiteSession.session.commit()
-
         # create or recreate running instances
         for job in task.jobs:
-            if jobRange == 'all' or job['id'] in jobRange:
+            if jobRange == 'all' or job['id'] in parseRange( jobRange ):
                 self.bossLiteSession.getRunningInstance(
                     job, { 'schedulerAttributes' : jobAttributes }
                     )
@@ -154,8 +146,7 @@ class BossLiteAPISched(object):
 
         # retrieve running instances
         for job in task.jobs:
-            if jobRange != 'all' and job['id'] in jobRange:
-                self.bossLiteSession.getRunningInstance( job )
+            self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.query( task, queryType )
