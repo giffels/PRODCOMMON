@@ -78,6 +78,14 @@ class InputSource:
             self.data.fileNames.append(entry)
 
         return
+
+    def setSecondaryFileNames(self, *fileNames):
+        """set secondary file names vector"""
+        self.data.secondaryFileNames = CfgTypes.untracked(CfgTypes.vstring())
+        for entry in fileNames:
+            self.data.secondaryFileNames.append(entry)
+        return
+    
         
     def setFileMatchMode(self, matchMode):
         """set file match mode for reading files in same job"""

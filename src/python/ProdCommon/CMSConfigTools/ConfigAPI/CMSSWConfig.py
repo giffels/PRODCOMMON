@@ -489,6 +489,10 @@ class CMSSWConfig:
         #//
         cfg.inputSource.setFileNames(*self.inputFiles)
 
+        if self.extensions.has_key("SecondaryInputFiles"):
+            cfg.inputSource.setSecondaryFileNames(
+                *self.extensions["SecondaryInputFiles"].data)
+            
         firstRun = self.sourceParams.get("firstRun", None)
         if firstRun != None:
             cfg.inputSource.setFirstRun(firstRun)
@@ -497,7 +501,8 @@ class CMSSWConfig:
         if skipEv != None:
             cfg.inputSource.setSkipEvents(skipEv)
 
-
+            
+            
         #  //
         # // maxEvents PSet
         #//
