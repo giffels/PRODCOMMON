@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.3 2008/02/21 16:27:34 gcodispo Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: Job.py,v 1.4 2008/02/21 22:27:47 spiga Exp $"
+__revision__ = "$Revision: 1.4 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -103,6 +103,13 @@ class Job(DbObject):
             status = db.insert(self)
             if status != 1:
                 raise JobError("Cannot insert job %s" % self)
+
+            # create entry for runningJob
+            if self.runningJob is not None:
+                self.runningJob['jobId'] = self.data['jobId']
+                self.runningJob['taskId'] = self.data['taskId']
+                self.runningJob['submission'] = self.data['submissionNumber']
+                self.runningJob.save( db )
 
         # database error
         except DbError, msg:
