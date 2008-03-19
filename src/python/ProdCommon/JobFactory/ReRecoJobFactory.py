@@ -325,6 +325,11 @@ class ReRecoJobFactory:
             args['skipEvents'] = skipEvents
 
         jobCfg = generator(self.currentJob, **args)
+        #  //
+        # // insert parent files
+        #//
+        parentFiles = self.currentJobDef['ParentLFNS']
+        jobCfg.addExtension("SecondaryInputFiles", parentFiles)
 
         
         jobSpecNode.cfgInterface = jobCfg
