@@ -154,38 +154,30 @@ class BossLiteAPI(object):
         taskInfo, jobInfos, rjAttrs = self.deserialize( xml )
        
         # reconstruct task
-        task = Task( {'name' : taskInfo['name'], 'user_proxy' : proxyFile} ) 
-        task.updateInternalData()
-        self.saveTask( task )
-        for key in taskInfo:
-            task[key] = taskInfo[key] 
-        self.updateDB( task )
+        task = Task( taskInfo )
+        task['user_proxy'] = proxyFile
         
         # reconstruct jobs and fill the data
         jobs = []
         for jI in jobInfos:
             job = Job( jI )
+            subn = int( job['submissionNumber'] )
+            if subn > 0 :
+                job['submissionNumber'] = subn - 1
+            else :
+                job['submissionNumber'] = subn
             jobs.append(job)
 
         task.addJobs(jobs)
-        self.updateDB( task )
-        del jobs
 
-        # reconstruct running jobs
-        task = self.loadTaskByName(taskInfo['name'])
-        
-        for i in xrange(len(task.jobs)):
-            attrs = rjAttrs[ str(task.jobs[i]['name']) ]
-            self.getRunningInstance(task.jobs[i]) 
+        for job in task.jobs:
+            attrs = rjAttrs[ str(job['name']) ]
+            self.getRunningInstance( job, attrs )
 
-            for key in attrs:
-                if not attrs[key] or attrs[key] == 'None':
-                    continue 
-                task.jobs[i].runningJob[key] = str(attrs[key])
-        self.updateDB( task )
+        self.saveTask( task )
 
         # all done
-        return self.loadTaskByName(taskInfo['name'])
+        return task
 
 
     ##########################################################################
@@ -367,7 +359,6 @@ class BossLiteAPI(object):
 
         # loop over tasks
         for taskId in parseRange( taskRange ) :
-            print "TASKID", taskId
 
             # create template
             task = Task()
@@ -450,15 +441,19 @@ class BossLiteAPI(object):
         if job.runningJob is not None :
             return
 
-        # set eventual attributes
-        if runningAttrs is None :
-            runningAttrs = {}
+        # load if exixts
+        job.getRunningInstance(self.db)
 
-        # load if exixts, create it otherwise
-        if job.getRunningInstance(self.db) is None :
-            run = RunningJob(runningAttrs)
+        # create it otherwise
+        if job.runningJob is None or job.runningJob == [] :
+
+            if runningAttrs is None :
+                run = RunningJob()
+            else :
+                run = RunningJob(runningAttrs)
+
             job.newRunningInstance( run, self.db )
-            run.save(self.db)
+ #           run.save(self.db)
 
     ##########################################################################
 
