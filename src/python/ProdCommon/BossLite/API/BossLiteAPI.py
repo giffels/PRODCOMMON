@@ -33,6 +33,31 @@ from ProdCommon.BossLite.Common.Exceptions import *
 from os.path import expandvars
 import copy
 
+
+##########################################################################
+def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
+    """
+    Utility for parsing ranges and/or lists of tasks/jobs    
+    """
+
+    if type( nRange ) == int :
+        return [ nRange ]
+
+    nList = []
+        
+    for subRange in nRange.split( listSep ) :
+        if subRange.find( rangeSep ) == -1 :
+            start = int( subRange )
+            end = int( subRange )
+        else :
+            s, e = subRange.split( rangeSep )
+            start = int( s )
+            end = int( e )
+        nList.extend( range( start, end+1 ) )
+        
+    return nList
+
+
 ##########################################################################
 
 class BossLiteAPI(object):
@@ -248,24 +273,6 @@ class BossLiteAPI(object):
         return task
 
     ##########################################################################
-    ###### Added By DanieleS. 
-    def loadTaskByID( self, ID ) :
-        """
-        retrieve task information from db for task 'name'
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create template for task
-        task = Task()
-        task['id'] = ID
-
-        # load task
-        task.load(self.db)
-        
-        return task
         
     def loadTaskByName( self, name ) :
         """
@@ -286,7 +293,6 @@ class BossLiteAPI(object):
         return task
 
     ##########################################################################
-
         
     def loadTasksByUser( self, user ) :
         """
@@ -352,51 +358,42 @@ class BossLiteAPI(object):
         # defining default
         if jobAttributes is None:
             jobAttributes = {}
-
         taskList = []
         jobList= jobRange
+
         # identify jobRange
         if jobRange != 'all' :
-            jobSubRanges = jobRange.split(',')
-            jobList = []
-
-            for jobSubRange in jobSubRanges :
-                if jobSubRange.find(':') == -1 :
-                    start = int( jobSubRange )
-                    end = int( jobSubRange )
-                else :
-                    s, e = jobSubRange.split(':')
-                    start = int( s )
-                    end = int( e )
-                jobList.extend( range( start, end+1 ) )
+            jobList = parseRange( jobRange )
 
         # loop over tasks
-        for subRange in taskRange.split(',') :
-            if subRange.find(':') == -1 :
-                start = int( subRange )
-                end = int( subRange )
+        for taskId in parseRange( taskRange ) :
+            print "TASKID", taskId
+
+            # create template
+            task = Task()
+
+            # load task
+            if jobRange == 'all' :
+                task = self.loadTask( taskId, jobAttributes )
+
             else :
-                s, e = subRange.split(':')
-                start = int( s )
-                end = int( e )
-
-            for taskId in range ( start, end+1 ) :
-                
-                # create template
-                task = Task()
-                task['id'] = str(taskId)
-
+                task['id'] = int(taskId)
+                task.load( self.db, deep = False )
+            
                 # select jobs
-                if jobRange != 'all' :
-                    for jobId in jobList:
-                        job = Job( jobAttributes )
-                        job['jobId'] = str( jobId )
-                        task.addJob(job)
+                jobs = []
+                for jobId in jobList:
+ 
+                    jobAttributes.update( { 'taskId' : task['id'],
+                                            'jobId' : int( jobId ) } )
+                    job = Job( jobAttributes )
+                    jobs.extend( self.db.select(job) )
 
-                # load task
-                task.load(self.db)
-                taskList.append( task )
-
+                task.addJobs(jobs)
+            
+            # update task list
+            taskList.append( task )
+                
         return taskList
     
     ##########################################################################
@@ -880,5 +877,7 @@ updating the database server:
         return cfile.toprettyxml().replace('\&quot;','')
 
 
+
+    ##########################################################################
 
 
