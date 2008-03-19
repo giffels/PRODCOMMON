@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.3 2008/03/05 10:03:07 spiga Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: TrackingDB.py,v 1.4 2008/03/06 23:16:21 spiga Exp $"
+__revision__ = "$Revision: 1.4 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -43,7 +43,7 @@ class TrackingDB:
         # get field information
         fields = self.getFields(obj)
         fieldList = ','.join([x[0] for x in fields])
-        valueList = '","'.join([x[1] for x in fields])
+        valueList = '","'.join([x[1].replace('"', '""') for x in fields])
 
         # add missing quotes to value list if not empty
         if valueList.strip() != "":
@@ -86,7 +86,7 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value)
+        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
                                      for key, value in fields
                                 ])
 
