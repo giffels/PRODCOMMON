@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.2 2008/02/15 12:11:00 gcodispo Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.3 2008/03/17 14:12:13 spiga Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import sys
 import os
@@ -61,34 +61,33 @@ def getJobInfo( jobidInfo, states ):
         }
         
     result = {}
-    jobid = jobidInfo[states.index('Jobid')]
+    jobid = str(jobidInfo[states.index('Jobid')])
     try:
-        result['statusScheduler'] = jobidInfo[states.index('Status')]
+        result['statusScheduler'] = str(jobidInfo[states.index('Status')])
     except StandardError :
         raise sys.exc_info()[1].__str__()
     
     try:
-        result['statusReason'] = jobidInfo[states.index('Reason')]
+        result['statusReason'] = str(jobidInfo[states.index('Reason')])
     except StandardError :
         pass
     
     try:
-        result['service'] = jobidInfo[states.index('Network server')].replace(
-                "https://", ""
-                )
+        result['service'] = str( jobidInfo[states.index('Network server')] )
+        result['service'] = result['service'].replace( "https://", "" )
         result['service'] = getfqdn ( result['service'].split(':')[0] )
     except StandardError :
         pass
     
     try:
-        dest_ce = jobidInfo[states.index( 'Destination' )]
+        dest_ce = str(jobidInfo[states.index( 'Destination' )])
         result['destination'] = dest_ce.replace("https://", "")
 #        result['DEST_CE'] = dest_ce.split(':')[0].replace("https://", "")
     except StandardError :
         pass
     
     try:
-        timestamp = jobidInfo[states.index('Stateentertimes')]
+        timestamp = str(jobidInfo[states.index('Stateentertimes')])
         pos = timestamp.find(result)
         result["lbTimestamp"] = timestamp[
             timestamp.find('=', pos)+1:timestamp.find(' ', pos)
@@ -137,8 +136,6 @@ def checkJobs( job_list, user_proxy='' ):
     states = jobStatus.states_names
 
     for jobid in jobs:
-        if type( jobid ) != str :  
-           jobid=str(jobid)
         try:
             jobid = jobid.strip()
             if len(jobid) == 0 :

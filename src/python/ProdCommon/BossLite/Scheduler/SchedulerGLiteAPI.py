@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.7 2008/02/15 14:18:23 gcodispo Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.8 2008/03/17 14:12:13 spiga Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import sys
 import os
@@ -30,16 +30,16 @@ except StandardError, e:
 #
 # defining handler for timeout kill
 #
-import signal
-def handler(signum, frame):
-    """
-    a signal handler to clean up files when a signal is sent
-    """
-    error = 'signal received, probably timeout issued\n'
-    print error
-    os.system( "rm -rf " + SchedulerGLiteAPI.SandboxDir \
-               + ' ' + SchedulerGLiteAPI.zippedISB )
-    sys.exit(0)
+#import signal
+#def handler(signum, frame):
+#    """
+#    a signal handler to clean up files when a signal is sent
+#    """
+#    error = 'signal received, probably timeout issued\n'
+#    print error
+#    os.system( "rm -rf " + SchedulerGLiteAPI.SandboxDir \
+#               + ' ' + SchedulerGLiteAPI.zippedISB )
+#    sys.exit(0)
 
 
 def processRow ( row ):
@@ -216,12 +216,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             task = wmproxy.jobRegister ( jdl, self.delegationId )
 
             # retrieve parent id
-            taskId = task.getJobId()
+            taskId = str( task.getJobId() )
             
             # retrieve nodes id
             dag = task.getChildren()
             for job in dag:
-                ret_map[ job.getNodeName() ] = job.getJobId()
+                ret_map[ str( job.getNodeName() ) ] = str( job.getJobId() )
 
             # handle input sandbox :
             #   get destination
@@ -389,7 +389,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 # get file list
                 filelist = wmproxy.getOutputFileList( job )
-                print filelist
+#                print filelist
 
                 # retrieve files
                 for m in filelist:

@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.7 2008/03/17 14:12:13 spiga Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: Scheduler.py,v 1.8 2008/03/17 16:21:22 spiga Exp $"
+__revision__ = "$Revision: 1.8 $"
 
 class Scheduler(object):
     """
@@ -157,7 +157,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
     ##########################################################################
     
