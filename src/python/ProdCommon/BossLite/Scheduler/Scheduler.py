@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.8 2008/03/17 16:21:22 spiga Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: Scheduler.py,v 1.9 2008/03/19 17:21:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 
 class Scheduler(object):
     """
@@ -293,6 +293,17 @@ class Scheduler(object):
         return self.schedObj.matchResources( obj, requirements, \
                                              self.parameters['config'], \
                                              self.parameters['service'] )
+
+    ##########################################################################
+
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+
+        return self.schedObj.lcgInfo( tags, seList, blacklist, whitelist, vo )
+
 
     ##########################################################################
 
