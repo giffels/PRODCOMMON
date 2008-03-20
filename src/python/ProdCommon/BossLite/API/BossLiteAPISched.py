@@ -119,6 +119,10 @@ class BossLiteAPISched(object):
         # update
         self.bossLiteSession.updateDB(task)
 
+
+        # return task updated
+        return task
+
     ##########################################################################
 
     def query( self, taskId, jobRange='all', queryType='node' ):
@@ -138,6 +142,9 @@ class BossLiteAPISched(object):
 
         # update
         self.bossLiteSession.updateDB(task)
+
+        # return task updated
+        return task
 
     ##########################################################################
 
@@ -160,6 +167,9 @@ class BossLiteAPISched(object):
         # update
         self.bossLiteSession.updateDB(task)
 
+        # return task updated
+        return task
+
     ##########################################################################
     
     def kill( self, taskId, jobRange='all' ):
@@ -179,6 +189,9 @@ class BossLiteAPISched(object):
 
         # update
         self.bossLiteSession.updateDB(task)
+        
+        # return task updated
+        return task
 
     ##########################################################################
 
