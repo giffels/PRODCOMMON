@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.2 2008/02/07 14:57:47 spiga Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.3 2008/02/08 13:43:35 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 
 class SchedulerInterface(object):
     """
@@ -191,7 +191,8 @@ class SchedulerInterface(object):
             whitelist = []
 
         if len( tags ) != 0 :
-            query =  "Tag=" + ','.join( tags ) + ',CEStatus=Production'
+            query =  ','.join(  ["Tag=%s" % tag for tag in tags ] ) + \
+                    ',CEStatus=Production'
         else :
             query = 'CEStatus=Production'
 
@@ -203,9 +204,9 @@ class SchedulerInterface(object):
             out = self.ExecuteCommand( command )
             out = out.split()
             for ce in out :
-                if ce.find( "blah" ) == -1 \
-                       and ce in whitelist and ce not in blacklist :
-                    celist.append( ce )
+                if ce.find( "blah" ) == -1 and ce not in blacklist :
+                    if whitelist is None or ce in whitelist :
+                        celist.append( ce )
             
             return celist
         
@@ -216,8 +217,8 @@ class SchedulerInterface(object):
             out = out.split()
 
             for ce in out :
-                if ce.find( "blah" ) == -1 \
-                       and ce in whitelist and ce not in blacklist :
-                    celist.append( ce )
+                if ce.find( "blah" ) == -1 and ce not in blacklist :
+                    if whitelist is None or ce in whitelist :
+                        celist.append( ce )
 
         return celist
