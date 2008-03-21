@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.8 2008/03/17 14:12:13 spiga Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.9 2008/03/19 17:21:24 gcodispo Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import sys
 import os
@@ -342,7 +342,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # installing a signal handler to clean files if the submission
         # is signaled e.g. for a timeout
-        signal.signal(signal.SIGTERM, handler)
+        # signal.signal(signal.SIGTERM, handler)
 
         # emulate ui round robin
         random.shuffle(endpoints)
