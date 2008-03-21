@@ -40,8 +40,8 @@ def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
     Utility for parsing ranges and/or lists of tasks/jobs    
     """
 
-    if type( nRange ) == int :
-        return [ nRange ]
+    if type( nRange ) == int or type( nRange ) == long:
+        return [ str(nRange) ]
 
     nList = []
         
