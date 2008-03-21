@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.3 2008/02/08 13:43:35 gcodispo Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.4 2008/03/21 13:24:41 gcodispo Exp $"
+__revision__ = "$Revision: 1.4 $"
 
 class SchedulerInterface(object):
     """
@@ -23,7 +23,12 @@ class SchedulerInterface(object):
         initialization
         """
         if userProxy == '':
-            self.cert = '/tmp/x509up_u' + str( getuid() )
+            try :
+                self.cert = '/tmp/x509up_u' + str( getuid() )
+                checkUserProxy( self.cert )
+            except :
+                self.cert = ''
+                raise SchedulerError("Missing Proxy", "Missing Proxy")
         else :
             self.cert = userProxy
 
@@ -64,10 +69,10 @@ class SchedulerInterface(object):
         try:
             output = output.split("timeleft  :")[1].strip()
         except IndexError:
-            raise SchedulerError("Missing Proxy")
+            raise SchedulerError("Missing Proxy", "Missing Proxy")
     
         if output == "0:00:00":
-            raise SchedulerError("Proxy Expired")
+            raise SchedulerError("Proxy Expired", "Proxy Expired")
     
     ##########################################################################
 
