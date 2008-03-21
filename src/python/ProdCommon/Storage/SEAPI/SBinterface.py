@@ -34,9 +34,9 @@ class SBinterface:
             if self.useProxy:
                 self.storage1.action.copy(self.storage1, self.storage2, proxy)
             elif self.storage2.protocol != 'local':
-                self.storage2.action.copy(self.storage1, self.storage2)
+                self.storage2.action.copy(self.storage1, self.storage2, proxy)
             else:
-                self.storage1.action.copy(self.storage1, self.storage2)
+                self.storage1.action.copy(self.storage1, self.storage2, proxy)
             self.storage1.workon = ""
             self.storage2.workon = ""
 
@@ -49,19 +49,19 @@ class SBinterface:
             if self.useProxy:
                 self.storage1.action.move(self.storage1, self.storage2, proxy)
             elif self.storage2.protocol != 'local':
-                self.storage2.action.move(self.storage1, self.storage2)
+                self.storage2.action.move(self.storage1, self.storage2, proxy)
             else:
-                self.storage1.action.move(self.storage1, self.storage2)
+                self.storage1.action.move(self.storage1, self.storage2, proxy)
             self.storage1.workon = ""
             self.storage2.workon = ""
 
     def checkExists( self, source, proxy = None ):
         self.storage1.workon = source
-        resval = False
+        resval = False;
         if self.useProxy:
             resval = self.storage1.action.checkExists(self.storage1, proxy)
         else:
-            resval = self.storage1.action.checkExists(self.storage1)
+            resval = self.storage1.action.checkExists(self.storage1, proxy)
         self.storage1.workon = ""
         return resval
 
@@ -71,7 +71,7 @@ class SBinterface:
         if self.useProxy:
             resval = self.storage1.action.checkPermission(self.storage1, proxy)
         else:
-            resval = self.storage1.action.checkPermission(self.storage1)
+            resval = self.storage1.action.checkPermission(self.storage1, proxy)
         self.storage1.workon = ""
         return resval
 
@@ -83,7 +83,7 @@ class SBinterface:
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy)
         else:
-            self.storage1.action.delete(self.storage1)
+            self.storage1.action.delete(self.storage1, proxy)
         self.storage1.workon = ""
 
     def getSize( self, source, proxy = None ):
@@ -91,13 +91,18 @@ class SBinterface:
         if self.useProxy:
             size = self.storage1.action.getFileSize(self.storage1, proxy)
         else:
-            size = self.storage1.action.getFileSize(self.storage1)
+            size = self.storage1.action.getFileSize(self.storage1, proxy)
         self.storage1.workon = ""
         return size
 
     def getDirSpace( self, source, proxy = None ):
-        pass
-
+        if self.storage1.protocol == 'local':
+            self.storage1.workon = source
+            val = self.storage1.action.getDirSize(self.storage1, proxy)
+            self.storage1.workon = ""
+            return val
+        else: 
+            return 0
     def getGlobalSpace( self, source, proxy = None ):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
@@ -105,4 +110,4 @@ class SBinterface:
             self.storage1.workon = ""
             return val
         else:
-            return None
+            return 0
