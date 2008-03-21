@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.3 2008/03/17 14:12:13 spiga Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.4 2008/03/19 17:21:24 gcodispo Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import sys
 import os
@@ -137,7 +137,7 @@ def checkJobs( job_list, user_proxy='' ):
 
     for jobid in jobs:
         try:
-            jobid = jobid.strip()
+            jobid = str( jobid ).strip()
             if len(jobid) == 0 :
                 continue
             status.getStatus(jobid, 0)
@@ -193,7 +193,7 @@ def checkJobsBulk( job_list, user_proxy='' ):
     print "check"
     for jobid in jobs:
         try:
-            jobid = jobid.strip()
+            jobid = str( jobid ).strip()
             if len(jobid) == 0 :
                 continue
             status.getStatus(jobid, 0)
@@ -250,7 +250,7 @@ def groupByWMS( job_list, user_proxy='', id_type='node', status_list=None, allow
         url = attr[ 'WMS' ]
         if not endpoints.has_key( url ) and len(url) != 0 :
             endpoints[ url ] = []
-        endpoints[ url ].append( jobid )
+        endpoints[ url ].append( str( jobid ) )
     return endpoints
 
 
