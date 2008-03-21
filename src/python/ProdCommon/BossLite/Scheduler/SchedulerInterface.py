@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.6 2008/03/21 13:59:11 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.7 2008/03/21 14:19:36 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 
 class SchedulerInterface(object):
     """
@@ -53,7 +53,7 @@ class SchedulerInterface(object):
         """
 
         command = 'voms-proxy-info'
-        
+
         if cert != '' :
             command += ' --file ' + cert
 
@@ -182,11 +182,8 @@ class SchedulerInterface(object):
     
         celist = []
     
-        if blacklist == None :
+        if blacklist is None :
             blacklist = []
-        
-        if whitelist == None :
-            whitelist = []
 
         if len( tags ) != 0 :
             query =  ','.join(  ["Tag=%s" % tag for tag in tags ] ) + \
@@ -203,7 +200,7 @@ class SchedulerInterface(object):
             out = out.split()
             for ce in out :
                 if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or ce in whitelist :
+                    if whitelist is not None and ce in whitelist :
                         celist.append( ce )
             
             return celist
@@ -217,7 +214,7 @@ class SchedulerInterface(object):
 
             for ce in out :
                 if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or ce in whitelist :
+                    if whitelist is not None and ce in whitelist :
                         celist.append( ce )
 
         return celist
