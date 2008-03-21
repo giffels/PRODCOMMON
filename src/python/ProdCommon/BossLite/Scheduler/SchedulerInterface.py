@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.4 2008/03/21 13:24:41 gcodispo Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.5 2008/03/21 13:33:29 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 
 class SchedulerInterface(object):
     """
@@ -204,7 +204,7 @@ class SchedulerInterface(object):
         command = "export X509_USER_PROXY=" + self.cert + '; '
     
         if seList == None :
-            command += "lcg-info --vo " + vo + " --list-ce --query " + \
+            command += " lcg-info --vo " + vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out = self.ExecuteCommand( command )
             out = out.split()
@@ -216,9 +216,10 @@ class SchedulerInterface(object):
             return celist
         
         for se in seList :
-            command += "lcg-info --vo " + vo + " --list-ce --query " + \
-                       "\'" + query + ",CloseSE"+ se + "\' --sed"
-            out = self.ExecuteCommand( command )
+            singleComm = command + " lcg-info --vo " + vo + \
+                         " --list-ce --query " + \
+                         "\'" + query + ",CloseSE="+ se + "\' --sed"
+            out = self.ExecuteCommand( singleComm )
             out = out.split()
 
             for ce in out :
