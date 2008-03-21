@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.4 2008/03/19 17:21:24 gcodispo Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.5 2008/03/21 11:51:41 gcodispo Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import sys
 import os
@@ -124,9 +124,8 @@ def checkJobs( job_list, user_proxy='' ):
     elif type( job_list ) == list :
         jobs = job_list
 
-    if user_proxy == '':
-        user_proxy = '/tmp/x509up_u' + str( os.getuid() )
-    os.environ["X509_USER_PROXY"] = user_proxy
+    if user_proxy != '':
+        os.environ["X509_USER_PROXY"] = user_proxy
 
     # instatiating status object
     status =   Status()
