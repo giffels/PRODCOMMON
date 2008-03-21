@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.9 2008/03/19 17:21:24 gcodispo Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.10 2008/03/21 11:14:34 gcodispo Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import sys
 import os
@@ -293,12 +293,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         delegate proxy to a wms
         """
+
+        command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
+                  + " --endpoint " + wms
         
-        msg = self.ExecuteCommand(
-            "export X509_USER_PROXY=" + self.cert \
-            + "; glite-wms-job-delegate-proxy -d " +  self.delegationId \
-            + " --endpoint " + wms
-            )
+        if self.cert != '' :
+            command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
+
+        msg = self.ExecuteCommand( command )
 
         if msg.find("Error -") >= 0 :
             print "Warning : \n", msg
