@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.7 2008/03/21 14:19:36 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.8 2008/03/21 15:40:16 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 
 class SchedulerInterface(object):
     """
@@ -200,7 +200,7 @@ class SchedulerInterface(object):
             out = out.split()
             for ce in out :
                 if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is not None and ce in whitelist :
+                    if whitelist is None or ce in whitelist :
                         celist.append( ce )
             
             return celist
@@ -214,7 +214,7 @@ class SchedulerInterface(object):
 
             for ce in out :
                 if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is not None and ce in whitelist :
+                    if whitelist is None or ce in whitelist :
                         celist.append( ce )
 
         return celist
