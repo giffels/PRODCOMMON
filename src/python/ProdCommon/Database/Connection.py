@@ -70,6 +70,9 @@ class Connection:
        #  //
        # // Make sure that user provide minimum required parameters ['dbType', 'dbName', 'user', 'passwd', 'host']       
        #//
+       if not connection_parameters.has_key('dbType'):
+          connection_parameters['dbType'] = 'mysql'
+
        self.argsValidityCheck(**connection_parameters)
                 
        #  //
@@ -194,7 +197,10 @@ class Connection:
        #  //
        # // Raises exception if the provided connection parameters are missing any minRequired parameter list element 
        #//
-       for arg in minRequired:
+
+       if connection_parameters['dbType'] == 'mysql':
+        
+        for arg in minRequired:
 
           if not (arg in connection_parameters.keys()):
 
@@ -204,13 +210,27 @@ class Connection:
              else:
                 connection_parameters[arg] = ""    
   
-       #// Raises exception if both socketFileLocation and portNr are provided non empty Or if none of them is given.        
-       if (connection_parameters['socketFileLocation'] == "" and connection_parameters['portNr'] == "") or \
-          (connection_parameters['socketFileLocation'] != "" and connection_parameters['portNr'] != ""):
+        #// Raises exception if both socketFileLocation and portNr are provided non empty Or if none of them is given.        
+       
+        if (connection_parameters['socketFileLocation'] == "" and connection_parameters['portNr'] == "") or \
+           (connection_parameters['socketFileLocation'] != "" and connection_parameters['portNr'] != ""):
 
           logging.error("Either Both socketFileLocation and portNr are empty OR Both are Non empty. Please provide only \
                          one")                       
           raise ProdException(exceptions[4012], 4012)
+
+
+       elif connection_parameters['dbType'] == 'oracle':
+          
+          minRequired = ['user', 'passwd', 'dbType','tnsName']
+
+          for arg in minRequired:
+             if not (connection_parameters.has_key(arg)):
+                msg = 'Missing Parameter: %s' %arg
+                
+                logging.error(msg)
+                raise ProdException(exceptions[4012], 4012)
+         
 
        return  #//argsValidityCheck
 
@@ -251,8 +271,11 @@ class Connection:
           
           try:
 
-             #// If connection via socket file to local server
-             if self.connection_parameters['socketFileLocation'] != '' :
+             
+             if self.connection_parameters['dbType'] == 'mysql':
+              
+              #// If connection via socket file to local server
+              if self.connection_parameters['socketFileLocation'] != '' :
 
                 self.engine = create_engine(url, connect_args = {'unix_socket':\
                                             self.connection_parameters['socketFileLocation']}, strategy= 'plain', \
@@ -263,9 +286,19 @@ class Connection:
                                             echo = self.connection_parameters['echo'], \
                                             echo_pool= self.connection_parameters['echo_pool'])
 
-             #// If connecting via port to remote server
-             else:
+              #// If connecting via port to remote server
+              else:
 
+                self.engine = create_engine(url , strategy= 'plain', \
+                                            pool_size =  int(self.connection_parameters['pool_size']), \
+                                            max_overflow = int(self.connection_parameters['max_overflow']), \
+                                            pool_timeout = int(self.connection_parameters['pool_timeout']), \
+                                            pool_recycle = int(self.connection_parameters['pool_recycle']), \
+                                            echo = self.connection_parameters['echo'], \
+                                            echo_pool=  self.connection_parameters['echo_pool'])
+
+             elif self.connection_parameters['dbType'] == 'oracle':
+                
                 self.engine = create_engine(url , strategy= 'plain', \
                                             pool_size =  int(self.connection_parameters['pool_size']), \
                                             max_overflow = int(self.connection_parameters['max_overflow']), \
@@ -314,20 +347,36 @@ class Connection:
        
        connectionUrl = None
 
-       if self.connection_parameters['portNr'] == '' :
+       if self.connection_parameters['dbType'] == 'mysql':
+
+        if self.connection_parameters['portNr'] == '' :
           connectionUrl = URL (drivername = self.connection_parameters['dbType'],\
                                username = self.connection_parameters['user'],\
                                password = self.connection_parameters['passwd'],\
                                host = self.connection_parameters['host'],\
                                database = self.connection_parameters['dbName'])
-       else:
+        else:
            connectionUrl = URL (drivername = self.connection_parameters['dbType'],\
                                username = self.connection_parameters['user'],\
                                password = self.connection_parameters['passwd'],\
                                host = self.connection_parameters['host'],\
                                port = int(self.connection_parameters['portNr']),\
                                database = self.connection_parameters['dbName'])
+       
+       elif self.connection_parameters['dbType'] == 'oracle':
+       
+           #  //
+           # // Connecting via TNS Name
+           #//
+
+           connectionUrl = URL (drivername = self.connection_parameters['dbType'],\
+                               username = self.connection_parameters['user'],\
+                               password = self.connection_parameters['passwd'],\
+                               host = self.connection_parameters['tnsName'])
  
+       else:
+           
+          raise RuntimeError(2,"Incompatible dbType provided ")   
 
        return connectionUrl   #//getUrl  
        
@@ -457,7 +506,7 @@ class Connection:
           else :              
              return
 
-       except OperationalError, ex:
+       except (OperationalError, DatabaseError), ex:
        
           msg = 'SERVER WENT DOWN : ' + str(ex)          
           logging.warning(msg)
@@ -467,7 +516,7 @@ class Connection:
 
                 self.session.connection()
 
-             except OperationalError, e:
+             except (OperationalError, DatabaseError), e:
                 msg = 'SERVER WENT DOWN : ' + str(e)
                 msg += '\n'
                 msg += 'Trying to reconnect : ' + str(attempt)
@@ -490,7 +539,7 @@ class Connection:
  
                 self.session.connection()
 
-             except OperationalError, ex:
+             except (OperationalError, DatabaseError), ex:
  
                 msg = 'SERVER WENT DOWN : ' + str(ex)
                 msg += '\n'
