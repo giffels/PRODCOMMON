@@ -108,7 +108,7 @@ class Operation:
                     if entry == "LAST_INSERT_ID()":
                         sqlStr += entry
                     else:
-                        sqlStr += '"'+str(entry)+'"'
+                        sqlStr += '\''+str(entry)+'\''
                 sqlStr += ')'
             else:
                 i=0
@@ -127,7 +127,7 @@ class Operation:
                     if entry == "LAST_INSERT_ID()":
                         sqlStr += entry
                     else:
-                        sqlStr += '"'+str(entry)+'"'
+                        sqlStr += '\''+str(entry)+'\''
                     i += 1
                 sqlStr += ')'
         
@@ -141,15 +141,15 @@ class Operation:
                 elif not comma :
                    comma=True
                 if type(row) == dict: 
-                   sqlStr+= column_name + '="'+ str(row[column_name]) + '"'
+                   sqlStr+= column_name + '=\''+ str(row[column_name]) + '\''
                 else:
-                   sqlStr+= column_name + '="'+ str(row[i]) + '"'
+                   sqlStr+= column_name + '=\''+ str(row[i]) + '\''
                 i += 1
  
-        
-         
-        
-        self.connection.execute(sqlStr)
+               
+                
+        rowsModified = self.connection.execute(sqlStr)
+        return rowsModified
       
     def insert2update(self, table_name, rows , columns =[], encode = [], encodeb64 = []):
         self.insert(table_name, rows, columns, encode, encodeb64, duplicate = True)
@@ -207,6 +207,7 @@ class Operation:
           else:
              sqlStr += " = '%s'" % values[value_name]      
        
+        
 
        self.connection.execute(sqlStr)
          
@@ -248,7 +249,8 @@ class Operation:
                 sqlStr += " = '%s'" % rows[key_name]   
         
         
-        self.connection.execute(sqlStr)
+        rowsModified = self.connection.execute(sqlStr)
+        return rowsModified
     
     def update(self, table_name, rows, columns = [], keys = {}, encode = [], encodeb64 = []):
         """
@@ -298,9 +300,9 @@ class Operation:
                     sqlStr += ', '
                 entry_comma = True
                 if entry == "LAST_INSERT_ID()":
-                    sqlStr += column_name + "=\"" + entry + "\""
+                    sqlStr += column_name + "=\'" + entry + "\'"
                 else:
-                    sqlStr += column_name + "=\"" +str(entry)+ '"'
+                    sqlStr += column_name + "=\'" +str(entry)+ '\''
         else:
             i=0
             for column_name in column_names:
@@ -314,9 +316,9 @@ class Operation:
                     sqlStr += ', '
                 entry_comma = True
                 if entry == "LAST_INSERT_ID()":
-                    sqlStr += column_name + "=\"" + entry + "\""
+                    sqlStr += column_name + "=\'" + entry + "\'"
                 else:
-                    sqlStr += column_name + "=\"" +str(entry)+ '"'
+                    sqlStr += column_name + "=\'" +str(entry)+ '\''
                 i += 1
          
         if keys is not None :            
@@ -339,10 +341,10 @@ class Operation:
             
              sqlStr += " = '%s'" % entry              
         
-   
+           
         
-       
-        self.connection.execute(sqlStr)
+        rowsModified=self.connection.execute(sqlStr)
+        return rowsModified
 
   
   
