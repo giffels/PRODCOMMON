@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.11 2008/03/21 15:39:52 gcodispo Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.12 2008/03/26 09:47:48 gcodispo Exp $"
+__version__ = "$Revision: 1.12 $"
 
 import sys
 import os
@@ -391,7 +391,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
                 # retrieve files
                 for m in filelist:
-                    dest = outdir + '/' +os.path.basename( m['name'] )
+                    dest = outdir + '/' + os.path.basename( m['name'] )
                     command = "globus-url-copy " + m['name'] \
                               + " file://" + dest
                     
@@ -637,7 +637,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # general part
         jdl = "[\n"
         jdl += 'Type = "job";\n'
-        jdl += 'Executable = "%s";\n' % job[ 'executable' ]
+        jdl += 'AllowZippedISB = true;\n'
+        jdl += 'ZippedISB = "%s";\n' % self.zippedISB
+        jdl += 'Executable = "%s";\n' \
+                   % os.path.basename( job[ 'executable' ] )
         jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
         if job[ 'standardInput' ] != '':
             jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
@@ -684,6 +687,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # general part for task
         jdl = "[\n"
         jdl += 'Type = "collection";\n'
+        jdl += 'AllowZippedISB = true;\n'
+        jdl += 'ZippedISB = "%s";\n' %self.zippedISB
 
         # global task attributes :
         # \\ the list of files for the JDL common part
@@ -719,10 +724,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # single job definition
         jdl += "Nodes = {\n"
-        for job in task.getJobs() :
+        for job in task.jobs :
             jdl += '[\n'
             jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
-            jdl += 'Executable = "%s";\n'% job[ 'executable' ]
+            jdl += 'Executable = "%s";\n' \
+                   % os.path.basename( job[ 'executable' ] )
             jdl += 'Arguments  = "%s";\n'% job[ 'arguments' ]
             if job[ 'standardInput' ] != '':
                 jdl += 'StdInput = "%s";\n'% job[ 'standardInput' ]
@@ -785,7 +791,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += "]"
         
         # return values
-   #     print jdl, filelist
+        print jdl, filelist
         return jdl, filelist
 
 
