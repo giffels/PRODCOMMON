@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.2 2008/03/12 15:32:15 ewv Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.3 2008/03/13 19:37:54 ewv Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import sys
 import os
@@ -255,7 +255,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     for jobId in schedIdList:
       fileList = ['condor_g_'+str(jid)+'.log', 'BossOutArchive_'+str(jid)+'.tgz',
-                  'condor_g_'+str(jid)+'.out', 'condor_g_'+str(jid)+'.err', # Not correct names, how to get them?
+                  'condor_g_'+str(jid)+'.out', 'condor_g_'+str(jid)+'.err'] # Not correct names, how to get them?
       for file in fileList:
         try :
           shutil.move(file,outdir)
