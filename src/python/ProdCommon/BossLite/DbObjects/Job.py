@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.4 2008/02/21 22:27:47 spiga Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: Job.py,v 1.5 2008/03/19 17:24:06 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -172,7 +172,6 @@ class Job(DbObject):
 
             # update running job if associated
             if deep and self.runningJob is not None:
-
                 status += self.runningJob.update(db)
 
         # database error
