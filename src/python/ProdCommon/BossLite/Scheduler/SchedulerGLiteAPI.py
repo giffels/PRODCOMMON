@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.10 2008/03/21 11:14:34 gcodispo Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.11 2008/03/21 15:39:52 gcodispo Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import sys
 import os
@@ -55,8 +55,8 @@ def processRow ( row ):
         try:
             row = row[ row.find('\n') : ].strip()
             return processRow ( row )
-        except StandardError:
-            raise StandardError
+        except StandardError, err:
+            raise err
     index = row.find('=')
     key = row[0:index].strip().lower()
     val = row[index+1:].strip()
@@ -99,8 +99,8 @@ def processClassAd(  ClassAd ):
                 endpoints = endpoints + wms.split(',')
             else :
                 cladDict[ key ] = val
-    except :
-        raise StandardError
+    except StandardError:
+        raise SchedulerError( "bad jdl ", traceback.format_exc() )
     
     return cladDict, endpoints, configfile
 
@@ -176,13 +176,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 begin = '[\n'
                 jdl = begin + schedClassad + jdl[1:]
         except SchedulerError, err:
-            print err
-            print traceback.format_exc()
             raise err
-        except :
-            error = str ( traceback.format_exception(sys.exc_info()[0],
-                                                     sys.exc_info()[1],
-                                                     sys.exc_info()[2]) )
+        except StandardError:
+            error = str ( traceback.format_exc() )
             raise SchedulerError( "failed submission", error )
 
         return jdl, endpoints
@@ -581,9 +577,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
              checkJobs, checkJobsBulk
         if objType == 'node':
-            return checkJobs( schedIdList )
+            return checkJobs( schedIdList, self.cert )
         elif objType == 'parent' :
-            return checkJobsBulk( schedIdList )
+            return checkJobsBulk( schedIdList, self.cert )
 
 
     ##########################################################################
