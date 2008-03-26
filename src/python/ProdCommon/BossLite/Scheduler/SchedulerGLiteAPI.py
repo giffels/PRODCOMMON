@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.12 2008/03/26 09:47:48 gcodispo Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.13 2008/03/26 10:53:42 gcodispo Exp $"
+__version__ = "$Revision: 1.13 $"
 
 import sys
 import os
@@ -638,9 +638,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl = "[\n"
         jdl += 'Type = "job";\n'
         jdl += 'AllowZippedISB = true;\n'
-        jdl += 'ZippedISB = "%s";\n' % self.zippedISB
-        jdl += 'Executable = "%s";\n' \
-                   % os.path.basename( job[ 'executable' ] )
+        jdl += 'ZippedISB = "%s";\n'  % self.zippedISB
+        jdl += 'Executable = "%s";\n' % job[ 'executable' ]
         jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
         if job[ 'standardInput' ] != '':
             jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
@@ -727,13 +726,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         for job in task.jobs :
             jdl += '[\n'
             jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
-            jdl += 'Executable = "%s";\n' \
-                   % os.path.basename( job[ 'executable' ] )
-            jdl += 'Arguments  = "%s";\n'% job[ 'arguments' ]
+            jdl += 'Executable = "%s";\n' % job[ 'executable' ] 
+            jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
             if job[ 'standardInput' ] != '':
-                jdl += 'StdInput = "%s";\n'% job[ 'standardInput' ]
-            jdl += 'StdOutput  = "%s";\n'% job[ 'standardOutput' ]
-            jdl += 'StdError   = "%s";\n'% job[ 'standardError' ]
+                jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
+            jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
+            jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
             
             # extra job attributes
             if job.runningJob is not None \
