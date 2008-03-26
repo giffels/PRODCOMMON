@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.2 2008/02/21 16:27:34 gcodispo Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: Task.py,v 1.3 2008/03/04 20:27:50 mcinquil Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -68,6 +68,26 @@ class Task(DbObject):
         # initialize job set struture
         self.jobs = []
         self.jobIndex = 0
+
+    ##########################################################################
+
+    def appendJob(self, job):
+        """
+        insert a job into the task
+        """
+
+        # assign task id if possible
+        if self.data['id'] is None:
+            raise TaskError( "Task not loaded %s" %self)
+
+        if self.data['id'] != job['taskId'] :
+            raise TaskError(
+                "Mismatching taskId: %d for the task, %d for the job" \
+                % ( self.data['id'], job['taskId'] )
+                )
+
+        # insert job
+        self.jobs.append(job)
 
     ##########################################################################
 
@@ -214,7 +234,7 @@ class Task(DbObject):
             # update all jobs
             if deep:
                 for job in self.jobs:
-                    status += job.update(db)
+                    status += job.update(db, deep)
 
         # database error
         except DbError, msg:
