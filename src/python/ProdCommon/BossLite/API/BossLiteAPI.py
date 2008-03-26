@@ -376,13 +376,14 @@ class BossLiteAPI(object):
                 # select jobs
                 jobs = []
                 for jobId in jobList:
- 
-                    jobAttributes.update( { 'taskId' : task['id'],
+                    jobAttributes.update( { 'taskId' : int( task['id'] ),
                                             'jobId' : int( jobId ) } )
                     job = Job( jobAttributes )
-                    jobs.extend( self.db.select(job) )
+                    job.load( self.db )
+                    task.appendJob( job )
+                    # jobs.extend( self.db.select(job) )
 
-                task.addJobs(jobs)
+                # task.addJobs(jobs)
             
             # update task list
             taskList.append( task )
