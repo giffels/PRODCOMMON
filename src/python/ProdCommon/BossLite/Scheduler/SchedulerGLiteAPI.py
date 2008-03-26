@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.13 2008/03/26 10:53:42 gcodispo Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.14 2008/03/26 15:28:12 gcodispo Exp $"
+__version__ = "$Revision: 1.14 $"
 
 import sys
 import os
@@ -148,7 +148,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
-    zippedISB  = "zippedISB"
+    zippedISB  = "zippedISB.tar.gz"
         
     def mergeJDL( self, jdl, wms='', configfile='' ):
         """
@@ -789,7 +789,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += "]"
         
         # return values
-        print jdl, filelist
+        # print jdl, filelist
         return jdl, filelist
 
 
