@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.9 2008/03/19 17:21:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: Scheduler.py,v 1.10 2008/03/20 10:43:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.10 $"
 
 class Scheduler(object):
     """
@@ -80,6 +80,8 @@ class Scheduler(object):
         else:
             raise SchedulerError('wrong argument type')
 
+        # returns an updated object
+        return obj
     
     ##########################################################################
 
@@ -131,6 +133,7 @@ class Scheduler(object):
                 for job in obj.jobs :
                     if job.runningJob is None\
                            or job.runningJob['schedulerId'] is None:
+                        job.runningJob = None
                         continue
                     schedIds.append( job.runningJob['schedulerId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
@@ -158,6 +161,9 @@ class Scheduler(object):
         # unknown object type
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
+
+        # returns an updated object
+        return obj
 
     ##########################################################################
     
