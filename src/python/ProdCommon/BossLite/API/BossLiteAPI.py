@@ -192,9 +192,14 @@ class BossLiteAPI(object):
             self.connect()
 
         # save task
-        task.updateInternalData()
-        task.save(self.db)
-        self.session.commit()
+        try :
+            task.updateInternalData()
+            task.save(self.db)
+            self.session.commit()
+        except SandardError, err:
+            self.removeTask( task )
+            task = None
+            raise err
 
         return task
 
