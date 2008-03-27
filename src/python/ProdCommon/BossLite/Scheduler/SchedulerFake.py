@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id$"
-__version__ = "$Revision$"
+__revision__ = "$Id: SchedulerFake.py,v 1.1 2008/03/27 09:54:14 gcodispo Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import random
 import traceback
@@ -238,13 +238,33 @@ class SchedulerFake(SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
-        
-        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
-             checkJobs, checkJobsBulk
+
+        # ask for the job informations, mainly status
+        # some systems allow a query job per job, others also bulk queries
+
+        ret_map = {}
+
         if objType == 'node':
-            return checkJobs( schedIdList, self.cert )
+            for schedId in schedIdList :
+                # do query
+                # ...
+                values = { 'destination' : 'home',
+                           'statusScheduler' : 'Running',
+                           'status' : 'R',
+                           'statusReason' : 'on site'}
+                ret_map[ schedId ] = values
         elif objType == 'parent' :
-            return checkJobsBulk( schedIdList, self.cert )
+            for schedId in schedIdList :
+                #  a bulk command  may give many jobs in one shot!
+                newIdList = bulkQueryCommand( schedId )
+                for newId in newIdList :
+                    values = { 'destination' : 'home',
+                               'statusScheduler' : 'Running',
+                               'status' : 'R',
+                               'statusReason' : 'on site'}
+                    ret_map[ newId ] = values
+
+        return ret_map
 
 
     ##########################################################################
