@@ -388,7 +388,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # defining default
-        if jobAttributes is None:
+        if jobAttributes is None and jobRange != "all" :
             jobAttributes = {}
         taskList = []
         jobList= jobRange
