@@ -3,12 +3,11 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.14 2008/03/26 15:28:12 gcodispo Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.15 2008/03/26 18:50:03 gcodispo Exp $"
+__version__ = "$Revision: 1.15 $"
 
 import sys
 import os
-import random
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -343,7 +342,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # signal.signal(signal.SIGTERM, handler)
 
         # emulate ui round robin
-        random.shuffle(endpoints)
+        try :
+            import random
+            random.shuffle(endpoints)
+        except:
+            print "random access to wms not allowed, using sequential access"
+            pass
+
         success = ''
         seen = []
         for wms in endpoints :
@@ -520,10 +525,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile)
 
         # jdl ready!
-      #  print "Using jdl : \n" + jdl
-
         seen = []
-        random.shuffle(endpoints)
+
+        # emulate ui round robin
+        try :
+            import random
+            random.shuffle(endpoints)
+        except:
+            print "random access to wms not allowed, using sequential access"
+            pass
 
         for wms in endpoints :
             try :
@@ -673,6 +683,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += requirements + '\n]\n'
         
         # return values
+        print jdl
         return jdl, filelist
 
     ##########################################################################
