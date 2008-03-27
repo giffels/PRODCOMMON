@@ -3,10 +3,9 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.1 2008/03/27 09:54:14 gcodispo Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.2 2008/03/27 13:55:06 gcodispo Exp $"
+__version__ = "$Revision: 1.2 $"
 
-import random
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -133,8 +132,13 @@ class SchedulerFake(SchedulerInterface) :
         # emulate ui round robin
         if type( service ) == str :
             service = [ service ]
+        try :
+            import random
+            random.shuffle(endpoints)
+        except:
+            print "random access to wms not allowed, using sequential access"
+            pass
 
-        random.shuffle(service)
         success = ''
         seen = []
         for serv in service :
