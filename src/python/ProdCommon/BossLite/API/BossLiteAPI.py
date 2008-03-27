@@ -200,6 +200,40 @@ class BossLiteAPI(object):
 
     ##########################################################################
 
+    def removeTask( self, task ):
+        """
+        register task related informations in the db
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # remove jobs in db with non relational checks
+        if self.database == "SQLite":
+
+            # load running jobs
+            rjob = RunningJob( { 'taskId' : task['id'] } )
+            rjobList = self.db.select( rjob)
+            for rjob in rjobList :
+                rjob.remove( self.db )
+
+            # load jobs
+            job = Job( { 'taskId' : task['id'] } )
+            jobList = self.db.select( job)
+            for job in jobList :
+                job.remove( self.db )
+
+        # remove task
+        task.remove( self.db )
+        self.session.commit()
+
+        task = None
+
+        return task
+
+    ##########################################################################
+
         
     def installDB( self, schemaLocation ) :
         """
