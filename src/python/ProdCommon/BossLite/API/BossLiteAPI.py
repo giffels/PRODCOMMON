@@ -196,9 +196,10 @@ class BossLiteAPI(object):
             task.updateInternalData()
             task.save(self.db)
             self.session.commit()
-        except StandardError, err:
-            self.removeTask( task )
-            task = None
+        except TaskError, err:
+            if str(err).find( 'column name is not unique') == -1 :
+                self.removeTask( task )
+                task = None
             raise err
 
         return task
