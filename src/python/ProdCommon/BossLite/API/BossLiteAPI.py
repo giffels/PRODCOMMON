@@ -196,7 +196,7 @@ class BossLiteAPI(object):
             task.updateInternalData()
             task.save(self.db)
             self.session.commit()
-        except SandardError, err:
+        except StandardError, err:
             self.removeTask( task )
             task = None
             raise err
@@ -557,7 +557,7 @@ class BossLiteAPI(object):
 
         # evaluate just jobs without running instances or with status W
         for job in jobList :
-            job.getRunningInstance( self.db )
+            job.getRunningInstance( self.db )            
             if job.runningJob is None or job.runningJob == [] \
                    or job.runningJob['status'] == 'W' :
                 retJobList.append( job )
