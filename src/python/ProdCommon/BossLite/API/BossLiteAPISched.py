@@ -84,6 +84,8 @@ class BossLiteAPISched(object):
         # update
         self.bossLiteSession.updateDB(task)
 
+        # return updated task
+        return task
 
     ##########################################################################
 
