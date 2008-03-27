@@ -274,6 +274,62 @@ def compHep():
 
     return 0
 
+"""
+MadGraph generator
+"""
+def madgraph():
+    """
+    Generator dependent from here
+    """
+    # First line in the config file is the generator name
+    file      = open(cfgFile, 'r')
+    generatorLine  = file.readline() # Not used
+    nameLabelLine  = file.readline()
+    nameLabel  = nameLabelLine.split('\n')
+
+    try:
+        msg  = "wget http://home.cern.ch/ceballos/madgraph/tarballs/%s.tar.gz;" % nameLabel[0].strip()
+        msg += "tar xzf %s.tar.gz;" % nameLabel[0].strip()
+        os.system(msg)
+    except Exception, ex:
+    	return 1
+
+    numberOfSeedsNeeded = 1
+    random.seed(int(seeds))
+    seedsMadgraph = []
+    for i in range(0, numberOfSeedsNeeded):
+      seedsMadgraph.append(random.randint(1,99999999))
+
+    try:
+        msg  = "chmod a+x run.sh;"
+        msg += "./run.sh %s %s" % (int(nEvents),seedsMadgraph[0])
+        os.system(msg)
+    except Exception, ex:
+    	return 1
+
+    """
+    Making links and providing some information
+    """
+    try:
+        msg  = "rm -f nCmsGenEvents.txt;"
+        msg += "echo `grep \"Number of Events\" madevent/Events/events.lhe | awk '{print$6}'` > nCmsGenEvents.txt;"
+        os.system(msg)
+    except Exception, ex:
+    	return 4
+
+    try:
+        msg  = "mv events.lhe.gz %s_events.lhe.gz;" % nameLabel[0].strip()
+	msg += "gunzip %s_events.lhe.gz;" % nameLabel[0].strip()
+        msg += "cd ../cmsRun1; ln -s ../cmsGen1/%s_events.lhe .;" % nameLabel[0].strip()
+        os.system(msg)
+    except Exception, ex:
+    	return 5
+
+    global outputFile
+    outputFile = "%s_events.lhe"  % nameLabel[0].strip()
+
+    return 0
+
 def processFrameworkJobReport():
     """
     Runtime tool for processing the Framework Job Report produced
@@ -334,6 +390,8 @@ def processFrameworkJobReport():
           outputFileUnw = "%s.unw" % outputFile
       elif generator == "comphep":
           outputFileUnw = "%s" % outputFile
+      elif generator == "madgraph":
+          outputFileUnw = "%s" % outputFile
  
       if not os.path.exists(outputFileUnw):
           msg = "Output file Not Found: %s" % outputFileUnw
@@ -349,6 +407,8 @@ def processFrameworkJobReport():
         #newFile["PFN"]         = "%s/%s" % (os.getcwd(),outputFile)
         newFile["PFN"]         = "%s" % outputFile
     elif generator == "comphep":
+        newFile["PFN"]         = "%s" % outputFile
+    elif generator == "madgraph":
         newFile["PFN"]         = "%s" % outputFile
     newFile["Size"] 	   = totalSize
     newFile["TotalEvents"] = totalEvents
@@ -423,6 +483,9 @@ if generator == "alpgen":
     processFrameworkJobReport()
 elif generator == "comphep":
     jobFailed  = compHep()
+    processFrameworkJobReport()
+elif generator == "madgraph":
+    jobFailed  = madgraph()
     processFrameworkJobReport()
 else:
     msg = "Generator %s Not Found" % generator
