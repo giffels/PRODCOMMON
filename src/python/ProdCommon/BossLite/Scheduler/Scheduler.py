@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.11 2008/03/27 18:58:13 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: Scheduler.py,v 1.12 2008/03/28 16:15:14 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 
 class Scheduler(object):
     """
@@ -202,7 +202,7 @@ class Scheduler(object):
                     schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
 
             # perform actual getoutput
-            for service, idList in schedIdList :
+            for service, idList in schedIdList.items() :
                 self.schedObj.getOutput( idList, outdir, service )
  
             #update objects
