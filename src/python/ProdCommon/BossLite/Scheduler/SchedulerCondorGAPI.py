@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.4 2008/03/26 19:23:09 ewv Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.5 2008/03/28 19:44:05 ewv Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import sys
 import os
@@ -175,38 +175,30 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
     jobIds = {}
     bossIds = {}
+    statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status to BossLite Status codes
+                 'R':'R', 'X':'SK', 'C':'SD'}
 
     #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
-      print "ID is ",id
       bossIds[id] = 'SD' # Done by default?
-        # extract schedd and id from bossId
       schedd = id.split('//')[0]
-        #id     = id.split('//')[1]
-      job =   id.split('//')[1]
+      job    = id.split('//')[1]
         # fill dictionary
-      if schedd in jobIds.keys() :
+      if schedd in jobIds.keys():
         jobIds[schedd].append(job)
       else :
         jobIds[schedd] = [job]
 
     for schedd in jobIds.keys() :
-
-      #if logFile :
-          #logFile.write(schedd+'\n')
-
+      condor_status = {}
       # call condor_q
       cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
-      print "Issuing command ",cmd
       (input_file, output_file) = os.popen4(cmd)
 
       # parse output and store Condor status in dictionary { 'id' : 'status' , ... }
-      condor_status = {}
       for line in output_file.readlines() :
         line = line.strip()
-        #if logFile :
-          #logFile.write(line+'\n')
         try:
           line_array = line.split()
           if line_array[1].strip() == os.environ['USER'] :
@@ -214,31 +206,16 @@ class SchedulerCondorGAPI(SchedulerInterface) :
         except:
           pass
 
-      # go through job_ids[schedd] and save status in boss_ids
-      # Would should do this with a map
-
-      print "Status matrix ",condor_status
+      # go through job_ids[schedd] and save status in bossIds
 
       for id in jobIds[schedd] :
         for condor_id in condor_status.keys() :
           if condor_id.find(id) != -1 :
             status = condor_status[condor_id]
-            #if logFile :
-                #logFile.write(status+'\n')
-            if status == 'I':
-              bossIds[schedd+'//'+id] = 'I'
-            elif status == 'U':
-              bossIds[schedd+'//'+id] = 'RE'
-            elif status == 'H':
-              bossIds[schedd+'//'+id] = 'SA'
-            elif status == 'R':
-              bossIds[schedd+'//'+id] = 'R'
-            elif status == 'X':
-              bossIds[schedd+'//'+id] = 'SK'
-            elif status == 'C':
-              bossIds[schedd+'//'+id] = 'SD'
-            else:
-              bossIds[schedd+'//'+id] = 'UN'
+            bossIds[schedd+'//'+id] = statusMap.get(status,'UN')
+
+    print bossIds
+    return bossIds
 
   def kill( self, schedIdList, service):
     """
