@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.9 2008/03/25 09:21:52 spiga Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.10 2008/03/27 11:20:53 farinafa Exp $"
+__revision__ = "$Revision: 1.10 $"
 
 class SchedulerInterface(object):
     """
@@ -211,7 +211,6 @@ class SchedulerInterface(object):
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
             out = self.ExecuteCommand( singleComm )
-            print out 
             out = out.split()
 
             for ce in out :
