@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.10 2008/03/20 10:43:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.10 $"
+__version__ = "$Id: Scheduler.py,v 1.11 2008/03/27 18:58:13 gcodispo Exp $"
+__revision__ = "$Revision: 1.11 $"
 
 class Scheduler(object):
     """
@@ -175,7 +175,7 @@ class Scheduler(object):
         # the object passed is a runningJob
         if type(obj) == RunningJob :
             self.schedObj.getOutput(
-                obj['schedulerId'], outdir, self.parameters['service']
+                obj['schedulerId'], outdir, obj['service']
                 )
             obj['status'] = 'E'
             obj['closed'] = 'Y'
@@ -184,7 +184,7 @@ class Scheduler(object):
         # the object passed is a job
         elif type(obj) == Job :
             self.schedObj.getOutput( obj.runningJob['schedulerId'], \
-                                     outdir, self.parameters['service']  )
+                                     outdir, obj.runningJob['service']  )
             obj.runningJob['status'] = 'E'
             obj.runningJob['closed'] = 'Y'
             obj.runningJob['statusScheduler'] = "Retrieved"
@@ -193,15 +193,17 @@ class Scheduler(object):
         elif type(obj) == Task :
 
             # retrieve scheduler id list
-            schedIdList = []
+            schedIdList = {}
             for job in obj.jobs:
                 if job.runningJob is not None \
                        and job.runningJob['schedulerId'] is not  None:
-                    schedIdList.append( job.runningJob['schedulerId'] )
+                    if not schedIdList.has_key( job.runningJob['service'] ) :
+                        schedIdList[job.runningJob['service']] = []
+                    schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
 
             # perform actual getoutput
-            self.schedObj.getOutput( schedIdList, outdir, \
-                                     self.parameters['service'] )
+            for service, idList in schedIdList :
+                self.schedObj.getOutput( idList, outdir, service )
  
             #update objects
             for job in obj.jobs:
