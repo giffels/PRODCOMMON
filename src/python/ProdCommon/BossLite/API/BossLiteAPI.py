@@ -156,7 +156,8 @@ class BossLiteAPI(object):
         # reconstruct task
         task = Task( taskInfo )
         task['user_proxy'] = proxyFile
-        
+        self.saveTask( task )
+
         # reconstruct jobs and fill the data
         jobs = []
         for jI in jobInfos:
@@ -174,7 +175,7 @@ class BossLiteAPI(object):
             attrs = rjAttrs[ str(job['name']) ]
             self.getRunningInstance( job, attrs )
 
-        self.saveTask( task )
+        self.updateDB( task )
 
         # all done
         return task
@@ -485,8 +486,7 @@ class BossLiteAPI(object):
             return
 
         # load if exixts
-        if job['taskId'] is not None :
-            job.getRunningInstance(self.db)
+        job.getRunningInstance(self.db)
 
         # create it otherwise
         if job.runningJob is None or job.runningJob == [] :
