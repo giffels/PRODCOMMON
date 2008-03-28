@@ -29,5 +29,6 @@ setup (name='prodcommon',
                  'ProdCommon.BossLite.API',
                  'ProdCommon.BossLite.Common',
                  'ProdCommon.BossLite.DbObjects',
-                 'ProdCommon.BossLite.Scheduler'],)
+                 'ProdCommon.BossLite.Scheduler',
+                 'ProdCommon.Storage.SEAPI'],)
 
