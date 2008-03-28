@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.15 2008/03/26 18:50:03 gcodispo Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.16 2008/03/27 14:40:34 gcodispo Exp $"
+__version__ = "$Revision: 1.16 $"
 
 import sys
 import os
@@ -683,7 +683,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += requirements + '\n]\n'
         
         # return values
-        print jdl
+        #print jdl
         return jdl, filelist
 
     ##########################################################################

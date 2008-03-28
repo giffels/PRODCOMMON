@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.6 2008/03/21 14:19:36 gcodispo Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.7 2008/03/26 09:46:54 gcodispo Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import sys
 import os
@@ -77,7 +77,6 @@ def getJobInfo( jobidInfo, states ):
         if result['service'] != '' :
             result['service'] = result['service'].replace( "https://", "" )
             result['service'] = getfqdn ( result['service'].split(':')[0] )
-        print result['service']
     except StandardError :
         pass
     
