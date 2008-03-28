@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.5 2008/03/28 19:44:05 ewv Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.6 2008/03/28 22:33:37 ewv Exp $"
+__version__ = "$Revision: 1.6 $"
 
 import sys
 import os
@@ -207,13 +207,21 @@ class SchedulerCondorGAPI(SchedulerInterface) :
           pass
 
       # go through job_ids[schedd] and save status in bossIds
+      # Each status record looks like this:
+      # 'https://lb105.cern.ch:9000/tf9-in51MqEOzm_yTCvWEg': {'status': 'SU', 'statusScheduler': 'Submitted', 'destination': '', 'service': 'wms102.cern.ch', 'statusReason': ''}
 
       for id in jobIds[schedd] :
         for condor_id in condor_status.keys() :
-          if condor_id.find(id) != -1 :
+          if condor_id.find(id) != -1:
             status = condor_status[condor_id]
-            bossIds[schedd+'//'+id] = statusMap.get(status,'UN')
+            statusRecord = {}
+            statusRecord['status']          = statusMap.get(status,'UN')
+            statusRecord['statusScheduler'] = status
+            statusRecord['statusReason']    = ''
+            statusRecord['destination']     = 'someHost'
+            statusRecord['service']         = service
 
+            bossIds[schedd+'//'+id] = statusRecord
     print bossIds
     return bossIds
 
