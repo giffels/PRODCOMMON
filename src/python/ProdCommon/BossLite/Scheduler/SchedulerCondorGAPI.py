@@ -3,13 +3,17 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.3 2008/03/13 19:37:54 ewv Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.4 2008/03/26 19:23:09 ewv Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import sys
 import os
 import popen2
+import re
+from socket import getfqdn
+
 import traceback
+import pdb
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
@@ -24,6 +28,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     # call super class init method
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
+    self.hostname = getfqdn()
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -50,11 +55,38 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     #      wms = service
     configfile = config
     # decode obj
-    jdl, sandboxFileList = self.decode( obj, requirements='' )
 
-    # return values
     taskId = ''
     ret_map = {}
+
+#    jobRegExp = re.compile("\s+(\d+)*submitted to cluster\s+(\d+)*")
+    jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
+
+    if type(obj) == RunningJob or type(obj) == Job :
+      jdl, sandboxFileList = self.decode( obj, requirements='' )
+    elif type(obj) == Task :
+      taskId = obj.data['name']
+#      pdb.set_trace()
+      for job in obj.getJobs():
+        jdl, sandboxFileList = self.decode( job, requirements='' )
+        print "JobName",job['name'],  "mynode"
+        jdl += "Queue 1\n"
+
+#        print "Generated JDL\n",jdl
+
+        stdout, stdin, stderr = popen2.popen3('condor_submit /home/ewv/test.jdl')
+        for line in stdout:
+          matchObj = jobRegExp.match(line)
+          if matchObj:
+#            print "Njobs =",matchObj.group(1)
+#            print "jobID =",matchObj.group(2)
+            ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
+        print job['name'],":",ret_map[ job['name']  ]
+
+
+    #jdl, sandboxFileList = self.decode( obj, requirements='' )
+
+    # return values
 
     # handle wms
     #      jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
@@ -66,12 +98,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     # is signaled e.g. for a timeout
     #      signal.signal(signal.SIGTERM, handler)
 
-    jdl.append("Queue 1\n");
-
-
-
     # emulate ui round robin
-    #success = ''
+    success = self.hostname
     #seen = []
     #for wms in endpoints :
         #try :
@@ -151,15 +179,17 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
-      boss_ids[service+'//'+id] = 'SD' # Done by default?
+      print "ID is ",id
+      bossIds[id] = 'SD' # Done by default?
         # extract schedd and id from bossId
-      schedd = service     # id.split('//')[0]
+      schedd = id.split('//')[0]
         #id     = id.split('//')[1]
+      job =   id.split('//')[1]
         # fill dictionary
-      if schedd in job_ids.keys() :
-        jobIds[schedd].append(id)
+      if schedd in jobIds.keys() :
+        jobIds[schedd].append(job)
       else :
-        jobIds[schedd] = [id]
+        jobIds[schedd] = [job]
 
     for schedd in jobIds.keys() :
 
@@ -168,6 +198,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
       # call condor_q
       cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
+      print "Issuing command ",cmd
       (input_file, output_file) = os.popen4(cmd)
 
       # parse output and store Condor status in dictionary { 'id' : 'status' , ... }
@@ -185,7 +216,10 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
       # go through job_ids[schedd] and save status in boss_ids
       # Would should do this with a map
-      for id in job_ids[schedd] :
+
+      print "Status matrix ",condor_status
+
+      for id in jobIds[schedd] :
         for condor_id in condor_status.keys() :
           if condor_id.find(id) != -1 :
             status = condor_status[condor_id]
