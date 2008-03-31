@@ -241,7 +241,7 @@ class BossLiteAPISched(object):
                 job, { 'schedulerAttributes' : jobAttributes }
                 )
 
-        return self.bossLiteSession.jobDescription ( task, requirements )
+        return self.scheduler.jobDescription ( task, requirements )
 
     ##########################################################################
 
