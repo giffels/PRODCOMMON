@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.20 2008/03/31 09:29:16 gcodispo Exp $"
-__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.21 2008/03/31 10:02:30 gcodispo Exp $"
+__version__ = "$Revision: 1.21 $"
 
 import sys
 import os
@@ -416,8 +416,17 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # retrieve files
             for m in filelist:
 
+                # ugly error: nothing there!
+                try :
+                    size = int( m['size'] )
+                    # ugly trick for empty fields...
+                    if m['name'] == '' :
+                        raise ValueError
+                except ValueError:
+                    size = -1
+
                 # avoid globus-url-copy for empty files
-                if int( m['size'] ) == 0 :
+                if size == 0 or size == -1:
                     os.system( 'touch ' + os.path.basename( m['name'] ) )
                     continue
 
@@ -432,7 +441,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
                 # check file size
-                if os.path.getsize(dest) !=  int( m['size'] )  :
+                if size > 0 and os.path.getsize(dest) !=  size  :
                     joberr =  'size mismatch : expected ' \
                              + str( os.path.getsize(dest) ) \
                              + ' got ' + m['size'] + '; '
