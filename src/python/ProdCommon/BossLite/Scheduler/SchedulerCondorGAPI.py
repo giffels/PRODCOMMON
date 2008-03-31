@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.6 2008/03/28 22:33:37 ewv Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.7 2008/03/28 22:50:17 ewv Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import sys
 import os
@@ -55,7 +55,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     #      wms = service
     configfile = config
     # decode obj
-
+    print 'CWD',os.getcwd()
     taskId = ''
     ret_map = {}
 
@@ -175,13 +175,20 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
     jobIds = {}
     bossIds = {}
-    statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status to BossLite Status codes
-                 'R':'R', 'X':'SK', 'C':'SD'}
-
+    statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status
+                 'R':'R', 'X':'SK', 'C':'SD'} # to BossLite Status codes
+    textStatusMap = {
+            'I':'Scheduled',
+            'R':'Running',
+            'U':'Ready',
+            'X':'Cancelled',
+            'C':'Done',
+            'H':'Aborted'
+    }
     #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
-      bossIds[id] = 'SD' # Done by default?
+      bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default?
       schedd = id.split('//')[0]
       job    = id.split('//')[1]
         # fill dictionary
@@ -216,13 +223,13 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             status = condor_status[condor_id]
             statusRecord = {}
             statusRecord['status']          = statusMap.get(status,'UN')
-            statusRecord['statusScheduler'] = status
+            statusRecord['statusScheduler'] = textStatusMap.get(status,'Undefined')
             statusRecord['statusReason']    = ''
             statusRecord['destination']     = 'someHost'
             statusRecord['service']         = service
 
             bossIds[schedd+'//'+id] = statusRecord
-    print bossIds
+
     return bossIds
 
   def kill( self, schedIdList, service):
@@ -271,6 +278,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
 
     import shutil
+    print 'CWD',os.getcwd()
 
     for jobId in schedIdList:
       fileList = ['condor_g_'+str(jid)+'.log', 'BossOutArchive_'+str(jid)+'.tgz',
