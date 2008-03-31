@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.18 2008/03/31 07:37:20 gcodispo Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.19 2008/03/31 08:23:18 gcodispo Exp $"
+__version__ = "$Revision: 1.19 $"
 
 import sys
 import os
@@ -20,12 +20,12 @@ try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
 except StandardError, e:
-    err = \
-        """
-        missing glite environment.
-        Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
-        """
-    raise ImportError(err + str(e))
+    warn = \
+         """
+         missing glite environment.
+         Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
+         """
+    raise ImportError(warn + str(e))
 #
 # defining handler for timeout kill
 #
@@ -347,7 +347,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             random.shuffle(endpoints)
         except:
             print "random access to wms not allowed, using sequential access"
-            pass
 
         success = ''
         seen = []
@@ -409,25 +408,35 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # get file list
                 filelist = wmproxy.getOutputFileList( job )
 
+                # eventual error container
+                joberr = ''
+
                 # retrieve files
                 for m in filelist:
+
+                    # avoid globus-url-copy for empty files
+                    if int( m['size'] ) == 0 :
+                        os.system( 'touch ' + os.path.basename( m['name'] ) )
+                        continue
+
+                    # retrieve file
                     dest = outdir + '/' + os.path.basename( m['name'] )
                     command = "globus-url-copy " + m['name'] \
                               + " file://" + dest
-                    
                     msg = self.ExecuteCommand(command)
                     if msg.upper().find("ERROR") >= 0 or \
                            msg.find("wrong format") >= 0 :
-                        errors[ job ] = msg
+                        joberr = msg + '; '
                         continue
 
                     # check file size
                     if os.path.getsize(dest) !=  int( m['size'] )  :
-                        errors[ job ] = 'size mismatch : expected ' \
-                                        + str( os.path.getsize(dest) ) \
-                                        + ' got ' + m['size'] + '\n\n'
+                        joberr =  'size mismatch : expected ' \
+                                 + str( os.path.getsize(dest) ) \
+                                 + ' got ' + m['size'] + '; '
+                        continue
 
-                    # try to purge jobs (not allowed for bulk
+                    # try to purge files
                     try :
                         wmproxy.jobPurge( job )
                     except BaseException, err:
@@ -435,6 +444,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             except BaseException, err:
                 errors[ job ] = err.toString()
+
+            # got errors?
+            if joberr != '' :
+                errors[ job ] = joberr
 
         # raise exception for failed operations
         if len( errors ) != 0 :
@@ -470,14 +483,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         for jobid in schedIdList:
 
             # skip malformed id
-            job = str( job ).strip()
-            if job is None or len(job) == 0 :
+            jobid = str( jobid ).strip()
+            if jobid is None or len(jobid) == 0 :
                 continue
 
             try :
                 wmproxy.jobCancel( jobid )
             except BaseException, err:
-                errors[ job ] = err.toString()
+                errors[ jobid ] = err.toString()
                 continue
             try :
                 wmproxy.jobPurge( jobid )
@@ -508,6 +521,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             jobs = schedIdList
             
         # retrieve wms
+        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
         endpoints = groupByWMS(
             jobs, self.cert, id_type, \
             status_list = ['Done', 'Aborted','Cancelled'],\
@@ -538,6 +552,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             jobs = schedIdList
         
         # retrieve wms and get output
+        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
         endpoints = groupByWMS(
             jobs, self.cert, 'node', status_list=['Done'], allow=True
             )
@@ -573,7 +588,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             random.shuffle(endpoints)
         except:
             print "random access to wms not allowed, using sequential access"
-            pass
 
         for wms in endpoints :
             try :
@@ -738,7 +752,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl = "[\n"
         jdl += 'Type = "collection";\n'
         jdl += 'AllowZippedISB = true;\n'
-        jdl += 'ZippedISB = "%s";\n' %self.zippedISB
+        jdl += 'ZippedISB = "%s";\n' % self.zippedISB
 
         # global task attributes :
         # \\ the list of files for the JDL common part

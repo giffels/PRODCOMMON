@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.7 2008/03/26 09:46:54 gcodispo Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.8 2008/03/28 10:06:35 spiga Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import sys
 import os
@@ -73,10 +73,11 @@ def getJobInfo( jobidInfo, states ):
         pass
     
     try:
-        result['service'] = str( jobidInfo[states.index('Network server')] )
-        if result['service'] != '' :
-            result['service'] = result['service'].replace( "https://", "" )
-            result['service'] = getfqdn ( result['service'].split(':')[0] )
+        wms = str( jobidInfo[states.index('Network server')] )
+        if wms != '' :
+            wms = wms.replace( "https://", "" )
+            tmp = wms.split(':')
+            result['service'] = "https://" + getfqdn ( tmp[0] ) + ':' + tmp[1]
     except StandardError :
         pass
     
@@ -176,21 +177,18 @@ def checkJobsBulk( job_list, user_proxy='' ):
         user_proxy = '/tmp/x509up_u' + str( os.getuid() )
     os.environ["X509_USER_PROXY"] = user_proxy
 
-    print "instatiating status object"
     # instatiating status object
     status = Status()
 
-    print "Loading dictionary with available parameters list"
     # Loading dictionary with available parameters list
     jobStatus = lbJob.JobStatus (status)
-    print "Loaded dictionary with available parameters list"
+
     states = jobStatus.states_names
     attrNumber = jobStatus.ATTR_MAX
     if attrNumber == 0 :
         print "Problem loading attrNumber"
         return
 
-    print "check"
     for jobid in jobs:
         try:
             jobid = str( jobid ).strip()
