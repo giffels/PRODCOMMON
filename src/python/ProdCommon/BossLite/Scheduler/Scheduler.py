@@ -8,9 +8,24 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.14 2008/03/31 07:36:31 gcodispo Exp $"
-__revision__ = "$Revision: 1.14 $"
+__version__ = "$Id: Scheduler.py,v 1.15 2008/03/31 08:23:18 gcodispo Exp $"
+__revision__ = "$Revision: 1.15 $"
 
+##########################################################################
+def valid( runningJob ) :
+    """
+    evaluate if the runningJob is valid for scheduler interaction
+    
+    """
+    
+    if runningJob is not None \
+           and runningJob['schedulerId'] is not None \
+           and runningJob['closed'] == "N" :
+        return True
+    else :
+        return False
+
+##########################################################################
 class Scheduler(object):
     """
     Upper layer for scheduler interaction
@@ -78,10 +93,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
-
-        # returns an updated object
-        return obj
+            raise SchedulerError('wrong argument type', str( type(obj) ))
     
     ##########################################################################
 
@@ -103,23 +115,34 @@ class Scheduler(object):
 
         # the object passed is a runningJob: query and update
         if type(obj) == RunningJob :
-            schedId = obj['schedulerId']
-            if obj['schedulerId'] is None:
-                return
-            jobAttributes = self.schedObj.query( schedId, \
-                                           self.parameters['service'], 'node' )
-            for key, value in jobAttributes[schedId].iteritems() :
+
+            # check for the RunningJob integrity
+            if not valid( obj ):
+                raise SchedulerError('invalid object', str( obj ))
+
+            # query!
+            jobAttributes = self.schedObj.query(
+                obj['schedulerId'], self.parameters['service'], 'node'
+                )
+
+            # status association
+            for key, value in jobAttributes[obj['schedulerId']].iteritems() :
                 obj[key] = value
 
         # the object passed is a Job: query and update
         elif type(obj) == Job :
-            if obj.runningJob is None \
-                   or obj.runningJob['schedulerId'] is None:
-                return
-            schedId = obj.runningJob['schedulerId']
-            jobAttributes = self.schedObj.query( schedId, \
-                                           self.parameters['service'], 'node' )
-            for key, value in jobAttributes[schedId].iteritems() :
+
+            # check for the RunningJob integrity
+            if not valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # query!
+            jobAttributes = self.schedObj.query (
+                obj.runningJob['schedulerId'], self.parameters['service'], \
+                'node' )
+
+            # status association
+            for key, value in jobAttributes[obj['schedulerId']].iteritems() :
                 obj.runningJob[key] = value
 
         # the object passed is a Task:
@@ -131,11 +154,8 @@ class Scheduler(object):
             # query performed through single job ids
             if objType == 'node' :
                 for job in obj.jobs :
-                    if job.runningJob is None\
-                           or job.runningJob['schedulerId'] is None:
-                        job.runningJob = None
-                        continue
-                    schedIds.append( job.runningJob['schedulerId'] )
+                    if valid( job.runningJob ):
+                        schedIds.append( job.runningJob['schedulerId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
                                                self.parameters['service'], \
                                                'node' )
@@ -149,7 +169,7 @@ class Scheduler(object):
                                                self.parameters['service'],
                                                'parent' )
 
-            # update
+            # status association
             for job in obj.jobs :
                 try:
                     valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
@@ -162,8 +182,6 @@ class Scheduler(object):
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
 
-        # returns an updated object
-        return obj
 
     ##########################################################################
     
@@ -174,17 +192,33 @@ class Scheduler(object):
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
+
+            # check for the RunningJob integrity
+            if not valid( obj ):
+                raise SchedulerError('invalid object', str( obj ))
+
+            # retrieve output
             self.schedObj.getOutput(
                 obj['schedulerId'], outdir, obj['service']
                 )
+
+            # update object
             obj['status'] = 'E'
             obj['closed'] = 'Y'
             obj['statusScheduler'] = "Retrieved"
 
         # the object passed is a job
         elif type(obj) == Job :
+
+            # check for the RunningJob integrity
+            if not valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # retrieve output
             self.schedObj.getOutput( obj.runningJob['schedulerId'], \
                                      outdir, obj.runningJob['service']  )
+
+            # update object
             obj.runningJob['status'] = 'E'
             obj.runningJob['closed'] = 'Y'
             obj.runningJob['statusScheduler'] = "Retrieved"
@@ -198,17 +232,16 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = {}
             for job in obj.jobs:
-                if job.runningJob is not None \
-                       and job.runningJob['schedulerId'] is not  None:
+                if valid( job.runningJob ):
                     if not schedIdList.has_key( job.runningJob['service'] ) :
                         schedIdList[job.runningJob['service']] = []
                     schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
 
-            # perform actual getoutput
+            # retrieve output for all jobs
             for service, idList in schedIdList.iteritems() :
                 self.schedObj.getOutput( idList, outdir, service )
  
-            #update objects
+            # update objects: still missing handling for partial success
             for job in obj.jobs:
                 job.runningJob['status'] = 'E'
                 job.runningJob['closed'] = 'Y'
@@ -216,7 +249,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError( 'getOutput', 'wrong argument type' )
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
 
     ##########################################################################
@@ -228,14 +261,30 @@ class Scheduler(object):
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
+
+            # check for the RunningJob integrity
+            if not valid( obj ):
+                raise SchedulerError('invalid object', str( obj ))
+
+            # kill job
             self.schedObj.kill( obj['schedulerId'], obj['service'] )
+
+            # update object
             obj['status'] = 'K'
             obj['statusScheduler'] = "Killed"
 
         # the object passed is a job
         elif type(obj) == Job :
+
+            # check for the RunningJob integrity
+            if not valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # kill job
             self.schedObj.kill( obj.runningJob['schedulerId'], \
                                 obj.runningJob['service'] )
+
+            # update object
             obj.runningJob['status'] = 'K'
             obj.runningJob['statusScheduler'] = "Killed"
 
@@ -243,26 +292,25 @@ class Scheduler(object):
         elif type(obj) == Task :
 
             # retrieve scheduler id list
-            schedIdList = []
+            schedIdList = {}
             for job in obj.jobs:
-                if job.runningJob is not None \
-                       and job.runningJob['schedulerId'] is not  None:
+                if valid( job.runningJob ):
                     if not schedIdList.has_key( job.runningJob['service'] ) :
                         schedIdList[job.runningJob['service']] = []
                     schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
                         
             # perform actual kill
             for service, idList in schedIdList.iteritems() :
-                self.schedObj.kill( schedIdList, service )
+                self.schedObj.kill( idList, service )
 
-            #update objects
+            # update objects: still missing handling for partial success
             for job in obj.jobs:
                 job.runningJob['status'] = 'K'
                 job.runningJob['statusScheduler'] = "Killed"
 
         # unknown object type
         else:
-            raise SchedulerError( 'kill', 'wrong argument type')
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
     ##########################################################################
 
@@ -294,7 +342,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
     ##########################################################################
 
@@ -328,12 +376,26 @@ class Scheduler(object):
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
-            self.schedObj.purgeService( obj['schedulerId'] )
+
+            # purge object if valid
+            if valid( obj ):
+                self.schedObj.purgeService( obj['schedulerId'] )
+            else :
+                raise SchedulerError('invalid object', str( obj ))
+
+            # update object
             obj['statusScheduler'] = "Purged"
 
         # the object passed is a job
         elif type(obj) == Job :
-            self.schedObj.purgeService( obj.runningJob['schedulerId'] )
+
+            # purge object if valid
+            if not valid( obj.runningJob ):
+                self.schedObj.purgeService( obj.runningJob['schedulerId'] )
+            else :
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # update object
             obj.runningJob['statusScheduler'] = "Purged"
 
         # the object passed is a Task
@@ -342,20 +404,19 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = []
             for job in obj.jobs:
-                if job.runningJob is not None \
-                       and job.runningJob['schedulerId'] is not  None:
+                if valid( job.runningJob ):
                     schedIdList.append( job.runningJob['schedulerId'] )
 
             # perform actual kill
             self.schedObj.purgeService( schedIdList )
 
-            #update objects
+            # update objects
             for job in obj.jobs:
                 job.runningJob['statusScheduler'] = "Purged"
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
 
 
