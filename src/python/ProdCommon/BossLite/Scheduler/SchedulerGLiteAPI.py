@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.17 2008/03/28 10:06:35 spiga Exp $"
-__version__ = "$Revision: 1.17 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.18 2008/03/31 07:37:20 gcodispo Exp $"
+__version__ = "$Revision: 1.18 $"
 
 import sys
 import os
@@ -436,10 +436,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             except BaseException, err:
                 errors[ job ] = err.toString()
 
-            if len( errors ) != 0 :
-                raise SchedulerError(
-                    'scheduler interaction failed for some jobs ', str(errors)
-                    )
+        # raise exception for failed operations
+        if len( errors ) != 0 :
+            raise SchedulerError(
+                'scheduler interaction failed for some jobs ', str(errors)
+                )
                 
 
     ##########################################################################
@@ -448,26 +449,47 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         Kill jobs submitted to a given WMS. Does not perform status check
         """
-   
-        wms = service
- 
+
+        # skip empty endpoint
+        wms = service.strip()
         if len(wms) == 0 :
             return
 
+        # prepare the list of possible exceptions
+        errors = {}
+
+        # look for a well formed name
+        if wms.find( 'https') < 0 :
+            wms = 'https://' + wms + ':7443/glite_wms_wmproxy_server'
+
+        # initialize wmproxy
         wmproxy = Wmproxy(wms, self.cert)
         wmproxy.soapInit()
+
+        # loop ove jobs
         for jobid in schedIdList:
+
+            # skip malformed id
+            job = str( job ).strip()
+            if job is None or len(job) == 0 :
+                continue
+
             try :
                 wmproxy.jobCancel( jobid )
-                print jobid + "\tkilled"
             except BaseException, err:
-                print jobid, "error", err.toString()
+                errors[ job ] = err.toString()
                 continue
             try :
                 wmproxy.jobPurge( jobid )
             except BaseException, err:
                 print "WARNING : " + err.toString()
                 continue
+
+        # raise exception for failed operations
+        if len( errors ) != 0 :
+            raise SchedulerError(
+                'scheduler interaction failed for some jobs ', str(errors)
+                )
 
     ##########################################################################
 

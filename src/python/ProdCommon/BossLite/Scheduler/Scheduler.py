@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.13 2008/03/28 17:33:36 spiga Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: Scheduler.py,v 1.14 2008/03/31 07:36:31 gcodispo Exp $"
+__revision__ = "$Revision: 1.14 $"
 
 class Scheduler(object):
     """
@@ -216,7 +216,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
+            raise SchedulerError( 'getOutput', 'wrong argument type' )
 
 
     ##########################################################################
@@ -228,15 +228,14 @@ class Scheduler(object):
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
-            self.schedObj.kill( obj['schedulerId'], \
-                                self.parameters['service'] )
+            self.schedObj.kill( obj['schedulerId'], obj['service'] )
             obj['status'] = 'K'
             obj['statusScheduler'] = "Killed"
 
         # the object passed is a job
         elif type(obj) == Job :
             self.schedObj.kill( obj.runningJob['schedulerId'], \
-                                self.parameters['service'] )
+                                obj.runningJob['service'] )
             obj.runningJob['status'] = 'K'
             obj.runningJob['statusScheduler'] = "Killed"
 
@@ -248,10 +247,13 @@ class Scheduler(object):
             for job in obj.jobs:
                 if job.runningJob is not None \
                        and job.runningJob['schedulerId'] is not  None:
-                    schedIdList.append( job.runningJob['schedulerId'] )
-
+                    if not schedIdList.has_key( job.runningJob['service'] ) :
+                        schedIdList[job.runningJob['service']] = []
+                    schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
+                        
             # perform actual kill
-            self.schedObj.kill( schedIdList, self.parameters['service'] )
+            for service, idList in schedIdList.iteritems() :
+                self.schedObj.kill( schedIdList, service )
 
             #update objects
             for job in obj.jobs:
@@ -260,7 +262,7 @@ class Scheduler(object):
 
         # unknown object type
         else:
-            raise SchedulerError('wrong argument type')
+            raise SchedulerError( 'kill', 'wrong argument type')
 
     ##########################################################################
 
