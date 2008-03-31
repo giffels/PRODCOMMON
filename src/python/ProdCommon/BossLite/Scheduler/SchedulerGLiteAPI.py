@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.16 2008/03/27 14:40:34 gcodispo Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.17 2008/03/28 10:06:35 spiga Exp $"
+__version__ = "$Revision: 1.17 $"
 
 import sys
 import os
@@ -379,20 +379,35 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         Retrieve jobs output from WMS to outdir
         """
-   
-        wms = service
 
+        # skip empty endpoint
+        wms = service.strip()
         if len(wms) == 0 :
             return
 
+        # prepare the list of possible exceptions
+        errors = {}
+
+        # look for a well formed name
+        if wms.find( 'https') < 0 :
+            wms = 'https://' + wms + ':7443/glite_wms_wmproxy_server'
+
         # initialize wmproxy
-        wmproxy = Wmproxy(wms, self.cert)
+        wmproxy = Wmproxy(wms, proxy=self.cert)
         wmproxy.soapInit()
+
+        # loop ove jobs
         for job in schedIdList:
+
+            # skip malformed id
+            job = str( job ).strip()
+            if job is None or len(job) == 0 :
+                continue
+
             try :
+
                 # get file list
                 filelist = wmproxy.getOutputFileList( job )
-#                print filelist
 
                 # retrieve files
                 for m in filelist:
@@ -403,16 +418,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     msg = self.ExecuteCommand(command)
                     if msg.upper().find("ERROR") >= 0 or \
                            msg.find("wrong format") >= 0 :
-                        print "globus-url-copy error :"
-                        print msg
+                        errors[ job ] = msg
                         continue
 
                     # check file size
                     if os.path.getsize(dest) !=  int( m['size'] )  :
-                        print 'size mismatch : expected ' \
-                              + str( os.path.getsize(dest) ) \
-                              + ' got ' + m['size'] + '\n\n'
-                        print job, 'retrieved'
+                        errors[ job ] = 'size mismatch : expected ' \
+                                        + str( os.path.getsize(dest) ) \
+                                        + ' got ' + m['size'] + '\n\n'
 
                     # try to purge jobs (not allowed for bulk
                     try :
@@ -421,8 +434,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                         print "WARNING : " + err.toString()
 
             except BaseException, err:
-                print err.toString(), '\n\n'
-                print "error"
+                errors[ job ] = err.toString()
+
+            if len( errors ) != 0 :
+                raise SchedulerError(
+                    'scheduler interaction failed for some jobs ', str(errors)
+                    )
+                
 
     ##########################################################################
 
