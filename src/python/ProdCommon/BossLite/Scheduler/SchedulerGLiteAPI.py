@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.19 2008/03/31 08:23:18 gcodispo Exp $"
-__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.20 2008/03/31 09:29:16 gcodispo Exp $"
+__version__ = "$Revision: 1.20 $"
 
 import sys
 import os
@@ -403,51 +403,50 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if job is None or len(job) == 0 :
                 continue
 
+            # eventual error container
+            joberr = ''
+
+            # get file list
             try :
-
-                # get file list
                 filelist = wmproxy.getOutputFileList( job )
-
-                # eventual error container
-                joberr = ''
-
-                # retrieve files
-                for m in filelist:
-
-                    # avoid globus-url-copy for empty files
-                    if int( m['size'] ) == 0 :
-                        os.system( 'touch ' + os.path.basename( m['name'] ) )
-                        continue
-
-                    # retrieve file
-                    dest = outdir + '/' + os.path.basename( m['name'] )
-                    command = "globus-url-copy " + m['name'] \
-                              + " file://" + dest
-                    msg = self.ExecuteCommand(command)
-                    if msg.upper().find("ERROR") >= 0 or \
-                           msg.find("wrong format") >= 0 :
-                        joberr = msg + '; '
-                        continue
-
-                    # check file size
-                    if os.path.getsize(dest) !=  int( m['size'] )  :
-                        joberr =  'size mismatch : expected ' \
-                                 + str( os.path.getsize(dest) ) \
-                                 + ' got ' + m['size'] + '; '
-                        continue
-
-                    # try to purge files
-                    try :
-                        wmproxy.jobPurge( job )
-                    except BaseException, err:
-                        print "WARNING : " + err.toString()
-
             except BaseException, err:
                 errors[ job ] = err.toString()
+                filelist = []
+
+            # retrieve files
+            for m in filelist:
+
+                # avoid globus-url-copy for empty files
+                if int( m['size'] ) == 0 :
+                    os.system( 'touch ' + os.path.basename( m['name'] ) )
+                    continue
+
+                # retrieve file
+                dest = outdir + '/' + os.path.basename( m['name'] )
+                command = "globus-url-copy " + m['name'] \
+                          + " file://" + dest
+                msg = self.ExecuteCommand(command)
+                if msg.upper().find("ERROR") >= 0 or \
+                       msg.find("wrong format") >= 0 :
+                    joberr = msg + '; '
+                    continue
+
+                # check file size
+                if os.path.getsize(dest) !=  int( m['size'] )  :
+                    joberr =  'size mismatch : expected ' \
+                             + str( os.path.getsize(dest) ) \
+                             + ' got ' + m['size'] + '; '
+                    continue
 
             # got errors?
             if joberr != '' :
                 errors[ job ] = joberr
+            else :
+                # try to purge files
+                try :
+                    wmproxy.jobPurge( job )
+                except BaseException, err:
+                    print "WARNING : " + err.toString()
 
         # raise exception for failed operations
         if len( errors ) != 0 :
