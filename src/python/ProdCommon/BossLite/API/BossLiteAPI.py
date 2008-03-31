@@ -427,6 +427,7 @@ class BossLiteAPI(object):
                 # task.addJobs(jobs)
             
             # update task list
+            task.updateInternalData()
             taskList.append( task )
                 
         return taskList
