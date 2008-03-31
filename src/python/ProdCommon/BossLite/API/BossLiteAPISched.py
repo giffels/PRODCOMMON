@@ -79,7 +79,7 @@ class BossLiteAPISched(object):
                 )
 
         # scheduler submit
-        task = self.scheduler.submit( task, requirements )
+        self.scheduler.submit( task, requirements )
 
         # update
         self.bossLiteSession.updateDB(task)
@@ -136,11 +136,11 @@ class BossLiteAPISched(object):
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
+        #for job in task.jobs:
+        #    self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
-        task = self.scheduler.query( task, queryType )
+        self.scheduler.query( task, queryType )
 
         # update
         self.bossLiteSession.updateDB(task)
