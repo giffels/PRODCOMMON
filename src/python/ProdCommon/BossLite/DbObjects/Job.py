@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.5 2008/03/19 17:24:06 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: Job.py,v 1.6 2008/03/26 15:25:33 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -253,7 +253,8 @@ class Job(DbObject):
         template = RunningJob()
         template['jobId'] = self['jobId']
         template['taskId'] = self['taskId']
-        template['closed'] = "N"
+        template['submission'] = self['submissionNumber']
+        # template['closed'] = "N"
 
         # get running job
         runningJobs = db.select(template)
