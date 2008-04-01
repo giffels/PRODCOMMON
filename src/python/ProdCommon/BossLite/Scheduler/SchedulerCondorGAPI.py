@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.10 2008/04/01 12:07:41 ewv Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.11 2008/04/01 12:47:27 ewv Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import sys
 import os
@@ -34,6 +34,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     self.hostname = getfqdn()
     self.condorTemp = ''
     self.workingDir = ''
+    self.execDir = ''
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -64,7 +65,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     # Figure out our environment, make some directories
 
-    self.workingDir = os.getcwd()+'/'+obj['scriptName'].split('/')[0]+'/'
+    self.execDir = os.getcwd()+'/'
+    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
     self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
@@ -86,7 +88,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       for job in obj.getJobs():
         requirements = obj['jobType']
         execHost = self.findExecHost(requirements)
-        # FUTURE: call a function to find exec host from requirements
+        filelist = self.inputFiles(obj['globalSandbox'])
+        requirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
 
         # Build JDL file
@@ -167,6 +170,17 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     return execHost.strip()
 
+  def inputFiles(self,globalSandbox):
+    filelist = ''
+    if globalSandbox is not None :
+      for file in globalSandbox.split(','):
+        if file == '' :
+            continue
+        filename = os.path.abspath(file)
+        filename.strip()
+        filelist += filename + ','
+    return filelist[:-1]
+
   def decode  ( self, obj, requirements='' ):
       """
       prepare file for submission
@@ -186,9 +200,16 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       # general part
       jdl = ""
       jdl += 'Executable = %s\n' % (self.workingDir+"job/"+job[ 'executable' ])
-#      jdl += 'Executable = /home/ewv/date.csh\n'
+      #jdl += 'Executable = /home/ewv/date.csh\n'
       jdl += 'Universe   = grid\n'
-      jdl += 'Arguments  = %s\n' % job[ 'arguments' ]
+
+      # Massage arguments into condor friendly (space delimited) form
+      jobArgs = job[ 'arguments' ]
+      jobArgs = jobArgs.replace(',',' ')
+      jobArgs = jobArgs.replace('\\ ',',')
+      jobArgs = jobArgs.replace('\\','')
+      jobArgs = jobArgs.replace('"','')
+      jdl += 'Arguments  = %s\n' % jobArgs
       if job[ 'standardInput' ] != '':
           jdl += 'input = %s\n' % job[ 'standardInput' ]
       jdl += 'output  = %s\n' % job[ 'standardOutput' ]
