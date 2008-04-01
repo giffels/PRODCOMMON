@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.9 2008/04/01 10:16:13 ewv Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.10 2008/04/01 12:07:41 ewv Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import sys
 import os
@@ -85,8 +85,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       taskId = obj['name']#      pdb.set_trace()
       for job in obj.getJobs():
         requirements = obj['jobType']
+        execHost = self.findExecHost(requirements)
         # FUTURE: call a function to find exec host from requirements
-        job.runningJob['destination'] = "exec.host"
+        job.runningJob['destination'] = execHost
 
         # Build JDL file
         jdl, sandboxFileList = self.decode( job, requirements)
@@ -154,6 +155,18 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     return ret_map, taskId, success
 
+  def findExecHost(self, requirements=''):
+    jdlLines = requirements.split(';')
+    execHost = 'Unknown'
+    for line in jdlLines:
+      if line.find("globusscheduler") != -1:
+        parts = line.split('=')
+        sched = parts[1]
+        parts = sched.split(':')
+        execHost = parts[0]
+
+    return execHost.strip()
+
   def decode  ( self, obj, requirements='' ):
       """
       prepare file for submission
@@ -211,8 +224,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     query status of jobs
     """
     #import Xml2Obj
-    print "Service = ",service
-    pprint.pprint(schedIdList)
 
     jobIds = {}
     bossIds = {}
