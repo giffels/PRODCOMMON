@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.15 2008/03/31 08:23:18 gcodispo Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: Scheduler.py,v 1.16 2008/03/31 13:50:22 gcodispo Exp $"
+__revision__ = "$Revision: 1.16 $"
 
 ##########################################################################
 def valid( runningJob ) :
@@ -74,22 +74,22 @@ class Scheduler(object):
 
         # update single job
         if type( obj ) == Job :
-            run = obj.runningJob
-            run['schedulerId'] = jobAttributes[ obj['name'] ]
-            run['schedulerParentId'] = run['schedulerId']
-            run['scheduler'] = self.scheduler
-            run['service'] = service
+            obj.runningJob['schedulerId'] = jobAttributes[ obj['name'] ]
+            obj.runningJob['status'] = 'S'
+            obj.runningJob['schedulerParentId'] = obj.runningJob['schedulerId']
+            obj.runningJob['scheduler'] = self.scheduler
+            obj.runningJob['service'] = service
             
         # update multiple jobs of a task
         elif type( obj ) == Task :
             for job in obj.jobs :
-                run = job.runningJob
-                if job.runningJob is None:
+                if not valid( job.runningJob ) :
                     continue
-                run['schedulerId'] = jobAttributes[ job['name'] ]
-                run['schedulerParentId'] = bulkId
-                run['scheduler'] = self.scheduler
-                run['service'] = service
+                job.runningJob['schedulerId'] = jobAttributes[ job['name'] ]
+                job.runningJob['status'] = 'S'
+                job.runningJob['schedulerParentId'] = bulkId
+                job.runningJob['scheduler'] = self.scheduler
+                job.runningJob['service'] = service
 
         # unknown object type
         else:
@@ -191,16 +191,9 @@ class Scheduler(object):
         """
 
         # the object passed is a runningJob
+        self.schedObj.getOutput( obj, outdir, self.parameters['service']  )
+
         if type(obj) == RunningJob :
-
-            # check for the RunningJob integrity
-            if not valid( obj ):
-                raise SchedulerError('invalid object', str( obj ))
-
-            # retrieve output
-            self.schedObj.getOutput(
-                obj['schedulerId'], outdir, obj['service']
-                )
 
             # update object
             obj['status'] = 'E'
@@ -210,14 +203,6 @@ class Scheduler(object):
         # the object passed is a job
         elif type(obj) == Job :
 
-            # check for the RunningJob integrity
-            if not valid( obj.runningJob ):
-                raise SchedulerError('invalid object', str( obj.runningJob ))
-
-            # retrieve output
-            self.schedObj.getOutput( obj.runningJob['schedulerId'], \
-                                     outdir, obj.runningJob['service']  )
-
             # update object
             obj.runningJob['status'] = 'E'
             obj.runningJob['closed'] = 'Y'
@@ -225,21 +210,6 @@ class Scheduler(object):
 
         # the object passed is a Task
         elif type(obj) == Task :
-
-            if outdir == '' :
-                outdir = obj['outputDirectory']
-
-            # retrieve scheduler id list
-            schedIdList = {}
-            for job in obj.jobs:
-                if valid( job.runningJob ):
-                    if not schedIdList.has_key( job.runningJob['service'] ) :
-                        schedIdList[job.runningJob['service']] = []
-                    schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
-
-            # retrieve output for all jobs
-            for service, idList in schedIdList.iteritems() :
-                self.schedObj.getOutput( idList, outdir, service )
  
             # update objects: still missing handling for partial success
             for job in obj.jobs:

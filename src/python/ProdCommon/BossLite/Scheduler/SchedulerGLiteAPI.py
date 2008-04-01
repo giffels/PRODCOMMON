@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.21 2008/03/31 10:02:30 gcodispo Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.22 2008/03/31 16:35:47 gcodispo Exp $"
+__version__ = "$Revision: 1.22 $"
 
 import sys
 import os
@@ -26,20 +26,22 @@ except StandardError, e:
          Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
          """
     raise ImportError(warn + str(e))
-#
-# defining handler for timeout kill
-#
-#import signal
-#def handler(signum, frame):
-#    """
-#    a signal handler to clean up files when a signal is sent
-#    """
-#    error = 'signal received, probably timeout issued\n'
-#    print error
-#    os.system( "rm -rf " + SchedulerGLiteAPI.SandboxDir \
-#               + ' ' + SchedulerGLiteAPI.zippedISB )
-#    sys.exit(0)
 
+##########################################################################
+def valid( runningJob ) :
+    """
+    evaluate if the runningJob is valid for scheduler interaction
+    
+    """
+    
+    if runningJob is not None \
+           and runningJob['schedulerId'] is not None \
+           and runningJob['closed'] == "N" :
+        return True
+    else :
+        return False
+
+##########################################################################
 
 def processRow ( row ):
     """
@@ -374,9 +376,63 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
     ##########################################################################
 
-    def getOutput( self, schedIdList,  outdir, service ):
+    def getOutput( self, obj, outdir='', service='' ):
         """
-        Retrieve jobs output from WMS to outdir
+        retrieve output or just put it in the destination directory
+
+        """
+
+        # the object passed is a runningJob
+        if type(obj) == RunningJob :
+
+            # check for the RunningJob integrity
+            if not valid( obj ):
+                raise SchedulerError('invalid object', str( obj ))
+
+            # retrieve output
+            self.getWMSOutput(
+                obj['schedulerId'], outdir, obj['service']
+                )
+
+        # the object passed is a job
+        elif type(obj) == Job :
+
+            # check for the RunningJob integrity
+            if not valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # retrieve output
+            self.getWMSOutput( obj.runningJob['schedulerId'], \
+                                     outdir, obj.runningJob['service']  )
+
+        # the object passed is a Task
+        elif type(obj) == Task :
+
+            if outdir == '' :
+                outdir = obj['outputDirectory']
+
+            # retrieve scheduler id list
+            schedIdList = {}
+            for job in obj.jobs:
+                if valid( job.runningJob ):
+                    if not schedIdList.has_key( job.runningJob['service'] ) :
+                        schedIdList[job.runningJob['service']] = []
+                    schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
+
+            # retrieve output for all jobs
+            for service, idList in schedIdList.iteritems() :
+                self.getWMSOutput( idList, outdir, service )
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
+
+        
+    ##########################################################################
+
+    def getWMSOutput( self, schedIdList,  outdir, service ):
+        """
+        Manage objects to retrieve the output
         """
 
         # skip empty endpoint

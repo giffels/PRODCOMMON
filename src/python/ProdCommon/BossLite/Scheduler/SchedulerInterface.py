@@ -9,8 +9,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from os import popen4
 from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.10 2008/03/27 11:20:53 farinafa Exp $"
-__revision__ = "$Revision: 1.10 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.11 2008/03/28 09:57:22 spiga Exp $"
+__revision__ = "$Revision: 1.11 $"
 
 class SchedulerInterface(object):
     """
@@ -124,7 +124,7 @@ class SchedulerInterface(object):
 
     ##########################################################################
     
-    def getOutput( self, schedIdList, outdir, service ):
+    def getOutput( self, obj, outdir='', service='' ):
         """
         retrieve output or just put it in the destination directory
 
