@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.8 2008/03/31 12:15:49 ewv Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.9 2008/04/01 10:16:13 ewv Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import sys
 import os
@@ -33,6 +33,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
     self.hostname = getfqdn()
     self.condorTemp = ''
+    self.workingDir = ''
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -61,7 +62,10 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     # better to use os join, etc.
 
-    self.condorTemp = os.getcwd()+'/'+obj['scriptName'].split('/')[0]+'/share/.condor_temp'
+    # Figure out our environment, make some directories
+
+    self.workingDir = os.getcwd()+'/'+obj['scriptName'].split('/')[0]+'/'
+    self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
     else:
@@ -69,7 +73,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     #      wms = service
     configfile = config
     # decode obj
-    print 'CWD',os.getcwd()
+
     taskId = ''
     ret_map = {}
 
@@ -78,25 +82,38 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     if type(obj) == RunningJob or type(obj) == Job :
       jdl, sandboxFileList = self.decode( obj, requirements='' )
     elif type(obj) == Task :
-      taskId = obj.data['name']
-#      pdb.set_trace()
+      taskId = obj['name']#      pdb.set_trace()
       for job in obj.getJobs():
-        print "Job Object"#,job.getNodeName()
-        job.runningJob['destination']="exec.host"
-        jdl, sandboxFileList = self.decode( job, requirements='' )
-        print "JobName",job['name'],  "mynode"
+        requirements = obj['jobType']
+        # FUTURE: call a function to find exec host from requirements
+        job.runningJob['destination'] = "exec.host"
+
+        # Build JDL file
+        jdl, sandboxFileList = self.decode( job, requirements)
         jdl += "Queue 1\n"
 
-#        print "Generated JDL\n",jdl
+        # Write and submit JDL
 
-        stdout, stdin, stderr = popen2.popen3('condor_submit /home/ewv/test.jdl')
+        jdlFileName = job['name']+'.jdl'
+        cacheDir = os.getcwd()
+        os.chdir(self.condorTemp)
+        jdlFile = open(jdlFileName, 'w')
+        jdlFile.write(jdl)
+        jdlFile.close()
+        stdout, stdin, stderr = popen2.popen3('condor_submit '+jdlFileName)
+
+        # Parse output, build numbers
         for line in stdout:
           matchObj = jobRegExp.match(line)
           if matchObj:
-#            print "Njobs =",matchObj.group(1)
-#            print "jobID =",matchObj.group(2)
             ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
-        print job['name'],":",ret_map[ job['name']  ]
+        try:
+          junk = ret_map[ job['name']  ]
+        except:
+          print "Job not submitted:"
+          print stdout.readlines()
+          print stderr.readlines()
+        os.chdir(cacheDir)
 
 
     #jdl, sandboxFileList = self.decode( obj, requirements='' )
@@ -141,10 +158,11 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       """
       prepare file for submission
       """
+
       if type(obj) == RunningJob or type(obj) == Job :
-          return self.singleApiJdl ( obj, requirements='' )
+          return self.singleApiJdl(obj, requirements)
       elif type(obj) == Task :
-          return self.collectionApiJdl ( obj, requirements='' )
+          return self.collectionApiJdl(obj, requirements)
 
   def singleApiJdl( self, job, requirements='' ):
       """
@@ -154,32 +172,36 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
       # general part
       jdl = ""
-      jdl += 'Executable = "%s";\n' % job[ 'executable' ]
-      jdl += 'Universe   = globus\n'
-      jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
+      jdl += 'Executable = %s\n' % (self.workingDir+"job/"+job[ 'executable' ])
+#      jdl += 'Executable = /home/ewv/date.csh\n'
+      jdl += 'Universe   = grid\n'
+      jdl += 'Arguments  = %s\n' % job[ 'arguments' ]
       if job[ 'standardInput' ] != '':
-          jdl += 'input = "%s";\n' % job[ 'standardInput' ]
-      jdl += 'output  = "%s";\n' % job[ 'standardOutput' ]
-      jdl += 'error   = "%s";\n' % job[ 'standardError' ]
+          jdl += 'input = %s\n' % job[ 'standardInput' ]
+      jdl += 'output  = %s\n' % job[ 'standardOutput' ]
+      jdl += 'error   = %s\n' % job[ 'standardError' ]
 
-      #print CMD ("globusscheduler         = $globusscheduler\n");
       #if ( ! ($globusrsl eq "") ) {
       #    print CMD ("globusrsl               = $globusrsl\n");
       #}
       # output,error files passed to executable
       # print CMD ("initialdir              = $subdir\n");
-      jdl += 'stream_output           = false;\n'
-      jdl += 'stream_error            = false;\n'
-      jdl += 'notification            = never;\n'
+      jdl += 'stream_output           = false\n'
+      jdl += 'stream_error            = false\n'
+      jdl += 'notification            = never\n'
       # Condor log file
       #    print CMD ("log                     = $condorlog\n");
       # Transfer files
-      jdl += 'should_transfer_files   = YES;\n'
-      jdl += 'when_to_transfer_output = ON_EXIT;\n'
+      jdl += 'should_transfer_files   = YES\n'
+      jdl += 'when_to_transfer_output = ON_EXIT\n'
       #    print CMD ("transfer_input_files    = $inSandBox\n");
-      jdl += 'copy_to_spool           = fals;\n'
+      jdl += 'copy_to_spool           = false\n'
       #    print CMD ("transfer_output_files   = $outSandBox\n");
       # A string to help finding boss jobs in condor
+        #missing
+      jdlLines = requirements.split(';')
+      for line in jdlLines:
+        jdl += line + '\n';
 
       filelist = ''
       return jdl, filelist
