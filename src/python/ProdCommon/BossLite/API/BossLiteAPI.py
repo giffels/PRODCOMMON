@@ -524,8 +524,11 @@ class BossLiteAPI(object):
         # recall jobs
         for rJob in  runJobList :
             job = Job(
-                { 'jobId' : rJob['jobId'] , 'taskId' : rJob['taskId'] }
+                { 'jobId' : rJob['jobId'] ,
+                  'taskId' : rJob['taskId'],
+                  'submissionNumber' : rJob['submission'] }
                 )
+            job.load( self.db )
             job.runningJob = rJob
             jobList.append( job )
 
@@ -658,7 +661,7 @@ class BossLiteAPI(object):
 
     ##########################################################################
   
-    def archive( self, task, jobList=None ):
+    def archive( self, obj ):
         """
         set a flag/index to closed
         """
@@ -667,8 +670,14 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
-        for job in task.jobs:
-            if jobList is None or job['id'] in jobList:
+        # the object passed is a Job
+        if type(job) == Job :
+            obj.closeRunningInstance( self.db )
+
+        
+        # the object passed is a Task
+        elif type(obj) == Task :
+            for job in obj.jobs:
                 job.closeRunningInstance( self.db )
 
         # update
