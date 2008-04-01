@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.7 2008/03/28 22:50:17 ewv Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.8 2008/03/31 12:15:49 ewv Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import sys
 import os
@@ -14,6 +14,9 @@ from socket import getfqdn
 
 import traceback
 import pdb
+import pprint
+import inspect
+
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
@@ -29,6 +32,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     # call super class init method
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
     self.hostname = getfqdn()
+    self.condorTemp = ''
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -52,6 +56,16 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     """
 
+
+    print "Service =",service
+
+    # better to use os join, etc.
+
+    self.condorTemp = os.getcwd()+'/'+obj['scriptName'].split('/')[0]+'/share/.condor_temp'
+    if os.path.isdir(self.condorTemp):
+      pass
+    else:
+      os.mkdir(self.condorTemp)
     #      wms = service
     configfile = config
     # decode obj
@@ -59,7 +73,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     taskId = ''
     ret_map = {}
 
-#    jobRegExp = re.compile("\s+(\d+)*submitted to cluster\s+(\d+)*")
     jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
 
     if type(obj) == RunningJob or type(obj) == Job :
@@ -68,6 +81,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       taskId = obj.data['name']
 #      pdb.set_trace()
       for job in obj.getJobs():
+        print "Job Object"#,job.getNodeName()
+        job.runningJob['destination']="exec.host"
         jdl, sandboxFileList = self.decode( job, requirements='' )
         print "JobName",job['name'],  "mynode"
         jdl += "Queue 1\n"
@@ -173,6 +188,10 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
     query status of jobs
     """
+    #import Xml2Obj
+    print "Service = ",service
+    pprint.pprint(schedIdList)
+
     jobIds = {}
     bossIds = {}
     statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status
@@ -200,6 +219,20 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     for schedd in jobIds.keys() :
       condor_status = {}
       # call condor_q
+      #cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
+      #(input_file, output_file) = os.popen4(cmd)
+      #parser = Xml2Obj.Xml2Obj()
+      #print "line:",output_file.readline()
+      #print "line:",output_file.readline()
+      #print "line:",output_file.readline()
+      #topElement = parser.Parse(output_file)
+      #for child in topElement.getElements(): # These are the job entries
+        #for item in child.getElements():
+          #pprint.pprint(inspect.getmembers(item))
+          #dict = item.getAttributes()
+          #if dict['a'] == 'JobStatus':
+            #condor_status[
+
       cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
       (input_file, output_file) = os.popen4(cmd)
 
@@ -225,7 +258,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             statusRecord['status']          = statusMap.get(status,'UN')
             statusRecord['statusScheduler'] = textStatusMap.get(status,'Undefined')
             statusRecord['statusReason']    = ''
-            statusRecord['destination']     = 'someHost'
+            #statusRecord['destination']     = 'someHost'
             statusRecord['service']         = service
 
             bossIds[schedd+'//'+id] = statusRecord
