@@ -287,18 +287,15 @@ def madgraph():
     nameLabelLine  = file.readline()
     nameLabel  = nameLabelLine.split('\n')
 
-    try:
-        msg  = "wget http://home.cern.ch/ceballos/madgraph/tarballs/%s.tar.gz;" % nameLabel[0].strip()
-        msg += "tar xzf %s.tar.gz;" % nameLabel[0].strip()
-        os.system(msg)
-    except Exception, ex:
-    	return 1
+    msg  = "wget --no-check-certificate -O %s.tar.gz \"http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/RobertoChierici/MadGraphCompiledTarballs/%s.tar.gz?view=co\";" % (nameLabel[0].strip(),nameLabel[0].strip())
+    msg += "tar xzf %s.tar.gz;" % nameLabel[0].strip()
+    os.system(msg)
 
     numberOfSeedsNeeded = 1
     random.seed(int(seeds))
     seedsMadgraph = []
     for i in range(0, numberOfSeedsNeeded):
-      seedsMadgraph.append(random.randint(1,99999999))
+      seedsMadgraph.append(random.randint(1,30081))
 
     try:
         msg  = "chmod a+x run.sh;"
