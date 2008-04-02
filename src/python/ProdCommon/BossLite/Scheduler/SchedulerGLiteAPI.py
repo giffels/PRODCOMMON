@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.26 2008/04/02 17:34:35 gcodispo Exp $"
-__version__ = "$Revision: 1.26 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.27 2008/04/02 17:45:09 gcodispo Exp $"
+__version__ = "$Revision: 1.27 $"
 
 import sys
 import os
@@ -257,8 +257,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if sandboxFileList != '' :
                 msg = self.ExecuteCommand( "rm -rf " + self.SandboxDir \
                                            + ' ' + self.zippedISB )
-            if msg != '' :
-                print "Warning : " + msg
+                if msg != '' :
+                    print "Warning : " + msg
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
