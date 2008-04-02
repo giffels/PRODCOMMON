@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.3 2008/03/04 20:27:50 mcinquil Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: Task.py,v 1.4 2008/03/26 15:25:10 gcodispo Exp $"
+__revision__ = "$Revision: 1.4 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -333,7 +333,8 @@ class Task(DbObject):
 
             # comput full path for output files
             job['fullPathOutputFiles'] = [os.path.join(outputDirectory, file)
-                                          for file in job['outputFiles']]
+                                          for file in job['outputFiles']
+                                          if file != '']
 
         # get input directory
         if self.data['globalSandbox'] is not None:
@@ -346,5 +347,6 @@ class Task(DbObject):
 
             # comput full path for output files
             job['fullPathInputFiles'] = [os.path.join(inputDirectory, file)
-                                         for file in job['inputFiles']]
+                                         for file in job['inputFiles']
+                                         if file != '']
 
