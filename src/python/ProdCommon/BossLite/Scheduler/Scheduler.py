@@ -8,22 +8,9 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.16 2008/03/31 13:50:22 gcodispo Exp $"
-__revision__ = "$Revision: 1.16 $"
+__version__ = "$Id: Scheduler.py,v 1.17 2008/04/01 15:40:33 gcodispo Exp $"
+__revision__ = "$Revision: 1.17 $"
 
-##########################################################################
-def valid( runningJob ) :
-    """
-    evaluate if the runningJob is valid for scheduler interaction
-    
-    """
-    
-    if runningJob is not None \
-           and runningJob['schedulerId'] is not None \
-           and runningJob['closed'] == "N" :
-        return True
-    else :
-        return False
 
 ##########################################################################
 class Scheduler(object):
@@ -83,7 +70,7 @@ class Scheduler(object):
         # update multiple jobs of a task
         elif type( obj ) == Task :
             for job in obj.jobs :
-                if not valid( job.runningJob ) :
+                if job.runningJob is None or job.runningJob['closed'] == "Y" :
                     continue
                 job.runningJob['schedulerId'] = jobAttributes[ job['name'] ]
                 job.runningJob['status'] = 'S'
@@ -117,7 +104,7 @@ class Scheduler(object):
         if type(obj) == RunningJob :
 
             # check for the RunningJob integrity
-            if not valid( obj ):
+            if not self.schedObj.valid( obj ):
                 raise SchedulerError('invalid object', str( obj ))
 
             # query!
@@ -133,7 +120,7 @@ class Scheduler(object):
         elif type(obj) == Job :
 
             # check for the RunningJob integrity
-            if not valid( obj.runningJob ):
+            if not self.schedObj.valid( obj.runningJob ):
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # query!
@@ -154,7 +141,7 @@ class Scheduler(object):
             # query performed through single job ids
             if objType == 'node' :
                 for job in obj.jobs :
-                    if valid( job.runningJob ):
+                    if self.schedObj.valid( job.runningJob ):
                         schedIds.append( job.runningJob['schedulerId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
                                                self.parameters['service'], \
@@ -233,7 +220,7 @@ class Scheduler(object):
         if type(obj) == RunningJob :
 
             # check for the RunningJob integrity
-            if not valid( obj ):
+            if not self.schedObj.valid( obj ):
                 raise SchedulerError('invalid object', str( obj ))
 
             # kill job
@@ -247,7 +234,7 @@ class Scheduler(object):
         elif type(obj) == Job :
 
             # check for the RunningJob integrity
-            if not valid( obj.runningJob ):
+            if not self.schedObj.valid( obj.runningJob ):
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # kill job
@@ -264,7 +251,7 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = {}
             for job in obj.jobs:
-                if valid( job.runningJob ):
+                if self.schedObj.valid( job.runningJob ):
                     if not schedIdList.has_key( job.runningJob['service'] ) :
                         schedIdList[job.runningJob['service']] = []
                     schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
@@ -348,7 +335,7 @@ class Scheduler(object):
         if type(obj) == RunningJob :
 
             # purge object if valid
-            if valid( obj ):
+            if self.schedObj.valid( obj ):
                 self.schedObj.purgeService( obj['schedulerId'] )
             else :
                 raise SchedulerError('invalid object', str( obj ))
@@ -360,7 +347,7 @@ class Scheduler(object):
         elif type(obj) == Job :
 
             # purge object if valid
-            if not valid( obj.runningJob ):
+            if not self.schedObj.valid( obj.runningJob ):
                 self.schedObj.purgeService( obj.runningJob['schedulerId'] )
             else :
                 raise SchedulerError('invalid object', str( obj.runningJob ))
@@ -374,7 +361,7 @@ class Scheduler(object):
             # retrieve scheduler id list
             schedIdList = []
             for job in obj.jobs:
-                if valid( job.runningJob ):
+                if self.schedObj.valid( job.runningJob ):
                     schedIdList.append( job.runningJob['schedulerId'] )
 
             # perform actual kill
