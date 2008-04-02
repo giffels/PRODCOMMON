@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.24 2008/04/02 08:24:22 gcodispo Exp $"
-__version__ = "$Revision: 1.24 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.25 2008/04/02 12:23:50 gcodispo Exp $"
+__version__ = "$Revision: 1.25 $"
 
 import sys
 import os
@@ -208,50 +208,55 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 ret_map[ str( job.getNodeName() ) ] = str( job.getJobId() )
 
             # handle input sandbox :
-            #   get destination
-            destURI = wmproxy.getSandboxDestURI(taskId)
+            if sandboxFileList != '' :
+                #   get destination
+                destURI = wmproxy.getSandboxDestURI(taskId)
 
-            #   make directory struct locally
-            basedir = self.SandboxDir + \
-                      destURI[0].split('/' + self.SandboxDir)[1]
-            os.makedirs( basedir )
+                #   make directory struct locally
+                basedir = self.SandboxDir + \
+                          destURI[0].split('/' + self.SandboxDir)[1]
+                os.makedirs( basedir )
 
-            # copy files in the directory
-            msg = \
-                self.ExecuteCommand( "cp %s %s" % (sandboxFileList, basedir) )
-            if msg != '' :
-                raise SchedulerError( "cp error", msg )
+                # copy files in the directory
+                msg = \
+                    self.ExecuteCommand(
+                    "cp %s %s" % (sandboxFileList, basedir)
+                    )
+                if msg != '' :
+                    raise SchedulerError( "cp error", msg )
 
-            # zip sandbox + chmod workarond for the wms
-            msg = self.ExecuteCommand(
-                "chmod 773 " + self.SandboxDir +"; chmod 773 " \
-                + self.SandboxDir + "/*"
-                )
-            msg = self.ExecuteCommand(
-                "tar pczf %s %s/*"%(self.zippedISB, basedir))
-            if msg != '' :
-                raise SchedulerError( "tar error", msg )
+                # zip sandbox + chmod workarond for the wms
+                msg = self.ExecuteCommand(
+                    "chmod 773 " + self.SandboxDir +"; chmod 773 " \
+                    + self.SandboxDir + "/*"
+                    )
+                msg = self.ExecuteCommand(
+                    "tar pczf %s %s/*"%(self.zippedISB, basedir))
+                if msg != '' :
+                    raise SchedulerError( "tar error", msg )
 
-            # copy file to the wms (also usable curl)
-            #
-            # command = "/usr/bin/curl --cert  " + self.cert + \
-            #          " --key " + self.cert + \
-            #          " --capath /etc/grid-security/certificates " + \
-            #          " --upload-file://%s/%s %s/%s "
+                # copy file to the wms (also usable curl)
+                #
+                # command = "/usr/bin/curl --cert  " + self.cert + \
+                #          " --key " + self.cert + \
+                #          " --capath /etc/grid-security/certificates " + \
+                #          " --upload-file://%s/%s %s/%s "
 
-            command = "globus-url-copy file://%s/%s %s/%s" \
-                      % ( os.getcwd(), self.zippedISB, destURI[0], self.zippedISB )
-            msg = self.ExecuteCommand(command)
-            if msg.upper().find("ERROR") >= 0 \
-                   or msg.find("wrong format") >= 0 :
-                raise SchedulerError( "globus-url-copy error", msg )
+                command = "globus-url-copy file://%s/%s %s/%s" \
+                          % ( os.getcwd(), self.zippedISB, \
+                              destURI[0], self.zippedISB )
+                msg = self.ExecuteCommand(command)
+                if msg.upper().find("ERROR") >= 0 \
+                       or msg.find("wrong format") >= 0 :
+                    raise SchedulerError( "globus-url-copy error", msg )
 
             # start job!
             wmproxy.jobStart(taskId)
             
             # cleaning up everything: delete temporary files and exit
-            msg = self.ExecuteCommand( "rm -rf " + self.SandboxDir \
-                                   + ' ' + self.zippedISB )
+            if sandboxFileList != '' :
+                msg = self.ExecuteCommand( "rm -rf " + self.SandboxDir \
+                                           + ' ' + self.zippedISB )
             if msg != '' :
                 print "Warning : " + msg
 
@@ -834,11 +839,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         else :
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
-                for files in task['globalSandbox']:
+                for files in task['globalSandbox'].split(','):
                     if files == '' :
                         continue
                     filename = os.path.join( task['startDirectory'], files )
                     GlobalSandbox += filename + '",'
+                    commonFiles += "root.inputsandbox[%d]," % ISBindex
+                    ISBindex += 1
 
         # single job definition
         jdl += "Nodes = {\n"
