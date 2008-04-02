@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.27 2008/04/02 17:45:09 gcodispo Exp $"
-__version__ = "$Revision: 1.27 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.28 2008/04/02 17:54:31 gcodispo Exp $"
+__version__ = "$Revision: 1.28 $"
 
 import sys
 import os
@@ -342,7 +342,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         except:
             print "random access to wms not allowed, using sequential access"
 
-        success = ''
+        errors = ''
+        success = None
         seen = []
         for wms in endpoints :
             try :
@@ -357,12 +358,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 success = wms
                 break
             except SchedulerError, err:
-                print err
+                errors += str( err )
                 continue
 
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
-    
+
+        # if submission failed, raise error
+        if success is None :
+            raise SchedulerError( "failed submission", errors )
+
         return ret_map, taskId, success
 
 
@@ -744,9 +749,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         prepare file for submission
         """
         if type(obj) == RunningJob or type(obj) == Job :
-            return self.singleApiJdl ( obj, requirements ) 
+            return self.singleApiJdl ( obj, requirements )
         elif type(obj) == Task :
-            return self.collectionApiJdl ( obj, requirements ) 
+            if len( obj.jobs ) == 1:
+                return self.singleApiJdl ( obj.jobs[0], requirements )
+            else:
+                return self.collectionApiJdl ( obj, requirements )
 
 
     ##########################################################################
@@ -843,7 +851,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     if ifile == '' :
                         continue
                     filename = task['startDirectory'] + '/' + ifile
-                    GlobalSandbox += "," + filename + '",'
+                    GlobalSandbox += '"' + filename + '",'
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
                     ISBindex += 1
 
