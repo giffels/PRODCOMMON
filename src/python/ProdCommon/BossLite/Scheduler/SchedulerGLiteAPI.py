@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.23 2008/04/01 15:40:33 gcodispo Exp $"
-__version__ = "$Revision: 1.23 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.24 2008/04/02 08:24:22 gcodispo Exp $"
+__version__ = "$Revision: 1.24 $"
 
 import sys
 import os
@@ -27,19 +27,6 @@ except StandardError, e:
          """
     raise ImportError(warn + str(e))
 
-##########################################################################
-def valid( runningJob ) :
-    """
-    evaluate if the runningJob is valid for scheduler interaction
-    
-    """
-    
-    if runningJob is not None \
-           and runningJob['schedulerId'] is not None \
-           and runningJob['closed'] == "N" :
-        return True
-    else :
-        return False
 
 ##########################################################################
 
@@ -142,10 +129,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     """
     basic class to handle glite jobs through wmproxy API
     """
-    def __init__( self, user_proxy = '' ):
+    def __init__( self, userProxy = '' ):
 
         # call super class init method
-        super(SchedulerGLiteAPI, self).__init__(user_proxy)
+        super(SchedulerGLiteAPI, self).__init__(userProxy)
 
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
@@ -386,7 +373,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if type(obj) == RunningJob :
 
             # check for the RunningJob integrity
-            if not valid( obj ):
+            if not self.valid( obj ):
                 raise SchedulerError('invalid object', str( obj ))
 
             # retrieve output
@@ -398,7 +385,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         elif type(obj) == Job :
 
             # check for the RunningJob integrity
-            if not valid( obj.runningJob ):
+            if not self.valid( obj.runningJob ):
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # retrieve output
@@ -414,7 +401,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # retrieve scheduler id list
             schedIdList = {}
             for job in obj.jobs:
-                if valid( job.runningJob ):
+                if self.valid( job.runningJob ):
                     if not schedIdList.has_key( job.runningJob['service'] ) :
                         schedIdList[job.runningJob['service']] = []
                     schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )

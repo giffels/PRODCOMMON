@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.8 2008/03/28 10:06:35 spiga Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.9 2008/03/31 09:29:16 gcodispo Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import sys
 import os
@@ -109,7 +109,7 @@ def getJobInfo( jobidInfo, states ):
     return jobid, result
 
 
-def checkJobs( job_list, user_proxy='' ):
+def checkJobs( job_list, userProxy='' ):
     """
     check a list of provided job id
     
@@ -126,8 +126,8 @@ def checkJobs( job_list, user_proxy='' ):
     elif type( job_list ) == list :
         jobs = job_list
 
-    if user_proxy != '':
-        os.environ["X509_USER_PROXY"] = user_proxy
+    if userProxy != '':
+        os.environ["X509_USER_PROXY"] = userProxy
 
     # instatiating status object
     status =   Status()
@@ -156,7 +156,7 @@ def checkJobs( job_list, user_proxy='' ):
 
 
 
-def checkJobsBulk( job_list, user_proxy='' ):
+def checkJobsBulk( job_list, userProxy='' ):
     """
     check a list of provided job parent ids
     
@@ -173,9 +173,9 @@ def checkJobsBulk( job_list, user_proxy='' ):
     elif type( job_list ) == list :
         jobs = job_list
 
-    if user_proxy == '':
-        user_proxy = '/tmp/x509up_u' + str( os.getuid() )
-    os.environ["X509_USER_PROXY"] = user_proxy
+    if userProxy == '':
+        userProxy = '/tmp/x509up_u' + str( os.getuid() )
+    os.environ["X509_USER_PROXY"] = userProxy
 
     # instatiating status object
     status = Status()
@@ -218,7 +218,7 @@ def checkJobsBulk( job_list, user_proxy='' ):
 
 
 
-def groupByWMS( job_list, user_proxy='', id_type='node', status_list=None, allow=False ):
+def groupByWMS( job_list, userProxy='', id_type='node', status_list=None, allow=False ):
     """
     groups a list of jobid for submission WMS
     
@@ -233,9 +233,9 @@ def groupByWMS( job_list, user_proxy='', id_type='node', status_list=None, allow
         status_list = []
 
     if id_type == 'parent':
-        states = checkJobsBulk( job_list, user_proxy )
+        states = checkJobsBulk( job_list, userProxy )
     else:
-        states = checkJobs( job_list, user_proxy )
+        states = checkJobs( job_list, userProxy )
 
     for jobid, attr in states.iteritems() :
         status = attr[ 'STATUS' ]

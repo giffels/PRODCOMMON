@@ -7,10 +7,9 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
-from os import getuid
 
-__version__ = "$Id: SchedulerInterface.py,v 1.11 2008/03/28 09:57:22 spiga Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.12 2008/04/01 15:40:33 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 
 class SchedulerInterface(object):
     """
@@ -25,6 +24,20 @@ class SchedulerInterface(object):
 
         self.cert = userProxy
         self.checkUserProxy( self.cert )
+
+    ##########################################################################
+    def valid( self, runningJob ) :
+        """
+        evaluate if the runningJob is valid for scheduler interaction
+        
+        """
+
+        if runningJob is not None \
+               and runningJob['schedulerId'] is not None \
+               and runningJob['closed'] == "N" :
+            return True
+        else :
+            return False
 
     ##########################################################################
 
