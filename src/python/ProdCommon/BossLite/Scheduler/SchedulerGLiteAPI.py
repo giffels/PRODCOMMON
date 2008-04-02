@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.28 2008/04/02 17:54:31 gcodispo Exp $"
-__version__ = "$Revision: 1.28 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.29 2008/04/02 18:09:58 gcodispo Exp $"
+__version__ = "$Revision: 1.29 $"
 
 import sys
 import os
@@ -751,10 +751,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if type(obj) == RunningJob or type(obj) == Job :
             return self.singleApiJdl ( obj, requirements )
         elif type(obj) == Task :
-            if len( obj.jobs ) == 1:
-                return self.singleApiJdl ( obj.jobs[0], requirements )
-            else:
-                return self.collectionApiJdl ( obj, requirements )
+            return self.collectionApiJdl ( obj, requirements )
+            #if len( obj.jobs ) == 1:
+            #    return self.singleApiJdl ( obj.jobs[0], requirements )
+            #else:
+            #    return self.collectionApiJdl ( obj, requirements )
 
 
     ##########################################################################
@@ -818,8 +819,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # general part for task
         jdl = "[\n"
         jdl += 'Type = "collection";\n'
-        jdl += 'AllowZippedISB = true;\n'
-        jdl += 'ZippedISB = "%s";\n' % self.zippedISB
 
         # global task attributes :
         # \\ the list of files for the JDL common part
@@ -844,15 +843,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     filelist += filename + ' '
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
                     ISBindex += 1
-        else :
+        else :            
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
+                jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
                 for ifile in task['globalSandbox'].split(','):
                     if ifile == '' :
                         continue
-                    filename = task['startDirectory'] + '/' + ifile
-                    GlobalSandbox += '"' + filename + '",'
-                    commonFiles += "root.inputsandbox[%d]," % ISBindex
+                    #filename = task['startDirectory'] + '/' + ifile
+                    #GlobalSandbox += '"' + filename + '",'
+                    if ifile[0] == '/':
+                        ifile = ifile[1:]
+                    #GlobalSandbox += '"' + ifile + '",'
+                    #commonFiles += "root.inputsandbox[%d]," % ISBindex
+                    commonFiles += '"' + ifile + '",'
                     ISBindex += 1
 
         # single job definition
@@ -895,10 +899,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             else :
                 # files are elsewhere, just add their composed path
                 for filePath in job['fullPathInputFiles']:
-                    if filePath != '' :
-                        localfiles += "root.inputsandbox[%d]," % ISBindex
-                    GlobalSandbox += filePath
-                    ISBindex += 1
+                    if filePath[0] == '/':
+                        filePath = filePath[1:]
+                    localfiles += '"' + filePath + '",'
 
             if localfiles != '' :
                 jdl += 'InputSandbox = {%s};\n'% localfiles[:-1]
@@ -908,9 +911,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # global sandbox definition
         if GlobalSandbox != '' :
             jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
-        jdl += \
-            'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
-        
+
         # blindly append user requirements
         try :
             requirements = requirements.strip()
@@ -919,9 +920,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             jdl += '\n' + requirements + '\n'
         except :
             pass
-        
-        jdl += "]"
-        
+
+        # useful attributes if the transfer is not direct to the WN
+        if filelist != '':
+            jdl += 'AllowZippedISB = true;\n'
+            jdl += 'ZippedISB = "%s";\n' % self.zippedISB
+
+        # close jdl
+        jdl += 'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
+        jdl += "\n]\n"
+
         # return values
         # print jdl, filelist
         return jdl, filelist
