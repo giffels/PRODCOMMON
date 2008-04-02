@@ -43,6 +43,7 @@ class FwkJobReport:
         self.dashboardId = None
         self.performance = PerformanceReport()
         self.removedFiles = {}
+        self.logFiles = {}
         self.unremovedFiles = {} 
 
     def wasSuccess(self):
@@ -150,6 +151,14 @@ class FwkJobReport:
        
        return
 
+    def addLogFile(self, lfn, seName):
+        """
+        addLogFile
+        """
+        self.logFiles[lfn] = seName
+        return
+    
+
     def save(self):
         """
         _save_
@@ -232,6 +241,12 @@ class FwkJobReport:
             
             result.addNode(IMProvNode("UnremovedFile", unremLfn, SEName=unremSE))
 
+        
+        #  //
+        # // Save Log Files
+        #//
+        for logLfn, logSE in self.logFiles.items():
+            result.addNode(IMProvNode("LogFile", logLfn, SEName=logSE))
         
         #  //
         # // Save Errors
@@ -362,6 +377,13 @@ class FwkJobReport:
         [ self.addUnremovedFile(str(remF.chardata), remF.attrs['SEName'])
           for remF in unremFileQ(improvNode) ]
 
+        
+        #  //
+        # // log files
+        #//
+        logFileQ = IMProvQuery("/FrameworkJobReport/LogFile")
+        [ self.addLogFile(str(logF.chardata), logF.attrs['SEName'])
+          for logF in logFileQ(improvNode) ]
         
         #  //
         # // Timing, Storage and generator info
