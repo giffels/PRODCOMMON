@@ -69,6 +69,9 @@ CREATE TABLE bl_runningjob
     application_return_code INT,
     wrapper_return_code INT,
     sched_attr TEXT,
+    process_status enum('not_handled', 'handled','output_requested',
+                        'in_progress','output_retrieved','output_processed')
+                   default 'not_handled',
     closed CHAR default "N",
     PRIMARY KEY(id),
     UNIQUE(submission, job_id, task_id),

@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.5 2008/02/21 22:27:47 spiga Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: RunningJob.py,v 1.6 2008/03/21 11:29:31 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -42,6 +42,7 @@ class RunningJob(DbObject):
                'applicationReturnCode' : 'application_return_code',
                'wrapperReturnCode' : 'wrapper_return_code',
                'schedulerAttributes' : 'sched_attr',
+               'processStatus' : 'process_status',
                'closed' : 'closed'
              }
 
@@ -74,6 +75,7 @@ class RunningJob(DbObject):
                  'applicationReturnCode' : None,
                  'wrapperReturnCode' : None,
                  'schedulerAttributes' : None,
+                 'processStatus' : None,
                  'closed' : None
                }
 

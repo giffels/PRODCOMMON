@@ -62,6 +62,7 @@ CREATE TABLE bl_runningjob
     application_return_code INT,
     wrapper_return_code INT,
     sched_attr TEXT,
+    process_status TEXT default 'not_handled',
     closed CHAR default "N",
     UNIQUE(submission, job_id, task_id),
     FOREIGN KEY(job_id) references bl_job(id) ON DELETE CASCADE,
