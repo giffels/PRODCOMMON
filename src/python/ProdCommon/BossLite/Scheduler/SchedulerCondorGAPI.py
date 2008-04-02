@@ -3,13 +3,15 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.11 2008/04/01 12:47:27 ewv Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.12 2008/04/01 15:36:34 ewv Exp $"
+__version__ = "$Revision: 1.12 $"
 
 import sys
 import os
 import popen2
 import re
+import shutil
+
 from socket import getfqdn
 
 import traceback
@@ -111,6 +113,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
           matchObj = jobRegExp.match(line)
           if matchObj:
             ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
+            job.runningJob['schedulerId'] = ret_map[job['name']]
         try:
           junk = ret_map[ job['name']  ]
         except:
@@ -225,12 +228,10 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'notification            = never\n'
       # Condor log file
       #    print CMD ("log                     = $condorlog\n");
-      # Transfer files
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
-      #    print CMD ("transfer_input_files    = $inSandBox\n");
       jdl += 'copy_to_spool           = false\n'
-      #    print CMD ("transfer_output_files   = $outSandBox\n");
+      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
       # A string to help finding boss jobs in condor
         #missing
       jdlLines = requirements.split(';')
@@ -245,7 +246,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     query status of jobs
     """
     #import Xml2Obj
-
     jobIds = {}
     bossIds = {}
     statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status
@@ -261,6 +261,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
+
       bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default?
       schedd = id.split('//')[0]
       job    = id.split('//')[1]
@@ -358,23 +359,52 @@ class SchedulerCondorGAPI(SchedulerInterface) :
         }
     """
 
-  def getOutput( self, schedIdList,  outdir, service ):
+  def getOutput( self, obj, outdir='', service='' ):
     """
     Retrieve (move) job output from cache directory to outdir
     User files from CondorG appear asynchronously in the cache directory
     """
 
-    import shutil
     print 'CWD',os.getcwd()
+    self.execDir = os.getcwd()+'/'
+    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    self.condorTemp = self.workingDir+'share/.condor_temp'
 
-    for jobId in schedIdList:
-      fileList = ['condor_g_'+str(jid)+'.log', 'BossOutArchive_'+str(jid)+'.tgz',
-                  'condor_g_'+str(jid)+'.out', 'condor_g_'+str(jid)+'.err'] # Not correct names, how to get them?
-      for file in fileList:
-        try :
-          shutil.move(file,outdir)
-        except BaseException, err:
-          print "Problem retrieving file "+file+": " + err.toString()
+    if type(obj) == RunningJob: # The object passed is a RunningJob
+      raise SchedulerError('Operation not possible',
+                           'CondorG cannot retrieve files when passed RunningJob')
+    elif type(obj) == Job: # The object passed is a Job
+
+      # check for the RunningJob integrity
+      if not self.valid( obj.runningJob ):
+        raise SchedulerError('invalid object', str( obj.runningJob ))
+
+      # retrieve output
+      self.getCondorOutput(obj, outdir)
+
+    # the object passed is a Task
+    elif type(obj) == Task :
+
+      if outdir == '':
+        outdir = obj['outputDirectory']
+
+      for job in obj.jobs:
+        if self.valid( job.runningJob ):
+          self.getCondorOutput(job, outdir)
+
+    # unknown object type
+    else:
+      raise SchedulerError('wrong argument type', str( type(obj) ))
+
+  def getCondorOutput(self,job,outdir):
+    fileList = []
+    fileList.append(self.condorTemp+'/'+job['standardOutput'])
+    fileList.append(self.condorTemp+'/'+job['standardError'])
+    fileList.extend(job['outputFiles'])
+
+    for file in fileList:
+      #try
+      shutil.move(file,outdir)
 
   def postMortem( self, schedulerId, outfile, service):
         """
