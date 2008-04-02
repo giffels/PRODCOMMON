@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.25 2008/04/02 12:23:50 gcodispo Exp $"
-__version__ = "$Revision: 1.25 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.26 2008/04/02 17:34:35 gcodispo Exp $"
+__version__ = "$Revision: 1.26 $"
 
 import sys
 import os
@@ -827,11 +827,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if task['startDirectory'] is None or task['startDirectory'][0] == '/':
             # files are stored locally, compose with 'file://'
             if task['globalSandbox'] is not None :
-                for files in task['globalSandbox'].split(','):
+                for ifile in task['globalSandbox'].split(','):
                    # print files
-                    if files == '' :
+                    if ifile == '' :
                         continue
-                    filename = os.path.abspath( files )
+                    filename = os.path.abspath( ifile )
                     GlobalSandbox += '"file://' + filename + '",'
                     filelist += filename + ' '
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
@@ -839,11 +839,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         else :
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
-                for files in task['globalSandbox'].split(','):
-                    if files == '' :
+                for ifile in task['globalSandbox'].split(','):
+                    if ifile == '' :
                         continue
-                    filename = os.path.join( task['startDirectory'], files )
-                    GlobalSandbox += filename + '",'
+                    filename = task['startDirectory'] + '/' + ifile
+                    GlobalSandbox += "," + filename + '",'
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
                     ISBindex += 1
 
