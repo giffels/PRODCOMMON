@@ -671,7 +671,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # the object passed is a Job
-        if type(job) == Job :
+        if type(obj) == Job :
             obj.closeRunningInstance( self.db )
 
         
@@ -681,7 +681,7 @@ class BossLiteAPI(object):
                 job.closeRunningInstance( self.db )
 
         # update
-        task.update(self.db)
+        obj.update(self.db)
         self.session.commit()
 
 
