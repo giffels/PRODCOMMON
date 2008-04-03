@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.12 2008/04/01 15:36:34 ewv Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.13 2008/04/02 15:54:33 ewv Exp $"
+__version__ = "$Revision: 1.13 $"
 
 import sys
 import os
@@ -35,7 +35,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
     self.hostname = getfqdn()
     self.condorTemp = ''
-    self.workingDir = ''
+    self.workingDir = '' # HACK: Would like this in task/job
     self.execDir = ''
 
   def submit( self, obj, requirements='', config ='', service='' ):
@@ -231,7 +231,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
-      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
+      outputFiles = job['outputFiles']
+      outputFiles = ['MLfiles.tgz'] # HACK: Remove .BrokerInfo
+      jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
       # A string to help finding boss jobs in condor
         #missing
       jdlLines = requirements.split(';')
@@ -398,13 +400,15 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
   def getCondorOutput(self,job,outdir):
     fileList = []
-    fileList.append(self.condorTemp+'/'+job['standardOutput'])
-    fileList.append(self.condorTemp+'/'+job['standardError'])
+    fileList.append(job['standardOutput'])
+    fileList.append(job['standardError'])
     fileList.extend(job['outputFiles'])
 
     for file in fileList:
-      #try
-      shutil.move(file,outdir)
+      try:
+        shutil.move(self.condorTemp+'/'+file,outdir)
+      except IOError:
+        print "Could not move file ",file
 
   def postMortem( self, schedulerId, outfile, service):
         """
