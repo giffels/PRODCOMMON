@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.29 2008/04/02 18:09:58 gcodispo Exp $"
-__version__ = "$Revision: 1.29 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.30 2008/04/02 18:48:06 gcodispo Exp $"
+__version__ = "$Revision: 1.30 $"
 
 import sys
 import os
@@ -388,7 +388,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # retrieve output
             self.getWMSOutput(
-                obj['schedulerId'], outdir, obj['service']
+                [ obj['schedulerId'] ], outdir, obj['service']
                 )
 
         # the object passed is a job
@@ -399,8 +399,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # retrieve output
-            self.getWMSOutput( obj.runningJob['schedulerId'], \
-                                     outdir, obj.runningJob['service']  )
+            self.getWMSOutput( [ obj.runningJob['schedulerId'] ], \
+                               outdir, obj.runningJob['service']  )
 
         # the object passed is a Task
         elif type(obj) == Task :
