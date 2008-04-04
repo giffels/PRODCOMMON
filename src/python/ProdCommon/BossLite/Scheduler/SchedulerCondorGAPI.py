@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.13 2008/04/02 15:54:33 ewv Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.14 2008/04/03 09:38:54 ewv Exp $"
+__version__ = "$Revision: 1.14 $"
 
 import sys
 import os
@@ -34,9 +34,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     # call super class init method
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
     self.hostname = getfqdn()
-    self.condorTemp = ''
-    self.workingDir = '' # HACK: Would like this in task/job
-    self.execDir = ''
+    self.execDir = os.getcwd()+'/'
+    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/' # HACK: Would like this in task/job
+    self.condorTemp = self.workingDir+'share/.condor_temp'
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -67,9 +67,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
     # Figure out our environment, make some directories
 
-    self.execDir = os.getcwd()+'/'
-    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
-    self.condorTemp = self.workingDir+'share/.condor_temp'
+    #self.execDir = os.getcwd()+'/'
+    #self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    #self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
     else:
@@ -122,42 +122,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
           print stderr.readlines()
         os.chdir(cacheDir)
 
-
-    #jdl, sandboxFileList = self.decode( obj, requirements='' )
-
-    # return values
-
-    # handle wms
-    #      jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
-
-    # jdl ready!
-    # print "Using jdl : \n" + jdl
-
-    # installing a signal handler to clean files if the submission
-    # is signaled e.g. for a timeout
-    #      signal.signal(signal.SIGTERM, handler)
-
-    # emulate ui round robin
     success = self.hostname
-    #seen = []
-    #for wms in endpoints :
-        #try :
-            #wms = wms.replace("\"", "").strip()
-            #if  len( wms ) == 0 or wms[0]=='#' or wms in seen:
-                #continue
-            #else :
-                #seen.append( wms)
-            #print "Submitting to : " + wms
-            #taskId, ret_map = \
-                    #self.wmproxySubmit( jdl, wms, sandboxFileList )
-            #success = wms
-            #break
-        #except SchedulerError, err:
-            #print err
-            #continue
-
-    # clean files
-    #os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
 
     return ret_map, taskId, success
 
@@ -221,8 +186,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       #if ( ! ($globusrsl eq "") ) {
       #    print CMD ("globusrsl               = $globusrsl\n");
       #}
-      # output,error files passed to executable
-      # print CMD ("initialdir              = $subdir\n");
+
       jdl += 'stream_output           = false\n'
       jdl += 'stream_error            = false\n'
       jdl += 'notification            = never\n'
@@ -260,7 +224,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             'C':'Done',
             'H':'Aborted'
     }
-    #Condor_q has an XML output mode that might be worth investigating.
 
     for id in schedIdList:
 
@@ -276,20 +239,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     for schedd in jobIds.keys() :
       condor_status = {}
       # call condor_q
-      #cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
-      #(input_file, output_file) = os.popen4(cmd)
-      #parser = Xml2Obj.Xml2Obj()
-      #print "line:",output_file.readline()
-      #print "line:",output_file.readline()
-      #print "line:",output_file.readline()
-      #topElement = parser.Parse(output_file)
-      #for child in topElement.getElements(): # These are the job entries
-        #for item in child.getElements():
-          #pprint.pprint(inspect.getmembers(item))
-          #dict = item.getAttributes()
-          #if dict['a'] == 'JobStatus':
-            #condor_status[
-
       cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
       (input_file, output_file) = os.popen4(cmd)
 
@@ -321,6 +270,23 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             bossIds[schedd+'//'+id] = statusRecord
 
     return bossIds
+
+    # Condor_q has an XML output mode that might be worth investigating.
+    # Parsing with Xml2Obj looks like this
+
+    #cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
+    #(input_file, output_file) = os.popen4(cmd)
+    #parser = Xml2Obj.Xml2Obj()
+    #print "line:",output_file.readline()
+    #print "line:",output_file.readline()
+    #print "line:",output_file.readline()
+    #topElement = parser.Parse(output_file)
+    #for child in topElement.getElements(): # These are the job entries
+      #for item in child.getElements():
+        #pprint.pprint(inspect.getmembers(item))
+        #dict = item.getAttributes()
+        #if dict['a'] == 'JobStatus':
+          #condor_status[
 
   def kill( self, schedIdList, service):
     """
@@ -367,10 +333,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     User files from CondorG appear asynchronously in the cache directory
     """
 
-    print 'CWD',os.getcwd()
-    self.execDir = os.getcwd()+'/'
-    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
-    self.condorTemp = self.workingDir+'share/.condor_temp'
+    #self.execDir = os.getcwd()+'/'
+    #self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    #self.condorTemp = self.workingDir+'share/.condor_temp'
 
     if type(obj) == RunningJob: # The object passed is a RunningJob
       raise SchedulerError('Operation not possible',
