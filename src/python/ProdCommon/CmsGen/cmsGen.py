@@ -283,19 +283,29 @@ def madgraph():
     """
     # First line in the config file is the generator name
     file      = open(cfgFile, 'r')
-    generatorLine  = file.readline() # Not used
-    nameLabelLine  = file.readline()
-    nameLabel  = nameLabelLine.split('\n')
+    generatorLine    = file.readline() # Not used
+    nameLabelLine    = file.readline()
+    nameLabel        = nameLabelLine.split('\n')
+    tarballAreaLabel = file.readline()
+    tarballArea      = tarballAreaLabel.split('\n')
 
-    msg  = "wget --no-check-certificate -O %s.tar.gz \"http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/RobertoChierici/MadGraphCompiledTarballs/%s.tar.gz?view=co\";" % (nameLabel[0].strip(),nameLabel[0].strip())
-    msg += "tar xzf %s.tar.gz;" % nameLabel[0].strip()
-    os.system(msg)
+    if tarballArea[0].strip() == "NONE":
+        msg  = "wget --no-check-certificate -O %s.tar.gz \"http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/RobertoChierici/MadGraphCompiledTarballs/%s.tar.gz?view=co\";" % (nameLabel[0].strip(),nameLabel[0].strip())
+        msg += "tar xvzf %s.tar.gz;" % nameLabel[0].strip()
+        os.system(msg)
+    else:
+        msg  = "wget --no-check-certificate -O %s.tar.gz \"%s/%s.tar.gz\";" % (nameLabel[0].strip(),tarballArea[0].strip(),nameLabel[0].strip())
+        msg += "tar xvzf %s.tar.gz;" % nameLabel[0].strip()
+        msg += "cd madevent;"
+        msg += "./bin/compile dynamic;"
+        msg += "./bin/clean4grid;"
+        os.system(msg)
 
     numberOfSeedsNeeded = 1
     random.seed(int(seeds))
     seedsMadgraph = []
     for i in range(0, numberOfSeedsNeeded):
-      seedsMadgraph.append(random.randint(1,30081))
+      seedsMadgraph.append(random.randint(1,99999999))
 
     try:
         msg  = "chmod a+x run.sh;"
