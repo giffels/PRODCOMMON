@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.2 2008/03/27 13:55:06 gcodispo Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.3 2008/03/27 14:51:30 gcodispo Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -159,11 +159,12 @@ class SchedulerFake(SchedulerInterface) :
 
     ##########################################################################
 
-    def getOutput( self, schedIdList,  outdir, service ):
+    def getOutput( self, obj, outdir='', service='' ):
         """
-        Retrieve jobs output to outdir
+        retrieve output or just put it in the destination directory
         """
 
+        # obj can be a task, a job or even a running job
         # several possibilities:
         # 1) connect to a service and perform a remote copy
         # 2) just eventually copy the local output to the destination dir
