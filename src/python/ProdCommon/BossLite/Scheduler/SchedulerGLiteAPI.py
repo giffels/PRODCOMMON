@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.30 2008/04/02 18:48:06 gcodispo Exp $"
-__version__ = "$Revision: 1.30 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.31 2008/04/03 12:18:27 gcodispo Exp $"
+__version__ = "$Revision: 1.31 $"
 
 import sys
 import os
@@ -473,13 +473,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 try :
                     size = int( m['size'] )
                     # ugly trick for empty fields...
-                    if m['name'] == '' :
+                    if m['name'].strip() == '' :
                         raise ValueError
                 except ValueError:
-                    size = -1
+                    continue
 
                 # avoid globus-url-copy for empty files
-                if size == 0 or size == -1:
+                if size == 0 :
                     os.system( 'touch ' + os.path.basename( m['name'] ) )
                     continue
 
