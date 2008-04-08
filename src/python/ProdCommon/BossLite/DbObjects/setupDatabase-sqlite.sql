@@ -55,6 +55,7 @@ CREATE TABLE bl_runningjob
     submission_time TIMESTAMP,
     start_time TIMESTAMP,
     stop_time TIMESTAMP,
+    output_dir TEXT,
     getoutput_time TIMESTAMP,
     execution_host TEXT,
     execution_path TEXT,

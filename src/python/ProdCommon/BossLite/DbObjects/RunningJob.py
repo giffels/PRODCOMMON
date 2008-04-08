@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.6 2008/03/21 11:29:31 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: RunningJob.py,v 1.7 2008/04/02 08:24:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -35,6 +35,7 @@ class RunningJob(DbObject):
                'submissionTime' : 'submission_time',
                'startTime' : 'start_time',
                'stopTime' : 'stop_time',
+               'outputDirectory' : 'output_dir',
                'getOutputTime' : 'getoutput_time',
                'executionHost' : 'execution_host',
                'executionPath' : 'execution_path',
@@ -68,6 +69,7 @@ class RunningJob(DbObject):
                  'submissionTime' : None,
                  'startTime' : None,
                  'stopTime' : None,
+                 'outputDirectory' : None,
                  'getOutputTime' : None,
                  'executionHost' : None,
                  'executionPath' : None,
