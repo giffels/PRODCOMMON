@@ -8,8 +8,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.13 2008/04/02 12:23:50 gcodispo Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.14 2008/04/08 09:50:28 farinafa Exp $"
+__revision__ = "$Revision: 1.14 $"
 
 class SchedulerInterface(object):
     """
@@ -213,7 +213,6 @@ class SchedulerInterface(object):
         if seList == None :
             command += " lcg-info --vo " + vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
-            print command
             out = self.ExecuteCommand( command )
             out = out.split()
             for ce in out :
