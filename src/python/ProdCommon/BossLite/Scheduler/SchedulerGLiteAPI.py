@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.32 2008/04/07 15:44:31 gcodispo Exp $"
-__version__ = "$Revision: 1.32 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.33 2008/04/08 15:54:54 gcodispo Exp $"
+__version__ = "$Revision: 1.33 $"
 
 import sys
 import os
@@ -800,11 +800,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # output files handling
         outfiles = ''
-        for outfile in job['fullPathOutputFiles'] :
-            if outfile != '' :
-                outfiles += '"' + outfile + '",'
+        remOutfiles = ''
+        for filePath in job['outputFiles'] :
+            if filePath.find('gsiftp://') >= 0 :
+                remOutfiles += '"' + filePath + '",'
+            elif filePath != '' :
+                outfiles += '"' + filePath + '",'
         if len( outfiles ) != 0 :
-            jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
+            jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
+        if len( remOutfiles ) != 0 :
+            jdl += 'OutputSandboxDestURI = {%s};\n' % remOutfiles[:-1]
 
         # extra job attributes
         if job.runningJob is not None \
@@ -888,11 +893,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # job output files handling
             outfiles = ''
-            for filePath in job['fullPathOutputFiles'] :
-                if filePath != '' :
+            remOutfiles = ''
+            for filePath in job['outputFiles'] :
+                if filePath.find('gsiftp://') >= 0 :
+                    remOutfiles += '"' + filePath + '",'
+                elif filePath != '' :
                     outfiles += '"' + filePath + '",'
             if len( outfiles ) != 0 :
-                jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
+                jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
+            if len( remOutfiles ) != 0 :
+                jdl += 'OutputSandboxDestURI = {%s};\n' % remOutfiles[:-1]
 
             # job input files handling:
             # add their name in the global sanbox and put a reference
