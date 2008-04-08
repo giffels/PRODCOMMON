@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.15 2008/04/04 16:38:31 ewv Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.16 2008/04/08 18:30:02 ewv Exp $"
+__version__ = "$Revision: 1.16 $"
 
 import sys
 import os
@@ -61,13 +61,10 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
 
 
-    print "Service =",service
-
-    # better to use os join, etc.
-
     # Figure out our environment, make some directories
 
     #self.execDir = os.getcwd()+'/'
+    # better to use os join, etc.
     self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
     self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
@@ -183,10 +180,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'output  = %s\n' % job[ 'standardOutput' ]
       jdl += 'error   = %s\n' % job[ 'standardError' ]
 
-      #if ( ! ($globusrsl eq "") ) {
-      #    print CMD ("globusrsl               = $globusrsl\n");
-      #}
-
       jdl += 'stream_output           = false\n'
       jdl += 'stream_error            = false\n'
       jdl += 'notification            = never\n'
@@ -200,7 +193,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
         #missing
       jdlLines = requirements.split(';')
       for line in jdlLines:
-        jdl += line + '\n';
+        jdl += line.strip() + '\n';
 
       filelist = ''
       return jdl, filelist
