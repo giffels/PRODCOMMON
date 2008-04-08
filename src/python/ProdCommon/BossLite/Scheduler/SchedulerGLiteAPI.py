@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.31 2008/04/03 12:18:27 gcodispo Exp $"
-__version__ = "$Revision: 1.31 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.32 2008/04/07 15:44:31 gcodispo Exp $"
+__version__ = "$Revision: 1.32 $"
 
 import sys
 import os
@@ -467,6 +467,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 filelist = []
 
             # retrieve files
+            retrieved = 0
             for m in filelist:
 
                 # ugly error: nothing there!
@@ -485,7 +486,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
                 # retrieve file
                 dest = outdir + '/' + os.path.basename( m['name'] )
-                command = "globus-url-copy " + m['name'] \
+                command = "globus-url-copy -verbose " + m['name'] \
                           + " file://" + dest
                 msg = self.ExecuteCommand(command)
                 if msg.upper().find("ERROR") >= 0 or \
@@ -500,6 +501,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                              + ' got ' + m['size'] + '; '
                     continue
 
+                # update files counter
+                retrieved += 1
+
+            # no files?
+            if retrieved == 0:
+                # errors[ job ] = 'Warning: non files retrieved'
+                print  'Warning: non files retrieved'
+
             # got errors?
             if joberr != '' :
                 errors[ job ] = joberr
@@ -508,6 +517,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 try :
                     wmproxy.jobPurge( job )
                 except BaseException, err:
+                    # errors[ job ] = "WARNING : " + err.toString()
                     print "WARNING : " + err.toString()
 
         # raise exception for failed operations
