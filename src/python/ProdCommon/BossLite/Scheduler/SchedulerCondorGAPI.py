@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.14 2008/04/03 09:38:54 ewv Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.15 2008/04/04 16:38:31 ewv Exp $"
+__version__ = "$Revision: 1.15 $"
 
 import sys
 import os
@@ -35,8 +35,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     super(SchedulerCondorGAPI, self).__init__(user_proxy)
     self.hostname = getfqdn()
     self.execDir = os.getcwd()+'/'
-    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/' # HACK: Would like this in task/job
-    self.condorTemp = self.workingDir+'share/.condor_temp'
+    self.workingDir = ''
+    self.condorTemp = ''
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -68,8 +68,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     # Figure out our environment, make some directories
 
     #self.execDir = os.getcwd()+'/'
-    #self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
-    #self.condorTemp = self.workingDir+'share/.condor_temp'
+    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
     else:
@@ -195,9 +195,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
-      outputFiles = job['outputFiles']
-      outputFiles = ['MLfiles.tgz'] # HACK: Remove .BrokerInfo
-      jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
+      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
       # A string to help finding boss jobs in condor
         #missing
       jdlLines = requirements.split(';')
@@ -334,8 +332,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     """
 
     #self.execDir = os.getcwd()+'/'
-    #self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
-    #self.condorTemp = self.workingDir+'share/.condor_temp'
+    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    self.condorTemp = self.workingDir+'share/.condor_temp'
 
     if type(obj) == RunningJob: # The object passed is a RunningJob
       raise SchedulerError('Operation not possible',
@@ -383,6 +381,3 @@ class SchedulerCondorGAPI(SchedulerInterface) :
         cmd = 'condor_q -l -name ' + service + ' ' + schedulerId
 
         return self.ExecuteCommand(cmd)
-
-
-
