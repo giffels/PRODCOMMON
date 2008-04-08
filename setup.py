@@ -30,5 +30,6 @@ setup (name='prodcommon',
                  'ProdCommon.BossLite.Common',
                  'ProdCommon.BossLite.DbObjects',
                  'ProdCommon.BossLite.Scheduler',
+                 'ProdCommon.Storage',
                  'ProdCommon.Storage.SEAPI'],)
 
