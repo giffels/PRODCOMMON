@@ -112,6 +112,17 @@ class WorkflowMaker:
         self.workflow.setRequestCategory(newCategory)
         return
 
+    
+    def setActivity(self, activity):
+        """
+        _changeWorkflowType"
+        
+        Set the workflow type
+        i.e. Simulation, Reconstruction, Reprocessing, Skimming
+        """
+        self.workflow.setActivity(activity)
+        return
+    
 
     def setCMSSWVersion(self, version):
         """

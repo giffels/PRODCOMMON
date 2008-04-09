@@ -102,6 +102,15 @@ class WorkflowSpec:
         self.parameters['RequestCategory'] = category
         return
 
+    def setActivity(self, activity):
+        """
+        _setWorkflowCategory_
+        
+        Set the workflow category,
+        i.e. Simulation, Reconstruction, Reprocessing, Skimming
+        """
+        self.parameters["Activity"] = activity
+        return
 
     def lumiserverUrl(self):
         """
