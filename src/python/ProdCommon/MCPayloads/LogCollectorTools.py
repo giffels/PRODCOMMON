@@ -60,7 +60,7 @@ def createLogCollectorWorkflowSpec(wf):
     return workflow
 
 
-def createLogCollectorJobSpec(workflowSpec, originalWf, site, stageOutParams, *lfns):
+def createLogCollectorJobSpec(workflowSpec, originalWf, site, lfnBase, stageOutParams, *lfns):
     """
     createLogCollectorJobSpec
 
@@ -82,6 +82,8 @@ def createLogCollectorJobSpec(workflowSpec, originalWf, site, stageOutParams, *l
     # add site and workflow to collect
     confNode.addNode(IMProvNode("wf", originalWf))
     confNode.addNode(IMProvNode("se", site))
+    confNode.addNode(IMProvNode("lfnBase", lfnBase))
+    
 
     # add logs to collect
     logNode = IMProvNode("LogsToCollect")
