@@ -103,6 +103,7 @@ class SBinterface:
             return val
         else: 
             return 0
+
     def getGlobalSpace( self, source, proxy = None ):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
@@ -110,4 +111,4 @@ class SBinterface:
             self.storage1.workon = ""
             return val
         else:
-            return 0
+            return ['0%', '0', '0'] 
