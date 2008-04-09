@@ -24,12 +24,12 @@ class ProcToMerge:
     to convert them into merged datasets
 
     """
-    def __init__(self, fastMerge = True):
+    def __init__(self, fastMerge = False):
         self.mergeModuleName = "Merged"
         self.appName = "cmsRun"
-        if fastMerge == True:
-            self.mergeModuleName = "EdmFastMerge"
-            self.appName = _FastMergeBinary
+        #if fastMerge == True:
+        #    self.mergeModuleName = "EdmFastMerge"
+        #    self.appName = _FastMergeBinary
         
                  
     def __call__(self, node):
@@ -78,9 +78,9 @@ class SizeBasedMerge:
     def __init__(self, fastMerge = True):
         self.mergeModuleName = "Merged"
         self.appName = "cmsRun"
-        if fastMerge == True:
-            self.mergeModuleName = "EdmFastMerge"
-            self.appName = _FastMergeBinary
+        #if fastMerge == True:
+        #    self.mergeModuleName = "EdmFastMerge"
+        #    self.appName = _FastMergeBinary
 
         self.result = []
         
@@ -128,7 +128,7 @@ def getSizeBasedMergedDatasets(procSpec, isFastMerge = True):
 
     """
     operator = SizeBasedMerge(isFastMerge)
-    operator.appName = "edmFastMerge"
+    operator.appName = "cmsRun"
     procSpec.payload.operate(operator)
     return operator.result
 
@@ -141,7 +141,7 @@ def getSizeBasedMergeDatasetsFromNode(procSpecNode, isFastMerge = True):
 
     """
     operator = SizeBasedMerge(isFastMerge)
-    operator.appName = "edmFastMerge"
+    operator.appName = "cmsRun"
     operator(procSpecNode)
     return operator.result
 
@@ -156,8 +156,8 @@ def createMergeDatasetWorkflow(procSpec, isFastMerge = True, littleE = False):
     """
     newSpec = copy.deepcopy(procSpec)
     operator = ProcToMerge(isFastMerge)
-    if littleE:
-        operator.appName = "edmFastMerge"
+    #    if littleE:
+    operator.appName = "cmsRun"
     newSpec.payload.operate(operator)
     return newSpec
 
@@ -206,15 +206,15 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littl
         if userSandbox != None:
             cmsRunNode.userSandbox = userSandbox
 
-        if isFastMerge == True:
-            if littleE:
-                cmsRunNode.application["Executable"] = "edmFastMerge"
-            else:
-                cmsRunNode.application["Executable"] = _FastMergeBinary
-            outputModuleName = "EdmFastMerge"
-        else:
-            cmsRunNode.application["Executable"] = "cmsRun"
-            outputModuleName = "Merged"
+        #if isFastMerge == True:
+        #    if littleE:
+        #        cmsRunNode.application["Executable"] = "edmFastMerge"
+        #    else:
+        #        cmsRunNode.application["Executable"] = _FastMergeBinary
+        #    outputModuleName = "EdmFastMerge"
+        #else:
+        cmsRunNode.application["Executable"] = "cmsRun"
+        outputModuleName = "Merged"
 
         #  //
         # // Input Dataset
