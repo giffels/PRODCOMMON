@@ -67,12 +67,13 @@ class Operation:
 
 
         # make sure everything is in the right format
-        
-        rows = [rows]
+        if type(rows) == dict:
+            rows = [rows]
         
         # if nothing to do return
         if len(rows) == 0:
             return
+
         if type(rows[0]) == dict: 
             column_names = rows[0].keys()
         if type(rows[0]) == list:
@@ -130,7 +131,7 @@ class Operation:
                         sqlStr += '\''+str(entry)+'\''
                     i += 1
                 sqlStr += ')'
-        
+
         if duplicate:
             sqlStr+=" ON DUPLICATE KEY UPDATE "
             comma=False
@@ -146,8 +147,6 @@ class Operation:
                    sqlStr+= column_name + '=\''+ str(row[i]) + '\''
                 i += 1
  
-               
-                
         rowsModified = self.connection.execute(sqlStr)
         return rowsModified
       
