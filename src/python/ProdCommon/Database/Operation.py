@@ -356,8 +356,6 @@ class Operation:
                      entry = value
                  sqlStr += " = '%s'" % entry
 
-        print "sqlStr = %s" % sqlStr
-
         rowsModified=self.connection.execute(sqlStr)
         return rowsModified
 
