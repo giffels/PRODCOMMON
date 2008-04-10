@@ -309,7 +309,7 @@ def madgraph():
 
     try:
         msg  = "chmod a+x run.sh;"
-        msg += "./run.sh %s %s" % (int(nEvents),seedsMadgraph[0])
+        msg += "export PBS_O_WORKDIR=\"\"; ./run.sh %s %s" % (int(nEvents),seedsMadgraph[0])
         os.system(msg)
     except Exception, ex:
     	return 1
