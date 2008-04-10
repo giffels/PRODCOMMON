@@ -258,8 +258,9 @@ class Operation:
         Arguments:
 
         table_name: Table Name on which update query will run
-        keys: Dictionary containing the key/value pair forming the where clause. It corresponds to the rows
-              on which update will be called    
+        keys: Dictionary containing the key/value pair forming the where clause.
+              It corresponds to the rows on which update will be called
+              If value is a list, a 'in (a,b,c,d)' is used in the query
 
         rows: If dict, Collumn id's against values to update
              If list, data values  
@@ -326,22 +327,37 @@ class Operation:
            entry_and=False
            for key_name in keys.keys():
              if entry_and:
-                sqlStr += 'and '
+                sqlStr += ' and '
              entry_and=True
              sqlStr += key_name
 
-             entry=""
-             if key_name in encode:
-                 entry = base64.encodestring(cPickle.dumps(keys[key_name]))
-             elif key_name in encodeb64:
-                 entry = base64.encodestring(keys[key_name])
+             values = keys[key_name]
+
+             if type(values) != list:
+                 values = [values]
+             if len(values) > 1:
+                 sqlStr += " in ("
+                 for value in values:
+                     if key_name in encode:
+                         entry = base64.encodestring(cPickle.dumps(value))
+                     elif key_name in encodeb64:
+                         entry = base64.encodestring(value)
+                     else:
+                         entry = value
+                     sqlStr += "'%s'," % entry
+                 sqlStr = sqlStr.rstrip(',') + ')'
              else:
-                 entry = keys[key_name] 
-            
-             sqlStr += " = '%s'" % entry              
-        
-           
-        
+                 value = values[0]
+                 if key_name in encode:
+                     entry = base64.encodestring(cPickle.dumps(value))
+                 elif key_name in encodeb64:
+                     entry = base64.encodestring(value)
+                 else:
+                     entry = value
+                 sqlStr += " = '%s'" % entry
+
+        print "sqlStr = %s" % sqlStr
+
         rowsModified=self.connection.execute(sqlStr)
         return rowsModified
 
