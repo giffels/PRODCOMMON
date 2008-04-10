@@ -141,21 +141,46 @@ class CfgInterface:
             return
         svc = self.data.services["RandomNumberGeneratorService"]
 
-        srcSeedVec = getattr(svc, "sourceSeedVector", Utilities._CfgNoneType()).value()
+        #  //=====Old methods, keep for backwards compat.=======
+        # // 
+        #//
+        srcSeedVec = getattr(svc, "sourceSeedVector",
+                             Utilities._CfgNoneType()).value()
         if srcSeedVec != None:
             numReq = len(srcSeedVec)
             seedsReq = seedList[0:numReq]
             seedList = seedList[numReq+1:]
-            svc.sourceSeedVector = CfgTypes.untracked( CfgTypes.vuint32(seedsReq))
+            svc.sourceSeedVector = CfgTypes.untracked(
+                CfgTypes.vuint32(seedsReq))
             
-            
-
+        
         else:
-            svc.sourceSeed = CfgTypes.untracked(CfgTypes.uint32(seedList.pop(0)))
-        modSeeds = getattr(svc, "moduleSeeds", Utilities._CfgNoneType()).value()
+            svc.sourceSeed = CfgTypes.untracked(
+                CfgTypes.uint32(seedList.pop(0)))
+        modSeeds = getattr(svc, "moduleSeeds",
+                           Utilities._CfgNoneType()).value()
         if modSeeds != None:
             for param in modSeeds.parameterNames_():
-                setattr(modSeeds, param, CfgTypes.untracked(CfgTypes.uint32(seedList.pop(0))))
+                setattr(modSeeds, param,
+                        CfgTypes.untracked(CfgTypes.uint32(seedList.pop(0))))
+        #  //
+        # //
+        #//====End old stuff======================================
+
+        #  //
+        # // Use seed service utility to generate seeds on the fly
+        #//
+        try:
+            from IOMC.RandomEngine.RandomServiceHelper import RandomNumberServiceHelper
+        except ImportError:
+            # old release
+            return
+
+        randHelper = RandomNumberServiceHelper(svc)
+        randHelper.populate()
+        svc.saveFileName = CfgTypes.untracked(
+            CfgTypes.string("RandomEngineState.log"))
+        
         return
     
     def configMetadata(self):
