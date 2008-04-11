@@ -174,13 +174,13 @@ class BossLiteAPISched(object):
 
     ##########################################################################
     
-    def kill( self, taskId, jobRange='all' ):
+    def kill( self, task, jobRange='all' ):
         """
         kill the job instance
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = self.bossLiteSession.load( task['id'], jobRange )[0]
 
         # retrieve running instances
         for job in task.jobs:

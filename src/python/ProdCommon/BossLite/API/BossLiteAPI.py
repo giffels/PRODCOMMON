@@ -17,12 +17,14 @@ from ProdCommon.BossLite.DbObjects.TrackingDB import TrackingDB
 try:
     from ProdCommon.Database.MysqlInstance import MysqlInstance
 except ImportError :
-    print "Warning: missing MySQL\n"
+    pass
+    #print "Warning: missing MySQL\n"
 
 try:
     from ProdCommon.Database.SqliteInstance import SqliteInstance
 except ImportError :
-    print "Warning: missing pysqlite2\n"
+    pass
+    #print "Warning: missing pysqlite2\n"
     
 # Task and job objects
 from ProdCommon.BossLite.DbObjects.Job import Job
