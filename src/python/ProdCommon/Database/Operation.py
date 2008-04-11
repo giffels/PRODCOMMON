@@ -27,7 +27,7 @@ class Operation:
     def __del__ (self):
 
         del self.connection
-        print 'operationssss IAM DELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL'
+        
         
     
     def __getattr__ (self,name):
@@ -408,9 +408,12 @@ class Operation:
               if row.has_key(column_name):
                  row[column_name] = base64.encodestring(row[column_name])
 
-        self.connection.session.execute(tableMetadata.insert(), rows)
+        resultSet = self.connection.session.execute(tableMetadata.insert(), rows)
+        cursor = resultSet.cursor
+        rowsModified = cursor.rowcount 
 
-        return
+
+        return rowsModified
  
   
   
