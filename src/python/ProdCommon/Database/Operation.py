@@ -13,6 +13,7 @@ import base64
 import cPickle
 import logging
 from ProdCommon.Database.Connection import Connection
+from sqlalchemy import MetaData, Table
 
 class Operation:
     
@@ -21,6 +22,12 @@ class Operation:
            connection_parameters['dbType'] =  'mysql'
                            
         self.connection = Connection(**connection_parameters)
+        self.metaData = MetaData(self.connection.engine)
+
+    def __del__ (self):
+
+        del self.connection
+        print 'operationssss IAM DELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL'
         
     
     def __getattr__ (self,name):
@@ -39,6 +46,10 @@ class Operation:
         
         if name == 'connection':
            self.__dict__['connection'] = val     
+
+        if name == 'metaData':
+           self.__dict__['metaData'] = val
+
 
     def insert(self,table_name, rows , columns =[], encode = [], encodeb64 = [], \
         duplicate = False):
@@ -75,6 +86,9 @@ class Operation:
             return
 
         if type(rows[0]) == dict: 
+            if self.connection.connection_parameters['dbType'] == 'oracle':
+              if len(rows) > 1:
+                raise RuntimeError('Operations not permitted: Please use insertBulk for inserting muliple rows in Oracle DB',1)
             column_names = rows[0].keys()
         if type(rows[0]) == list:
             column_names = columns
@@ -360,7 +374,44 @@ class Operation:
         return rowsModified
 
   
-  
+    def insertBulk(self, table_name, rows, encode = [], encodeb64 = []):
+        """
+        _insertBulk_
+
+        Method that inserts muliple rows in one go.
+        Argument:
+
+        table_name: Table name in which data will be inserted
+        rows: List of dictionaries in which each dictionary represents each row to be inserted
+
+        """
+        if type(rows) == [dict]:
+           rows = [rows]
+
+        if type(rows) not in [list]:
+           raise ValueError ("Invalid row format provided. Please provide list of dictionaries")
+
+        #  //
+        # // Retrieving table metadata. It is singleton process. Will only execute once for whole life cycle
+        #//
+        tableMetadata = Table (table_name, self.metaData, autoload = True)
+
+        for row in rows:
+
+           if type(row) != dict:
+              raise ValueError("Invalid row: Expecting Dictionary")
+           for column_name in encode:
+              if row.has_key(column_name):
+                 row[column_name] = base64.encodestring(cPickle.dumps(row[column_name]))
+
+           for column_name in encodeb64:
+              if row.has_key(column_name):
+                 row[column_name] = base64.encodestring(row[column_name])
+
+        self.connection.session.execute(tableMetadata.insert(), rows)
+
+        return
+ 
   
   
   
