@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.16 2008/04/08 18:30:02 ewv Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.17 2008/04/08 19:44:42 ewv Exp $"
+__version__ = "$Revision: 1.17 $"
 
 import sys
 import os
@@ -71,9 +71,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       pass
     else:
       os.mkdir(self.condorTemp)
-    #      wms = service
+
     configfile = config
-    # decode obj
 
     taskId = ''
     ret_map = {}
@@ -93,6 +92,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
         # Build JDL file
         jdl, sandboxFileList = self.decode( job, requirements)
+        jdl += '+BLTaskID = "' + taskId + '"\n'
+        # If query were to take a task could then do something like
+        # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
         jdl += "Queue 1\n"
 
         # Write and submit JDL
@@ -164,21 +166,21 @@ class SchedulerCondorGAPI(SchedulerInterface) :
 
       # general part
       jdl = ""
-      jdl += 'Executable = %s\n' % (self.workingDir+"job/"+job[ 'executable' ])
+      jdl += 'Executable = %s\n' % (self.execDir+job['executable'])
       #jdl += 'Executable = /home/ewv/date.csh\n'
       jdl += 'Universe   = grid\n'
 
       # Massage arguments into condor friendly (space delimited) form
-      jobArgs = job[ 'arguments' ]
+      jobArgs = job['arguments']
       jobArgs = jobArgs.replace(',',' ')
       jobArgs = jobArgs.replace('\\ ',',')
       jobArgs = jobArgs.replace('\\','')
       jobArgs = jobArgs.replace('"','')
       jdl += 'Arguments  = %s\n' % jobArgs
-      if job[ 'standardInput' ] != '':
-          jdl += 'input = %s\n' % job[ 'standardInput' ]
-      jdl += 'output  = %s\n' % job[ 'standardOutput' ]
-      jdl += 'error   = %s\n' % job[ 'standardError' ]
+      if job['standardInput'] != '':
+          jdl += 'input = %s\n' % job['standardInput']
+      jdl += 'output  = %s\n' % job['standardOutput']
+      jdl += 'error   = %s\n' % job['standardError']
 
       jdl += 'stream_output           = false\n'
       jdl += 'stream_error            = false\n'
@@ -189,8 +191,8 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
       jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
-      # A string to help finding boss jobs in condor
-        #missing
+
+      # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
       for line in jdlLines:
         jdl += line.strip() + '\n';
@@ -255,7 +257,6 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             statusRecord['status']          = statusMap.get(status,'UN')
             statusRecord['statusScheduler'] = textStatusMap.get(status,'Undefined')
             statusRecord['statusReason']    = ''
-            #statusRecord['destination']     = 'someHost'
             statusRecord['service']         = service
 
             bossIds[schedd+'//'+id] = statusRecord
