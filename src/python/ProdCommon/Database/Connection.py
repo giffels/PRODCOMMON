@@ -149,10 +149,9 @@ class Connection:
        return    #// init method
 
     def __del__ (self):
-
-        print 'connectionssssss. I AM DELLLLLLLLLLLLLLLLLLLLLL'
+        
         self.close()
-        print self.poolStatus()
+        
 
 
     def getConnectionParameters (self):
