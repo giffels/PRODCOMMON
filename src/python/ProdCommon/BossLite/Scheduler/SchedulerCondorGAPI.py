@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.17 2008/04/08 19:44:42 ewv Exp $"
-__version__ = "$Revision: 1.17 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.18 2008/04/11 21:34:36 ewv Exp $"
+__version__ = "$Revision: 1.18 $"
 
 import sys
 import os
@@ -165,12 +165,11 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       """
 
       # general part
-      jdl = ""
+      jdl  = ''
       jdl += 'Executable = %s\n' % (self.execDir+job['executable'])
-      #jdl += 'Executable = /home/ewv/date.csh\n'
       jdl += 'Universe   = grid\n'
 
-      # Massage arguments into condor friendly (space delimited) form
+      # Massage arguments into condor friendly (space delimited) form w/o backslashes
       jobArgs = job['arguments']
       jobArgs = jobArgs.replace(',',' ')
       jobArgs = jobArgs.replace('\\ ',',')
@@ -182,9 +181,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
       jdl += 'output  = %s\n' % job['standardOutput']
       jdl += 'error   = %s\n' % job['standardError']
 
-      jdl += 'stream_output           = false\n'
-      jdl += 'stream_error            = false\n'
-      jdl += 'notification            = never\n'
+      jdl += 'stream_output = false\n'
+      jdl += 'stream_error  = false\n'
+      jdl += 'notification  = never\n'
       # Condor log file
       #    print CMD ("log                     = $condorlog\n");
       jdl += 'should_transfer_files   = YES\n'
