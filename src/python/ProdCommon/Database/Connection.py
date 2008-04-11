@@ -42,6 +42,7 @@ class Connection:
     #// Dictionary containing the session instances local to current thread
     sessionCollection = None
 
+
     def __init__ (self,**connection_parameters):
 
        """
@@ -87,11 +88,25 @@ class Connection:
        self.connection_parameters['pool_recycle'] = -1 
        self.connection_parameters['max_overflow'] = -1
        self.connection_parameters['pool_timeout'] = 30 
-       self.connection_parameters['echo'] =  False
+       self.connection_parameters['echo'] = False 
        self.connection_parameters['echo_pool'] =  False
        self.connection_parameters['maxConnectionAttempts'] = 5
        self.connection_parameters['dbWaitingTime'] = 10
        self.connection_parameters.update(**connection_parameters)    
+
+       if self.connection_parameters['echo'] == 'True':
+          self.connection_parameters['echo'] = True
+
+       elif self.connection_parameters['echo'] == 'False':
+         self.connection_parameters['echo'] = False
+
+
+       if self.connection_parameters['echo_pool'] == 'True':
+          self.connection_parameters['echo_pool'] = True
+
+       elif self.connection_parameters['echo_pool'] == 'False':
+          self.connection_parameters['echo_pool'] = False
+                
 
        #  //
        # // Instance attributes
@@ -132,6 +147,13 @@ class Connection:
 
 
        return    #// init method
+
+    def __del__ (self):
+
+        print 'connectionssssss. I AM DELLLLLLLLLLLLLLLLLLLLLL'
+        self.close()
+        print self.poolStatus()
+
 
     def getConnectionParameters (self):
 
@@ -625,13 +647,7 @@ class Connection:
              if sess['sessionId'] is self.session:
                 self.__class__.sessionCollection.__dict__['sessions'].remove(sess)
 
-          self.session = None
-               
-                    
-
-       else:
-          logging.debug("No connection found")  
-          raise ProdException(exceptions[4014], 4014)
+          self.session = None  
  
 
        return #// close 
