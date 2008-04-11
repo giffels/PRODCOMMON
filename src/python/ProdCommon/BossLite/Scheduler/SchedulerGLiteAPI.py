@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.33 2008/04/08 15:54:54 gcodispo Exp $"
-__version__ = "$Revision: 1.33 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.34 2008/04/08 17:22:30 gcodispo Exp $"
+__version__ = "$Revision: 1.34 $"
 
 import sys
 import os
@@ -363,7 +363,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
-
         # if submission failed, raise error
         if success is None :
             raise SchedulerError( "failed submission", errors )
