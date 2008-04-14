@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.18 2008/04/11 21:34:36 ewv Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.19 2008/04/11 22:10:01 ewv Exp $"
+__version__ = "$Revision: 1.19 $"
 
 import sys
 import os
@@ -204,10 +204,15 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     query status of jobs
     """
     #import Xml2Obj
+
+    # HACK: Don't know how to solve this one. When I kill jobs they are set to "K" but since
+    # CondorG cancelled jobs leave the queue, they are in the same state as "Done" jobs, so
+    # crab -status eventually shows them as "Done"
+
     jobIds = {}
     bossIds = {}
-    statusMap = {'I':'I', 'U':'RE', 'H':'SA', # Convert Condor status
-                 'R':'R', 'X':'SK', 'C':'SD'} # to BossLite Status codes
+    statusMap = {'I':'SS', 'U':'RE', 'H':'SA', # Convert Condor status
+                 'R':'R',  'X':'SK', 'C':'SD'} # to BossLite Status codes
     textStatusMap = {
             'I':'Scheduled',
             'R':'Running',
@@ -284,39 +289,9 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     Kill jobs submitted to a given WMS. Does not perform status check
     """
 
-    # Do killCheck too?
-
-    host = service
-
-    if len(host) == 0 :
-        return
-    for jobId in schedIdList:
-      # Use ExecuteCommand?
-      killer = popen2.Popen4("condor_rm -name  %s %s " % (service,jobId))
-      exitStatus = killer.wait()
-      content = killer.fromchild.read()
-
-    """Perl code snippet
-
-    chomp $identifier;
-    $status="error";
-    # use GlobalJobId to query for schedd name
-    if ( $identifier =~ /(.+)\/\/(.+)/ ) {
-        $schedd=$1;
-        $sid=$2;
-    }
-    $killcmd = "condor_rm -name $schedd $sid 2>&1  |";
-    if ( LOG ) {
-        print LOG "\n====>> Kill request for job $sid\n";
-        print LOG "Killing with command $killcmd\n";
-        print LOG "*** Start dump of kill request:\n";
-    }
-    open (KILL, $killcmd);
-    while (<KILL>) {
-        if ($_ =~ m/Cluster\s+.+\s+has been marked for removal/) {
-            $status = "killed";
-        }
-    """
+    for job in schedIdList:
+      submitHost,jobId  = job.split('//')
+      (input_file, output_file) = os.popen4("condor_rm -name  %s %s " % (submitHost,jobId))
 
   def getOutput( self, obj, outdir='', service='' ):
     """
