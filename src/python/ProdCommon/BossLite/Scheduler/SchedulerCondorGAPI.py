@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.19 2008/04/11 22:10:01 ewv Exp $"
-__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.20 2008/04/14 14:15:20 ewv Exp $"
+__version__ = "$Revision: 1.20 $"
 
 import sys
 import os
@@ -342,10 +342,11 @@ class SchedulerCondorGAPI(SchedulerInterface) :
         print "Could not move file ",file
 
   def postMortem( self, schedulerId, outfile, service):
-        """
-        Get detailed postMortem job info
-        """
+    """
+    Get detailed postMortem job info
+    """
 
-        cmd = 'condor_q -l -name ' + service + ' ' + schedulerId
+    submitHost,jobId  = schedulerId.split('//')
+    (input_file, output_file) = os.popen4("condor_q -l  -name  %s %s " % (submitHost,jobId))
 
-        return self.ExecuteCommand(cmd)
+    #return self.ExecuteCommand(cmd)
