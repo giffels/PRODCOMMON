@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# pylint: disable-msg=W0102,R0913,W0142,W0141,R0914
 """
 _SplitterMaker_
 
@@ -7,6 +7,9 @@ For a given dataset, create and return a JobSplitter instance
 
 
 """
+__version__ = "$Revision$"
+__revision__ = \
+   "$Id$"
 
 import logging
 
@@ -98,10 +101,9 @@ def splitDatasetByEvents(dataset, dbsUrl, eventsPerJob,
     API to split a dataset into eventsPerJob sized jobs
 
     """
-    filterSites = len(siteWhitelist) > 0
-    filterBlocks = len(blockWhitelist) > 0
     
-    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks, siteWhitelist, blockWhitelist)
+    splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks,
+                                 siteWhitelist, blockWhitelist)
     allJobs = []
     for block in splitter.listFileblocks():
         logging.debug("Processing Block: %s" % block)
@@ -129,8 +131,6 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
     API to split a dataset into filesPerJob sized jobs
 
     """
-    filterSites = len(siteWhitelist) > 0
-    filterBlocks = len(blockWhitelist) > 0
 
     splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks,
                                  siteWhitelist, blockWhitelist)
@@ -155,7 +155,7 @@ def splitDatasetByFiles(dataset, dbsUrl, filesPerJob,
     return allJobs
 
 
-def splitDatasetForReReco(dataset, dbsUrl,
+def splitDatasetForReReco(dataset, dbsUrl, filesPerJob,
                           onlyClosedBlocks = False,
                           siteWhitelist = [], blockWhitelist = []):
     """
@@ -164,9 +164,7 @@ def splitDatasetForReReco(dataset, dbsUrl,
     API to split a dataset into filesPerJob sized jobs
 
     """
-    filterSites = len(siteWhitelist) > 0
-    filterBlocks = len(blockWhitelist) > 0
-
+    
     splitter = createJobSplitter(dataset, dbsUrl, onlyClosedBlocks,
                                  siteWhitelist, blockWhitelist, True)
     allJobs = []
@@ -185,7 +183,7 @@ def splitDatasetForReReco(dataset, dbsUrl,
         
         
             
-        jobDefs = splitter.splitByFiles(block, 1)
+        jobDefs = splitter.splitByFiles(block, filesPerJob)
         allJobs.extend(jobDefs)
     return allJobs
 
