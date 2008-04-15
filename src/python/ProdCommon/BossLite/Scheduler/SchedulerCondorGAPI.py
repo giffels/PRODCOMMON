@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.20 2008/04/14 14:15:20 ewv Exp $"
-__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.21 2008/04/14 16:42:15 ewv Exp $"
+__version__ = "$Revision: 1.21 $"
 
 import sys
 import os
@@ -346,7 +346,11 @@ class SchedulerCondorGAPI(SchedulerInterface) :
     Get detailed postMortem job info
     """
 
-    submitHost,jobId  = schedulerId.split('//')
-    (input_file, output_file) = os.popen4("condor_q -l  -name  %s %s " % (submitHost,jobId))
+    if not outfile:
+      raise SchedulerError('Empty filename',
+                           'postMortem called with empty logfile name')
 
-    #return self.ExecuteCommand(cmd)
+    submitHost,jobId  = schedulerId.split('//')
+    fullFilename = outfile+'.LoggingInfo'
+    cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,fullFilename)
+    return self.ExecuteCommand(cmd)
