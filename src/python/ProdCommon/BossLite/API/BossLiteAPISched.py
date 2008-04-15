@@ -275,6 +275,6 @@ class BossLiteAPISched(object):
             self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
-        self.bossLiteSession.postMortem( task, outfile )
+        self.scheduler.postMortem( task, outfile )
 
     ##########################################################################
