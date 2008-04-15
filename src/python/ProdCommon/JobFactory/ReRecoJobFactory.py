@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable-msg = W0612
 """
 _ReRecoJobFactory_
 
@@ -7,6 +8,10 @@ job specs for it.
 
 
 """
+__version__ = "$Revision$"
+__revision__ = \
+   "$id$"
+
 
 import os
 import logging
@@ -29,9 +34,9 @@ class FilterSites:
     """
     def __init__(self, allowed):
         self.allowed = allowed
-    def __call__(self, object):
-        return object in self.allowed
-
+    def __call__(self, objRef):
+        return objRef in self.allowed
+    
 
 
 class GeneratorMaker(dict):
@@ -108,8 +113,9 @@ class ReRecoJobFactory:
         # // Initial tests 1 file per job for ReReco
         #//  May want to adjust this for skims, but that comes later.
         self.splitType = "file"
-        self.splitSize = 1
-
+        #self.splitSize = 1
+        self.splitSize = int(self.workflowSpec.parameters.get("SplitSize", 1))
+        
         self.generators = GeneratorMaker()
         self.generators(self.workflowSpec.payload)
 
@@ -192,7 +198,7 @@ class ReRecoJobFactory:
         and override it
 
         """
-        self.useInputDataset = imputDataset
+        self.useInputDataset = inputDataset
         return
 
 
@@ -218,6 +224,7 @@ class ReRecoJobFactory:
 
         jobDefs = splitDatasetForReReco(self.inputDataset(),
                                         self.dbsUrl,
+                                        self.splitSize,
                                         self.onlyClosedBlocks,
                                         self.allowedSites,
                                         self.allowedBlocks)
@@ -318,7 +325,7 @@ class ReRecoJobFactory:
             }
             
         if self.splitType == "file":
-           maxEvents = -1
+            maxEvents = -1
         if maxEvents != None:
             args['maxEvents'] = maxEvents
         if skipEvents != None:
