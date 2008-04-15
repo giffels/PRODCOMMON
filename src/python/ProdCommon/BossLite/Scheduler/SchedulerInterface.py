@@ -7,9 +7,9 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
-
-__version__ = "$Id: SchedulerInterface.py,v 1.14 2008/04/08 09:50:28 farinafa Exp $"
-__revision__ = "$Revision: 1.14 $"
+import logging
+__version__ = "$Id: SchedulerInterface.py,v 1.15 2008/04/08 09:52:05 farinafa Exp $"
+__revision__ = "$Revision: 1.15 $"
 
 class SchedulerInterface(object):
     """
@@ -216,9 +216,21 @@ class SchedulerInterface(object):
             out = self.ExecuteCommand( command )
             out = out.split()
             for ce in out :
-                if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
-                        celist.append( ce )
+                # blacklist
+                if ce.find( "blah" ) == -1:
+                  passblack=1
+                  if len(blacklist)>0:
+                   for ceb in blacklist :
+                      if ce.find(ceb)>0:
+                         passblack=0
+                # whitelist if surviving the blacklist selection
+                if passblack:
+                   if whitelist is None or len(whitelist)==0 :
+                      celist.append( ce )
+                   else:
+                      for cew in whitelist:
+                         if ce.find(cew)>=0:
+                            celist.append( ce )
             
             return celist
         
@@ -229,10 +241,22 @@ class SchedulerInterface(object):
 
             out = self.ExecuteCommand( singleComm )
             out = out.split()
-
             for ce in out :
-                if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
-                        celist.append( ce )
+                # blacklist
+                if ce.find( "blah" ) == -1:
+                  passblack=1 
+                  if len(blacklist)>0:
+                   for ceb in blacklist :
+                      if ce.find(ceb)>0:
+                         passblack=0
+                # whitelist if surviving the blacklist selection
+                if passblack:
+                   if whitelist is None or len(whitelist)==0 :
+                      celist.append( ce )
+                   else:
+                      for cew in whitelist:
+                         if ce.find(cew)>=0:
+                            celist.append( ce )  
+
 
         return celist
