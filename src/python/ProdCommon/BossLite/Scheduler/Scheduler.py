@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.17 2008/04/01 15:40:33 gcodispo Exp $"
-__revision__ = "$Revision: 1.17 $"
+__version__ = "$Id: Scheduler.py,v 1.18 2008/04/02 12:23:28 gcodispo Exp $"
+__revision__ = "$Revision: 1.18 $"
 
 
 ##########################################################################
@@ -289,13 +289,13 @@ class Scheduler(object):
 
         # the object passed is a Task
         elif type(obj) == Task :
-            out = ''
+ #           out = ''
             for job in obj.jobs:
                 if job.runningJob is None:
                     continue
-                self.schedObj.postMortem( job .runningJob['schedulerId'], \
-                                          out, self.parameters['service'] )
-                outfile += out
+                self.schedObj.postMortem( job.runningJob['schedulerId'], \
+                                          outfile, self.parameters['service'] )
+ #               outfile += out
 
         # unknown object type
         else:
