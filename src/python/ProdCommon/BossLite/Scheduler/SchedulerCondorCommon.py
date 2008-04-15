@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.22 2008/04/15 17:01:25 ewv Exp $"
-__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.1 2008/04/15 22:00:15 ewv Exp $"
+__version__ = "$Revision: 1.1 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -164,7 +164,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
       # general part
       jdl  = ''
       jdl += 'Executable = %s\n' % (self.execDir+job['executable'])
-      jdl += 'Universe   = grid\n'
 
       # Massage arguments into condor friendly (space delimited) form w/o backslashes
       jobArgs = job['arguments']
