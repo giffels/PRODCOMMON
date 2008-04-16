@@ -112,3 +112,10 @@ class SBinterface:
             return val
         else:
             return ['0%', '0', '0'] 
+
+    def createDir (self, source, proxy = None):
+        if self.storage1.protocol == 'gridftp':
+            self.storage1.workon = source
+            val = self.storage1.action.createDir(self.storage1, proxy)
+            self.storage1.workon = ""
+            return val

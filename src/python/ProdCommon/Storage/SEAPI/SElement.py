@@ -2,6 +2,7 @@ from Exceptions import ProtocolUnknown
 from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
+from ProtocolGsiFtp import ProtocolGsiFtp
 
 class SElement(object):
     """
@@ -9,7 +10,7 @@ class SElement(object):
     [just a bit more then a classis struct type]
     """
 
-    _protocols = ["srmv1", "srmv2", "local"]
+    _protocols = ["srmv1", "srmv2", "local", "gridftp"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -29,7 +30,7 @@ class SElement(object):
         """
         if protocol == "srmv1" or protocol == "srmv2":
             return "8443"
-        elif protocol == "local":
+        elif protocol == "local" or protocol == "gridftp":
             return ""
         else:
             raise ProtocolUnknown()
@@ -44,6 +45,8 @@ class SElement(object):
             return ProtocolSrmv2()
         elif protocol == "local":
             return ProtocolLocal()
+        elif protocol == "gridftp":
+            return ProtocolGsiFtp()
         else:
             raise ProtocolUnknown()
 
@@ -56,7 +59,11 @@ class SElement(object):
             return ("srm://" + self.hostname + ":" + self.port + \
                     join("/", self.workon))
         elif self.protocol == "local":
-            return ("file:///" + join("/", self.workon))
+            if self.workon[0] != '/':
+                self.workon = join("/", self.workon) 
+            return ("file://" + self.workon)
+        elif self.protocol == "gridftp":
+            return ("gsiftp://" + self.hostname + join("/", self.workon) )
         else:
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
