@@ -166,4 +166,22 @@ class ProtocolSrmv2(Protocol):
         except OperationException:
             return False
 
+
+    def getTurl(self, source, proxy = None):
+        """
+        return the gsiftp turl
+        """
+        fullSource = source.getLynk()
+        cmd = ""
+        if proxy is not None:
+            cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
+        cmd += "lcg-gt  -T srmv2 -D srmv2 " + str(fullSource) + " gsiftp"
+        exitcode, outputs = self.executeCommand(cmd)
+        problems = self.simpleOutputCheck(outputs)
+
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
+        return outputs.split('\n')[0]
+
 # srm-reserve-space srm-release-space srmrmdir srmmkdir srmping srm-bring-online

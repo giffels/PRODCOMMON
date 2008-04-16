@@ -119,3 +119,11 @@ class SBinterface:
             val = self.storage1.action.createDir(self.storage1, proxy)
             self.storage1.workon = ""
             return val
+
+    def getTurl (self, source, proxy = None):
+        if self.storage1.protocol == 'srmv1' or self.storage1.protocol == 'srmv2':
+            self.storage1.workon = source
+            val = self.storage1.action.getTurl(self.storage1, proxy)
+            self.storage1.workon = ""
+            return val
+
