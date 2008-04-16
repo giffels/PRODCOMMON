@@ -16,7 +16,7 @@ class ProtocolGsiFtp(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1:
+            if line.find("No such file or directory") != -1 or line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -72,3 +72,21 @@ class ProtocolGsiFtp(Protocol):
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
+
+
+    def checkExists(self, source, proxy):
+        """
+        edg-gridftp-ls
+        """
+        fullSource = source.getLynk()
+        
+        cmd = "export X509_USER_PROXY=" + proxy + "; edg-gridftp-ls "+ fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+ 
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+ 
+        if exitcode != 0 or len(problems) > 0:
+            return False
+        return True
+ 
