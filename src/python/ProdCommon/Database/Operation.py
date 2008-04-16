@@ -14,6 +14,8 @@ import cPickle
 import logging
 from ProdCommon.Database.Connection import Connection
 from sqlalchemy import MetaData, Table
+from sqlalchemy.sql import text
+
 
 class Operation:
     
@@ -374,17 +376,22 @@ class Operation:
         return rowsModified
 
   
-    def insertBulk(self, table_name, rows, encode = [], encodeb64 = []):
+    def arrayInsert(self, table_name, rows, key = None, encode = [], encodeb64 = []):
         """
-        _insertBulk_
+        _arrayInsert_
 
         Method that inserts muliple rows in one go.
         Argument:
 
         table_name: Table name in which data will be inserted
         rows: List of dictionaries in which each dictionary represents each row to be inserted
-
+        key: Dictionary of atmost element where key will be collumn id and value will be sequence name attached to it 
         """
+        if key is None:
+           key = {}
+        if len(key) > 1:
+           raise ValueError('Invalid parameter: key, it must be a dictionary containing at most one element')
+          
         if type(rows) == [dict]:
            rows = [rows]
 
@@ -394,8 +401,12 @@ class Operation:
         #  //
         # // Retrieving table metadata. It is singleton process. Will only execute once for whole life cycle
         #//
-        tableMetadata = Table (table_name, self.metaData, autoload = True)
-
+        tableMetadata = None
+         
+        
+        tableMetadata = Table (table_name, self.metaData, autoload = True)                  
+        
+             
         for row in rows:
 
            if type(row) != dict:
@@ -407,8 +418,18 @@ class Operation:
            for column_name in encodeb64:
               if row.has_key(column_name):
                  row[column_name] = base64.encodestring(row[column_name])
-
-        resultSet = self.connection.session.execute(tableMetadata.insert(), rows)
+        
+        resultSet = None
+        try:
+          if len(key) == 1:
+             id = key.keys()[0]
+             resultSet = self.connection.session.execute(tableMetadata.insert(values = {id:text(key[id]+'.nextval')}), rows)
+          else:
+             resultSet = self.connection.session.execute(tableMetadata.insert(), rows)
+        except Exception, e:
+             msg = 'Exception caught while inserting data: \n'         
+             msg += str(e)
+             raise RuntimeError(1, msg)  
         cursor = resultSet.cursor
         rowsModified = cursor.rowcount 
 
