@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.1 2008/04/15 22:00:15 ewv Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.2 2008/04/15 22:10:31 ewv Exp $"
+__version__ = "$Revision: 1.2 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -80,7 +80,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     if type(obj) == RunningJob or type(obj) == Job :
       jdl, sandboxFileList = self.decode( obj, requirements='' )
     elif type(obj) == Task :
-      taskId = obj['name']#      pdb.set_trace()
+      taskId = obj['name']
       for job in obj.getJobs():
         requirements = obj['jobType']
         execHost = self.findExecHost(requirements)
@@ -90,6 +90,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         # Build JDL file
         jdl, sandboxFileList = self.decode( job, requirements)
+        jdl += 'Executable = %s\n' % (self.execDir+obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
         # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
@@ -113,7 +114,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             job.runningJob['schedulerId'] = ret_map[job['name']]
         try:
           junk = ret_map[ job['name']  ]
-        except:
+        except: #FIXME: Which exception? KeyError?
           print "Job not submitted:"
           print stdout.readlines()
           print stderr.readlines()
@@ -158,12 +159,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
   def singleApiJdl( self, job, requirements='' ):
       """
-      build a job jdl 
+      build a job jdl
       """
 
       # general part
       jdl  = ''
-      jdl += 'Executable = %s\n' % (self.execDir+job['executable'])
 
       # Massage arguments into condor friendly (space delimited) form w/o backslashes
       jobArgs = job['arguments']

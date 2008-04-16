@@ -3,8 +3,8 @@
 _SchedulerCondorGAPI_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.21 2008/04/14 16:42:15 ewv Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.22 2008/04/15 17:01:25 ewv Exp $"
+__version__ = "$Revision: 1.22 $"
 
 import sys
 import os
@@ -115,7 +115,7 @@ class SchedulerCondorGAPI(SchedulerInterface) :
             job.runningJob['schedulerId'] = ret_map[job['name']]
         try:
           junk = ret_map[ job['name']  ]
-        except:
+        except: #FIXME: Which exception? KeyError?
           print "Job not submitted:"
           print stdout.readlines()
           print stderr.readlines()
