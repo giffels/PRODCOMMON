@@ -1,6 +1,7 @@
 from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
+from ProtocolGsiFtp import ProtocolGsiFtp
 from SElement import SElement
 from Exceptions import MissingDestination, ProtocolUnknown, ProtocolMismatch
 
