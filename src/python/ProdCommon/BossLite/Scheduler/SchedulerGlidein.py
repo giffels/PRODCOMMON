@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.1 2008/04/15 22:00:15 ewv Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.2 2008/04/17 14:25:38 ewv Exp $"
+__version__ = "$Revision: 1.2 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -24,7 +24,7 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       """
 
       jdl = 'Universe   = vanilla\n'
-      superJdl, filelist = super(SchedulerCondorG, self).singleApiJdl(job, requirements)
+      superJdl, filelist = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
       jdl += superJdl
 
       glidein = 'UCSDT2'
