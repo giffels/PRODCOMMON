@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.2 2008/04/17 14:25:38 ewv Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.3 2008/04/17 19:20:55 ewv Exp $"
+__version__ = "$Revision: 1.3 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -23,15 +23,11 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       and gives back the list of input files for a better handling
       """
 
-      jdl = 'Universe   = vanilla\n'
+      jdl = 'Universe = vanilla\n'
       superJdl, filelist = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
       jdl += superJdl
 
-      glidein = 'UCSDT2'
-
-      #jdl += '+DESIRED_Sites = "'+glidein+'\n'
-      #jdl += '+DESIRED_Archs = "INTEL,X86_64"\n'
-      #jdl += 'Requirements = stringListMember(GLIDEIN_Site,DESIRED_Sites) && stringListMember(Arch, DESIRED_Archs) \n'
+      # Optional parameters that may be put in after the conversion from Perl to Python and escapes are fixed
       #jdl += '+JOB_Site = \"\$\$(GLIDEIN_Site:Unknown)\" \n");
       #jdl += '+JOB_VM = \"\$\$(Name:Unknown)\" \n");
       #jdl += '+JOB_Machine_KFlops = \"\$\$(KFlops:Unknown)\" \n");
