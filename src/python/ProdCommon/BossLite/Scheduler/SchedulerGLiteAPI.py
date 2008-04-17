@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.35 2008/04/11 14:56:55 slacapra Exp $"
-__version__ = "$Revision: 1.35 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.36 2008/04/15 09:45:15 spiga Exp $"
+__version__ = "$Revision: 1.36 $"
 
 import sys
 import os
@@ -954,3 +954,54 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         return jdl, filelist
 
 
+    ##########################################################################
+
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+    
+        celist = []
+
+        if seList == ['']: seList = None  
+        if blacklist == ['']: blacklist = None
+        if whitelist == ['']: whitelist = None
+
+        if blacklist is None :
+            blacklist = []
+
+        if len( tags ) != 0 :
+            query =  ','.join(  ["Tag=%s" % tag for tag in tags ] ) + \
+                    ',CEStatus=Production'
+        else :
+            query = 'CEStatus=Production'
+
+        command = "export X509_USER_PROXY=" + self.cert + '; '
+    
+        if seList == None :
+            command += " lcg-info --vo " + vo + " --list-ce --query " + \
+                       "\'" + query + "\' --sed"
+            out = self.ExecuteCommand( command )
+            out = out.split()
+            for ce in out :
+                if ce.find( "blah" ) == -1 and ce not in blacklist :
+                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
+                        celist.append( ce )
+            
+            return celist
+        
+        for se in seList :
+            singleComm = command + " lcg-info --vo " + vo + \
+                         " --list-ce --query " + \
+                         "\'" + query + ",CloseSE="+ se + "\' --sed"
+
+            out = self.ExecuteCommand( singleComm )
+            out = out.split()
+
+            for ce in out :
+                if ce.find( "blah" ) == -1 and ce not in blacklist :
+                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
+                        celist.append( ce )
+
+        return celist

@@ -8,8 +8,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 import logging
-__version__ = "$Id: SchedulerInterface.py,v 1.15 2008/04/08 09:52:05 farinafa Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.16 2008/04/15 11:56:58 afanfani Exp $"
+__revision__ = "$Revision: 1.16 $"
 
 class SchedulerInterface(object):
     """
@@ -185,78 +185,9 @@ class SchedulerInterface(object):
         """
         raise NotImplementedError
 
-    ##########################################################################
-
     def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
         """
-        execute a resources discovery through bdii
+        perform a resources discovery
         returns a list of resulting sites
         """
-    
-        celist = []
-
-        if seList == ['']: seList = None  
-        if blacklist == ['']: blacklist = None
-        if whitelist == ['']: whitelist = None
-
-        if blacklist is None :
-            blacklist = []
-
-        if len( tags ) != 0 :
-            query =  ','.join(  ["Tag=%s" % tag for tag in tags ] ) + \
-                    ',CEStatus=Production'
-        else :
-            query = 'CEStatus=Production'
-
-        command = "export X509_USER_PROXY=" + self.cert + '; '
-    
-        if seList == None :
-            command += " lcg-info --vo " + vo + " --list-ce --query " + \
-                       "\'" + query + "\' --sed"
-            out = self.ExecuteCommand( command )
-            out = out.split()
-            for ce in out :
-                # blacklist
-                if ce.find( "blah" ) == -1:
-                  passblack=1
-                  if len(blacklist)>0:
-                   for ceb in blacklist :
-                      if ce.find(ceb)>0:
-                         passblack=0
-                # whitelist if surviving the blacklist selection
-                if passblack:
-                   if whitelist is None or len(whitelist)==0 :
-                      celist.append( ce )
-                   else:
-                      for cew in whitelist:
-                         if ce.find(cew)>=0:
-                            celist.append( ce )
-            
-            return celist
-        
-        for se in seList :
-            singleComm = command + " lcg-info --vo " + vo + \
-                         " --list-ce --query " + \
-                         "\'" + query + ",CloseSE="+ se + "\' --sed"
-
-            out = self.ExecuteCommand( singleComm )
-            out = out.split()
-            for ce in out :
-                # blacklist
-                if ce.find( "blah" ) == -1:
-                  passblack=1 
-                  if len(blacklist)>0:
-                   for ceb in blacklist :
-                      if ce.find(ceb)>0:
-                         passblack=0
-                # whitelist if surviving the blacklist selection
-                if passblack:
-                   if whitelist is None or len(whitelist)==0 :
-                      celist.append( ce )
-                   else:
-                      for cew in whitelist:
-                         if ce.find(cew)>=0:
-                            celist.append( ce )  
-
-
-        return celist
+        raise NotImplementedError

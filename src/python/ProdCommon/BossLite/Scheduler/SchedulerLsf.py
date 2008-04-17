@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.0 2008/03/05 18:51:41 slacapra Exp $"
-__version__ = "$Revision: 1.0 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.1 2008/04/11 14:56:55 slacapra Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import re,os
 
@@ -223,3 +223,12 @@ class SchedulerLsf (SchedulerInterface) :
         execute any post mortem command such as logging-info
         and write it in outfile
         """
+
+
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+        """
+        perform a resources discovery
+        returns a list of resulting sites
+        """
+
+        return  seList
