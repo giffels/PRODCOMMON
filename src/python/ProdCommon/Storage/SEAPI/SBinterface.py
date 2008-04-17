@@ -2,6 +2,7 @@ from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
+from ProtocolRfio import ProtocolRfio
 from SElement import SElement
 from Exceptions import MissingDestination, ProtocolUnknown, ProtocolMismatch
 
@@ -127,4 +128,11 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy)
             self.storage1.workon = ""
             return val
+        elif self.storage1.protocol == 'gridftp':
+            self.storage1.workon = source
+            val = self.storage1.action.getTurl(self.storage1, proxy)
+            self.storage1.workon = ""
+            return val
+        elif self.storage1.protocol == 'local' or self.storage1.protocol == "rfio":
+            return ""
 

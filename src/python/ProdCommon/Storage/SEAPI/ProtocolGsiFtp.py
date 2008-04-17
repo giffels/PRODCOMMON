@@ -90,3 +90,8 @@ class ProtocolGsiFtp(Protocol):
             return False
         return True
  
+    def getTurl(self, source, proxy = None):
+        """
+        return the gsiftp turl
+        """
+        return source.getLynk()
