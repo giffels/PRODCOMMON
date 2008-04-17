@@ -3,6 +3,7 @@ from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
+from ProtocolRfio import ProtocolRfio
 
 class SElement(object):
     """
@@ -10,7 +11,7 @@ class SElement(object):
     [just a bit more then a classis struct type]
     """
 
-    _protocols = ["srmv1", "srmv2", "local", "gridftp"]
+    _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -30,7 +31,7 @@ class SElement(object):
         """
         if protocol == "srmv1" or protocol == "srmv2":
             return "8443"
-        elif protocol == "local" or protocol == "gridftp":
+        elif protocol == "local" or protocol == "gridftp" or protocol == "rfio":
             return ""
         else:
             raise ProtocolUnknown()
@@ -47,6 +48,8 @@ class SElement(object):
             return ProtocolLocal()
         elif protocol == "gridftp":
             return ProtocolGsiFtp()
+        elif protocol == "rfio":
+            return ProtocolRfio()
         else:
             raise ProtocolUnknown()
 
@@ -64,6 +67,8 @@ class SElement(object):
             return ("file://" + self.workon)
         elif self.protocol == "gridftp":
             return ("gsiftp://" + self.hostname + join("/", self.workon) )
+        elif self.protocol == "rfio":
+            return (join(self.hostname, "/", self.workon))
         else:
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
