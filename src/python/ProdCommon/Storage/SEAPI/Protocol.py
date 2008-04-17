@@ -88,5 +88,16 @@ class Protocol(object):
         """
         import commands
         status, output = commands.getstatusoutput( command )
+        self.__logout__("Executed:\t" + str(command) + "\n" + \
+                        "Done with exit code:\t" + str(status) + "\n" + \
+                        " and output:\n" + str(output) + "\n" )
         return status, output
 
+    def __logout__(self, mess):
+        """
+        write to log file
+        """
+        logfile = "./.SEinteraction.log"
+        import datetime
+        writeout = str(datetime.datetime.now()) + ":\n" + str(mess) + "\n"
+        file(logfile, 'a').write(writeout)
