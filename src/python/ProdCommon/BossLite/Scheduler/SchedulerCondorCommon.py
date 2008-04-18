@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.2 2008/04/15 22:10:31 ewv Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.3 2008/04/16 19:42:15 ewv Exp $"
+__version__ = "$Revision: 1.3 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -204,20 +204,23 @@ class SchedulerCondorCommon(SchedulerInterface) :
     # HACK: Don't know how to solve this one. When I kill jobs they are set to "K" but since
     # CondorG cancelled jobs leave the queue, they are in the same state as "Done" jobs, so
     # crab -status eventually shows them as "Done"
+    from xml.dom.minidom import parse
 
     jobIds = {}
     bossIds = {}
-    statusMap = {'I':'SS', 'U':'RE', 'H':'SA', # Convert Condor status
-                 'R':'R',  'X':'SK', 'C':'SD'} # to BossLite Status codes
-    textStatusMap = {
-            'I':'Scheduled',
-            'R':'Running',
-            'U':'Ready',
-            'X':'Cancelled',
-            'C':'Done',
-            'H':'Aborted'
+
+    statusCodes = {'0':'RE', '1':'SS', '2':'R',  # Convert Condor integer status
+                   '3':'SK', '4':'SD', '5':'SA'} # to BossLite Status codes
+    textStatusCodes = {
+            '0':'Ready',
+            '1':'Scheduled',
+            '2':'Running',
+            '3':'Cancelled',
+            '4':'Done',
+            '5':'Aborted'
     }
 
+    # Get a list of the schedd's that were used to submit this task
     for id in schedIdList:
 
       bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default?
@@ -231,54 +234,46 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     for schedd in jobIds.keys() :
       condor_status = {}
-      # call condor_q
-      cmd = 'condor_q -name ' + schedd + ' ' + os.environ['USER']
+      cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
       (input_file, output_file) = os.popen4(cmd)
 
-      # parse output and store Condor status in dictionary { 'id' : 'status' , ... }
-      for line in output_file.readlines() :
-        line = line.strip()
-        try:
-          line_array = line.split()
-          if line_array[1].strip() == os.environ['USER'] :
-            condor_status[line_array[0].strip()] = line_array[5].strip()
-        except:
-          pass
+      # Throw away first three lines. Junk
+      output_file.readline()
+      output_file.readline()
+      output_file.readline()
 
-      # go through job_ids[schedd] and save status in bossIds
-      # Each status record looks like this:
-      # 'https://lb105.cern.ch:9000/tf9-in51MqEOzm_yTCvWEg': {'status': 'SU', 'statusScheduler': 'Submitted', 'destination': '', 'service': 'wms102.cern.ch', 'statusReason': ''}
+      # Start parsing XML
+      dom = parse(output_file)
+      classAd = dom.getElementsByTagName("classads")[0]
+      jobList = classAd.getElementsByTagName("c")  # Jobs are "c" elements
+      for job in jobList:
+        globalJobId = ''
+        jobId = 0
+        jobStatus = None
+        gridJobId = None
+        adList = job.getElementsByTagName("a")     # Job attributes are "a" elements
+        for ad in adList:
+          name = ad.getAttribute('n')
+          if name=="JobStatus":
+            jobStatus = (ad.getElementsByTagName("i")[0]).firstChild.data
+          if name=="GlobalJobId":
+            globalJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
+            host,task,jobId = globalJobId.split("#")
+          if name=="GridJobId":
+            gridJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
 
-      for id in jobIds[schedd] :
-        for condor_id in condor_status.keys() :
-          if condor_id.find(id) != -1:
-            status = condor_status[condor_id]
-            statusRecord = {}
-            statusRecord['status']          = statusMap.get(status,'UN')
-            statusRecord['statusScheduler'] = textStatusMap.get(status,'Undefined')
-            statusRecord['statusReason']    = ''
-            statusRecord['service']         = service
+        # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
+        if bossIds.has_key(schedd+'//'+jobId):
+          statusRecord = {}
+          statusRecord['status']          = statusCodes.get(jobStatus,'UN')
+          statusRecord['statusScheduler'] = textStatusCodes.get(jobStatus,'Undefined')
+          statusRecord['statusReason']    = ''
+          statusRecord['service']         = service
+#          statusRecord['destination']         = "my host"
 
-            bossIds[schedd+'//'+id] = statusRecord
+          bossIds[schedd+'//'+jobId] = statusRecord
 
     return bossIds
-
-    # Condor_q has an XML output mode that might be worth investigating.
-    # Parsing with Xml2Obj looks like this
-
-    #cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
-    #(input_file, output_file) = os.popen4(cmd)
-    #parser = Xml2Obj.Xml2Obj()
-    #print "line:",output_file.readline()
-    #print "line:",output_file.readline()
-    #print "line:",output_file.readline()
-    #topElement = parser.Parse(output_file)
-    #for child in topElement.getElements(): # These are the job entries
-      #for item in child.getElements():
-        #pprint.pprint(inspect.getmembers(item))
-        #dict = item.getAttributes()
-        #if dict['a'] == 'JobStatus':
-          #condor_status[
 
   def kill( self, schedIdList, service):
     """
