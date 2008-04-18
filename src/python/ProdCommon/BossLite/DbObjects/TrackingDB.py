@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.4 2008/03/06 23:16:21 spiga Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: TrackingDB.py,v 1.5 2008/03/19 17:23:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -237,7 +237,7 @@ class TrackingDB:
         return fields
 
     ##DanieleS NOTE: ToBeRevisited 
-    def distinctAttr(self, template, value_1 , value_2, list ,  strict = True):
+    def distinctAttr(self, template, value_1 , value_2, alist ,  strict = True):
 
         # get template information
         mapping = template.__class__.fields.items()
@@ -264,7 +264,7 @@ class TrackingDB:
         else:
             operator = ' like '
         listOfFields = ' or '.join([('%s'+ operator +'"%s"') % (field, value)
-                                     for value in list
+                                     for value in alist
                                 ])
         # check for general query for all objects
         if listOfFields != "":
