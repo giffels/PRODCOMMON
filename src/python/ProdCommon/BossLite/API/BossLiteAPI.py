@@ -394,7 +394,7 @@ class BossLiteAPI(object):
         if jobAttributes is None and jobRange != "all" :
             jobAttributes = {}
         taskList = []
-        jobList= jobRange
+        jobList = jobRange
 
         # identify jobRange
         if type( jobRange ) == list :
@@ -417,7 +417,7 @@ class BossLiteAPI(object):
                 task.load( self.db, deep = False )
             
                 # select jobs
-                jobs = []
+                # jobs = []
                 for jobId in jobList:
                     jobAttributes.update( { 'taskId' : int( task['id'] ),
                                             'jobId' : int( jobId ) } )
@@ -548,7 +548,7 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
-    def loadCreated( self, taskRange="all", jobRange="all") :
+    def loadCreated( self, attributes = None ) :
         """
         retrieve information from db for jobs created but not submitted using:
         - range of tasks
@@ -558,23 +558,24 @@ class BossLiteAPI(object):
         """
 
         retJobList = []
+        if attributes is None :
+            attributes = { 'status' : 'W' }
+        else :
+            attributes['status'] = 'W'
 
-        # load all jobs from task
-        jobList =  self.loadJobsByAttr( {} )
+        # load W
+        jobList = self.loadJobsByRunningAttr( attributes )
 
-        # evaluate just jobs without running instances or with status W
-        for job in jobList :
-            job.getRunningInstance( self.db )            
-            if job.runningJob is None or job.runningJob == [] \
-                   or job.runningJob['status'] == 'W' :
-                retJobList.append( job )
+        # load C
+        attributes['status'] = 'C'
+        jobList.extend( self.loadJobsByRunningAttr( attributes ) )
 
         return retJobList
 
 
     ##########################################################################
 
-    def loadSubmitted( self, taskRange="all", jobRange="all" ) :
+    def loadSubmitted( self, attributes = None ) :
         """
         retrieve information from db for jobs submitted using:
         - range of tasks
@@ -583,12 +584,17 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
-        return self.loadJobsByRunningAttr( { 'closed' : None } )
+        if attributes is None :
+            attributes = { 'closed' : 'N' }
+        else :
+            attributes['closed'] = 'N'
+
+        return self.loadJobsByRunningAttr( attributes )
 
     ##########################################################################
 
         
-    def loadEnded( self, taskRange="all", jobRange="all") :
+    def loadEnded( self, attributes = None ) :
         """
         retrieve information from db for jobs successfully using:
         - range of tasks
@@ -597,12 +603,17 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
-        return self.loadJobsByRunningAttr( { 'status' : 'SD' } )
+        if attributes is None :
+            attributes = { 'status' : 'SD' }
+        else :
+            attributes['status'] = 'SD'
+
+        return self.loadJobsByRunningAttr( attributes )
 
     ##########################################################################
 
         
-    def loadFailed( self, taskRange="all", jobRange="all") :
+    def loadFailed( self, attributes = None ) :
         """
         retrieve information from db for jobs aborted/killed using:
         - range of tasks
@@ -611,11 +622,17 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
+        if attributes is None :
+            attributes = { 'status' : 'A' }
+        else :
+            attributes['status'] = 'A'
+
         # load aborted
-        jobList = self.loadJobsByRunningAttr( { 'status' : 'SA' } )
+        jobList = self.loadJobsByRunningAttr( attributes )
         
         # load killed
-        jobList.extend( self.loadJobsByRunningAttr( { 'status' : 'SK' } ) )
+        attributes['status'] = 'K'
+        jobList.extend( self.loadJobsByRunningAttr( attributes ) )
         
         return jobList
 
@@ -641,7 +658,7 @@ class BossLiteAPI(object):
         return jobList
 
     ## DanieleS. NOTE: ToBeRevisited
-    def loadJobDistAttr( self, taskId, value_1, value_2, list ) :
+    def loadJobDistAttr( self, taskId, value_1, value_2, alist ) :
         """
         retrieve job distinct job attribute 
         """
@@ -655,7 +672,7 @@ class BossLiteAPI(object):
         job = Job( jobAttributes )
 
         # load job from db
-        jobList = self.db.distinctAttr(job, value_1, value_2, list )
+        jobList = self.db.distinctAttr(job, value_1, value_2, alist )
 
         return jobList
 
