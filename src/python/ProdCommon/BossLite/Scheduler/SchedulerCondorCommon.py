@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.3 2008/04/16 19:42:15 ewv Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.4 2008/04/18 18:08:45 ewv Exp $"
+__version__ = "$Revision: 1.4 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -162,7 +162,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
       build a job jdl
       """
 
-      # general part
       jdl  = ''
 
       # Massage arguments into condor friendly (space delimited) form w/o backslashes
@@ -199,12 +198,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
     query status of jobs
     """
-    #import Xml2Obj
+    from xml.dom.minidom import parse
 
     # HACK: Don't know how to solve this one. When I kill jobs they are set to "K" but since
     # CondorG cancelled jobs leave the queue, they are in the same state as "Done" jobs, so
     # crab -status eventually shows them as "Done"
-    from xml.dom.minidom import parse
 
     jobIds = {}
     bossIds = {}
@@ -251,6 +249,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobId = 0
         jobStatus = None
         gridJobId = None
+        execHost = None
         adList = job.getElementsByTagName("a")     # Job attributes are "a" elements
         for ad in adList:
           name = ad.getAttribute('n')
@@ -261,6 +260,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             host,task,jobId = globalJobId.split("#")
           if name=="GridJobId":
             gridJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
+            URI = gridJobId.split(' ')[1]
+            execHost = URI.split(':')[0]
 
         # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
         if bossIds.has_key(schedd+'//'+jobId):
@@ -269,7 +270,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
           statusRecord['statusScheduler'] = textStatusCodes.get(jobStatus,'Undefined')
           statusRecord['statusReason']    = ''
           statusRecord['service']         = service
-#          statusRecord['destination']         = "my host"
+          if execHost:
+            statusRecord['destination']         = execHost
 
           bossIds[schedd+'//'+jobId] = statusRecord
 
