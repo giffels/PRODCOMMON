@@ -8,8 +8,8 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: Scheduler.py,v 1.18 2008/04/02 12:23:28 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: Scheduler.py,v 1.19 2008/04/15 09:45:15 spiga Exp $"
+__revision__ = "$Revision: 1.19 $"
 
 
 ##########################################################################
@@ -141,7 +141,8 @@ class Scheduler(object):
             # query performed through single job ids
             if objType == 'node' :
                 for job in obj.jobs :
-                    if self.schedObj.valid( job.runningJob ):
+                    if self.schedObj.valid( job.runningJob ) and \
+                           job.runningJob['status'] != 'SD':
                         schedIds.append( job.runningJob['schedulerId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
                                                self.parameters['service'], \

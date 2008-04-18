@@ -7,9 +7,9 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
-import logging
-__version__ = "$Id: SchedulerInterface.py,v 1.16 2008/04/15 11:56:58 afanfani Exp $"
-__revision__ = "$Revision: 1.16 $"
+
+__version__ = "$Id: SchedulerInterface.py,v 1.17 2008/04/17 10:54:32 slacapra Exp $"
+__revision__ = "$Revision: 1.17 $"
 
 class SchedulerInterface(object):
     """
@@ -34,7 +34,8 @@ class SchedulerInterface(object):
 
         if runningJob is not None \
                and runningJob['schedulerId'] is not None \
-               and runningJob['closed'] == "N" :
+               and runningJob['closed'] == "N" \
+               and runningJob['status'] not in ['A', 'K', 'E'] :
             return True
         else :
             return False

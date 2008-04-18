@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.9 2008/03/31 09:29:16 gcodispo Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.10 2008/04/02 12:23:50 gcodispo Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import sys
 import os
@@ -53,9 +53,9 @@ def getJobInfo( jobidInfo, states ):
         'Scheduled':'SS',
         'Running':'R',
         'Done':'SD',
-        'Cleared':'SE',
-        'Aborted':'SA',
-        'Cancelled':'SK',
+        'Cleared':'E',
+        'Aborted':'A',
+        'Cancelled':'K',
         'Unknown':'UN',
         'Done(failed)':'DA'   
         }
