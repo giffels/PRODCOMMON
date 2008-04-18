@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.4 2008/04/18 18:08:45 ewv Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.5 2008/04/18 18:25:46 ewv Exp $"
+__version__ = "$Revision: 1.5 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -262,6 +262,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             gridJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
             URI = gridJobId.split(' ')[1]
             execHost = URI.split(':')[0]
+          if name=="MATCH_GLIDEIN_Site":
+            execHost = (ad.getElementsByTagName("s")[0]).firstChild.data
 
         # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
         if bossIds.has_key(schedd+'//'+jobId):
@@ -271,7 +273,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           statusRecord['statusReason']    = ''
           statusRecord['service']         = service
           if execHost:
-            statusRecord['destination']         = execHost
+            statusRecord['destination']   = execHost
 
           bossIds[schedd+'//'+jobId] = statusRecord
 
