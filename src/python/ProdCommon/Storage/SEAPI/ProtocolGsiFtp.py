@@ -24,9 +24,14 @@ class ProtocolGsiFtp(Protocol):
 
     def createDir(self, source, proxy):
         """
+        edg-gridftp-mkdir
         """
         fullSource = source.getLynk()
-        cmd = "export X509_USER_PROXY=" + proxy + "; edg-gridftp-mkdir "+ fullSource
+        options = ""
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+
+        cmd = "edg-gridftp-mkdir " + options + " "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -59,11 +64,15 @@ class ProtocolGsiFtp(Protocol):
 
     def delete(self, source, proxy):
         """
-        lcg-del
+        edg-gridftp-rm
         """
         fullSource = source.getLynk()
 
-        cmd = "export X509_USER_PROXY=" + proxy + "; lcg-del "+ fullSource
+        options = ""
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+        cmd = "edg-gridftp-rm " + options + " " + fullSource
+
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -73,14 +82,15 @@ class ProtocolGsiFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-
     def checkExists(self, source, proxy):
         """
         edg-gridftp-ls
         """
         fullSource = source.getLynk()
-        
-        cmd = "export X509_USER_PROXY=" + proxy + "; edg-gridftp-ls "+ fullSource
+        options = ""
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+        cmd = "edg-gridftp-ls " + options + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
  
         ### simple output parsing ###
