@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.5 2008/04/18 18:25:46 ewv Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.6 2008/04/18 18:50:26 ewv Exp $"
+__version__ = "$Revision: 1.6 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -35,6 +35,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
     self.execDir = os.getcwd()+'/'
     self.workingDir = ''
     self.condorTemp = ''
+
+    self.batchSize = 20 # Number of jobs to submit per site before changing CEs
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -163,7 +165,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
       """
 
       jdl  = ''
-
+      jobId = int(job['jobId'])
       # Massage arguments into condor friendly (space delimited) form w/o backslashes
       jobArgs = job['arguments']
       jobArgs = jobArgs.replace(',',' ')
@@ -189,7 +191,15 @@ class SchedulerCondorCommon(SchedulerInterface) :
       # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
       for line in jdlLines:
-        jdl += line.strip() + '\n';
+        [key,value] = line.split('=',1)
+        if key.strip() == "schedulerList":
+          CEs = value.split(',')
+          ceSlot = (jobId-1) // self.batchSize
+          ceNum = ceSlot%len(CEs)
+          ce = CEs[ceNum]
+          jdl += "globusscheduler = " + ce + '\n'
+        else:
+          jdl += line.strip() + '\n';
 
       filelist = ''
       return jdl, filelist
@@ -259,9 +269,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
             globalJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
             host,task,jobId = globalJobId.split("#")
           if name=="GridJobId":
-            gridJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
-            URI = gridJobId.split(' ')[1]
-            execHost = URI.split(':')[0]
+            idString = ad.getElementsByTagName("s")
+            if idString:
+              gridJobId = (idString[0]).firstChild.data
+              URI = gridJobId.split(' ')[1]
+              execHost = URI.split(':')[0]
           if name=="MATCH_GLIDEIN_Site":
             execHost = (ad.getElementsByTagName("s")[0]).firstChild.data
 
