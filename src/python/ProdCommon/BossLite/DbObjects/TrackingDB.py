@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.5 2008/03/19 17:23:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: TrackingDB.py,v 1.6 2008/04/18 14:02:40 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -141,6 +141,148 @@ class TrackingDB:
 
     ##########################################################################
 
+    def selectJoin(self, template, jTemplate, jMap=None, strict = True):
+        """
+        _selectJoin_
+
+        select from template and jTemplate, using join condition from jMap
+        """
+
+        # get template information
+        mapping = template.__class__.fields.items()
+        tableName = template.__class__.tableName
+
+        # get template information
+        jMapping = jTemplate.__class__.fields.items()
+        jTableName = jTemplate.__class__.tableName
+
+        # get field mapping in order
+        fieldMapping = [(key, value) for key, value in mapping]
+        objectFields = [key[0] for key in fieldMapping]
+        dbFields = [key[1] for key in fieldMapping]
+
+        # get field mapping in order for join table
+        jFieldMapping = [(key, value) for key, value in jMapping]
+        jObjectFields = [key[0] for key in jFieldMapping]
+        jDbFields = [key[1] for key in jFieldMapping]
+
+        # get matching information from template
+        fields = self.getFields(template)
+
+        # get matching information from join template
+        jFields = self.getFields(jTemplate)
+
+        # determine if comparison is strict or not
+        if strict:
+            operator = '='
+        else:
+            operator = ' like '
+        listOfFields = ' and '.join([('t1.%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+                                     for key, value in fields
+                                ])
+        jListOfFields = ' and '.join([('t2.%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+                                     for key, value in jFields
+                                ])
+
+        # check for general query for all objects
+        if listOfFields != "" and  jListOfFields != "":
+            listOfFields = " where " + listOfFields + " and " + jListOfFields
+
+        elif listOfFields != "":
+            listOfFields = " where " + listOfFields
+
+        elif jListOfFields != "":
+            listOfFields = " where " + jListOfFields
+
+        # evaluate join conditions
+        if jMap is not None :
+            jLFields = ' and '.join([('t1.%s=t2.%s') % ( \
+                template.__class__.fields[key], \
+                jTemplate.__class__.fields[value])
+                                     for key, value in jMap.iteritems()
+                                     ])
+
+            
+        if jLFields != "":
+            if listOfFields != "" :
+                listOfFields += " and " + jLFields
+            else :
+                listOfFields = " where " + jLFields
+
+        # prepare query
+        query = 'select ' + ', '.join( ['t1.'+ key for key in dbFields] ) + \
+                ', ' + ', '.join( ['t2.'+ key for key in jDbFields] ) + \
+                ' from ' +  tableName + ' t1, ' + \
+                jTableName + ' t2 ' + listOfFields
+
+        # execute query
+        try:
+            self.session.execute(query)
+        except Exception, msg:
+            raise DbError(msg)
+
+        # get all information
+        results = self.session.fetchall()
+        
+        # build objects
+        theList = []
+        size =  len( mapping )
+        for row in results:
+
+            # create a single object
+            template = deepcopy(template)
+            obj = type(template)()
+            
+            # create a single object
+            jTemplate = deepcopy(jTemplate)
+            jObj = type(jTemplate)()
+
+            # fill fields
+            for key, value in zip(objectFields, row):
+                    
+                # check for NULLs
+                if value is None:
+                    obj[key] = template.defaults[key]
+
+                # check for lists
+                elif type(template.defaults[key]) == list:
+                    obj[key] = eval(value)
+
+                # other objects get casted automatically
+                else:
+                    obj[key] = value
+
+                # mark them as existing in database
+                obj.existsInDataBase = True
+
+
+            # fill fields
+            for key, value in zip(jObjectFields, row[size:]):
+                
+                # check for NULLs
+                if value is None:
+                    jObj[key] = jTemplate.defaults[key]
+
+                # check for lists
+                elif type(jTemplate.defaults[key]) == list:
+                    jObj[key] = eval(value)
+
+                # other jObjects get casted automatically
+                else:
+                    jObj[key] = value
+
+                # mark them as existing in database
+                jObj.existsInDataBase = True
+
+            # add to list 
+            theList.append((obj, jObj))
+
+        # return the list
+        return theList
+
+
+    ##########################################################################
+
     def update(self, template):
         """
         _update_
@@ -238,6 +380,9 @@ class TrackingDB:
 
     ##DanieleS NOTE: ToBeRevisited 
     def distinctAttr(self, template, value_1 , value_2, alist ,  strict = True):
+        """
+        _distinctAttr_
+        """
 
         # get template information
         mapping = template.__class__.fields.items()
@@ -254,7 +399,7 @@ class TrackingDB:
                 dbFields = [val]
                 objectFields = [key]
             if key == value_2:
-                field= val 
+                field = val 
         #        break
         # get matching information from template
      #   fields = self.getFields(template)
@@ -320,7 +465,7 @@ class TrackingDB:
     ### DanieleS 
     def distinct(self, template, value_1 , strict = True):
         """
-        _select_
+        _distinct_
         """
         # get template information
         mapping = template.__class__.fields.items()
