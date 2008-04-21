@@ -33,6 +33,7 @@ class ProtocolSrmv1(Protocol):
         option = self._options + " -retry_num=1 "
         if proxy is not None:
             option += " -x509_user_proxy=%s " % proxy
+            self.checkUserProxy(proxy)
         
         cmd = "srmcp " +option +" "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
@@ -66,6 +67,7 @@ class ProtocolSrmv1(Protocol):
         option = self._options + " -retry_num=1 "
         if proxy is not None:
             option += " -x509_user_proxy=%s " % proxy
+            self.checkUserProxy(proxy)
 
         cmd = "srm-advisory-delete " +option +" "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
@@ -102,6 +104,7 @@ class ProtocolSrmv1(Protocol):
         option = self._options + " -retry_num=0 "
         if proxy is not None:
             option += " -x509_user_proxy=%s " % proxy
+            self.checkUserProxy(proxy)
 
         cmd = "srm-get-metadata " +option +" "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
@@ -150,6 +153,8 @@ class ProtocolSrmv1(Protocol):
         cmd = ""
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
+            self.checkUserProxy(proxy)
+
         cmd += "lcg-gt -T srmv1 -D srmv1 " + str(fullSource) + " gsiftp"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)

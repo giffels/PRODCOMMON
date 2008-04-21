@@ -30,6 +30,7 @@ class ProtocolGsiFtp(Protocol):
         options = ""
         if proxy is not None:
             options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
 
         cmd = "edg-gridftp-mkdir " + options + " "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
@@ -46,6 +47,9 @@ class ProtocolGsiFtp(Protocol):
         """
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
+
+        if proxy is not None:
+            self.checkUserProxy(proxy)
 
         cmd = "export X509_USER_PROXY=" + proxy + "; lcg-cp --vo cms "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
@@ -71,6 +75,8 @@ class ProtocolGsiFtp(Protocol):
         options = ""
         if proxy is not None:
             options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
+
         cmd = "edg-gridftp-rm " + options + " " + fullSource
 
         exitcode, outputs = self.executeCommand(cmd)
@@ -90,6 +96,8 @@ class ProtocolGsiFtp(Protocol):
         options = ""
         if proxy is not None:
             options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
+
         cmd = "edg-gridftp-ls " + options + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
  

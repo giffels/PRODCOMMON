@@ -1,3 +1,4 @@
+from Exceptions import OperationException
 
 class Protocol(object):
     '''Represents any Protocol'''
@@ -79,7 +80,31 @@ class Protocol(object):
         return [int, int, int]
         """
         raise NotImplementedError
- 
+
+    def checkUserProxy( self, cert='' ):
+        """
+        Retrieve the user proxy for the task
+        If the proxy is valid pass, otherwise raise an axception
+        """
+
+        command = 'voms-proxy-info'
+
+        if cert != '' :
+            command += ' --file ' + cert
+
+        status, output = self.executeCommand( command )
+
+        if status != 0:
+            raise OperationException("Missing Proxy", "Missing Proxy")
+
+        try:
+            output = output.split("timeleft  :")[1].strip()
+        except IndexError:
+            raise OperationException("Missing Proxy", "Missing Proxy")
+
+        if output == "0:00:00":
+            raise OperationException("Proxy Expired", "Proxy Expired")
+
     def executeCommand(self, command):
         """
         common method to execute commands
