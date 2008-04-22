@@ -1009,7 +1009,7 @@ updating the database server:
             subNode.setAttribute('fileBlock', str( job['fileBlock']) )
             subNode.setAttribute('submissionNumber',  str(job['submissionNumber']) )
             #
-            dlsD = ','.join(eval(job['dlsDestination']))
+            dlsD = ','.join(job['dlsDestination'])
             subNode.setAttribute('dlsDestination', dlsD )
             node.appendChild(subNode)
 
