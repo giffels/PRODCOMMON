@@ -133,7 +133,7 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-    def query( self, taskId, jobRange='all', queryType='node', runningAttrs=None ):
+    def query( self, taskId, jobRange='all', queryType='node', runningAttrs=None, strict=True ):
         """
         query status and eventually other scheduler related information
         
@@ -148,7 +148,9 @@ class BossLiteAPISched(object):
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange, runningAttrs)[0]
+        task = self.bossLiteSession.load( taskId, jobRange, \
+                                          runningAttrs=runningAttrs, \
+                                          strict=strict )[0]
 
         # scheduler query
         self.scheduler.query( task, queryType )
