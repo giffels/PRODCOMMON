@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.8 2008/04/21 15:37:20 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: Job.py,v 1.9 2008/04/22 08:14:20 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -234,7 +234,7 @@ class Job(DbObject):
             runningJob['taskId'] = self.data['taskId']
         if not runningJob.valid(['jobId']) :
             runningJob['jobId'] = self.data['jobId']
-        if not runningJob.valid(['submissionNumber']) :
+        if not runningJob.valid(['submission']) :
             runningJob['submission'] = self.data['submissionNumber']
 
         # check consistency
