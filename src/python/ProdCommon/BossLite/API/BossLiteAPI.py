@@ -324,9 +324,8 @@ class BossLiteAPI(object):
             jobAttributes['taskId'] = int( task['id'] )
             jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
                                                all , strict)
-            if len( jobs) == 1 :
-                task.appendJob( jobs[0] )
-                
+            task.addJobs( jobs )
+
         # load jobs from list
         else :
             for jobId in jobList:
