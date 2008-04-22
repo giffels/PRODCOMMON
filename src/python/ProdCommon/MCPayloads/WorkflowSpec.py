@@ -39,6 +39,7 @@ class WorkflowSpec:
         self.parameters.setdefault("RequestCategory", "PreProd")
         self.parameters.setdefault("WorkflowType", "Processing")
         self.parameters.setdefault("UseLumiserverUrl", "")
+        self.pythonLibs = []
         self._NodeMap = {}
 
     def workflowName(self):
@@ -131,6 +132,27 @@ class WorkflowSpec:
         """
         self.parameters['UseLumiserverUrl']=url
         return
+
+
+    def pythonLibraries(self):
+        """
+        _pythonLibraries_
+
+        Return list of additional py libs needed for this workflow
+
+        """
+        return self.pythonLibs
+
+    def addPythonLibrary(self, libraryName):
+        """
+        _addPythonLibrary_
+
+        Add the name of a python lib that needs to be packaged for
+        runtime. libraryName should be a string of the form
+        "pkg1.pkg2.module"
+        """
+        self.pythonLibs.append(libraryName)
+        return
     
     
     def makeIMProv(self):
@@ -144,6 +166,11 @@ class WorkflowSpec:
         for key, val in self.parameters.items():
             paramNode = IMProvNode("Parameter", str(val), Name = str(key))
             node.addNode(paramNode)
+        libs = IMProvNode("PythonLibraries")
+        for lib in self.pythonLibs:
+            libs.addNode(IMProvNode("PythonLibrary", None, Name = str(lib)))
+        node.addNode(libs)
+        
         payload = IMProvNode("Payload")
         payload.addNode(self.payload.makeIMProv())
         node.addNode(payload)
@@ -183,7 +210,8 @@ class WorkflowSpec:
         """
         paramQ = IMProvQuery("/WorkflowSpec/Parameter")
         payloadQ = IMProvQuery("/WorkflowSpec/Payload/PayloadNode")
-
+        libsQ = IMProvQuery(
+            "/WorkflowSpec/PythonLibraries/PythonLibrary[attribute(\"Name\")]")
         #  //
         # // Extract Params
         #//
@@ -195,7 +223,13 @@ class WorkflowSpec:
             paramValue = str(item.chardata)
             self.parameters[str(paramName)] = paramValue
 
-
+        #  //
+        # // Extract python lib list
+        #//
+        libNames = libsQ(improvNode)
+        for item in libNames:
+            self.addPythonLibrary(str(item))
+            
         #  //
         # // Extract Payload Nodes
         #//
