@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.7 2008/03/31 12:44:50 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: Job.py,v 1.8 2008/04/21 15:37:20 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -224,6 +224,34 @@ class Job(DbObject):
 
     ##########################################################################
 
+    def setRunningInstance(self, runningJob):
+        """
+        set currently running job
+        """
+
+        # check if the running instance is plain
+        if not runningJob.valid(['taskId']) :
+            runningJob['taskId'] = self.data['taskId']
+        if not runningJob.valid(['jobId']) :
+            runningJob['jobId'] = self.data['jobId']
+        if not runningJob.valid(['submissionNumber']) :
+            runningJob['submission'] = self.data['submissionNumber']
+
+        # check consistency
+        if runningJob['taskId'] != self.data['taskId'] or \
+               runningJob['jobId'] != self.data['jobId'] or \
+               runningJob['submission'] != self.data['submissionNumber'] :
+            raise JobError("Invalid running instance with keys %s.%s.%s " + \
+                           " instead of %s.%s.%s" % ( \
+            runningJob['taskId'], runningJob['jobId'],
+            runningJob['submission'], self.data['taskId'], \
+            self.data['jobId'], self.data['submissionNumber'] ) )
+        
+        # store instance
+        self.runningJob = runningJob
+
+    ##########################################################################
+
     def newRunningInstance(self, runningJob, db):
         """
         set currently running job
@@ -261,7 +289,7 @@ class Job(DbObject):
 
         # no running instance
         if runningJobs == []:
-            self.runningJobs = []
+            self.runningJob = []
 
         # one running instance
         elif len(runningJobs) == 1:
@@ -292,7 +320,7 @@ class Job(DbObject):
         # do for all of them (should be one...)
         for job in runningJobs:
 
-            job["closed"] = "Y";
+            job["closed"] = "Y"
             job.update(db)
 
 
