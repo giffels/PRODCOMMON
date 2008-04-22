@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.6 2008/04/18 18:50:26 ewv Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.7 2008/04/18 22:03:05 ewv Exp $"
+__version__ = "$Revision: 1.7 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -22,6 +22,10 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+
+import pdb           # FIXME: Remove
+import pprint        # FIXME: Remove
+import inspect       # FIXME: Remove
 
 class SchedulerCondorCommon(SchedulerInterface) :
   """
@@ -63,9 +67,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     # Figure out our environment, make some directories
 
-    #self.execDir = os.getcwd()+'/'
-    # better to use os join, etc.
-    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    # HACK: Script dir ends in /job/blah.sh, strip those parts off
+    scriptDir = os.path.split(obj['scriptName'])[0]
+    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
     self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
@@ -92,7 +96,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         # Build JDL file
         jdl, sandboxFileList = self.decode( job, requirements)
-        jdl += 'Executable = %s\n' % (self.execDir+obj['scriptName'])
+        jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
         # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
