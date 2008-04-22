@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.7 2008/04/21 15:37:56 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: TrackingDB.py,v 1.8 2008/04/22 08:09:56 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -106,7 +106,7 @@ class TrackingDB:
 
         # get all information
         results = self.session.fetchall()
-        
+
         # build objects
         theList = []
         for row in results:
@@ -273,6 +273,7 @@ class TrackingDB:
             listOfFields = " where " + jListOfFields
 
         # evaluate join conditions
+        jLFields = ''
         if jMap is not None :
             jLFields = ' and '.join([('t1.%s=t2.%s') % ( \
                 template.__class__.fields[key], \
@@ -280,15 +281,12 @@ class TrackingDB:
                                      for key, value in jMap.iteritems()
                                      ])
 
-        if jLFields != "":
-            if listOfFields != "" :
-                listOfFields += " and " + jLFields
-            else :
-                listOfFields = " where " + jLFields
+        if jLFields != '':
+            jLFields = ' on (' + jLFields + ') '
 
         # what kind of join?
         if jType == '' :
-            qJoin = ', '
+            qJoin = ' inner join '
         elif jType == 'left' :
             qJoin = ' left join '
         elif jType == 'right' :
@@ -298,7 +296,7 @@ class TrackingDB:
         query = 'select ' + ', '.join( ['t1.'+ key for key in dbFields] ) + \
                 ', ' + ', '.join( ['t2.'+ key for key in jDbFields] ) + \
                 ' from ' +  tableName + ' t1 ' + qJoin + \
-                jTableName + ' t2 ' + listOfFields
+                jTableName + ' t2 ' + jLFields + listOfFields
 
         # execute query
         try:
@@ -308,7 +306,7 @@ class TrackingDB:
 
         # get all information
         results = self.session.fetchall()
-        
+
         # build objects
         theList = []
         size =  len( mapping )
@@ -359,7 +357,7 @@ class TrackingDB:
                 # mark them as existing in database
                 jObj.existsInDataBase = True
 
-            # add to list 
+            # add to list
             theList.append((obj, jObj))
 
         # return the list
