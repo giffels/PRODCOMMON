@@ -122,9 +122,10 @@ class BossLiteAPI(object):
             self.dbInstance = SqliteInstance(self.dbConfig)
 
         # create a session and db access
-        self.session = SafeSession(dbInstance = self.dbInstance)
-        self.db = TrackingDB(self.session)
-
+        self.session = None
+        self.db = None
+        # self.session = SafeSession(dbInstance = self.dbInstance)
+        # self.db = TrackingDB(self.session)
 
     ##########################################################################
     def connect ( self ) :
@@ -324,7 +325,7 @@ class BossLiteAPI(object):
             jobAttributes['taskId'] = int( task['id'] )
             jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
                                                all , strict)
-            task.addJobs( jobs )
+            task.appendJobs( jobs )
 
         # load jobs from list
         else :
@@ -563,10 +564,10 @@ class BossLiteAPI(object):
                                          strict=strict, jType=jType )
         
         # recall jobs
-        for rJob, job in  runJobList :
-            job.runningJob = rJob
-        
-        #return jobList
+        for runningJob, job in  runJobList :
+            job.setRunningInstance( runningJob )
+
+        # return
         return [key[1] for key in runJobList]
 
     ##########################################################################
