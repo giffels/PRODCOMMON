@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.6 2008/04/18 14:02:40 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: TrackingDB.py,v 1.7 2008/04/21 15:37:56 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -141,7 +141,85 @@ class TrackingDB:
 
     ##########################################################################
 
-    def selectJoin(self, template, jTemplate, jMap=None, strict = True):
+    def selectDistinct(self, template, distinctAttr, strict = True):
+        """
+        _select_
+        """
+
+        # get template information
+        mapping = template.__class__.fields.items()
+        tableName = template.__class__.tableName
+
+        # get field mapping in order
+        fieldMapping = [(key, value) for key, value in mapping]
+        objectFields = [key[0] for key in fieldMapping]
+        distFields = [key[1] for key in fieldMapping if key[0] in distinctAttr]
+
+        # get matching information from template
+        fields = self.getFields(template)
+
+        # determine if comparison is strict or not
+        if strict:
+            operator = '='
+        else:
+            operator = ' like '
+        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+                                     for key, value in fields
+                                ])
+
+        # check for general query for all objects
+        if listOfFields != "":
+            listOfFields = " where " + listOfFields
+
+        # prepare query
+        query = 'select distinct (' + ', '.join(distFields) + ')' + \
+                ' from ' +  tableName + \
+                ' ' + listOfFields
+
+        # execute query
+        try:
+            self.session.execute(query)
+        except Exception, msg:
+            raise DbError(msg)
+
+        # get all information
+        results = self.session.fetchall()
+        
+        # build objects
+        theList = []
+        for row in results:
+
+            # create a single object
+            template = deepcopy(template)
+            obj = type(template)()
+
+            # fill fields
+            for key, value in zip(objectFields, row):
+
+                # check for NULLs
+                if value is None:
+                    obj[key] = template.defaults[key]
+
+                # check for lists
+                elif type(template.defaults[key]) == list:
+                    obj[key] = eval(value)
+
+                # other objects get casted automatically
+                else:
+                    obj[key] = value
+
+                # mark them as existing in database
+                obj.existsInDataBase = True
+
+            # add to list 
+            theList.append(obj)
+
+        # return the list
+        return theList
+
+    ##########################################################################
+
+    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType=''):
         """
         _selectJoin_
 
@@ -202,17 +280,24 @@ class TrackingDB:
                                      for key, value in jMap.iteritems()
                                      ])
 
-            
         if jLFields != "":
             if listOfFields != "" :
                 listOfFields += " and " + jLFields
             else :
                 listOfFields = " where " + jLFields
 
+        # what kind of join?
+        if jType == '' :
+            qJoin = ', '
+        elif jType == 'left' :
+            qJoin = ' left join '
+        elif jType == 'right' :
+            qJoin = ' right join '
+
         # prepare query
         query = 'select ' + ', '.join( ['t1.'+ key for key in dbFields] ) + \
                 ', ' + ', '.join( ['t2.'+ key for key in jDbFields] ) + \
-                ' from ' +  tableName + ' t1, ' + \
+                ' from ' +  tableName + ' t1 ' + qJoin + \
                 jTableName + ' t2 ' + listOfFields
 
         # execute query
