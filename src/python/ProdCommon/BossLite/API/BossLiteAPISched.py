@@ -56,23 +56,24 @@ class BossLiteAPISched(object):
     ##########################################################################
 
 
-    def submit( self, task, jobRange='all', requirements='', jobAttributes=None ):
+    def submit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
         """
-        works for Task objects
+        eventually creates running instances and submit to the scheduler
         
-        just create running instances and submit to the scheduler
-        in case of first submission
-        
-        archive existing submission an create a new entry for the next
-        submission (i.e. duplicate the entry with an incremented
-        submission number)
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - requirements are scheduler attributes affecting all jobs
+        - jobAttributes is a map of running attributes
+                        to be applyed at the job level
         """
 
         # load task
-        taskId = task['id']
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # create or recreate running instances
+        # create or load running instances
         for job in task.jobs:
             self.bossLiteSession.getRunningInstance(
                 job, { 'schedulerAttributes' : jobAttributes }
@@ -92,12 +93,17 @@ class BossLiteAPISched(object):
 
     def resubmit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
         """
-        unlike previous method, works using taskId
-        and load itself the Task object
-        
         archive existing submission an create a new entry for the next
         submission (i.e. duplicate the entry with an incremented
-        submission number)
+        submission number) instances and submit to the scheduler
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - requirements are scheduler attributes affecting all jobs
+        - jobAttributes is a map of running attributes
         """
 
         # load task
@@ -127,17 +133,22 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-    def query( self, taskId, jobRange='all', queryType='node' ):
+    def query( self, taskId, jobRange='all', queryType='node', runningAttrs=None ):
         """
         query status and eventually other scheduler related information
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - query type can be 'parent' if the status check is meant
+                                  to be performed via bulk id
+        - all: if False, only jobs with non closed running instances are loaded
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        #for job in task.jobs:
-        #    self.bossLiteSession.getRunningInstance( job )
+        task = self.bossLiteSession.load( taskId, jobRange, runningAttrs)[0]
 
         # scheduler query
         self.scheduler.query( task, queryType )
@@ -154,14 +165,17 @@ class BossLiteAPISched(object):
     def getOutput( self, taskId, jobRange='all', outdir='' ):
         """
         retrieve output or just put it in the destination directory
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - outdir is the output directory for files retrieved
         """
 
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.getOutput( task, outdir )
@@ -174,17 +188,19 @@ class BossLiteAPISched(object):
 
     ##########################################################################
     
-    def kill( self, task, jobRange='all' ):
+    def kill( self, taskId, jobRange='all' ):
         """
         kill the job instance
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
         """
 
         # load task
-        task = self.bossLiteSession.load( task['id'], jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
+        task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         # scheduler query
         self.scheduler.kill( task )
@@ -201,6 +217,12 @@ class BossLiteAPISched(object):
     def matchResources( self, taskId, jobRange='all', requirements='', jobAttributes=None ) :
         """
         perform a resources discovery
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
         """
 
         # load task
@@ -231,11 +253,21 @@ class BossLiteAPISched(object):
     def jobDescription ( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
         """
         query status and eventually other scheduler related information
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - requirements are scheduler attributes affecting all jobs
+        - jobAttributes is a map of running attributes
+                        to be applyed at the job level
         """
 
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
+        # create or load running instances
         for job in task.jobs:
             self.bossLiteSession.getRunningInstance(
                 job, { 'schedulerAttributes' : jobAttributes }
@@ -249,6 +281,12 @@ class BossLiteAPISched(object):
         """
         purge the service used by the scheduler from job files
         not available for every scheduler
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
         """
         
         # load task
@@ -265,6 +303,13 @@ class BossLiteAPISched(object):
     def postMortem ( self, taskId, jobId, outfile ) :
         """
         execute any post mortem command such as logging-info
+        
+        - taskId can be both a Task object or the task id
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+        - outfile is the physical file where to log post mortem informations
         """
 
         # load task
