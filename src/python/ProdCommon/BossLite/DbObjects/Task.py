@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.4 2008/03/26 15:25:10 gcodispo Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: Task.py,v 1.5 2008/04/02 15:57:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -67,7 +67,8 @@ class Task(DbObject):
 
         # initialize job set struture
         self.jobs = []
-        self.jobIndex = 0
+        self.jobLoaded = 0
+        self.jobIndex = []
 
     ##########################################################################
 
@@ -87,6 +88,7 @@ class Task(DbObject):
                 )
 
         # insert job
+        self.jobIndex.append( job['jobId'] )
         self.jobs.append(job)
 
     ##########################################################################
@@ -97,14 +99,15 @@ class Task(DbObject):
         """
 
         # assign id to the job
-        self.jobIndex += 1
-        job['jobId'] = self.jobIndex
+        self.jobLoaded += 1
+        job['jobId'] = self.jobLoaded
 
         # assign task id if possible
         if self.data['id'] is not None:
             job['taskId'] = self.data['id']
 
         # insert job
+        self.jobIndex.append( job['jobId'] )
         self.jobs.append(job)
 
     ##########################################################################
@@ -116,6 +119,18 @@ class Task(DbObject):
 
         for job in listOfJobs:
             self.addJob(job)
+
+    ##########################################################################
+
+    def getJob(self, jobId):
+        """
+        return the job with matching jobId
+        """
+
+        try :
+            return self.jobs[ self.jobIndex.index( jobId ) ]
+        except ValueError:
+            return None
 
     ##########################################################################
 
@@ -332,9 +347,9 @@ class Task(DbObject):
         for job in self.jobs:
 
             # comput full path for output files
-            job['fullPathOutputFiles'] = [os.path.join(outputDirectory, file)
-                                          for file in job['outputFiles']
-                                          if file != '']
+            job['fullPathOutputFiles'] = [os.path.join(outputDirectory, ofile)
+                                          for ofile in job['outputFiles']
+                                          if ofile != '']
 
         # get input directory
         if self.data['globalSandbox'] is not None:
@@ -346,7 +361,7 @@ class Task(DbObject):
         for job in self.jobs:
 
             # comput full path for output files
-            job['fullPathInputFiles'] = [os.path.join(inputDirectory, file)
-                                         for file in job['inputFiles']
-                                         if file != '']
+            job['fullPathInputFiles'] = [os.path.join(inputDirectory, ifile)
+                                         for ifile in job['inputFiles']
+                                         if ifile != '']
 
