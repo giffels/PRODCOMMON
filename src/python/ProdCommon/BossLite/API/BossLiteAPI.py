@@ -282,7 +282,7 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
-    def loadTask( self, taskId, jobAttributes=None ) :
+    def loadTask( self, taskId ) :
         """
         retrieve task information from db using task id
         and defined jobAttributes
@@ -296,14 +296,47 @@ class BossLiteAPI(object):
         task = Task()
         task['id'] = taskId
 
-
-        # create template for jobs with particular jobAttributes
-        if jobAttributes is not None:
-            job = Job(jobAttributes)
-            task.addJob(job)
-
         # load task
         task.load(self.db)
+        
+        return task
+
+    ##########################################################################
+
+        
+    def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True ) :
+        """
+        retrieve task information from db using task id
+        and defined static/running attributes.
+        Does not allow load of jobs without running instance
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # defining defaults
+        if jobAttributes is None :
+            jobAttributes = {}
+
+        # load all jobs
+        if jobList is None :
+            jobAttributes['taskId'] = int( task['id'] )
+            jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
+                                               all , strict)
+            if len( jobs) == 1 :
+                task.appendJob( jobs[0] )
+                
+        # load jobs from list
+        else :
+            for jobId in jobList:
+                if task.getJob( jobId ) is None :
+                    jobAttributes['jobId']  = int( jobId )
+                    jobAttributes['taskId'] = int( task['id'] )
+                    jobs = self.loadJobsByRunningAttr(
+                        runningAttrs, jobAttributes, all, strict )
+                    if len( jobs) == 1 :
+                        task.appendJob( jobs[0] )
         
         return task
 
@@ -372,10 +405,10 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
-    def load( self, taskRange, jobRange="all", jobAttributes=None ) :
+    def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True ) :
         """
         retrieve information from db for:
-        - range of tasks
+        - range of tasks or even a task object
         - range of jobs inside a task or a python list of id's
         - various job attributes (logic and)
 
@@ -391,42 +424,32 @@ class BossLiteAPI(object):
             self.connect()
 
         # defining default
-        if jobAttributes is None and jobRange != "all" :
-            jobAttributes = {}
         taskList = []
-        jobList = jobRange
 
         # identify jobRange
         if type( jobRange ) == list :
             jobList = jobRange
-        elif jobRange != 'all' :
+        elif jobRange == 'all' :
+            jobList = None
+        else:
             jobList = parseRange( jobRange )
+
+        # already loaded task?
+        if type( taskRange ) == Task :
+            self.loadTaskJobs(taskRange, jobList, \
+                              jobAttributes, runningAttrs, strict=strict )
+            taskList.append( taskRange )
+            return taskList
 
         # loop over tasks
         for taskId in parseRange( taskRange ) :
 
-            # create template
+            # create template and load
             task = Task()
-
-            # load task
-            if jobRange == 'all' :
-                task = self.loadTask( taskId, jobAttributes )
-
-            else :
-                task['id'] = int(taskId)
-                task.load( self.db, deep = False )
-            
-                # select jobs
-                # jobs = []
-                for jobId in jobList:
-                    jobAttributes.update( { 'taskId' : int( task['id'] ),
-                                            'jobId' : int( jobId ) } )
-                    job = Job( jobAttributes )
-                    job.load( self.db )
-                    task.appendJob( job )
-                    # jobs.extend( self.db.select(job) )
-
-                # task.addJobs(jobs)
+            task['id'] = int( taskId )
+            task.load( self.db, deep = False )
+            self.loadTaskJobs( task, jobList, jobAttributes, \
+                               runningAttrs, strict=strict )
             
             # update task list
             task.updateInternalData()
@@ -436,7 +459,7 @@ class BossLiteAPI(object):
     
     ##########################################################################
 
-        
+
     def loadJob( self, taskId, jobId ) :
         """
         retrieve job information from db using task and job id
@@ -504,7 +527,7 @@ class BossLiteAPI(object):
 
     ##########################################################################
 
-    def loadJobsByRunningAttr( self, runningAttrs ) :
+    def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True ) :
         """
         retrieve job information from db for job
         whose running instance match attributes
@@ -514,14 +537,31 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
+        # creating running jobs
+        if runningAttrs is None :
+            run = RunningJob()
+        else:
+            run = RunningJob( runningAttrs )
+
         # creating jobs
-        run = RunningJob( runningAttrs )
+        if jobAttributes is None :
+            job = Job()
+        else :
+            job = Job( jobAttributes )
+
+        # if requested, with a right join is possible to fill a running
+        # instance where missing
+        if all :
+            jType = 'right'
+        else :
+            jType = ''
 
         # load job from db        
-        runJobList = self.db.selectJoin(run, Job(), \
-                                        {'jobId' : 'jobId',
-                                         'taskId' : 'taskId',
-                                         'submission' : 'submissionNumber'} )
+        runJobList = self.db.selectJoin( run, job, \
+                                         {'jobId' : 'jobId',
+                                          'taskId' : 'taskId',
+                                          'submission' : 'submissionNumber'}, \
+                                         strict=strict, jType=jType )
         
         # recall jobs
         for rJob, job in  runJobList :
@@ -628,6 +668,52 @@ class BossLiteAPI(object):
         attributes['status'] = 'K'
         jobList.extend( self.loadJobsByRunningAttr( attributes ) )
         
+        return jobList
+
+    ##########################################################################
+
+    def loadJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
+        """
+        retrieve job templates with distinct job attribute 
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating job
+        if jobAttributes is None :
+            job = Job()
+        else :
+            job = Job( jobAttributes )
+        job['taskId'] =  taskId
+
+        # load job from db
+        jobList = self.db.selectDistinct(job, distinctAttr)
+
+        return jobList
+
+    ##########################################################################
+
+    def loadRunJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
+        """
+        retrieve job templates with distinct job attribute 
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating job
+        if jobAttributes is None :
+            job = RunningJob()
+        else :
+            job = RunningJob( jobAttributes )
+        job['taskId'] =  taskId
+
+        # load job from db
+        jobList = self.db.selectDistinct(job, distinctAttr)
+
         return jobList
 
     ##########################################################################
@@ -889,6 +975,9 @@ updating the database server:
     ##########################################################################
 
     def serialize( self, task ):
+        """
+        obtain XML object from task object
+        """
         from xml.dom import minidom
 
         cfile = minidom.Document()
