@@ -263,7 +263,6 @@ class BossLiteAPI(object):
 
         
     ##########################################################################
-
         
     def updateDB( self, obj ) :
         """
@@ -282,8 +281,7 @@ class BossLiteAPI(object):
 
     ##########################################################################
 
-        
-    def loadTask( self, taskId ) :
+    def loadTask( self, taskId, deep=True ) :
         """
         retrieve task information from db using task id
         and defined jobAttributes
@@ -298,13 +296,12 @@ class BossLiteAPI(object):
         task['id'] = taskId
 
         # load task
-        task.load(self.db)
-        
+        task.load(self.db, deep)
+
         return task
 
     ##########################################################################
 
-        
     def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True ) :
         """
         retrieve task information from db using task id
@@ -769,6 +766,10 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
+        # update object
+        obj.update(self.db)
+        self.session.commit()
+
         # the object passed is a Job
         if type(obj) == Job :
             obj.closeRunningInstance( self.db )
@@ -779,10 +780,7 @@ class BossLiteAPI(object):
             for job in obj.jobs:
                 job.closeRunningInstance( self.db )
 
-        # update
-        obj.update(self.db)
         self.session.commit()
-
 
     ##########################################################################
 
