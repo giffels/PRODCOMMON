@@ -433,6 +433,15 @@ class BossLiteAPI(object):
 
         # already loaded task?
         if type( taskRange ) == Task :
+            if jobList is not None:
+                s = set (
+                    jobList + [ str(job['jobId']) for job in taskRange.jobs ]
+                    )
+                jobList = [x for x in s]
+                jobList.sort()
+            elif len( taskRange.jobs ) != 0: 
+                jobList = [ str(job['jobId']) for job in taskRange.jobs ]
+
             self.loadTaskJobs(taskRange, jobList, \
                               jobAttributes, runningAttrs, strict=strict )
             taskList.append( taskRange )
