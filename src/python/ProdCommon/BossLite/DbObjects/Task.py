@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.6 2008/04/22 08:10:58 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: Task.py,v 1.7 2008/04/22 14:36:47 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -139,7 +139,7 @@ class Task(DbObject):
         """
 
         try :
-            return self.jobs[ self.jobIndex.index( jobId ) ]
+            return self.jobs[ self.jobIndex.index( long(jobId ) ) ]
         except ValueError:
             return None
 
