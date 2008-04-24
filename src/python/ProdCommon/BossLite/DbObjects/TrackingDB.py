@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.9 2008/04/22 14:36:26 gcodispo Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: TrackingDB.py,v 1.10 2008/04/24 17:21:32 gcodispo Exp $"
+__revision__ = "$Revision: 1.10 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -44,10 +44,6 @@ class TrackingDB:
         fields = self.getFields(obj)
         fieldList = ','.join([x[0] for x in fields])
         valueList = ','.join([x[1] for x in fields])
-
-        # add missing quotes to value list if not empty
-        if valueList.strip() != "":
-            valueList = '"' + valueList + '"'
 
         # prepare query 
         query = 'insert into ' + obj.tableName + '(' + fieldList + ') ' + \
@@ -404,6 +400,7 @@ class TrackingDB:
                 keysSpec
         # execute query
         try:
+            print query
             rows = self.session.execute(query)
         except Exception, msg:
             raise DbError(msg)
