@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.36 2008/04/15 09:45:15 spiga Exp $"
-__version__ = "$Revision: 1.36 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.37 2008/04/17 10:54:31 slacapra Exp $"
+__version__ = "$Revision: 1.37 $"
 
 import sys
 import os
@@ -378,28 +378,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         """
 
-        # the object passed is a runningJob
-        if type(obj) == RunningJob :
-
-            # check for the RunningJob integrity
-            if not self.valid( obj ):
-                raise SchedulerError('invalid object', str( obj ))
-
-            # retrieve output
-            self.getWMSOutput(
-                [ obj['schedulerId'] ], outdir, obj['service']
-                )
-
         # the object passed is a job
-        elif type(obj) == Job :
+        if type(obj) == Job :
 
             # check for the RunningJob integrity
             if not self.valid( obj.runningJob ):
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # retrieve output
-            self.getWMSOutput( [ obj.runningJob['schedulerId'] ], \
-                               outdir, obj.runningJob['service']  )
+            self.getWMSOutput( [ obj ], outdir, obj.runningJob['service']  )
+
+            # errors?
+            if obj.runningJob.isError() :
+                raise SchedulerError( str( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] ))
 
         # the object passed is a Task
         elif type(obj) == Task :
@@ -413,7 +405,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 if self.valid( job.runningJob ):
                     if not schedIdList.has_key( job.runningJob['service'] ) :
                         schedIdList[job.runningJob['service']] = []
-                    schedIdList[job.runningJob['service']].append( job.runningJob['schedulerId'] )
+                    schedIdList[job.runningJob['service']].append( job )
 
             # retrieve output for all jobs
             for service, idList in schedIdList.iteritems() :
@@ -426,7 +418,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
     ##########################################################################
 
-    def getWMSOutput( self, schedIdList,  outdir, service ):
+    def getWMSOutput( self, jobList,  outdir, service ):
         """
         Manage objects to retrieve the output
         """
@@ -435,9 +427,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wms = service.strip()
         if len(wms) == 0 :
             return
-
-        # prepare the list of possible exceptions
-        errors = {}
 
         # look for a well formed name
         if wms.find( 'https') < 0 :
@@ -448,11 +437,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wmproxy.soapInit()
 
         # loop ove jobs
-        for job in schedIdList:
+        for job in jobList:
 
             # skip malformed id
-            job = str( job ).strip()
-            if job is None or len(job) == 0 :
+            jobId = str( job.runningJob['schedulerId'] ).strip()
+            if jobId is None or len(jobId) == 0 :
                 continue
 
             # eventual error container
@@ -460,10 +449,28 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # get file list
             try :
-                filelist = wmproxy.getOutputFileList( job )
+                filelist = wmproxy.getOutputFileList( jobId )
             except BaseException, err:
-                errors[ job ] = err.toString()
-                filelist = []
+                output = err.toString()
+
+                # proxy expired: skip!
+                if output.find( 'Error with credential' ) != -1 :
+                    job.runningJob.errors.append( [ 'Error with credential', \
+                                                    output ] )
+                    continue
+
+                # purged: probably already retrieved. Archive
+                elif output.find( "has been purged" ) :
+                    job.runningJob['statusHistory'].append( output )
+                    job.runningJob['statusHistory'].append(
+                        'Job has been purged, recovering status' )
+                    continue
+
+                # not ready for GO: waiting for next round
+                elif output.find( "Job current status doesn" ) != -1 :
+                    job.runningJob.errors.append(
+                        [ "output not available", output ] )
+                    continue
 
             # retrieve files
             retrieved = 0
@@ -505,25 +512,22 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # no files?
             if retrieved == 0:
-                # errors[ job ] = 'Warning: non files retrieved'
-                print  'Warning: non files retrieved'
+                job.runningJob['statusHistory'].append(
+                    'Warning: non files retrieved' )
+                job.runningJob.errors.append( ['Missing Files' , \
+                                    'Warning: non files retrieved'] )
 
             # got errors?
             if joberr != '' :
-                errors[ job ] = joberr
+                job.runningJob.errors.append(
+                    ['problems with output retrieval', joberr] )
             else :
                 # try to purge files
                 try :
-                    wmproxy.jobPurge( job )
+                    wmproxy.jobPurge( jobId )
                 except BaseException, err:
-                    # errors[ job ] = "WARNING : " + err.toString()
-                    print "WARNING : " + err.toString()
-
-        # raise exception for failed operations
-        if len( errors ) != 0 :
-            raise SchedulerError(
-                'scheduler interaction failed for some jobs ', str(errors)
-                )
+                    job.runningJob['statusHistory'].append(
+                        "WARNING : " + err.toString())
                 
 
     ##########################################################################
@@ -757,7 +761,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         prepare file for submission
         """
-        if type(obj) == RunningJob or type(obj) == Job :
+        if type(obj) == Job :
             return self.singleApiJdl ( obj, requirements )
         elif type(obj) == Task :
             return self.collectionApiJdl ( obj, requirements )

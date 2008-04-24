@@ -7,9 +7,10 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
+import time
 
-__version__ = "$Id: Scheduler.py,v 1.22 2008/04/18 16:09:23 gcodispo Exp $"
-__revision__ = "$Revision: 1.22 $"
+__version__ = "$Id: Scheduler.py,v 1.23 2008/04/22 11:03:48 gcodispo Exp $"
+__revision__ = "$Revision: 1.23 $"
 
 
 ##########################################################################
@@ -63,6 +64,7 @@ class Scheduler(object):
         if type( obj ) == Job :
             obj.runningJob['schedulerId'] = jobAttributes[ obj['name'] ]
             obj.runningJob['status'] = 'S'
+            obj.runningJob['submissionTime'] = int( time.time() )
             obj.runningJob['statusScheduler'] = 'Submitted'
             obj.runningJob['schedulerParentId'] = obj.runningJob['schedulerId']
             obj.runningJob['scheduler'] = self.scheduler
@@ -70,11 +72,13 @@ class Scheduler(object):
             
         # update multiple jobs of a task
         elif type( obj ) == Task :
+            timestamp = int( time.time() )
             for job in obj.jobs :
                 if job.runningJob is None or job.runningJob['closed'] == "Y" :
                     continue
                 job.runningJob['schedulerId'] = jobAttributes[ job['name'] ]
                 job.runningJob['status'] = 'S'
+                job.runningJob['submissionTime'] = timestamp
                 job.runningJob['statusScheduler'] = 'Submitted'
                 job.runningJob['schedulerParentId'] = bulkId
                 job.runningJob['scheduler'] = self.scheduler
@@ -189,6 +193,7 @@ class Scheduler(object):
             # update object
             obj['status'] = 'E'
             obj['closed'] = 'Y'
+            obj['getOutputTime'] = int( time.time() )
             obj['statusScheduler'] = "Retrieved"
 
         # the object passed is a job
@@ -197,16 +202,29 @@ class Scheduler(object):
             # update object
             obj.runningJob['status'] = 'E'
             obj.runningJob['closed'] = 'Y'
+            obj.runningJob['getOutputTime'] = int( time.time() )
             obj.runningJob['statusScheduler'] = "Retrieved"
 
         # the object passed is a Task
         elif type(obj) == Task :
- 
+            timestamp = int( time.time() )
+
+            errors = ''
             # update objects: still missing handling for partial success
             for job in obj.jobs:
-                job.runningJob['status'] = 'E'
-                job.runningJob['closed'] = 'Y'
-                job.runningJob['statusScheduler'] = "Retrieved"
+                if job.runningJob.isError() :
+                    errors += str( job.runningJob.errors )
+                else :
+                    job.runningJob['status'] = 'E'
+                    job.runningJob['closed'] = 'Y'
+                    job.runningJob['getOutputTime'] = timestamp
+                    job.runningJob['statusScheduler'] = "Retrieved"
+
+            # handle errors
+            if errors != '' :
+                raise SchedulerError('interaction failed for some jobs', \
+                                     errors )
+        
 
         # unknown object type
         else:
