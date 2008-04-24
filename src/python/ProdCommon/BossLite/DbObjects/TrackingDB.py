@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.10 2008/04/24 17:21:32 gcodispo Exp $"
-__revision__ = "$Revision: 1.10 $"
+__version__ = "$Id: TrackingDB.py,v 1.11 2008/04/24 17:31:11 gcodispo Exp $"
+__revision__ = "$Revision: 1.11 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -400,7 +400,6 @@ class TrackingDB:
                 keysSpec
         # execute query
         try:
-            print query
             rows = self.session.execute(query)
         except Exception, msg:
             raise DbError(msg)
