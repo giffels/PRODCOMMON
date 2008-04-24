@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.7 2008/04/18 22:03:05 ewv Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.8 2008/04/22 18:36:00 ewv Exp $"
+__version__ = "$Revision: 1.8 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -278,7 +278,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
               gridJobId = (idString[0]).firstChild.data
               URI = gridJobId.split(' ')[1]
               execHost = URI.split(':')[0]
-          if name=="MATCH_GLIDEIN_Site":
+          if name=="MATCH_GLIDEIN_Gatekeeper":
             execHost = (ad.getElementsByTagName("s")[0]).firstChild.data
 
         # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
@@ -310,8 +310,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
     User files from CondorG appear asynchronously in the cache directory
     """
 
-    #self.execDir = os.getcwd()+'/'
-    self.workingDir = self.execDir+obj['scriptName'].split('/')[0]+'/'
+    # HACK: Script dir ends in /job/blah.sh, strip those parts off
+    scriptDir = os.path.split(obj['scriptName'])[0]
+    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
     self.condorTemp = self.workingDir+'share/.condor_temp'
 
     if type(obj) == RunningJob: # The object passed is a RunningJob
