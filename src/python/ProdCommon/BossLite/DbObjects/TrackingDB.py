@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.8 2008/04/22 08:09:56 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: TrackingDB.py,v 1.9 2008/04/22 14:36:26 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -43,7 +43,7 @@ class TrackingDB:
         # get field information
         fields = self.getFields(obj)
         fieldList = ','.join([x[0] for x in fields])
-        valueList = '","'.join([x[1].replace('"', '""') for x in fields])
+        valueList = ','.join([x[1] for x in fields])
 
         # add missing quotes to value list if not empty
         if valueList.strip() != "":
@@ -86,7 +86,7 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+        listOfFields = ' and '.join([('%s'+ operator +'%s') % (key, value)
                                      for key, value in fields
                                 ])
 
@@ -163,7 +163,7 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+        listOfFields = ' and '.join([('%s'+ operator +'%s') % (key, value)
                                      for key, value in fields
                                 ])
 
@@ -255,11 +255,12 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('t1.%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
+        listOfFields = ' and '.join([('t1.%s'+ operator +'%s') % (key, value)
                                      for key, value in fields
                                 ])
-        jListOfFields = ' and '.join([('t2.%s'+ operator +'"%s"') % (key, value.replace('"', '""'))
-                                     for key, value in jFields
+        jListOfFields = ' and '.join([('t2.%s'+ operator +'%s') \
+                                      % (key, value)
+                                      for key, value in jFields
                                 ])
 
         # check for general query for all objects
@@ -373,6 +374,8 @@ class TrackingDB:
         # get template information
         tableName = template.__class__.tableName
         tableIndex = template.__class__.tableIndex
+        tableIndexRes = [ template.mapping[key]
+                          for key in template.__class__.tableIndex ]
 
         # get specification for keys (if any)
         keys = [(template.mapping[key], template.data[key])
@@ -387,13 +390,11 @@ class TrackingDB:
         # define update list (does not include keys)
         fields = self.getFields(template)
 
-        #listOfFields = ','.join(['%s="%s"' % (key, value)
-        ## Added replace DanieleS.
-        listOfFields = ','.join(['%s="%s"' % (key, value.replace('"','""'))
+        listOfFields = ','.join(['%s=%s' % (key, value)
                                      for key, value in fields
-                                     if key not in tableIndex
+                                     if key not in tableIndexRes
                                 ])
-        
+
         # return if there are no fields to update
         if listOfFields == "":
             return 0
@@ -422,7 +423,7 @@ class TrackingDB:
 
         # get matching information from template
         fields = self.getFields(template)
-        listOfFields = ' and '.join(['%s="%s"' % (key, value)
+        listOfFields = ' and '.join(['%s=%s' % (key, value)
                                      for key, value in fields
                                 ])
 
@@ -451,12 +452,22 @@ class TrackingDB:
         # get access to default values and mappings
         defaults = obj.__class__.defaults
         mapping = obj.__class__.fields
+        tableIndex = obj.__class__.tableIndex
 
         # build list of fields and values with non default values
-        fields = [(mapping[key], str(value)) \
-                     for key, value in obj.data.items()
-                     if value != defaults[key]
-                 ]
+        #fields = [(mapping[key], str(value).replace('"','""')) \
+        #          for key, value in obj.data.items()
+        #          if value != defaults[key]
+        #]#
+
+        fields = []
+        for key, value in obj.data.items() :
+            if value != defaults[key] :
+                if type( defaults[key] ) == int and key not in tableIndex :
+                    fields.append( (mapping[key], str(value)) )
+                else:
+                    fields.append( (mapping[key], \
+                                    '"' + str(value).replace('"','""') + '"'))
 
         # return it
         return fields
@@ -491,7 +502,7 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' or '.join([('%s'+ operator +'"%s"') % (field, value)
+        listOfFields = ' or '.join([('%s'+ operator +'%s') % (field, value)
                                      for value in alist
                                 ])
         # check for general query for all objects
@@ -573,7 +584,7 @@ class TrackingDB:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('%s'+ operator +'"%s"') % (key, value)
+        listOfFields = ' and '.join([('%s'+ operator +'%s') % (key, value)
                                      for key, value in fields
                                 ])
 

@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.7 2008/04/02 08:24:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: RunningJob.py,v 1.8 2008/04/08 12:36:56 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -65,12 +65,12 @@ class RunningJob(DbObject):
                  'statusReason' : None,
                  'statusHistory' : [],
                  'destination' : None,
-                 'lbTimestamp' : None,
-                 'submissionTime' : None,
+                 'lbTimestamp' : 0,
+                 'submissionTime' : 0,
                  'startTime' : None,
                  'stopTime' : None,
                  'outputDirectory' : None,
-                 'getOutputTime' : None,
+                 'getOutputTime' : 0,
                  'executionHost' : None,
                  'executionPath' : None,
                  'executionUser' : None,
@@ -97,6 +97,19 @@ class RunningJob(DbObject):
 
         # call super class init method
         super(RunningJob, self).__init__(parameters)
+
+        # set operational errors
+        self.errors = []        
+
+    ##########################################################################
+
+    def isError(self):
+        """
+        returns the status based on the self.errors list
+        """
+
+        return ( len( self.errors ) != 0 )
+        
 
     ##########################################################################
 
@@ -174,11 +187,15 @@ class RunningJob(DbObject):
             raise JobError("The following job instance cannot be updated," + \
                      " since it is not completely specified: %s" % self)
 
+        # update status_history with error list
+        for err in self.errors :
+            self.data['statusHistory'].append( str(err) ) 
+        
         # update it on database
         try:
             status = db.update(self)
-        #    if status < 1:
-        #        raise JobError("Cannot update job %s" % str(self))
+            if status < 1:
+                raise JobError("Cannot update job %s" % str(self))
 
         # database error
         except DbError, msg:
@@ -221,6 +238,6 @@ class RunningJob(DbObject):
         for key in self.fields:
             self.data[key] = objects[0][key]
 
-       # update status
+        # update status
         self.existsInDataBase = True
 
