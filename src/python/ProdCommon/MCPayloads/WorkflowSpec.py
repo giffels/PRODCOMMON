@@ -281,6 +281,7 @@ class WorkflowSpec:
         self._NodeMap = {}
         result = JobSpec()
         result.payload = self._CloneTreeNode(self.payload)
+        result.parameters.update(self.parameters)
         return result
     
 
