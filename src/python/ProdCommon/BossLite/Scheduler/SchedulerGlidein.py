@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.5 2008/04/17 21:50:38 ewv Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.6 2008/04/24 15:23:07 ewv Exp $"
+__version__ = "$Revision: 1.6 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -41,5 +41,7 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       jdl += '+JOB_Gatekeeper = "$$(GLIDEIN_Gatekeeper:Unknown)" \n'
       jdl += '+JOB_GridType = "$$(GLIDEIN_GridType:Unknown)" \n'
       jdl += '+JOB_GlobusRSL = "$$(GLIDEIN_GlobusRSL:Unknown)" \n'
+      jdl += 'Periodic_Remove = (((JobStatus == 2) && ((CurrentTime - JobCurrentStartDate) > (MaxWallTimeMins*60))) =?= True) \n'
+
 
       return jdl, filelist
