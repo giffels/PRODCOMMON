@@ -19,7 +19,7 @@ class SBinterface:
         self.useProxy = True
         if self.storage2 != None:
             self.mono = True
-        if self.storage1.protocol == 'local':
+        if self.storage1.protocol == 'local' or self.storage1.protocol == 'rfio':
             self.useProxy = False
         if self.mono:
             if storel1.protocol != storel2.protocol:
@@ -63,7 +63,7 @@ class SBinterface:
         if self.useProxy:
             resval = self.storage1.action.checkExists(self.storage1, proxy)
         else:
-            resval = self.storage1.action.checkExists(self.storage1, proxy)
+            resval = self.storage1.action.checkExists(self.storage1)
         self.storage1.workon = ""
         return resval
 
@@ -73,7 +73,7 @@ class SBinterface:
         if self.useProxy:
             resval = self.storage1.action.checkPermission(self.storage1, proxy)
         else:
-            resval = self.storage1.action.checkPermission(self.storage1, proxy)
+            resval = self.storage1.action.checkPermission(self.storage1)
         self.storage1.workon = ""
         return resval
 
@@ -85,7 +85,7 @@ class SBinterface:
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy)
         else:
-            self.storage1.action.delete(self.storage1, proxy)
+            self.storage1.action.delete(self.storage1)
         self.storage1.workon = ""
 
     def getSize( self, source, proxy = None ):
@@ -93,14 +93,14 @@ class SBinterface:
         if self.useProxy:
             size = self.storage1.action.getFileSize(self.storage1, proxy)
         else:
-            size = self.storage1.action.getFileSize(self.storage1, proxy)
+            size = self.storage1.action.getFileSize(self.storage1)
         self.storage1.workon = ""
         return size
 
     def getDirSpace( self, source, proxy = None ):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
-            val = self.storage1.action.getDirSize(self.storage1, proxy)
+            val = self.storage1.action.getDirSize(self.storage1)
             self.storage1.workon = ""
             return val
         else: 

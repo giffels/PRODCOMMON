@@ -22,11 +22,13 @@ class ProtocolRfio(Protocol):
                     problems.append(cacheP)
         return problems
 
-    def copy(self, source, dest):
+    def copy(self, source, dest, proxy = None):
         """
         rfcp
         """
-        fullSource = source.getLynk()
+        fullSource = source.workon
+        if source.protocol != 'local':
+            fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
         cmd = "rfcp "+ fullSource +" "+ fullDest
@@ -37,7 +39,7 @@ class ProtocolRfio(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest):
+    def move(self, source, dest, proxy = None):
         """
         copy() + delete()
         """
