@@ -22,6 +22,32 @@ class ProtocolRfio(Protocol):
                     problems.append(cacheP)
         return problems
 
+
+    def createDir(self, dest, proxy):
+        """
+        rfmkdir
+        """
+
+        fullDest = dest.getLynk()
+
+        cmd = "rfmkdir " + fullDest 
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise TransferException("Error creating remote dir " + \
+                                    "[" +fullDest+ "].", problems, outputs)
+
+        cmd = "rfchmod 777 " + fullDest
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise TransferException("Error changing permission... " + \
+                                    "[" +fullDest+ "].", problems, outputs)
+
     def copy(self, source, dest, proxy = None):
         """
         rfcp
