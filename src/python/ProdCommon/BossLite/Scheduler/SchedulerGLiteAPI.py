@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.37 2008/04/17 10:54:31 slacapra Exp $"
-__version__ = "$Revision: 1.37 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.38 2008/04/24 17:19:59 gcodispo Exp $"
+__version__ = "$Revision: 1.38 $"
 
 import sys
 import os
@@ -14,6 +14,7 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+
 #
 # Import gLite specific modules
 try:
@@ -959,13 +960,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
     def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
         """
-    
+        
         celist = []
 
         if seList == ['']: seList = None  
@@ -982,30 +982,56 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             query = 'CEStatus=Production'
 
         command = "export X509_USER_PROXY=" + self.cert + '; '
-    
+
         if seList == None :
             command += " lcg-info --vo " + vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out = self.ExecuteCommand( command )
             out = out.split()
             for ce in out :
-                if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
-                        celist.append( ce )
-            
+                # blacklist
+                if ce.find( "blah" ) == -1:
+                  passblack=1
+                  if len(blacklist)>0:
+                   for ceb in blacklist :
+                      if ce.find(ceb)>0:
+                         passblack=0
+                # whitelist if surviving the blacklist selection   
+                if passblack:
+                   if whitelist is None or len(whitelist)==0 :
+                      celist.append( ce )
+                   else:
+                      for cew in whitelist:
+                         if ce.find(cew)>=0:
+                            celist.append( ce )
+                                                                                
+                                                                                
             return celist
-        
+
         for se in seList :
             singleComm = command + " lcg-info --vo " + vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
-
+                                                                                
             out = self.ExecuteCommand( singleComm )
             out = out.split()
-
             for ce in out :
-                if ce.find( "blah" ) == -1 and ce not in blacklist :
-                    if whitelist is None or len(whitelist)==0 or ce in whitelist :
-                        celist.append( ce )
-
+                # blacklist
+                if ce.find( "blah" ) == -1:
+                  passblack=1
+                  if len(blacklist)>0:
+                   for ceb in blacklist :
+                      if ce.find(ceb)>0:
+                         passblack=0
+                # whitelist if surviving the blacklist selection
+                if passblack:
+                   if whitelist is None or len(whitelist)==0 :
+                      celist.append( ce )
+                   else:
+                      for cew in whitelist:
+                         if ce.find(cew)>=0:
+                            celist.append( ce )
+                                                                                
         return celist
+ 
+
