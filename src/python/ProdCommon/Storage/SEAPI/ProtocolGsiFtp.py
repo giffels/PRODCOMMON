@@ -48,10 +48,12 @@ class ProtocolGsiFtp(Protocol):
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
+        setProxy = ''  
         if proxy is not None:
             self.checkUserProxy(proxy)
-
-        cmd = "export X509_USER_PROXY=" + proxy + "; lcg-cp --vo cms "+ fullSource +" "+ fullDest
+            setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
+ 
+        cmd = setProxy + " lcg-cp --vo cms "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
