@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.3 2008/04/28 07:37:42 spiga Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.1 2008/04/28 21:39:06 ewv Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import re,os
 
@@ -96,6 +96,8 @@ class SchedulerCondor(SchedulerInterface) :
       jobArgs = jobArgs.replace('\\ ',',')
       jobArgs = jobArgs.replace('\\','')
       jobArgs = jobArgs.replace('"','')
+      jdl += 'Universe  = vanilla\n'
+      jdl += 'environment = CONDOR_ID=$(Cluster).$(Process)\n'
       jdl += 'Arguments  = %s\n' % jobArgs
       if job['standardInput'] != '':
           jdl += 'input = %s\n' % job['standardInput']
@@ -105,8 +107,7 @@ class SchedulerCondor(SchedulerInterface) :
       jdl += 'stream_output = false\n'
       jdl += 'stream_error  = false\n'
       jdl += 'notification  = never\n'
-      jdl += 'should_transfer_files   = YES\n'
-      jdl += 'when_to_transfer_output = ON_EXIT\n'
+      jdl += 'should_transfer_files   = NO\n'
       jdl += 'copy_to_spool           = false\n'
       jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
 
