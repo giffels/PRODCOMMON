@@ -4,12 +4,13 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.9 2008/04/24 17:21:32 gcodispo Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: RunningJob.py,v 1.10 2008/04/24 17:31:11 gcodispo Exp $"
+__revision__ = "$Revision: 1.10 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
+import time
 
 class RunningJob(DbObject):
     """
@@ -65,12 +66,12 @@ class RunningJob(DbObject):
                  'statusReason' : None,
                  'statusHistory' : [],
                  'destination' : None,
-                 'lbTimestamp' : 0,
-                 'submissionTime' : 0,
+                 'lbTimestamp' : None,
+                 'submissionTime' : None,
                  'startTime' : None,
                  'stopTime' : None,
                  'outputDirectory' : None,
-                 'getOutputTime' : 0,
+                 'getOutputTime' : None,
                  'executionHost' : None,
                  'executionPath' : None,
                  'executionUser' : None,
@@ -84,7 +85,7 @@ class RunningJob(DbObject):
     # database properties
     tableName = "bl_runningjob"
     tableIndex = ["taskId", "jobId", "submission"]
-
+    timeFields = ['submissionTime', 'startTime', 'stopTime', 'getOutputTime']
     # exception class
     exception = JobError
 
@@ -99,7 +100,7 @@ class RunningJob(DbObject):
         super(RunningJob, self).__init__(parameters)
 
         # set operational errors
-        self.errors = []        
+        self.errors = []
 
     ##########################################################################
 
@@ -190,12 +191,23 @@ class RunningJob(DbObject):
         # update status_history with error list
         for err in self.errors :
             self.data['statusHistory'].append( str(err) ) 
-        
+
+        # convert timestamp fields as required by mysql ('YYYY-MM-DD HH:MM:SS')
+        for key in self.timeFields :
+            try :
+                self.data[key] = time.strftime("%Y-%m-%d %H:%M:%S", \
+                                              time.gmtime(int(self.data[key])))
+            # skip None and already formed strings
+            except TypeError :
+                pass
+            except ValueError :
+                pass
+
         # update it on database
         try:
             status = db.update(self)
-            # if status < 1:
-            #     raise JobError("Cannot update job %s" % str(self))
+            if status < 1:
+                raise JobError("Cannot update job %s" % str(self))
 
         # database error
         except DbError, msg:

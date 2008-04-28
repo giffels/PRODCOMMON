@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.11 2008/04/24 17:31:11 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: TrackingDB.py,v 1.12 2008/04/24 17:33:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -448,22 +448,12 @@ class TrackingDB:
         # get access to default values and mappings
         defaults = obj.__class__.defaults
         mapping = obj.__class__.fields
-        tableIndex = obj.__class__.tableIndex
 
         # build list of fields and values with non default values
-        #fields = [(mapping[key], str(value).replace('"','""')) \
-        #          for key, value in obj.data.items()
-        #          if value != defaults[key]
-        #]#
-
-        fields = []
-        for key, value in obj.data.items() :
-            if value != defaults[key] :
-                if type( defaults[key] ) == int and key not in tableIndex :
-                    fields.append( (mapping[key], str(value)) )
-                else:
-                    fields.append( (mapping[key], \
-                                    '"' + str(value).replace('"','""') + '"'))
+        fields = [(mapping[key], '"' + str(value).replace('"','""') + '"') \
+                  for key, value in obj.data.items()
+                  if value != defaults[key]
+        ]
 
         # return it
         return fields
