@@ -23,7 +23,7 @@ class ProtocolRfio(Protocol):
         return problems
 
 
-    def createDir(self, dest, proxy):
+    def createDir(self, dest):
         """
         rfmkdir
         """
