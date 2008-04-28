@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.1 2008/04/11 14:56:55 slacapra Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.2 2008/04/17 10:54:32 slacapra Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import re,os
 
@@ -86,7 +86,7 @@ class SchedulerLsf (SchedulerInterface) :
                 txt += "cp "+subDir+"/"+inpFile+" . ; "
         ## Job specific ISB
         for inpFile in job[ 'inputFiles' ]:
-            txt += "cp "+inpFile+" .;"
+            if inpFile != '': txt += "cp "+inpFile+" .;"
 
         ## Now the actual wrapper
         args = job[ 'arguments' ]
