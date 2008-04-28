@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.39 2008/04/26 13:09:19 afanfani Exp $"
-__version__ = "$Revision: 1.39 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.40 2008/04/28 15:04:25 gcodispo Exp $"
+__version__ = "$Revision: 1.40 $"
 
 import sys
 import os
@@ -488,7 +488,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
                 # avoid globus-url-copy for empty files
                 if size == 0 :
-                    os.system( 'touch ' + os.path.basename( m['name'] ) )
+                    joberr +=  'file ' + os.path.basename( m['name'] ) \
+                             + ' has zero size;'
                     continue
 
                 # retrieve file
@@ -960,7 +961,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):        
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -991,19 +992,19 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             for ce in out :
                 # blacklist
                 if ce.find( "blah" ) == -1:
-                  passblack=1
-                  if len(blacklist)>0:
-                   for ceb in blacklist :
-                      if ce.find(ceb)>0:
-                         passblack=0
+                    passblack = 1
+                    if len(blacklist) > 0:
+                        for ceb in blacklist :
+                            if ce.find(ceb) > 0:
+                                passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                   if whitelist is None or len(whitelist)==0 :
-                      celist.append( ce )
-                   else:
-                      for cew in whitelist:
-                         if ce.find(cew)>=0:
-                            celist.append( ce )
+                    if whitelist is None or len(whitelist)==0 :
+                        celist.append( ce )
+                    else:
+                        for cew in whitelist:
+                            if ce.find(cew)>=0:
+                                celist.append( ce )
 
             return celist
 
@@ -1017,19 +1018,19 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             for ce in out :
                 # blacklist
                 if ce.find( "blah" ) == -1:
-                  passblack=1
-                  if len(blacklist)>0:
-                   for ceb in blacklist :
-                      if ce.find(ceb)>0:
-                         passblack=0
+                    passblack = 1
+                    if len(blacklist) > 0:
+                        for ceb in blacklist :
+                            if ce.find(ceb) > 0:
+                                passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                   if whitelist is None or len(whitelist)==0 :
-                      celist.append( ce )
-                   else:
-                      for cew in whitelist:
-                         if ce.find(cew)>=0:
-                            celist.append( ce )
+                    if whitelist is None or len(whitelist)==0 :
+                        celist.append( ce )
+                    else:
+                        for cew in whitelist:
+                            if ce.find(cew)>=0:
+                                celist.append( ce )
 
         return celist
  
