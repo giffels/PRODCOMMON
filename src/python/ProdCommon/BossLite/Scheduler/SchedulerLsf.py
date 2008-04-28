@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.2 2008/04/17 10:54:32 slacapra Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.3 2008/04/28 07:37:42 spiga Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import re,os
 
@@ -32,10 +32,10 @@ class SchedulerLsf (SchedulerInterface) :
             'Running':'R',
             'RUN':'R',
             'DONE':'SD',
-            'Cleared':'SE',
-            'EXIT':'SA',
-            'Aborted':'SA',
-            'Cancelled':'SK',
+            'Cleared':'E',
+            'EXIT':'DA',
+            'Aborted':'A',
+            'Cancelled':'K',
             'Unknown':'UN',
             'Done(failed)':'DA'   
             }
@@ -119,7 +119,7 @@ class SchedulerLsf (SchedulerInterface) :
 
         m= r.search(out)
         if m is not None:
-            taskId =m.group(1)
+            #taskId =m.group(1)
             queue = m.group(2)
         else:
             rNot = re.compile("Job not submitted.*<(\w+)>")
@@ -129,7 +129,7 @@ class SchedulerLsf (SchedulerInterface) :
                 print "Job NOT submitted"
                 print out
             raise (out)
-        
+        taskId = None 
         #print "Your job identifier is: ", taskId, queue
         map={ job['name'] : taskId }
         return map, taskId, queue
