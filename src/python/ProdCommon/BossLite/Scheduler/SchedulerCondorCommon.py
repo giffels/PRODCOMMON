@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.8 2008/04/22 18:36:00 ewv Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.9 2008/04/24 15:23:07 ewv Exp $"
+__version__ = "$Revision: 1.9 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -181,12 +181,10 @@ class SchedulerCondorCommon(SchedulerInterface) :
           jdl += 'input = %s\n' % job['standardInput']
       jdl += 'output  = %s\n' % job['standardOutput']
       jdl += 'error   = %s\n' % job['standardError']
-
+      jdl += 'log     = %s.log\n' % os.path.splitext(job['standardError'])[0] # Same root at stderr
       jdl += 'stream_output = false\n'
       jdl += 'stream_error  = false\n'
       jdl += 'notification  = never\n'
-      # Condor log file
-      #    print CMD ("log                     = $condorlog\n");
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
