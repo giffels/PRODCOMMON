@@ -35,10 +35,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     # call super class init method
     super(SchedulerCondorCommon, self).__init__(user_proxy)
-    #self.hostname = getfqdn()
-    #self.execDir = os.getcwd()+'/'
-    #self.workingDir = ''
-    #self.condorTemp = ''
+    self.hostname = getfqdn()
+    self.execDir = os.getcwd()+'/'
+    self.workingDir = ''
+    self.condorTemp = ''
+
+    self.batchSize = 20 # Number of jobs to submit per site before changing CEs
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -62,23 +64,94 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     """
 
+
+    # Figure out our environment, make some directories
+
+    # HACK: Script dir ends in /job/blah.sh, strip those parts off
+    scriptDir = os.path.split(obj['scriptName'])[0]
+    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
+    self.condorTemp = self.workingDir+'share/.condor_temp'
+    if os.path.isdir(self.condorTemp):
+      pass
+    else:
+      os.mkdir(self.condorTemp)
+
+    configfile = config
+
     taskId = ''
     ret_map = {}
+
+    jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
+
+    if type(obj) == RunningJob or type(obj) == Job :
+      jdl, sandboxFileList = self.decode( obj, requirements='' )
+    elif type(obj) == Task :
+      taskId = obj['name']
+      for job in obj.getJobs():
+        requirements = obj['jobType']
+        execHost = self.findExecHost(requirements)
+        filelist = self.inputFiles(obj['globalSandbox'])
+        requirements += "transfer_input_files = " + filelist + '\n'
+        job.runningJob['destination'] = execHost
+
+        # Build JDL file
+        jdl, sandboxFileList = self.decode( job, requirements)
+        jdl += 'Executable = %s\n' % (obj['scriptName'])
+        jdl += '+BLTaskID = "' + taskId + '"\n'
+        # If query were to take a task could then do something like
+        # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
+        jdl += "Queue 1\n"
+
+        # Write and submit JDL
+
+        jdlFileName = job['name']+'.jdl'
+        cacheDir = os.getcwd()
+        os.chdir(self.condorTemp)
+        jdlFile = open(jdlFileName, 'w')
+        jdlFile.write(jdl)
+        jdlFile.close()
+        stdout, stdin, stderr = popen2.popen3('condor_submit '+jdlFileName)
+
+        # Parse output, build numbers
+        for line in stdout:
+          matchObj = jobRegExp.match(line)
+          if matchObj:
+            ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
+            job.runningJob['schedulerId'] = ret_map[job['name']]
+        try:
+          junk = ret_map[ job['name']  ]
+        except: #FIXME: Which exception? KeyError?
+          print "Job not submitted:"
+          print stdout.readlines()
+          print stderr.readlines()
+        os.chdir(cacheDir)
+
     success = self.hostname
 
     return ret_map, taskId, success
 
+  def findExecHost(self, requirements=''):
+    jdlLines = requirements.split(';')
+    execHost = 'Unknown'
+    for line in jdlLines:
+      if line.find("globusscheduler") != -1:
+        parts = line.split('=')
+        sched = parts[1]
+        parts = sched.split(':')
+        execHost = parts[0]
+
+    return execHost.strip()
+
   def inputFiles(self,globalSandbox):
-    #filelist = ''
-    #if globalSandbox is not None :
-      #for file in globalSandbox.split(','):
-        #if file == '' :
-            #continue
-        #filename = os.path.abspath(file)
-        #filename.strip()
-        #filelist += filename + ','
-    #return filelist[:-1]
-    return ''
+    filelist = ''
+    if globalSandbox is not None :
+      for file in globalSandbox.split(','):
+        if file == '' :
+            continue
+        filename = os.path.abspath(file)
+        filename.strip()
+        filelist += filename + ','
+    return filelist[:-1]
 
   def decode  ( self, obj, requirements='' ):
       """
@@ -117,32 +190,177 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jdl += 'copy_to_spool           = false\n'
       jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
 
+      # Things in the requirements/jobType field
+      jdlLines = requirements.split(';')
+      for line in jdlLines:
+        [key,value] = line.split('=',1)
+        if key.strip() == "schedulerList":
+          CEs = value.split(',')
+          ceSlot = (jobId-1) // self.batchSize
+          ceNum = ceSlot%len(CEs)
+          ce = CEs[ceNum]
+          jdl += "globusscheduler = " + ce + '\n'
+        else:
+          jdl += line.strip() + '\n';
+
       filelist = ''
       return jdl, filelist
 
   def query(self, schedIdList, service='', objType='node'):
-    import SchedulerCondorCommon
-    bossIds = SchedulerCondorCommon.query(schedIdList, service, objType)
+    """
+    query status of jobs
+    """
+    from xml.dom.minidom import parse
+
+    # HACK: Don't know how to solve this one. When I kill jobs they are set to "K" but since
+    # CondorG cancelled jobs leave the queue, they are in the same state as "Done" jobs, so
+    # crab -status eventually shows them as "Done"
+
+    jobIds = {}
+    bossIds = {}
+
+    statusCodes = {'0':'RE', '1':'SS', '2':'R',  # Convert Condor integer status
+                   '3':'SK', '4':'SD', '5':'SA'} # to BossLite Status codes
+    textStatusCodes = {
+            '0':'Ready',
+            '1':'Scheduled',
+            '2':'Running',
+            '3':'Cancelled',
+            '4':'Done',
+            '5':'Aborted'
+    }
+
+    # Get a list of the schedd's that were used to submit this task
+    for id in schedIdList:
+
+      bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default?
+      schedd = id.split('//')[0]
+      job    = id.split('//')[1]
+        # fill dictionary
+      if schedd in jobIds.keys():
+        jobIds[schedd].append(job)
+      else :
+        jobIds[schedd] = [job]
+
+    for schedd in jobIds.keys() :
+      condor_status = {}
+      cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
+      (input_file, output_file) = os.popen4(cmd)
+
+      # Throw away first three lines. Junk
+      output_file.readline()
+      output_file.readline()
+      output_file.readline()
+
+      # Start parsing XML
+      dom = parse(output_file)
+      classAd = dom.getElementsByTagName("classads")[0]
+      jobList = classAd.getElementsByTagName("c")  # Jobs are "c" elements
+      for job in jobList:
+        globalJobId = ''
+        jobId = 0
+        jobStatus = None
+        gridJobId = None
+        execHost = None
+        adList = job.getElementsByTagName("a")     # Job attributes are "a" elements
+        for ad in adList:
+          name = ad.getAttribute('n')
+          if name=="JobStatus":
+            jobStatus = (ad.getElementsByTagName("i")[0]).firstChild.data
+          if name=="GlobalJobId":
+            globalJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
+            host,task,jobId = globalJobId.split("#")
+          if name=="GridJobId":
+            idString = ad.getElementsByTagName("s")
+            if idString:
+              gridJobId = (idString[0]).firstChild.data
+              URI = gridJobId.split(' ')[1]
+              execHost = URI.split(':')[0]
+          if name=="MATCH_GLIDEIN_Gatekeeper":
+            execHost = (ad.getElementsByTagName("s")[0]).firstChild.data
+
+        # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
+        if bossIds.has_key(schedd+'//'+jobId):
+          statusRecord = {}
+          statusRecord['status']          = statusCodes.get(jobStatus,'UN')
+          statusRecord['statusScheduler'] = textStatusCodes.get(jobStatus,'Undefined')
+          statusRecord['statusReason']    = ''
+          statusRecord['service']         = service
+          if execHost:
+            statusRecord['destination']   = execHost
+
+          bossIds[schedd+'//'+jobId] = statusRecord
+
     return bossIds
 
   def kill( self, schedIdList, service):
     """
     Kill jobs submitted to a given WMS. Does not perform status check
     """
-    import SchedulerCondorCommon
-    SchedulerCondorCommon.kill(schedIdList, service)
+
+    for job in schedIdList:
+      submitHost,jobId  = job.split('//')
+      (input_file, output_file) = os.popen4("condor_rm -name  %s %s " % (submitHost,jobId))
 
   def getOutput( self, obj, outdir='', service='' ):
     """
     Retrieve (move) job output from cache directory to outdir
     User files from CondorG appear asynchronously in the cache directory
     """
-    import SchedulerCondorCommon
-    SchedulerCondorCommon.getOutput(obj, outdir, service)
+
+    # HACK: Script dir ends in /job/blah.sh, strip those parts off
+    scriptDir = os.path.split(obj['scriptName'])[0]
+    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
+    self.condorTemp = self.workingDir+'share/.condor_temp'
+
+    if type(obj) == RunningJob: # The object passed is a RunningJob
+      raise SchedulerError('Operation not possible',
+                           'CondorG cannot retrieve files when passed RunningJob')
+    elif type(obj) == Job: # The object passed is a Job
+
+      # check for the RunningJob integrity
+      if not self.valid( obj.runningJob ):
+        raise SchedulerError('invalid object', str( obj.runningJob ))
+
+      # retrieve output
+      self.getCondorOutput(obj, outdir)
+
+    # the object passed is a Task
+    elif type(obj) == Task :
+
+      if outdir == '':
+        outdir = obj['outputDirectory']
+
+      for job in obj.jobs:
+        if self.valid( job.runningJob ):
+          self.getCondorOutput(job, outdir)
+
+    # unknown object type
+    else:
+      raise SchedulerError('wrong argument type', str( type(obj) ))
+
+  def getCondorOutput(self,job,outdir):
+    fileList = []
+    fileList.append(job['standardOutput'])
+    fileList.append(job['standardError'])
+    fileList.extend(job['outputFiles'])
+
+    for file in fileList:
+      try:
+        shutil.move(self.condorTemp+'/'+file,outdir)
+      except IOError:
+        print "Could not move file ",file
 
   def postMortem( self, schedulerId, outfile, service):
     """
     Get detailed postMortem job info
     """
-    import SchedulerCondorCommon
-    return SchedulerCondorCommon.postMortem( self, schedulerId, outfile, service)
+
+    if not outfile:
+      raise SchedulerError('Empty filename',
+                           'postMortem called with empty logfile name')
+
+    submitHost,jobId  = schedulerId.split('//')
+    fullFilename = outfile+'.LoggingInfo'
+    cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,fullFilename)
+    return self.ExecuteCommand(cmd)
