@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.38 2008/04/24 17:19:59 gcodispo Exp $"
-__version__ = "$Revision: 1.38 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.39 2008/04/26 13:09:19 afanfani Exp $"
+__version__ = "$Revision: 1.39 $"
 
 import sys
 import os
@@ -502,7 +502,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
                 # check file size
-                if size > 0 and os.path.getsize(dest) !=  size  :
+                if os.path.getsize(dest) !=  size  :
                     joberr =  'size mismatch : expected ' \
                              + str( os.path.getsize(dest) ) \
                              + ' got ' + m['size'] + '; '
@@ -968,7 +968,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         celist = []
 
-        if seList == ['']: seList = None  
+        if seList == ['']: seList = None
         if blacklist == ['']: blacklist = None
         if whitelist == ['']: whitelist = None
 
@@ -996,7 +996,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                    for ceb in blacklist :
                       if ce.find(ceb)>0:
                          passblack=0
-                # whitelist if surviving the blacklist selection   
+                # whitelist if surviving the blacklist selection
                 if passblack:
                    if whitelist is None or len(whitelist)==0 :
                       celist.append( ce )
@@ -1004,15 +1004,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                       for cew in whitelist:
                          if ce.find(cew)>=0:
                             celist.append( ce )
-                                                                                
-                                                                                
+
             return celist
 
         for se in seList :
             singleComm = command + " lcg-info --vo " + vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
-                                                                                
+
             out = self.ExecuteCommand( singleComm )
             out = out.split()
             for ce in out :
@@ -1031,7 +1030,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                       for cew in whitelist:
                          if ce.find(cew)>=0:
                             celist.append( ce )
-                                                                                
+
         return celist
  
 
