@@ -4,14 +4,15 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.10 2008/04/02 12:23:50 gcodispo Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.11 2008/04/18 14:01:07 gcodispo Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import sys
 import os
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
 import Job as lbJob
+import time
 
 
 def config():
@@ -90,7 +91,7 @@ def getJobInfo( jobidInfo, states ):
     
     try:
         timestamp = str(jobidInfo[states.index('Stateentertimes')])
-        pos = timestamp.find(result)
+        pos = timestamp.find(result['statusScheduler'])
         result["lbTimestamp"] = timestamp[
             timestamp.find('=', pos)+1:timestamp.find(' ', pos)
             ]
