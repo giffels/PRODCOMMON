@@ -29,9 +29,9 @@ class SElement(object):
         """
         return default port for given protocol 
         """
-        if protocol == "srmv1" or protocol == "srmv2":
+        if protocol in ["srmv1", "srmv2"]:
             return "8443"
-        elif protocol == "local" or protocol == "gridftp" or protocol == "rfio":
+        elif protocol in ["local", "gridftp", "rfio"]:
             return ""
         else:
             raise ProtocolUnknown()

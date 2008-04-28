@@ -91,6 +91,8 @@ class Protocol(object):
 
         if cert != '' :
             command += ' --file ' + cert
+        else:
+            command += ' --file ' + str(os.environ['X509_USER_PROXY'])
 
         status, output = self.executeCommand( command )
 

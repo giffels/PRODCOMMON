@@ -19,7 +19,7 @@ class SBinterface:
         self.useProxy = True
         if self.storage2 != None:
             self.mono = True
-        if self.storage1.protocol == 'local' or self.storage1.protocol == 'rfio':
+        if self.storage1.protocol in ['local', 'rfio']:
             self.useProxy = False
         if self.mono:
             if storel1.protocol != storel2.protocol:
@@ -38,7 +38,7 @@ class SBinterface:
             elif self.storage2.protocol != 'local':
                 self.storage2.action.copy(self.storage1, self.storage2, proxy)
             else:
-                self.storage1.action.copy(self.storage1, self.storage2, proxy)
+                self.storage1.action.copy(self.storage1, self.storage2)
             self.storage1.workon = ""
             self.storage2.workon = ""
 
@@ -53,7 +53,7 @@ class SBinterface:
             elif self.storage2.protocol != 'local':
                 self.storage2.action.move(self.storage1, self.storage2, proxy)
             else:
-                self.storage1.action.move(self.storage1, self.storage2, proxy)
+                self.storage1.action.move(self.storage1, self.storage2)
             self.storage1.workon = ""
             self.storage2.workon = ""
 
@@ -116,11 +116,17 @@ class SBinterface:
             return ['0%', '0', '0'] 
 
     def createDir (self, source, proxy = None):
-        if self.storage1.protocol in ['gridftp','rfio']:
+        if self.storage1.protocol in ['gridftp']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy)
             self.storage1.workon = ""
             return val
+        if self.storage1.protocol in ['rfio', 'local']:
+            self.storage1.workon = source
+            val = self.storage1.action.createDir(self.storage1)
+            self.storage1.workon = ""
+            return val
+
 
     def getTurl (self, source, proxy = None):
         if self.storage1.protocol == 'srmv1' or self.storage1.protocol == 'srmv2':
@@ -133,6 +139,6 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol == 'local' or self.storage1.protocol == "rfio":
+        elif self.storage1.protocol in ['local', "rfio"]:
             return ""
 

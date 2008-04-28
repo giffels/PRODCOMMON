@@ -109,6 +109,71 @@ class ProtocolGsiFtp(Protocol):
         if exitcode != 0 or len(problems) > 0:
             return False
         return True
+
+    def __convertPermission__(self, drwx):
+        owner  = drwx[1:3]
+        ownSum = 0
+        group  = drwx[4:6]
+        groSum = 0
+        others = drwx[7:9]
+        othSum = 0
+
+        for val in owner:
+            if val == "r":   ownSum += 4
+            elif val == "w": ownSum += 2
+            elif val == "x": ownSum += 1
+        for val in group:
+            if val == "r":   groSum += 4
+            elif val == "w": groSum += 2
+            elif val == "x": groSum += 1
+        for val in others:
+            if val == "r":   othSum += 4
+            elif val == "w": othSum += 2
+            elif val == "x": othSum += 1
+
+        return [ownSum, groSum, othSum]
+
+
+    def checkPermission(self, source, proxy = None):
+        """
+        edg-gridftp-ls
+        """
+        fullSource = source.getLynk()
+        options = " --verbose "
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
+
+        cmd = "edg-gridftp-ls " + options + " " + fullSource + " | awk '{print $1}'"
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+
+        if exitcode != 0 or len(problems) > 0:
+            return self.__convertPermission__(outputs)
+        return outputs
+
+    def getFileSize(self, source, proxy = None):
+        """
+        edg-gridftp-ls
+        """
+        fullSource = source.getLynk()
+        options = " --verbose "
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
+
+        cmd = "edg-gridftp-ls " + options + " " + fullSource + " | awk '{print $5}'"
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+
+        if exitcode != 0 or len(problems) > 0:
+            return outputs
+        raise OperationException("Error getting size for [" +source.workon+ "]",
+                                  problems, outputs )
  
     def getTurl(self, source, proxy = None):
         """

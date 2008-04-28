@@ -10,16 +10,15 @@ class ProtocolLocal(Protocol):
     def __init__(self):
         super(ProtocolLocal, self).__init__()
 
-    def move(self, source, dest, proxy = None):
+    def move(self, source, dest):
         """
         move from source.workon to dest.workon
         """
         exitcode = -1
         outputs = ""
         
-        if self.checkExists(source.workon, proxy):
-            cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-            cmd += "mv "+ source.workon +" "+ dest.workon
+        if self.checkExists(source):
+            cmd = "mv "+ source.workon +" "+ dest.workon
             exitcode, outputs = self.executeCommand(cmd)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
@@ -28,15 +27,14 @@ class ProtocolLocal(Protocol):
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     +dest.workon+ "]\n " +outputs)
  
-    def copy(self, source, dest, proxy = None):
+    def copy(self, source, dest):
         """
         copy from source.workon to dest.workon
         """
         exitcode = -1
         outputs = ""
-        if self.checkExists(source, proxy):
-            cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-            cmd += "cp " + source.workon + " " + dest.workon
+        if self.checkExists(source):
+            cmd = "cp " + source.workon + " " + dest.workon
             exitcode, outputs = self.executeCommand(cmd)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
@@ -45,12 +43,11 @@ class ProtocolLocal(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     +dest.workon+ "]\n " +outputs)
  
-    def delete(self, source, proxy = None):
+    def delete(self, source):
         exitcode = -1
         outputs = ""
-        if self.checkExists(source, proxy):
-            cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-            cmd += "rm -rf " + source.workon
+        if self.checkExists(source):
+            cmd = "rm -rf " + source.workon
             exitcode, outputs = self.executeCommand(cmd)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
@@ -59,11 +56,10 @@ class ProtocolLocal(Protocol):
             raise OperationException("Error deleting [" +source.workon \
                                              + "]\n "+outputs)
 
-    def createDir(self, source, proxy = None):
+    def createDir(self, source):
         exitcode = -1
         outputs = ""
-        cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-        cmd += "mkdir " + source.workon
+        cmd = "mkdir " + source.workon
         exitcode, outputs = self.executeCommand(cmd)
         if exitcode != 0:
             raise OperationException("Error creating [" +source.workon \
@@ -92,12 +88,11 @@ class ProtocolLocal(Protocol):
  
         return [ownSum, groSum, othSum]
  
-    def checkPermission(self, source, proxy = None):
+    def checkPermission(self, source):
         exitcode = -1
         outputs = ""
-        if self.checkExists(source, proxy):
-            cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-            cmd += "ls -la " + source.workon + " | awk '{print $1}'"
+        if self.checkExists(source):
+            cmd = "ls -la " + source.workon + " | awk '{print $1}'"
             exitcode, outputs = self.executeCommand(cmd)
             if exitcode == 0:
                 outputs = self.__convertPermission__(outputs)
@@ -110,9 +105,9 @@ class ProtocolLocal(Protocol):
  
         return outputs
  
-    def getFileSize(self, source, proxy = None):
+    def getFileSize(self, source):
         sizeFile = ""
-        if self.checkExists(source, proxy):
+        if self.checkExists(source):
             try:
                 from os.path import getsize
                 sizeFile = getsize ( source.workon )
@@ -124,8 +119,8 @@ class ProtocolLocal(Protocol):
  
         return int(sizeFile)
  
-    def getDirSize(self, source, proxy = None):
-        if self.checkExists(source, proxy):
+    def getDirSize(self, source):
+        if self.checkExists(source):
             from os.path import join, getsize
             summ = 0
             for path, dirs, files in os.walk( source.workon, topdown=False):
@@ -139,12 +134,11 @@ class ProtocolLocal(Protocol):
             raise OperationException("Error: path [" + source.workon + \
                                              "] does not exists.")
         
-    def listPath(self, source, proxy):
+    def listPath(self, source):
         exitcode = -1
         outputs = ""
-        if self.checkExists(source, proxy):
-            cmd = 'export X509_USER_PROXY=' + str(proxy) + ' && '
-            cmd += "ls " + source.workon
+        if self.checkExists(source):
+            cmd = "ls " + source.workon
             exitcode, outputTemp = self.executeCommand(cmd)
             outputs = outputTemp.split("\n")
         else:
@@ -156,7 +150,7 @@ class ProtocolLocal(Protocol):
  
         return outputs
  
-    def checkExists(self, source, proxy):
+    def checkExists(self, source):
         return os.path.exists(source.workon)
  
     def getGlobalQuota(self, source):
