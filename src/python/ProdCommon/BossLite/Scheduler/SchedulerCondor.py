@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.4 2008/04/29 15:47:06 ewv Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.5 2008/04/29 16:33:55 ewv Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import re
 import os
@@ -41,92 +41,8 @@ class SchedulerCondor(SchedulerCondorCommon) :
     return it as a string
     """
 
-  def submit( self, obj, requirements='', config ='', service='' ):
-    """
-    user submission function
-
-    obj is job or list of jobs
-
-    takes as arguments:
-    - a finite, dedicated jdl
-    - eventually a wms list
-    - eventually a config file
-
-    the passed config file or, if not provided, the default one is
-    used to extract basic ui configurations and, if not provided, a
-    list o candidate wms
-
-    the function returns the grid parent id, the wms of the
-    successfully submission and a map associating the jobname to the
-    node id. If the submission is not bulk, the parent id is the node
-    id of the unique entry of the map
-
-    """
-
-    taskId = ''
-    ret_map = {}
-    scriptDir = os.path.split(obj['scriptName'])[0]
-    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
-    self.condorTemp = self.workingDir+'share/.condor_temp'
-    if os.path.isdir(self.condorTemp):
-      pass
-    else:
-      os.mkdir(self.condorTemp)
-
-    configfile = config
-
-    taskId = ''
-    ret_map = {}
-
-    jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
-
-    if type(obj) == RunningJob or type(obj) == Job :
-      raise NotImplementedError
-    elif type(obj) == Task :
-      taskId = obj['name']
-      for job in obj.getJobs():
-        requirements = obj['jobType']
-        #execHost = self.findExecHost(requirements)
-        #filelist = self.inputFiles(obj['globalSandbox'])
-        #requirements += "transfer_input_files = " + filelist + '\n'
-        job.runningJob['destination'] = self.hostname
-
-        # Build JDL file
-        jdl, sandboxFileList = self.decode( job, requirements)
-        jdl += 'Executable = %s\n' % (obj['scriptName'])
-        jdl += '+BLTaskID = "' + taskId + '"\n'
-        # If query were to take a task could then do something like
-        # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
-        jdl += "Queue 1\n"
-
-        # Write and submit JDL
-
-        jdlFileName = job['name']+'.jdl'
-        cacheDir = os.getcwd()
-        os.chdir(self.condorTemp)
-        jdlFile = open(jdlFileName, 'w')
-        jdlFile.write(jdl)
-        jdlFile.close()
-        stdout, stdin, stderr = popen2.popen3('condor_submit '+jdlFileName)
-
-        # Parse output, build numbers
-        for line in stdout:
-          matchObj = jobRegExp.match(line)
-          if matchObj:
-            ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
-            job.runningJob['schedulerId'] = ret_map[job['name']]
-        try:
-          junk = ret_map[ job['name']  ]
-        except KeyError:
-          print "Job not submitted:"
-          print stdout.readlines()
-          print stderr.readlines()
-        os.chdir(cacheDir)
-
-    success = self.hostname
-    success = self.hostname
-
-    return ret_map, taskId, success
+  def findExecHost(self, requirements=''):
+    return self.hostname
 
   def inputFiles(self,globalSandbox):
     #filelist = ''

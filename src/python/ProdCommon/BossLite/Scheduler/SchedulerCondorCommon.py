@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.13 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.14 2008/04/29 15:47:06 ewv Exp $"
+__version__ = "$Revision: 1.14 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -91,7 +91,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         requirements = obj['jobType']
         execHost = self.findExecHost(requirements)
         filelist = self.inputFiles(obj['globalSandbox'])
-        requirements += "transfer_input_files = " + filelist + '\n'
+        if filelist:
+          requirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
 
         # Build JDL file
