@@ -56,7 +56,7 @@ class BossLiteAPISched(object):
     ##########################################################################
 
 
-    def submit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
+    def submit( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         eventually creates running instances and submit to the scheduler
         
@@ -75,9 +75,7 @@ class BossLiteAPISched(object):
 
         # create or load running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance(
-                job, { 'schedulerAttributes' : jobAttributes }
-                )
+            job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # scheduler submit
         self.scheduler.submit( task, requirements )
@@ -91,7 +89,7 @@ class BossLiteAPISched(object):
     ##########################################################################
 
 
-    def resubmit( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
+    def resubmit( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         archive existing submission an create a new entry for the next
         submission (i.e. duplicate the entry with an incremented
@@ -109,16 +107,18 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
+        # get new running instance
         for job in task.jobs:
-            job.closeRunningInstance( self.bossLiteSession.db )
+            job.runningJob["closed"] = "Y"
 
         # update changes
         self.bossLiteSession.updateDB(task)
 
         # get new running instance
         for job in task.jobs:
+            job.runningJob = None
             self.bossLiteSession.getRunningInstance(
-                job, { 'schedulerAttributes' : jobAttributes }
+                job, { 'schedulerAttributes' : schedulerAttributes }
                 )
 
         # scheduler submit
