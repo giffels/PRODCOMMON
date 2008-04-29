@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.40 2008/04/28 15:04:25 gcodispo Exp $"
-__version__ = "$Revision: 1.40 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.41 2008/04/28 15:35:31 gcodispo Exp $"
+__version__ = "$Revision: 1.41 $"
 
 import sys
 import os
@@ -130,10 +130,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     """
     basic class to handle glite jobs through wmproxy API
     """
-    def __init__( self, userProxy = '' ):
+    def __init__( self, **args ):
 
         # call super class init method
-        super(SchedulerGLiteAPI, self).__init__(userProxy)
+        super(SchedulerGLiteAPI, self).__init__(**args)
 
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"

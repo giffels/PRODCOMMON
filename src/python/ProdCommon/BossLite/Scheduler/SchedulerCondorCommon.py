@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.10 2008/04/28 19:51:58 ewv Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.12 2008/04/28 21:34:33 ewv Exp $"
+__version__ = "$Revision: 1.12 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -31,10 +31,10 @@ class SchedulerCondorCommon(SchedulerInterface) :
   """
   basic class to handle glite jobs through wmproxy API
   """
-  def __init__( self, user_proxy = '' ):
+  def __init__( self, **args ):
 
     # call super class init method
-    super(SchedulerCondorCommon, self).__init__(user_proxy)
+    super(SchedulerCondorCommon, self).__init__(**args)
     self.hostname = getfqdn()
     self.execDir = os.getcwd()+'/'
     self.workingDir = ''

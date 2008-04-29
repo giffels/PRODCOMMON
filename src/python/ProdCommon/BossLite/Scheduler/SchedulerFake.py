@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.3 2008/03/27 14:51:30 gcodispo Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.4 2008/04/07 15:48:18 gcodispo Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -24,10 +24,10 @@ class SchedulerFake(SchedulerInterface) :
     """
     basic class to scheduler usage
     """
-    def __init__( self, user_proxy = '' ):
+    def __init__( self, **args ):
 
         # call super class init method
-        super(SchedulerFake, self).__init__(user_proxy)
+        super(SchedulerFake, self).__init__(**args)
 
     # Generic static parameter, if needed
     delegationId = "bossproxy"

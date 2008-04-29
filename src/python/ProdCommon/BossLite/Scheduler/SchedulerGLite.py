@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id$"
-__version__ = "$Revision$"
+__revision__ = "$Id: SchedulerGLite.py,v 1.1 2008/02/08 18:11:41 gcodispo Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import sys
 import os
@@ -67,11 +67,11 @@ class SchedulerGLite (SchedulerInterface) :
     """
     basic class to handle glite jobs
     """
-    def __init__( self, user_proxy = '' ):
+    def __init__( self, **args):
 
 
         # call super class init method
-        super(SchedulerGLite, self).__init__(user_proxy)
+        super(SchedulerGLite, self).__init__(**args)
 
     delegationId = ""
 

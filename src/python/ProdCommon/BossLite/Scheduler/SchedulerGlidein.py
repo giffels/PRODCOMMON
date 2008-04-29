@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.6 2008/04/24 15:23:07 ewv Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.7 2008/04/25 19:55:05 ewv Exp $"
+__version__ = "$Revision: 1.7 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -12,10 +12,10 @@ class SchedulerGlidein(SchedulerCondorCommon) :
   """
   basic class to handle glite jobs through wmproxy API
   """
-  def __init__( self, user_proxy = '' ):
+  def __init__( self, **args ):
 
     # call super class init method
-    super(SchedulerGlidein, self).__init__(user_proxy)
+    super(SchedulerGlidein, self).__init__(**args)
 
   def singleApiJdl( self, job, requirements='' ):
       """

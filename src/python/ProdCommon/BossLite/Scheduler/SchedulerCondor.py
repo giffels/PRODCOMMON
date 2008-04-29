@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.1 2008/04/28 21:39:06 ewv Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.2 2008/04/28 21:45:15 ewv Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import re,os
 
@@ -19,10 +19,10 @@ class SchedulerCondor(SchedulerInterface) :
   """
   basic class to handle lsf jobs
   """
-  def __init__( self, user_proxy = '' ):
+  def __init__( self, **args ):
 
     # call super class init method
-    super(SchedulerCondor, self).__init__(user_proxy)
+    super(SchedulerCondor, self).__init__(**args)
 
   def checkUserProxy( self, cert='' ):
     return

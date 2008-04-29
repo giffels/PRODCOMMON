@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.24 2008/04/24 17:19:59 gcodispo Exp $"
-__revision__ = "$Revision: 1.24 $"
+__version__ = "$Id: Scheduler.py,v 1.25 2008/04/28 14:58:26 gcodispo Exp $"
+__revision__ = "$Revision: 1.25 $"
 
 
 ##########################################################################
@@ -39,7 +39,7 @@ class Scheduler(object):
                 [self.scheduler]
                 )
             schedClass = vars(module)[self.scheduler]
-            self.schedObj = schedClass( self.parameters['user_proxy'])
+            self.schedObj = schedClass( **self.parameters )
         except KeyError:
             msg = 'Scheduler interface' + self.scheduler + 'not found'
             raise SchedulerError('missing', msg)

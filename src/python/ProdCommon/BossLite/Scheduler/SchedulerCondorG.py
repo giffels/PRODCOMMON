@@ -3,8 +3,8 @@
 _SchedulerCondorG_
 """
 
-__revision__ = "$Id: SchedulerCondorGAPI.py,v 1.22 2008/04/15 17:01:25 ewv Exp $"
-__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: SchedulerCondorG.py,v 1.1 2008/04/15 22:00:15 ewv Exp $"
+__version__ = "$Revision: 1.1 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -12,10 +12,10 @@ class SchedulerCondorG(SchedulerCondorCommon) :
   """
   basic class to handle glite jobs through wmproxy API
   """
-  def __init__( self, user_proxy = '' ):
+  def __init__( self, **args ):
 
     # call super class init method
-    super(SchedulerCondorG, self).__init__(user_proxy)
+    super(SchedulerCondorG, self).__init__(**args)
   
 
   def singleApiJdl( self, job, requirements='' ):
