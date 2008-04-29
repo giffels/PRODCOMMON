@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.12 2008/04/28 21:34:33 ewv Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.13 2008/04/29 08:15:42 gcodispo Exp $"
+__version__ = "$Revision: 1.13 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -84,7 +84,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
 
     if type(obj) == RunningJob or type(obj) == Job :
-      jdl, sandboxFileList = self.decode( obj, requirements='' )
+      raise NotImplementedError
     elif type(obj) == Task :
       taskId = obj['name']
       for job in obj.getJobs():
@@ -120,7 +120,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             job.runningJob['schedulerId'] = ret_map[job['name']]
         try:
           junk = ret_map[ job['name']  ]
-        except: #FIXME: Which exception? KeyError?
+        except KeyError:
           print "Job not submitted:"
           print stdout.readlines()
           print stderr.readlines()
