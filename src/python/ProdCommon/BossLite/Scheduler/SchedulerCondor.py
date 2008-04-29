@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.3 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.4 2008/04/29 15:47:06 ewv Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import re
 import os
@@ -13,13 +13,13 @@ import popen2
 
 from socket import getfqdn
 
-from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
+from SchedulerCondorCommon import SchedulerCondorCommon
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
-class SchedulerCondor(SchedulerInterface) :
+class SchedulerCondor(SchedulerCondorCommon) :
   """
   basic class to handle lsf jobs
   """
@@ -180,33 +180,6 @@ class SchedulerCondor(SchedulerInterface) :
 
       filelist = ''
       return jdl, filelist
-
-  def query(self, schedIdList, service='', objType='node'):
-    import SchedulerCondorCommon
-    bossIds = SchedulerCondorCommon.query(schedIdList, service, objType)
-    return bossIds
-
-  def kill( self, schedIdList, service):
-    """
-    Kill jobs submitted to a given WMS. Does not perform status check
-    """
-    import SchedulerCondorCommon
-    SchedulerCondorCommon.kill(schedIdList, service)
-
-  def getOutput( self, obj, outdir='', service='' ):
-    """
-    Retrieve (move) job output from cache directory to outdir
-    User files from CondorG appear asynchronously in the cache directory
-    """
-    import SchedulerCondorCommon
-    SchedulerCondorCommon.getOutput(obj, outdir, service)
-
-  def postMortem( self, schedulerId, outfile, service):
-    """
-    Get detailed postMortem job info
-    """
-    import SchedulerCondorCommon
-    return SchedulerCondorCommon.postMortem( self, schedulerId, outfile, service)
 
   def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
     """
