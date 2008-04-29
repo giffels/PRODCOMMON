@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.41 2008/04/28 15:35:31 gcodispo Exp $"
-__version__ = "$Revision: 1.41 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.42 2008/04/29 08:15:42 gcodispo Exp $"
+__version__ = "$Revision: 1.42 $"
 
 import sys
 import os
@@ -571,7 +571,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 wmproxy.jobPurge( jobid )
             except BaseException, err:
-                print "WARNING : " + err.toString()
+                #print "WARNING : " + err.toString()
                 continue
 
         # raise exception for failed operations
