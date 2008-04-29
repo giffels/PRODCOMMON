@@ -30,7 +30,8 @@ except ImportError :
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
-from ProdCommon.BossLite.Common.Exceptions import *
+from ProdCommon.BossLite.Common.Exceptions import TaskError
+from ProdCommon.BossLite.Common.Exceptions import DbError
 
 from os.path import expandvars
 import copy
@@ -302,7 +303,7 @@ class BossLiteAPI(object):
 
     ##########################################################################
 
-    def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True ) :
+    def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
         """
         retrieve task information from db using task id
         and defined static/running attributes.
@@ -321,7 +322,8 @@ class BossLiteAPI(object):
         if jobList is None :
             jobAttributes['taskId'] = int( task['id'] )
             jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
-                                               all , strict)
+                                               all, strict=strict, \
+                                               limit=limit, offset=offset )
             task.appendJobs( jobs )
 
         # load jobs from list
@@ -331,10 +333,11 @@ class BossLiteAPI(object):
                     jobAttributes['jobId']  = int( jobId )
                     jobAttributes['taskId'] = int( task['id'] )
                     jobs = self.loadJobsByRunningAttr(
-                        runningAttrs, jobAttributes, all, strict )
+                        runningAttrs, jobAttributes, all, \
+                        strict=strict, limit=limit, offset=offset )
                     if len( jobs) == 1 :
                         task.appendJob( jobs[0] )
-        
+
         return task
 
     ##########################################################################
@@ -402,7 +405,7 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
-    def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True ) :
+    def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
         """
         retrieve information from db for:
         - range of tasks or even a task object
@@ -443,7 +446,8 @@ class BossLiteAPI(object):
                 jobList = [ str(job['jobId']) for job in taskRange.jobs ]
 
             self.loadTaskJobs(taskRange, jobList, \
-                              jobAttributes, runningAttrs, strict=strict )
+                              jobAttributes, runningAttrs, strict=strict, \
+                              limit=limit, offset=offset  )
             taskList.append( taskRange )
             return taskList
 
@@ -455,7 +459,8 @@ class BossLiteAPI(object):
             task['id'] = int( taskId )
             task.load( self.db, deep = False )
             self.loadTaskJobs( task, jobList, jobAttributes, \
-                               runningAttrs, strict=strict )
+                               runningAttrs, strict=strict, \
+                               limit=limit, offset=offset )
             
             # update task list
             task.updateInternalData()
@@ -529,11 +534,10 @@ class BossLiteAPI(object):
                 run = RunningJob(runningAttrs)
 
             job.newRunningInstance( run, self.db )
- #           run.save(self.db)
 
     ##########################################################################
 
-    def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True ) :
+    def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True, limit=None, offset=None ) :
         """
         retrieve job information from db for job
         whose running instance match attributes
@@ -567,7 +571,8 @@ class BossLiteAPI(object):
                                          {'jobId' : 'jobId',
                                           'taskId' : 'taskId',
                                           'submission' : 'submissionNumber'}, \
-                                         strict=strict, jType=jType )
+                                         strict=strict, jType=jType, \
+                                         limit=limit, offset=offset )
         
         # recall jobs
         for runningJob, job in  runJobList :
@@ -588,7 +593,7 @@ class BossLiteAPI(object):
     ##########################################################################
 
         
-    def loadCreated( self, attributes = None ) :
+    def loadCreated( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs created but not submitted using:
         - range of tasks
@@ -597,25 +602,27 @@ class BossLiteAPI(object):
         Takes the highest submission number for each job
         """
 
-        retJobList = []
+        jobList = []
         if attributes is None :
             attributes = { 'status' : 'W' }
         else :
             attributes['status'] = 'W'
 
         # load W
-        jobList = self.loadJobsByRunningAttr( attributes )
+        jobList = self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset )
 
         # load C
         attributes['status'] = 'C'
-        jobList.extend( self.loadJobsByRunningAttr( attributes ) )
+        jobList.extend( self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset ) )
 
-        return retJobList
+        return jobList
 
 
     ##########################################################################
 
-    def loadSubmitted( self, attributes = None ) :
+    def loadSubmitted( self, attributes = None, limit=None, offset=None  ) :
         """
         retrieve information from db for jobs submitted using:
         - range of tasks
@@ -629,12 +636,13 @@ class BossLiteAPI(object):
         else :
             attributes['closed'] = 'N'
 
-        return self.loadJobsByRunningAttr( attributes )
+        return self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset )
 
     ##########################################################################
 
         
-    def loadEnded( self, attributes = None ) :
+    def loadEnded( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs successfully using:
         - range of tasks
@@ -648,12 +656,13 @@ class BossLiteAPI(object):
         else :
             attributes['status'] = 'SD'
 
-        return self.loadJobsByRunningAttr( attributes )
+        return self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset )
 
     ##########################################################################
 
         
-    def loadFailed( self, attributes = None ) :
+    def loadFailed( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs aborted/killed using:
         - range of tasks
@@ -668,11 +677,13 @@ class BossLiteAPI(object):
             attributes['status'] = 'A'
 
         # load aborted
-        jobList = self.loadJobsByRunningAttr( attributes )
+        jobList = self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset )
         
         # load killed
         attributes['status'] = 'K'
-        jobList.extend( self.loadJobsByRunningAttr( attributes ) )
+        jobList.extend( self.loadJobsByRunningAttr(
+            attributes, limit=limit, offset=offset ) )
         
         return jobList
 

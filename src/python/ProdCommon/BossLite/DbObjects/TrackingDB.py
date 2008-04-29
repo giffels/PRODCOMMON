@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.12 2008/04/24 17:33:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.12 $"
+__version__ = "$Id: TrackingDB.py,v 1.13 2008/04/28 10:40:37 gcodispo Exp $"
+__revision__ = "$Revision: 1.13 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -215,7 +215,7 @@ class TrackingDB:
 
     ##########################################################################
 
-    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType=''):
+    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType='', limit=None, offset=None):
         """
         _selectJoin_
 
@@ -294,6 +294,13 @@ class TrackingDB:
                 ', ' + ', '.join( ['t2.'+ key for key in jDbFields] ) + \
                 ' from ' +  tableName + ' t1 ' + qJoin + \
                 jTableName + ' t2 ' + jLFields + listOfFields
+
+        # limit?
+        if limit is not None :
+            if offset is None or int(offset) == 0 :
+                query += ' limit %s' % limit
+            else  :
+                query += ' limit %s,%s' % (offset, limit)
 
         # execute query
         try:
