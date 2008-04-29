@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.3 2008/04/28 07:37:42 spiga Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.4 2008/04/28 22:43:19 spiga Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import re,os
 
@@ -18,10 +18,10 @@ class SchedulerLsf (SchedulerInterface) :
     """
     basic class to handle lsf jobs
     """
-    def __init__( self, user_proxy = '' ):
+    def __init__( self, **args):
 
         # call super class init method
-        super(SchedulerLsf, self).__init__(user_proxy)
+        super(SchedulerLsf, self).__init__(**args)
         self.statusMap = {
             'Undefined':'UN',
             'Submitted':'SU',
