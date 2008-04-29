@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.11 2008/04/28 10:40:37 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: RunningJob.py,v 1.12 2008/04/28 14:22:53 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -101,6 +101,9 @@ class RunningJob(DbObject):
 
         # set operational errors
         self.errors = []
+
+        # flag for scheduler interaction
+        self.active = True
 
     ##########################################################################
 
