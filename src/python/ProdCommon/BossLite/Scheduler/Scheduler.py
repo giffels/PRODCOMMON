@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.25 2008/04/28 14:58:26 gcodispo Exp $"
-__revision__ = "$Revision: 1.25 $"
+__version__ = "$Id: Scheduler.py,v 1.26 2008/04/29 08:15:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.26 $"
 
 
 ##########################################################################
@@ -161,8 +161,9 @@ class Scheduler(object):
             # query performed through a bulk id
             elif objType == 'parent' :
                 for job in obj.jobs :
-                    if job.runningJob['schedulerParentId'] not in schedIds \
-                           and job.runningJob['status'] != 'SD':
+                    if self.schedObj.valid( job.runningJob ) \
+                      and job.runningJob['status'] != 'SD' \
+                      and job.runningJob['schedulerParentId'] not in schedIds:
                         schedIds.append( job.runningJob['schedulerParentId'] )
                 jobAttributes = self.schedObj.query( schedIds, \
                                                self.parameters['service'],
