@@ -302,6 +302,67 @@ class BossLiteAPI(object):
         return task
 
     ##########################################################################
+        
+    def loadTaskByName( self, name, deep=True ) :
+        """
+        retrieve task information from db for task 'name'
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # create template for task
+        task = Task()
+        task['name'] = name
+
+        # load task
+        task.load(self.db, deep)
+        
+        return task
+
+    ##########################################################################
+        
+    def loadTasksByUser( self, user, deep=True ) :
+        """
+        retrieve task information from db for task owned by user
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # create template for task
+        task = Task()
+        task['user'] = user
+
+        # load task
+        taskList = self.db.select(task, deep)
+        
+        return taskList
+  
+    ##########################################################################
+        
+    def loadTasksByProxy( self, name, deep=True ) :
+        """
+        retrieve task information from db for all tasks
+        with user proxy set to name
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # create template for task
+        task = Task()
+        task['user_proxy'] = name
+
+        # load task
+        taskList = self.db.select(task, deep)
+        
+        return taskList
+
+    ##########################################################################
 
     def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
         """
@@ -341,69 +402,6 @@ class BossLiteAPI(object):
         return task
 
     ##########################################################################
-        
-    def loadTaskByName( self, name ) :
-        """
-        retrieve task information from db for task 'name'
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create template for task
-        task = Task()
-        task['name'] = name
-
-        # load task
-        task.load(self.db)
-        
-        return task
-
-    ##########################################################################
-        
-    def loadTasksByUser( self, user ) :
-        """
-        retrieve task information from db for task owned by user
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create template for task
-        task = Task()
-        task['user'] = user
-
-        # load task
-        taskList = self.db.select(task)
-        
-        return taskList
-  
-    ##########################################################################
-
-        
-    def loadTasksByProxy( self, name ) :
-        """
-        retrieve task information from db for all tasks
-        with user proxy set to name
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # create template for task
-        task = Task()
-        task['user_proxy'] = name
-
-        # load task
-        taskList = self.db.select(task)
-        
-        return taskList
-
-    ##########################################################################
-
         
     def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
         """
@@ -526,7 +524,7 @@ class BossLiteAPI(object):
         job.getRunningInstance(self.db)
 
         # create it otherwise
-        if job.runningJob is None or job.runningJob == [] :
+        if job.runningJob is None :
 
             if runningAttrs is None :
                 run = RunningJob()
