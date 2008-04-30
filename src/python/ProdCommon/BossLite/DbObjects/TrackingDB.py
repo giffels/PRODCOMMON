@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.14 2008/04/29 17:44:22 gcodispo Exp $"
-__revision__ = "$Revision: 1.14 $"
+__version__ = "$Id: TrackingDB.py,v 1.15 2008/04/30 09:14:05 gcodispo Exp $"
+__revision__ = "$Revision: 1.15 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -120,7 +120,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
-                    obj[key] = eval(value)
+                    try :
+                        obj[key] = eval(value)
+                    except SyntaxError:
+                        obj[key] = [ value ]
 
                 # other objects get casted automatically
                 else:
@@ -198,7 +201,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
-                    obj[key] = eval(value)
+                    try :
+                        obj[key] = eval(value)
+                    except SyntaxError:
+                        obj[key] = [ value ]
 
                 # other objects get casted automatically
                 else:
@@ -333,7 +339,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
-                    obj[key] = eval(value)
+                    try :
+                        obj[key] = eval(value)
+                    except SyntaxError:
+                        obj[key] = [ value ]
 
                 # other objects get casted automatically
                 else:
@@ -352,7 +361,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(jTemplate.defaults[key]) == list:
-                    jObj[key] = eval(value)
+                    try :
+                        jObj[key] = eval(value)
+                    except SyntaxError:
+                        jObj[key] = [ value ]
 
                 # other jObjects get casted automatically
                 else:
@@ -532,7 +544,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
-                    obj[key] = eval(value)
+                    try :
+                        obj[key] = eval(value)
+                    except SyntaxError:
+                        obj[key] = [ value ]
 
                 # other objects get casted automatically
                 else:
@@ -615,7 +630,10 @@ class TrackingDB:
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
-                    obj[key] = eval(value)
+                    try :
+                        obj[key] = eval(value)
+                    except SyntaxError:
+                        obj[key] = [ value ]
 
                 # other objects get casted automatically
                 else:
