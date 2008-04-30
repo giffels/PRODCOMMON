@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.4 2008/04/28 22:43:19 spiga Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.5 2008/04/29 16:15:05 spiga Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import re,os
 
@@ -119,7 +119,7 @@ class SchedulerLsf (SchedulerInterface) :
 
         m= r.search(out)
         if m is not None:
-            #taskId =m.group(1)
+            jobId =m.group(1)
             queue = m.group(2)
         else:
             rNot = re.compile("Job not submitted.*<(\w+)>")
@@ -131,7 +131,7 @@ class SchedulerLsf (SchedulerInterface) :
             raise (out)
         taskId = None 
         #print "Your job identifier is: ", taskId, queue
-        map={ job['name'] : taskId }
+        map={ job['name'] : jobId }
         return map, taskId, queue
 
     def query(self, schedIdList, service='', objType='node') :
