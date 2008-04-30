@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.13 2008/04/28 10:40:37 gcodispo Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: TrackingDB.py,v 1.14 2008/04/29 17:44:22 gcodispo Exp $"
+__revision__ = "$Revision: 1.14 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -116,7 +116,7 @@ class TrackingDB:
 
                 # check for NULLs
                 if value is None:
-                    obj[key] = template.defaults[key]
+                    obj[key] = deepcopy( template.defaults[key] )
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
@@ -194,7 +194,7 @@ class TrackingDB:
 
                 # check for NULLs
                 if value is None:
-                    obj[key] = template.defaults[key]
+                    obj[key] = deepcopy( template.defaults[key] )
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
@@ -329,7 +329,7 @@ class TrackingDB:
                     
                 # check for NULLs
                 if value is None:
-                    obj[key] = template.defaults[key]
+                    obj[key] = deepcopy(template.defaults[key])
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
@@ -348,7 +348,7 @@ class TrackingDB:
                 
                 # check for NULLs
                 if value is None:
-                    jObj[key] = jTemplate.defaults[key]
+                    jObj[key] = deepcopy(jTemplate.defaults[key])
 
                 # check for lists
                 elif type(jTemplate.defaults[key]) == list:
@@ -528,7 +528,7 @@ class TrackingDB:
 
                 # check for NULLs
                 if value is None:
-                    obj[key] = template.defaults[key]
+                    obj[key] = deepcopy(template.defaults[key])
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
@@ -611,7 +611,7 @@ class TrackingDB:
 
                 # check for NULLs
                 if value is None:
-                    obj[key] = template.defaults[key]
+                    obj[key] = deepcopy(template.defaults[key])
 
                 # check for lists
                 elif type(template.defaults[key]) == list:
