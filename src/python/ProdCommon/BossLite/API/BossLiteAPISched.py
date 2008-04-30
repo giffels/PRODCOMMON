@@ -75,8 +75,8 @@ class BossLiteAPISched(object):
 
         # create or load running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-            job.runningJob['schedulerAttributes'] = schedulerAttributes
+            if job.runningJob is not None :
+                job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # scheduler submit
         self.scheduler.submit( task, requirements )
@@ -110,8 +110,8 @@ class BossLiteAPISched(object):
 
         # get new running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-            job.runningJob['schedulerAttributes'] = schedulerAttributes
+            if job.runningJob is not None :
+                job.runningJob["closed"] = "Y"
 
         # update changes
         self.bossLiteSession.updateDB(task)
@@ -154,10 +154,6 @@ class BossLiteAPISched(object):
                                           runningAttrs=runningAttrs, \
                                           strict=strict )[0]
 
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-
         # scheduler query
         self.scheduler.query( task, queryType )
 
@@ -185,10 +181,6 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-
         # scheduler query
         self.scheduler.getOutput( task, outdir )
 
@@ -213,10 +205,6 @@ class BossLiteAPISched(object):
 
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.kill( task )
@@ -245,8 +233,8 @@ class BossLiteAPISched(object):
 
         # retrieve running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-            job.runningJob['schedulerAttributes'] = schedulerAttributes
+            if job.runningJob is not None :
+                job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # scheduler query
         return self.scheduler.matchResources( task, requirements )
@@ -283,8 +271,8 @@ class BossLiteAPISched(object):
 
         # retrieve running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
-            job.runningJob['schedulerAttributes'] = schedulerAttributes
+            if job.runningJob is not None :
+                job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         return self.scheduler.jobDescription ( task, requirements )
 
@@ -304,10 +292,6 @@ class BossLiteAPISched(object):
         
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
 
         # purge task
         self.bossLiteSession.purgeService( task )
@@ -331,10 +315,6 @@ class BossLiteAPISched(object):
 
         # load task
         task = self.bossLiteSession.loadTask( taskId, {'id' : jobId} )
-
-        # retrieve running instances
-        for job in task.jobs:
-            self.bossLiteSession.getRunningInstance( job )
 
         # scheduler query
         self.scheduler.postMortem( task, outfile )
