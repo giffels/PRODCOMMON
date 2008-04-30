@@ -75,6 +75,7 @@ class BossLiteAPISched(object):
 
         # create or load running instances
         for job in task.jobs:
+            self.bossLiteSession.getRunningInstance( job )
             job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # scheduler submit
@@ -107,9 +108,10 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # get new running instance
+        # get new running instances
         for job in task.jobs:
-            job.runningJob["closed"] = "Y"
+            self.bossLiteSession.getRunningInstance( job )
+            job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # update changes
         self.bossLiteSession.updateDB(task)
@@ -152,6 +154,10 @@ class BossLiteAPISched(object):
                                           runningAttrs=runningAttrs, \
                                           strict=strict )[0]
 
+        # retrieve running instances
+        for job in task.jobs:
+            self.bossLiteSession.getRunningInstance( job )
+
         # scheduler query
         self.scheduler.query( task, queryType )
 
@@ -179,6 +185,10 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
+        # retrieve running instances
+        for job in task.jobs:
+            self.bossLiteSession.getRunningInstance( job )
+
         # scheduler query
         self.scheduler.getOutput( task, outdir )
 
@@ -204,6 +214,10 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
+        # retrieve running instances
+        for job in task.jobs:
+            self.bossLiteSession.getRunningInstance( job )
+
         # scheduler query
         self.scheduler.kill( task )
 
@@ -215,8 +229,7 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-
-    def matchResources( self, taskId, jobRange='all', requirements='', jobAttributes=None ) :
+    def matchResources( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ) :
         """
         perform a resources discovery
         
@@ -232,9 +245,8 @@ class BossLiteAPISched(object):
 
         # retrieve running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance(
-                job, { 'schedulerAttributes' : jobAttributes }
-                )
+            self.bossLiteSession.getRunningInstance( job )
+            job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         # scheduler query
         return self.scheduler.matchResources( task, requirements )
@@ -252,7 +264,7 @@ class BossLiteAPISched(object):
 
     ##########################################################################
         
-    def jobDescription ( self, taskId, jobRange='all', requirements='', jobAttributes=None ):
+    def jobDescription ( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         query status and eventually other scheduler related information
         
@@ -269,11 +281,10 @@ class BossLiteAPISched(object):
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # create or load running instances
+        # retrieve running instances
         for job in task.jobs:
-            self.bossLiteSession.getRunningInstance(
-                job, { 'schedulerAttributes' : jobAttributes }
-                )
+            self.bossLiteSession.getRunningInstance( job )
+            job.runningJob['schedulerAttributes'] = schedulerAttributes
 
         return self.scheduler.jobDescription ( task, requirements )
 
@@ -293,6 +304,10 @@ class BossLiteAPISched(object):
         
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+        # retrieve running instances
+        for job in task.jobs:
+            self.bossLiteSession.getRunningInstance( job )
 
         # purge task
         self.bossLiteSession.purgeService( task )
