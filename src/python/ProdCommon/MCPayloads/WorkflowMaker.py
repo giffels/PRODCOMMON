@@ -53,8 +53,9 @@ class WorkflowMaker:
         self.channel = channel
         self.cmsswVersion = None
         self.configuration = None
+        self.configurations = []
         self.psetHash = None
-
+        
         self.options = {}
         self.options.setdefault('FakeHash', False)
 
@@ -98,7 +99,20 @@ class WorkflowMaker:
         self.cmsRunNode.name = "cmsRun1"
         self.cmsRunNode.type = "CMSSW"
         
-        
+        self.topCmsRunNode = self.cmsRunNode
+        self.cmsRunNodes = [self.cmsRunNode]
+
+
+    def appendCmsRunNode(self):
+        """
+        append a cmsRun config to the current cmsRun node and chain them
+        """
+        newnode = self.cmsRunNode.newNode("cmsRun%s" % (len(self.cmsRunNodes) + 1))
+        newnode.type = "CMSSW"
+        newnode.addInputLink(self.cmsRunNode.name, self.configurations[-1].outputModules.keys()[0], 'source')
+        self.cmsRunNode = newnode
+        self.cmsRunNodes.append(newnode)
+        #return self.cmsRunNode
 
 
     def changeCategory(self, newCategory):
@@ -194,6 +208,7 @@ class WorkflowMaker:
                 
         self.configuration = cfgContent
         self.cmsRunNode.cfgInterface = cfgContent
+        self.configurations.append(cfgContent)
         return
 
 
@@ -300,7 +315,7 @@ class WorkflowMaker:
         # // Input Dataset?
         #//
         if self.inputDataset['IsUsed']:
-            inputDataset = self.cmsRunNode.addInputDataset(
+            inputDataset = self.cmsRunNodes[0].addInputDataset(
                 self.inputDataset['Primary'],
                 self.inputDataset['Processed']
                 )
@@ -320,7 +335,7 @@ class WorkflowMaker:
         # // Pileup Dataset?
         #//
         if self.pileupDataset['IsUsed']:
-            puDataset = self.cmsRunNode.addPileupDataset(
+            puDataset = self.cmsRunNodes[0].addPileupDataset(
                 self.pileupDataset['Primary'],
                 self.pileupDataset['DataTier'],
                 self.pileupDataset['Processed'])
@@ -330,8 +345,9 @@ class WorkflowMaker:
         #  //
         # // Extract dataset info from cfg
         #//
-        for outModName in self.configuration.outputModules.keys():
-            moduleInstance = self.configuration.getOutputModule(outModName)
+        #for outModName in self.configuration.outputModules.keys():
+        for outModName in self.configurations[-1].outputModules.keys():
+            moduleInstance = self.configurations[-1].getOutputModule(outModName)
             dataTier = moduleInstance['dataTier']
             filterName = moduleInstance["filterName"]
             primaryName = DatasetConventions.primaryDatasetName(
