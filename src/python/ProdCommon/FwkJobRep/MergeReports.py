@@ -6,7 +6,7 @@ Given two FrameworkJobReport XML files, concatenate them into
 a single file.
 
 """
-import os
+import os, time
 from IMProv.IMProvDoc import IMProvDoc
 from ProdCommon.FwkJobRep.ReportParser import readJobReport
 
@@ -87,3 +87,61 @@ def updateReport(reportFile, newReportInstance):
     return updatedReport
 
 
+def combineReports(reportFile, reportNames, newReportInstance):
+    """
+    Combine reports, take some fields from report with given name
+    in reportFile and then overwrite with newReportInstance
+    
+    Note: newReportInstance is modified, and should be written back as the 
+    task fjr - else subsequent tasks will take the wrong one!!!
+    
+    """
+    if not os.path.exists(reportFile):
+        existingReports = []
+    else:
+        existingReports = readJobReport(reportFile)
+
+    if not isinstance(reportNames, list):
+        reportNames = [reportNames]
+
+    updatedReport = False
+    output = IMProvDoc("JobReports")
+    
+    #wipe old values ready for new ones
+    newReportInstance.inputFiles = []
+    newReportInstance.generatorInfo = {} #how to handle multiple?
+    
+    for report in existingReports:
+        if report.name in reportNames:
+            # copy some values across from old report
+            newReportInstance.inputFiles.extend(report.inputFiles)
+            newReportInstance.skippedEvents.extend(report.skippedEvents)
+            newReportInstance.skippedFiles.extend(report.skippedFiles)
+            if report.timing.has_key('AppStartTime') and \
+                report.timing['AppStartTime'] < newReportInstance.timing.get('AppStartTime', time.time()):
+                newReportInstance.timing['AppStartTime'] = report.timing['AppStartTime']
+                
+            # loop over output files and change provenance to 1st node's
+            for outfile in newReportInstance.files:
+                oldinputfiles = outfile.inputFiles
+                outfile.inputFiles = [] #clear ready for correct provenance info
+                for infile in oldinputfiles:
+                    # find the ancestor input files in previous report
+                    for ancestor in report.files:
+                        if ancestor['LFN'] == infile['LFN']:
+                            outfile.inputFiles.extend(ancestor.inputFiles)
+                       
+            updatedReport = True
+        else:
+            output.addNode(report.save())
+    
+    if not updatedReport:
+        raise RuntimeError, "Reports not combined: %s not found in %s" % \
+                        (str(reportNames), reportFile)
+    
+    output.addNode(newReportInstance.save())
+    
+    handle = open(reportFile, 'w')
+    handle.write(output.makeDOMDocument().toprettyxml())
+    handle.close()
+    return newReportInstance
