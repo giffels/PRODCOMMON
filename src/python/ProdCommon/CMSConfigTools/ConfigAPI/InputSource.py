@@ -93,6 +93,18 @@ class InputSource:
             CfgTypes.string(matchMode))
 
 
+    def overrideCatalog(self):
+        """get overrideCatalog value of None if not set"""
+        cfgType = getattr(self.data, "overrideCatalog", _CfgNoneType())
+        return cfgType.value()
+
+
+    def setOverrideCatalog(self, catalog, protocol):
+        """set overrideCatalog to allow local files to be read via LFN"""
+        uri = "trivialcatalog_file:%s?protocol=%s" % (catalog, protocol)
+        self.data.overrideCatalog = CfgTypes.untracked(CfgTypes.string(uri))
+        
+        
     def sourceParameters(self):
         """
         _sourceParamaters_
@@ -104,4 +116,5 @@ class InputSource:
         result['fileNames'] = self.fileNames()
         result['firstRun'] = self.firstRun()
         result['skipEvents'] = self.skipevents()
+        result['overrideCatalog'] = self.overrideCatalog()
         return result

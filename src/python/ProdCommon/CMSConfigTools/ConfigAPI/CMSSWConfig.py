@@ -100,6 +100,7 @@ class CMSSWConfig:
         self.sourceParams = {}
         self.sourceType = None
         self.inputFiles = []
+        self.inputOverrideCatalog = None
         self.requiredSeeds = 0
         self.seeds = []
 
@@ -160,6 +161,7 @@ class CMSSWConfig:
         """
         self.maxEvents["input"] = maxEvents
         return
+    
 
     def setOutputMaxEvents(self, maxEvents, modName = None):
         """
@@ -229,6 +231,7 @@ class CMSSWConfig:
             [ sourceFiles.addNode(IMProvNode("File", str(x)))
                for x in self.inputFiles ]
             sourceNode.addNode(sourceFiles)
+            sourceNode.addNode(IMProvNode("OverrideCatalog", self.inputOverrideCatalog))
         for key, value in self.sourceParams.items():
             if value != None:
                 sourceNode.addNode(
@@ -342,11 +345,12 @@ class CMSSWConfig:
         srcParamQ = IMProvQuery("/CMSSWConfig/Source/Parameter")
         seedReqQ = IMProvQuery("/CMSSWConfig/Seeds/RequiredSeeds[attribute(\"Value\")]")
         seedValQ = IMProvQuery("/CMSSWConfig/Seeds/RandomSeed[attribute(\"Value\")]")
+        overrideCatalogQ = IMProvQuery("/CMSSWConfig/Source/OverrideCatalog[text()]")
 
         #  //
         # // Source
         #//
-        self.inputFiles = srcFileQ(improvNode)
+        self.inputOverrideCatalog = overrideCatalogQ(improvNode)
         for srcParam in srcParamQ(improvNode):
             parName = srcParam.attrs.get('Name', None)
             if parName == None:
@@ -358,7 +362,7 @@ class CMSSWConfig:
         srcTypeData = srcTypeQ(improvNode)
         if len(srcTypeData) > 0:
             self.sourceType = str(srcTypeData[-1])
-        
+        self.inputOverrideCatalog
         #  //
         # // seeds
         #//
@@ -501,7 +505,8 @@ class CMSSWConfig:
         if skipEv != None:
             cfg.inputSource.setSkipEvents(skipEv)
 
-            
+        if self.inputOverrideCatalog not in (None, ''):
+            cfg.inputSource.setOverrideCatalog(self.inputOverrideCatalog, 'override')    
             
         #  //
         # // maxEvents PSet

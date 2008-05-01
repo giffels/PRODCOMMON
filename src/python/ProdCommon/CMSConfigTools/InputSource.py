@@ -80,3 +80,15 @@ class InputSource:
           matchMode =  "\'%s\'" % matchMode
         self.data['fileMatchMode'] = ('string', 'untracked', matchMode)
 
+    def overrideCatalog(self):
+        """get value of overrideCatalog, None if not set"""
+        tpl = self.data.get("overrideCatalog", None)
+        if tpl != None:
+            return tpl[2]
+        return None
+    
+    def setOverrideCatalog(self, catalog, protocol):
+        """setMaxEvents value"""
+        uri = "trivialcatalog_file:%s?protocol=%s" % (catalog, protocol)
+        self.data['overrideCatalog'] = ('string', 'untracked', uri)
+
