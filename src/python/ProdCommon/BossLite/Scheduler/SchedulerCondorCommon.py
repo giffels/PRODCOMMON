@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.14 2008/04/29 15:47:06 ewv Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.15 2008/04/29 16:43:02 ewv Exp $"
+__version__ = "$Revision: 1.15 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -365,3 +365,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
     fullFilename = outfile+'.LoggingInfo'
     cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,fullFilename)
     return self.ExecuteCommand(cmd)
+
+  def jobDescription( self, obj, requirements='', config='', service = '' ):
+    """
+    retrieve scheduler specific job description
+    """
+
+
+    return "Check jdl files in share/.condor_temp after submit\n"
+
+
