@@ -301,7 +301,7 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-    def postMortem ( self, taskId, jobId, outfile ) :
+    def postMortem ( self, taskId, jobRange='all', outfile='loggingInfo.log') :
         """
         execute any post mortem command such as logging-info
         
@@ -314,7 +314,7 @@ class BossLiteAPISched(object):
         """
 
         # load task
-        task = self.bossLiteSession.loadTask( taskId, {'id' : jobId} )
+        task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         # scheduler query
         self.scheduler.postMortem( task, outfile )

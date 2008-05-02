@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.42 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.42 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.43 2008/04/29 12:47:06 gcodispo Exp $"
+__version__ = "$Revision: 1.43 $"
 
 import sys
 import os
@@ -702,7 +702,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         """
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
-                  " > " + outfile + ".LoggingInfo"
+                  " > " + outfile
             
         if self.cert != '' :
             command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
