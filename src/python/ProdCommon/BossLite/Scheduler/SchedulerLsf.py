@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.5 2008/04/29 16:15:05 spiga Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.6 2008/04/30 13:38:09 spiga Exp $"
+__version__ = "$Revision: 1.6 $"
 
 import re,os
 
@@ -40,6 +40,9 @@ class SchedulerLsf (SchedulerInterface) :
             'Done(failed)':'DA'   
             }
 
+        self.cpCmd=args['cpCmd']
+        if self.cmCmd ='': self.cpCmd = 'cp'
+        self.rfioSer=args['rfioSer'] 
 
     def checkUserProxy( self, cert='' ):
         return
@@ -49,6 +52,15 @@ class SchedulerLsf (SchedulerInterface) :
         retrieve scheduler specific job description
         return it as a string
         """
+        args='' 
+        if type(obj) == RunningJob or type(obj) == Job:
+            return self.decode(obj, requirements)
+        elif type(obj) == Task :
+            task = obj
+            for job in task.getJobs() :
+                args += self.decode(job, task, requirements)+'  \n'
+            return args 
+
 
     def submit ( self, obj, requirements='', config='', service = '' ) :
         """
@@ -78,39 +90,7 @@ class SchedulerLsf (SchedulerInterface) :
     def submitJob ( self, job, task=None, requirements=''):
         """ Need to copy the inputsandbox to WN before submitting a job"""
 
-        txt = "'"
-        # Need to copy InputSandBox to WN
-        if task:
-            subDir=task[ 'startDirectory' ]
-            for inpFile in task[ 'globalSandbox' ].split(','):
-                txt += "cp "+subDir+"/"+inpFile+" . ; "
-        ## Job specific ISB
-        for inpFile in job[ 'inputFiles' ]:
-            if inpFile != '': txt += "cp "+inpFile+" .;"
-
-        ## Now the actual wrapper
-        args = job[ 'arguments' ]
-        exe = job[ 'executable' ]
-        txt += "./"+os.path.basename(exe)+" "+args+" ; "
-
-        ## And finally copy back the output
-        outputDir=task['outputDirectory']
-        for outFile in job['outputFiles']:
-            txt += "cp "+outFile+" "+outputDir+". ; "
-
-        txt += "'"
-
-        arg = ""
-        if job[ 'standardInput' ] != '':
-            arg += ' -i %s ' % job[ 'standardInput' ]
-        arg += ' -o %s ' % job[ 'standardOutput' ]
-        arg += ' -e %s ' % job[ 'standardError' ]
-
-        # blindly append user requirements
-        arg += requirements
-
-        # and finally the wrapper
-        arg +=  '  %s ' % txt
+        arg = self.decode(job, task, requirements )
 
         command = "bsub " + arg 
 
@@ -133,6 +113,49 @@ class SchedulerLsf (SchedulerInterface) :
         #print "Your job identifier is: ", taskId, queue
         map={ job['name'] : jobId }
         return map, taskId, queue
+
+
+    def decode (self, job, task=None, requirements='' , config ='', service='' ):
+        """
+        prepare file for submission
+        """
+
+        txt = "'"
+        # Need to copy InputSandBox to WN
+        if task:
+            subDir=task[ 'startDirectory' ]
+            for inpFile in task[ 'globalSandbox' ].split(','):
+                txt += self.cpCmd+" "+self.rfioSer+subDir+inpFile+" . ; "
+        ## Job specific ISB
+        for inpFile in job[ 'inputFiles' ]:
+            if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+inpFile+" .;"
+
+        ## Now the actual wrapper
+        args = job[ 'arguments' ]
+        exe = job[ 'executable' ]
+        txt += "./"+os.path.basename(exe)+" "+args+" ; "
+
+        ## And finally copy back the output
+        outputDir=task['outputDirectory']
+        for outFile in job['outputFiles']:
+            txt += self.cpCmd+" "+outFile+" "+self.rfioSer+outputDir+". ; "
+
+        txt += "'"
+
+        arg = ""
+        if job[ 'standardInput' ] != '':
+            arg += ' -i %s ' % job[ 'standardInput' ]
+        arg += ' -o %s ' % job[ 'standardOutput' ]
+        arg += ' -e %s ' % job[ 'standardError' ]
+
+        # blindly append user requirements
+        arg += requirements
+
+        # and finally the wrapper
+        arg +=  '  %s ' % txt
+
+        return arg 
+
 
     def query(self, schedIdList, service='', objType='node') :
         """
