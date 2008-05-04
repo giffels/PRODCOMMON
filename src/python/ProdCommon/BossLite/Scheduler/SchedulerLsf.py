@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.6 2008/04/30 13:38:09 spiga Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.7 2008/05/03 18:23:19 spiga Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import re,os
 
@@ -39,11 +39,13 @@ class SchedulerLsf (SchedulerInterface) :
             'Unknown':'UN',
             'Done(failed)':'DA'   
             }
-
-        self.cpCmd=args['cpCmd']
-        if self.cmCmd ='': self.cpCmd = 'cp'
-        self.rfioSer=args['rfioSer'] 
-
+        self.cpCmd  = 'cp'
+        self.rfioSer= '' 
+        try:
+            self.cpCmd  =args['cpCmd']
+            self.rfioSer=args['rfioSer'] 
+        except:
+            pass
     def checkUserProxy( self, cert='' ):
         return
 
@@ -138,7 +140,7 @@ class SchedulerLsf (SchedulerInterface) :
         ## And finally copy back the output
         outputDir=task['outputDirectory']
         for outFile in job['outputFiles']:
-            txt += self.cpCmd+" "+outFile+" "+self.rfioSer+outputDir+". ; "
+            txt += self.cpCmd+" "+outFile+" "+self.rfioSer+outputDir+"/. ; "
 
         txt += "'"
 
