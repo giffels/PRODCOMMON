@@ -56,9 +56,8 @@ class ProtocolRfio(Protocol):
         fullDest = dest.workon
         if source.protocol != 'local':
             fullSource = source.getLynk()
-        elif dest.protocol != 'local':
+        if dest.protocol != 'local':
             fullDest = dest.getLynk()
-        fullDest = dest.getLynk()
 
         cmd = "rfcp "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
