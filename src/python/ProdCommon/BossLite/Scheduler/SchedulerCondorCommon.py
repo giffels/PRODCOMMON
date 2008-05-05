@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.15 2008/04/29 16:43:02 ewv Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.16 2008/05/02 19:52:27 ewv Exp $"
+__version__ = "$Revision: 1.16 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -23,24 +23,17 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
-import pdb           # FIXME: Remove
-import pprint        # FIXME: Remove
-import inspect       # FIXME: Remove
-
 class SchedulerCondorCommon(SchedulerInterface) :
   """
   basic class to handle glite jobs through wmproxy API
   """
   def __init__( self, **args ):
-
     # call super class init method
     super(SchedulerCondorCommon, self).__init__(**args)
-    self.hostname = getfqdn()
-    self.execDir = os.getcwd()+'/'
-    self.workingDir = ''
-    self.condorTemp = ''
 
-    self.batchSize = 20 # Number of jobs to submit per site before changing CEs
+    self.hostname   = getfqdn()
+    self.condorTemp = args['tmpDir']
+    self.batchSize  = 20 # Number of jobs to submit per site before changing CEs
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -64,13 +57,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     """
 
+    # Make directory for Condor returned files
 
-    # Figure out our environment, make some directories
-
-    # HACK: Script dir ends in /job/blah.sh, strip those parts off
-    scriptDir = os.path.split(obj['scriptName'])[0]
-    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
-    self.condorTemp = self.workingDir+'share/.condor_temp'
     if os.path.isdir(self.condorTemp):
       pass
     else:
@@ -309,11 +297,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
     User files from CondorG appear asynchronously in the cache directory
     """
 
-    # HACK: Script dir ends in /job/blah.sh, strip those parts off
-    scriptDir = os.path.split(obj['scriptName'])[0]
-    self.workingDir = (os.sep).join(scriptDir.split(os.sep)[:-1])+os.sep
-    self.condorTemp = self.workingDir+'share/.condor_temp'
-
     if type(obj) == RunningJob: # The object passed is a RunningJob
       raise SchedulerError('Operation not possible',
                            'CondorG cannot retrieve files when passed RunningJob')
@@ -371,7 +354,4 @@ class SchedulerCondorCommon(SchedulerInterface) :
     retrieve scheduler specific job description
     """
 
-
-    return "Check jdl files in share/.condor_temp after submit\n"
-
-
+    return "Check jdl files in " + self.tmpDir + " after submit\n"
