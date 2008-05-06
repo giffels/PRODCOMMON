@@ -28,7 +28,10 @@ def getJSON(service, **args):
     f = urllib.urlopen(query, params)
     result = f.read()
     f.close()
-    output = eval(result)
+    #
+    # TODO: replace eval with something less dangerous, probably need to 
+    # build a parser for the dict format only here.
+    output = eval(result, {}, {})
     return output
     
 
