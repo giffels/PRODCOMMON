@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.45 2008/05/06 10:20:36 gcodispo Exp $"
-__version__ = "$Revision: 1.45 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.46 2008/05/06 14:28:11 gcodispo Exp $"
+__version__ = "$Revision: 1.46 $"
 
 import sys
 import os
@@ -63,6 +63,7 @@ def processClassAd( classAd ):
     endpoints = []
     cladDict = {}
     configfile = ""
+
     try:
         if len(classAd) == 0 :
             raise SchedulerError( "bad jdl ", "empty classAd" )
@@ -161,10 +162,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 configfile = "%s/etc/%s/glite_wms.conf" \
                              % ( os.environ['GLITE_LOCATION'], vo )
 
-                fileh = open( configfile, "r" )
-                configClad = fileh.read().strip()
-                cladAddDict, endpoints, dummyfile = \
-                             processClassAd( configClad )
+            fileh = open( configfile, "r" )
+            configClad = fileh.read().strip()
+            cladAddDict, endpoints, dummyfile = processClassAd( configClad )
         except  StandardError, err:
             self.warnings.append( "Warning : " + str( err ) )
 
@@ -874,7 +874,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # files are stored locally, compose with 'file://'
             if task['globalSandbox'] is not None :
                 for ifile in task['globalSandbox'].split(','):
-                   # print files
                     if ifile == '' :
                         continue
                     filename = os.path.abspath( ifile )
