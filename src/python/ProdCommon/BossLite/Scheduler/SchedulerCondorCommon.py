@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.16 2008/05/02 19:52:27 ewv Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.17 2008/05/05 18:39:03 ewv Exp $"
+__version__ = "$Revision: 1.17 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -34,6 +34,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     self.hostname   = getfqdn()
     self.condorTemp = args['tmpDir']
     self.batchSize  = 20 # Number of jobs to submit per site before changing CEs
+
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
@@ -119,6 +120,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     return ret_map, taskId, success
 
+
   def findExecHost(self, requirements=''):
     jdlLines = requirements.split(';')
     execHost = 'Unknown'
@@ -131,6 +133,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     return execHost.strip()
 
+
   def inputFiles(self,globalSandbox):
     filelist = ''
     if globalSandbox is not None :
@@ -142,6 +145,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         filelist += filename + ','
     return filelist[:-1]
 
+
   def decode  ( self, obj, requirements='' ):
       """
       prepare file for submission
@@ -151,6 +155,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           return self.singleApiJdl(obj, requirements)
       elif type(obj) == Task :
           return self.collectionApiJdl(obj, requirements)
+
 
   def singleApiJdl( self, job, requirements='' ):
       """
@@ -195,24 +200,21 @@ class SchedulerCondorCommon(SchedulerInterface) :
       filelist = ''
       return jdl, filelist
 
+
   def query(self, schedIdList, service='', objType='node'):
     """
     query status of jobs
     """
     from xml.dom.minidom import parse
 
-    # HACK: Don't know how to solve this one. When I kill jobs they are set to "K" but since
-    # CondorG cancelled jobs leave the queue, they are in the same state as "Done" jobs, so
-    # crab -status eventually shows them as "Done"
-
     jobIds = {}
     bossIds = {}
 
-    statusCodes = {'0':'RE', '1':'SS', '2':'R',  # Convert Condor integer status
-                   '3':'SK', '4':'SD', '5':'SA'} # to BossLite Status codes
+    statusCodes = {'0':'RE', '1':'S', '2':'R',  # Convert Condor integer status
+                   '3':'K',  '4':'D', '5':'A'} # to BossLite Status codes
     textStatusCodes = {
             '0':'Ready',
-            '1':'Scheduled',
+            '1':'Submitted',
             '2':'Running',
             '3':'Cancelled',
             '4':'Done',
@@ -282,6 +284,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     return bossIds
 
+
   def kill( self, schedIdList, service):
     """
     Kill jobs submitted to a given WMS. Does not perform status check
@@ -290,6 +293,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     for job in schedIdList:
       submitHost,jobId  = job.split('//')
       (input_file, output_file) = os.popen4("condor_rm -name  %s %s " % (submitHost,jobId))
+
 
   def getOutput( self, obj, outdir='', service='' ):
     """
@@ -323,6 +327,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     else:
       raise SchedulerError('wrong argument type', str( type(obj) ))
 
+
   def getCondorOutput(self,job,outdir):
     fileList = []
     fileList.append(job['standardOutput'])
@@ -334,6 +339,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         shutil.move(self.condorTemp+'/'+file,outdir)
       except IOError:
         print "Could not move file ",file
+
 
   def postMortem( self, schedulerId, outfile, service):
     """
@@ -349,9 +355,62 @@ class SchedulerCondorCommon(SchedulerInterface) :
     cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,fullFilename)
     return self.ExecuteCommand(cmd)
 
+
   def jobDescription( self, obj, requirements='', config='', service = '' ):
     """
     retrieve scheduler specific job description
     """
 
     return "Check jdl files in " + self.tmpDir + " after submit\n"
+
+# Python handler from Brian Bockelman for faster XML
+#from xml.sax import make_parser
+#from xml.sax.handler import ContentHandler, feature_external_ges
+
+#class CondorHandler(ContentHandler):
+
+    #def __init__(self, idx, attrlist=[]):
+        #self.attrlist = attrlist
+        #self.idxAttr = idx
+
+    #def startDocument(self):
+        #self.attrInfo = ''
+        #self.jobInfo = {}
+
+    #def startElement(self, name, attrs):
+        #if name == 'c':
+            #self.curJobInfo = {}
+        #elif name == 'a':
+            #self.attrName = str(attrs.get('n', 'Unknown'))
+            #self.attrInfo = ''
+        #else:
+            #pass
+
+    #def endElement(self, name):
+        #if name == 'c':
+            #idx = self.curJobInfo.get(self.idxAttr, None)
+            #if idx:
+                #self.jobInfo[idx] = self.curJobInfo
+        #elif name == 'a':
+            #if self.attrName in self.attrlist or len(self.attrlist) == 0:
+                #self.curJobInfo[self.attrName] = self.attrInfo
+        #else:
+            #pass
+
+    #def characters(self, ch):
+        #self.attrInfo += str(ch)
+
+    #def getJobInfo(self):
+        #return self.jobInfo
+
+#if __name__ == '__main__':
+    #timer = -time.time()
+    #handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', \
+        #'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
+    #parser = make_parser()
+    #parser.setContentHandler(handler)
+    #parser.setFeature(feature_external_ges, False)
+    #parser.parse(open(sys.argv[1], 'r'))
+    #timer += time.time()
+    #print "Parsing took %.2f seconds." % timer
+    #print >> sys.stderr, handler.getJobInfo()
