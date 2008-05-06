@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.44 2008/05/02 12:13:42 gcodispo Exp $"
-__version__ = "$Revision: 1.44 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.45 2008/05/06 10:20:36 gcodispo Exp $"
+__version__ = "$Revision: 1.45 $"
 
 import sys
 import os
@@ -54,7 +54,7 @@ def processRow ( row ):
     return key, val
 
 
-def processClassAd(  ClassAd ):
+def processClassAd( classAd ):
     """
     Utility fuction
     
@@ -64,15 +64,15 @@ def processClassAd(  ClassAd ):
     cladDict = {}
     configfile = ""
     try:
-        if len(ClassAd) == 0 :
-            raise SchedulerError( "bad jdl ", "empty ClassAd" )
-        while ClassAd[0] == '[':
-            ClassAd = ClassAd[1:-1].strip()
-        if ClassAd.find("WmsClient") >= 0 :
-            ClassAd = (ClassAd.split("WmsClient")[1]).strip()
-            while ClassAd[0] == '[' or ClassAd[0] == '=' :
-                ClassAd = ClassAd[1:-1].strip()
-        cladMap = ClassAd.split(';')
+        if len(classAd) == 0 :
+            raise SchedulerError( "bad jdl ", "empty classAd" )
+        while classAd[0] == '[':
+            classAd = classAd[1:-1].strip()
+        if classAd.find("WmsClient") >= 0 :
+            classAd = (classAd.split("WmsClient")[1]).strip()
+            while classAd[0] == '[' or classAd[0] == '=' :
+                classAd = classAd[1:-1].strip()
+        cladMap = classAd.split(';')
         for p in cladMap:
             p = p.strip()
             try:
@@ -82,47 +82,17 @@ def processClassAd(  ClassAd ):
             if ( key == "wmsconfig" ) :
                 configfile = val.replace("\"", "")
             elif ( key == "wmproxyendpoints" ) :
-                wms = val[ val.find('{') +1 : val.find('}') ]
-                wms = wms.replace("\n", " ")
-                wms = wms.replace("#", ",#")
-                endpoints = endpoints + wms.split(',')
+                wmsList = val[ val.find('{') +1 : val.find('}') ].split('\n')
+                for wms in wmsList:
+                    wms = wms[ : wms.find('#') ].replace("\"", "").strip()
+                    if wms != '' :
+                        endpoints.append( wms )
             else :
                 cladDict[ key ] = val
     except StandardError:
         raise SchedulerError( "bad jdl ", traceback.format_exc() )
     
     return cladDict, endpoints, configfile
-
-
-def parseConfig ( configfile, vo='cms' ):
-    """
-    Utility fuction
-    
-    extract entries from glite config files
-    """
-
-    cladAddDict = {}
-    endpoints = []
- #   print "using config file", configfile
-    try:
-        if ( len(configfile) == 0 ):
-            configfile = "%s/etc/%s/glite_wms.conf" \
-                         % ( os.environ['GLITE_LOCATION'], vo )
-
-        fileh = open( configfile, "r" )
-        configClad = fileh.read().strip()
-        cladAddDict, endpoints, dummyfile = processClassAd( configClad )
-    except  StandardError, err:
-        print "Warning : \n" + err.__str__()
-
-    if ( len(endpoints) == 0  ) :
-        raise SchedulerError( "bad jdl ", "No WMS defined" )
-
-    cladadd = ''
-    for k, v in cladAddDict.iteritems():
-        cladadd += k + ' = ' + v + ';\n'
-
-    return endpoints, cladadd
 
 
     ##########################################################################
@@ -138,7 +108,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-        
+    warnings = []
+
     def mergeJDL( self, jdl, wms='', configfile='' ):
         """
         parse config files, merge jdl and retrieve wms list
@@ -153,11 +124,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 endpoints = [ wms ]
             elif type( wms ) == list :
                 endpoints = wms
-                
+
             if len( endpoints ) == 0 :
-                endpoints, schedClassad = parseConfig ( configfile )
+                endpoints, schedClassad = self.parseConfig ( configfile )
             else :
-                tmp, schedClassad = parseConfig ( configfile )
+                tmp, schedClassad = self.parseConfig ( configfile )
                 
             begin = ''
             jdl.strip()
@@ -174,6 +145,41 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
     ##########################################################################
 
+
+    def parseConfig ( self, configfile, vo='cms' ):
+        """
+        Utility fuction
+        
+        extract entries from glite config files
+        """
+
+        cladAddDict = {}
+        endpoints = []
+
+        try:
+            if ( len(configfile) == 0 ):
+                configfile = "%s/etc/%s/glite_wms.conf" \
+                             % ( os.environ['GLITE_LOCATION'], vo )
+
+                fileh = open( configfile, "r" )
+                configClad = fileh.read().strip()
+                cladAddDict, endpoints, dummyfile = \
+                             processClassAd( configClad )
+        except  StandardError, err:
+            self.warnings.append( "Warning : " + str( err ) )
+
+        if ( len(endpoints) == 0  ) :
+            raise SchedulerError( "bad jdl ", "No WMS defined" )
+
+        cladadd = ''
+        for k, v in cladAddDict.iteritems():
+            cladadd += k + ' = ' + v + ';\n'
+
+        return endpoints, cladadd
+
+    ##########################################################################
+
+
     def wmproxySubmit( self, jdl, wms, sandboxFileList ) :
         """
         actual submission function
@@ -182,7 +188,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         needs some cleaning
         """
 
-        ret_map = {}
+        returnMap = {}
         taskId = ''
     
         try :
@@ -206,7 +212,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # retrieve nodes id
             dag = task.getChildren()
             for job in dag:
-                ret_map[ str( job.getNodeName() ) ] = str( job.getJobId() )
+                returnMap[ str( job.getNodeName() ) ] = str( job.getJobId() )
 
             # handle input sandbox :
             if sandboxFileList != '' :
@@ -256,14 +262,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             
             # cleaning up everything: delete temporary files and exit
             if sandboxFileList != '' :
-                msg = self.ExecuteCommand( "rm -rf " + self.SandboxDir \
-                                           + ' ' + self.zippedISB )
-                if msg != '' :
-                    print "Warning : " + msg
+                os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise SchedulerError( "failed submission to " + wms, err.toString() )
+            raise SchedulerError("failed submission to " + wms, err.toString())
         except SchedulerError, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             SchedulerError( "failed submission to " + wms, err )
@@ -275,7 +278,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             raise SchedulerError( "failed submission to " + wms, error )
 
                 
-        return taskId, ret_map
+        return taskId, returnMap
 
     ##########################################################################
 
@@ -293,7 +296,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         msg = self.ExecuteCommand( command )
 
         if msg.find("Error -") >= 0 :
-            print "Warning : \n", msg
+            self.warnings.append( "Warning : " + str( msg ) )
 
     ##########################################################################
 
@@ -324,27 +327,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # return values
         taskId = ''
-        ret_map = {}
+        returnMap = {}
+        errorList = []
 
-        # handle wms
+        # handle wms and prepare jdl
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
-
         if endpoints == [] :
             raise SchedulerError( "failed submission", "empty WMS list" )
-
-        # jdl ready!
-        # print "Using jdl : \n" + jdl
-
-        # installing a signal handler to clean files if the submission
-        # is signaled e.g. for a timeout
-        # signal.signal(signal.SIGTERM, handler)
 
         # emulate ui round robin
         try :
             import random
             random.shuffle(endpoints)
-        except:
-            print "random access to wms not allowed, using sequential access"
+        except ImportError:
+            errorList.append(
+                "random access to wms not allowed, using sequential access" )
 
         errors = ''
         success = None
@@ -356,8 +353,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     seen.append( wms)
-                print "Submitting to : " + wms
-                taskId, ret_map = \
+                errorList.append( "Submitting to : " + wms )
+                taskId, returnMap = \
                         self.wmproxySubmit( jdl, wms, sandboxFileList )
                 success = wms
                 break
@@ -367,11 +364,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
+
+        # log warnings
+        for job in obj.jobs :
+            job.runningJob.errors.extend( self.warnings )
+            job.runningJob.errors.extend( errorList )
+        del self.warnings [:]
+
         # if submission failed, raise error
         if success is None :
             raise SchedulerError( "failed submission", errors )
 
-        return ret_map, taskId, success
+        return returnMap, taskId, success
 
 
     ##########################################################################
@@ -585,10 +589,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
     ##########################################################################
 
-    def killCheck( self, schedIdList, id_type = 'node' ):
+    def killCheck( self, schedIdList, idType = 'node' ):
         """
         Kill jobs querying WMS to LB, if the job status allows
-        If a list of parent id is used, must be id_type='parent'
+        If a list of parent id is used, must be idType='parent'
         """
 
         jobs = []
@@ -602,7 +606,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # retrieve wms
         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
         endpoints = groupByWMS(
-            jobs, self.cert, id_type, \
+            jobs, self.cert, idType, \
             status_list = ['Done', 'Aborted','Cancelled'],\
             allow = False
             )
@@ -612,8 +616,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 self.kill( wms, schedIdList )
             except StandardError:
-                for jobid in schedIdList:
-                    print jobid, "failed"
+                pass
+                # for job in schedIdList:
+                #     job.runningJob.errors.append( "failed" )
 
     ##########################################################################
 
@@ -642,8 +647,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 for jobid in schedIdList:
                     wmproxy.jobPurge( jobid )
             except BaseException, err:
-                print err.toString(), '\n\n'
-                print "error"
+                pass
+                # print err.toString(), '\n\n'
 
     ##########################################################################
 
@@ -655,8 +660,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         configfile = config
         wms = service
         matchingCEs = []
+        errorList = []
 
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile)
+
+        # handle wms
+        if endpoints == [] :
+            raise SchedulerError( "failed submission", "empty WMS list" )
 
         # jdl ready!
         seen = []
@@ -665,8 +675,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         try :
             import random
             random.shuffle(endpoints)
-        except:
-            print "random access to wms not allowed, using sequential access"
+        except ImportError:
+            errorList.append(
+                "random access to wms not allowed, using sequential access" )
 
         for wms in endpoints :
             try :
@@ -675,7 +686,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     seen.append( wms)
-                print "ListMatch to : ", wms
+                errorList.append( "ListMatch to : " + wms )
                 
                 # delegate proxy
                 self.delegateProxy( wms )
@@ -689,11 +700,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 if matchingCEs != None and len ( matchingCEs ) != 0 :
                     break
                 else :
-                    print  "No results for listMatch\n\n" 
+                    errorList.append( "No results for listMatch" )
             except BaseException, err:
                 continue
             except SchedulerError, err:
                 continue
+
+        # log warnings
+        for job in obj.jobs :
+            job.runningJob.errors.extend( errorList )
 
         return matchingCEs
 
@@ -755,7 +770,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # return values
         taskId = ''
-        ret_map = {}
+        returnMap = {}
 
         # handle wms
         return self.mergeJDL( jdl, service, config )[0]
@@ -830,7 +845,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += requirements + '\n]\n'
         
         # return values
-        #print jdl
         return jdl, filelist
 
     ##########################################################################
@@ -847,7 +861,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # global task attributes :
         # \\ the list of files for the JDL common part
-        GlobalSandbox = ''
+        globalSandbox = ''
         # \\ the list of physical files to be returned
         filelist = ''
         # \\ the list of common files to be put in every single node
@@ -864,7 +878,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     if ifile == '' :
                         continue
                     filename = os.path.abspath( ifile )
-                    GlobalSandbox += '"file://' + filename + '",'
+                    globalSandbox += '"file://' + filename + '",'
                     filelist += filename + ' '
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
                     ISBindex += 1
@@ -876,10 +890,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     if ifile == '' :
                         continue
                     #filename = task['startDirectory'] + '/' + ifile
-                    #GlobalSandbox += '"' + filename + '",'
+                    #globalSandbox += '"' + filename + '",'
                     if ifile[0] == '/':
                         ifile = ifile[1:]
-                    #GlobalSandbox += '"' + ifile + '",'
+                    #globalSandbox += '"' + ifile + '",'
                     #commonFiles += "root.inputsandbox[%d]," % ISBindex
                     commonFiles += '"' + ifile + '",'
                     ISBindex += 1
@@ -925,7 +939,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 for filePath in job['fullPathInputFiles']:
                     if filePath != '' :
                         localfiles += "root.inputsandbox[%d]," % ISBindex
-                    GlobalSandbox += '"file://' + filePath + '",'
+                    globalSandbox += '"file://' + filePath + '",'
                     filelist += filePath + ' '
                     ISBindex += 1
             else :
@@ -941,8 +955,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl  = jdl[:-2] + "\n};\n"
         
         # global sandbox definition
-        if GlobalSandbox != '' :
-            jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
+        if globalSandbox != '' :
+            jdl += "InputSandbox = {%s};\n"% (globalSandbox[:-1])
 
         # blindly append user requirements
         try :
@@ -963,7 +977,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += "\n]\n"
 
         # return values
-        # print jdl, filelist
         return jdl, filelist
 
 
@@ -976,15 +989,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         celist = []
 
-        if seList == ['']: seList = None
-        if blacklist == ['']: blacklist = None
-        if whitelist == ['']: whitelist = None
+        if seList == ['']:
+            seList = None
+        if blacklist == ['']:
+            blacklist = None
+        if whitelist == ['']:
+            whitelist = None
 
         if blacklist is None :
             blacklist = []
 
         if len( tags ) != 0 :
-            query =  ','.join(  ["Tag=%s" % tag for tag in tags ] ) + \
+            query =  ','.join( ["Tag=%s" % tag for tag in tags ] ) + \
                     ',CEStatus=Production'
         else :
             query = 'CEStatus=Production'
