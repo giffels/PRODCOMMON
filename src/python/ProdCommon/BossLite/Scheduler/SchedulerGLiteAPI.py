@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.43 2008/04/29 12:47:06 gcodispo Exp $"
-__version__ = "$Revision: 1.43 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.44 2008/05/02 12:13:42 gcodispo Exp $"
+__version__ = "$Revision: 1.44 $"
 
 import sys
 import os
@@ -328,6 +328,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # handle wms
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
+
+        if endpoints == [] :
+            raise SchedulerError( "failed submission", "empty WMS list" )
 
         # jdl ready!
         # print "Using jdl : \n" + jdl
@@ -803,18 +806,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if len( infiles ) != 0 :
             jdl += 'InputSandbox = {%s};\n'% infiles[:-1]
 
+        # output bypass WMS?
+        #if task['outputDirectory'] is not None and \
+        #       task['outputDirectory'].find('gsiftp://') >= 0 :
+        #    jdl += 'OutputSandboxBaseDestURI = "%s";\n' % \
+        #           task['outputDirectory']
+
         # output files handling
         outfiles = ''
-        remOutfiles = ''
         for filePath in job['outputFiles'] :
-            if filePath.find('gsiftp://') >= 0 :
-                remOutfiles += '"' + filePath + '",'
-            elif filePath != '' :
+            if filePath != '' :
                 outfiles += '"' + filePath + '",'
+
         if len( outfiles ) != 0 :
             jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
-        if len( remOutfiles ) != 0 :
-            jdl += 'OutputSandboxDestURI = {%s};\n' % remOutfiles[:-1]
 
         # extra job attributes
         if job.runningJob is not None \
@@ -879,6 +884,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     commonFiles += '"' + ifile + '",'
                     ISBindex += 1
 
+        # output bypass WMS?
+        if task['outputDirectory'] is not None and \
+               task['outputDirectory'].find('gsiftp://') >= 0 :
+            jdl += 'OutputSandboxBaseDestURI = "%s";\n' % \
+                   task['outputDirectory']
+
         # single job definition
         jdl += "Nodes = {\n"
         for job in task.jobs :
@@ -890,7 +901,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
             jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
             jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
-            
+
             # extra job attributes
             if job.runningJob is not None \
                    and job.runningJob[ 'schedulerAttributes' ] is not None :
@@ -898,16 +909,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # job output files handling
             outfiles = ''
-            remOutfiles = ''
             for filePath in job['outputFiles'] :
-                if filePath.find('gsiftp://') >= 0 :
-                    remOutfiles += '"' + filePath + '",'
-                elif filePath != '' :
+                if filePath != '' :
                     outfiles += '"' + filePath + '",'
+
             if len( outfiles ) != 0 :
                 jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
-            if len( remOutfiles ) != 0 :
-                jdl += 'OutputSandboxDestURI = {%s};\n' % remOutfiles[:-1]
 
             # job input files handling:
             # add their name in the global sanbox and put a reference
