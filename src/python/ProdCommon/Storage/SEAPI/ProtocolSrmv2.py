@@ -181,8 +181,8 @@ class ProtocolSrmv2(Protocol):
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
-
-        cmd += "lcg-gt  -T srmv2 -D srmv2 " + str(fullSource) + " gsiftp"
+        options = " -T srmv2 -D srmv2 "
+        cmd += "lcg-gt " + str(options) + " " + str(fullSource) + " gsiftp"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
 
