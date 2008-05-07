@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.12 2008/04/28 14:22:53 gcodispo Exp $"
-__revision__ = "$Revision: 1.12 $"
+__version__ = "$Id: RunningJob.py,v 1.13 2008/04/29 08:34:16 gcodispo Exp $"
+__revision__ = "$Revision: 1.13 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -100,6 +100,7 @@ class RunningJob(DbObject):
         super(RunningJob, self).__init__(parameters)
 
         # set operational errors
+        self.warnings = []
         self.errors = []
 
         # flag for scheduler interaction
@@ -190,10 +191,6 @@ class RunningJob(DbObject):
         if not self.valid(['submission', 'jobId', 'taskId']):
             raise JobError("The following job instance cannot be updated," + \
                      " since it is not completely specified: %s" % self)
-
-        # update status_history with error list
-        for err in self.errors :
-            self.data['statusHistory'].append( str(err) ) 
 
         # convert timestamp fields as required by mysql ('YYYY-MM-DD HH:MM:SS')
         for key in self.timeFields :
