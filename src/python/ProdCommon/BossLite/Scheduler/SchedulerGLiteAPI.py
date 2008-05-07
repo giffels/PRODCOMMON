@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.46 2008/05/06 14:28:11 gcodispo Exp $"
-__version__ = "$Revision: 1.46 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.47 2008/05/06 15:16:11 gcodispo Exp $"
+__version__ = "$Revision: 1.47 $"
 
 import sys
 import os
@@ -328,7 +328,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # return values
         taskId = ''
         returnMap = {}
-        errorList = []
+        actions = []
 
         # handle wms and prepare jdl
         jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
@@ -340,7 +340,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             import random
             random.shuffle(endpoints)
         except ImportError:
-            errorList.append(
+            self.warnings.append(
                 "random access to wms not allowed, using sequential access" )
 
         errors = ''
@@ -353,12 +353,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     seen.append( wms)
-                errorList.append( "Submitting to : " + wms )
+                actions.append( "Submitting to : " + wms )
                 taskId, returnMap = \
                         self.wmproxySubmit( jdl, wms, sandboxFileList )
                 success = wms
                 break
             except SchedulerError, err:
+                actions.append( "Failed submit to : " + wms )
                 errors += str( err )
                 continue
 
@@ -367,8 +368,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # log warnings
         for job in obj.jobs :
-            job.runningJob.errors.extend( self.warnings )
-            job.runningJob.errors.extend( errorList )
+            job.runningJob.warnings.extend( self.warnings )
+            job.runningJob['statusHistory'].extend( actions )
+            if errors != '' :
+                job.runningJob.errors.append( errors )
         del self.warnings [:]
 
         # if submission failed, raise error
@@ -463,21 +466,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
-                    job.runningJob.errors.append( [ 'Error with credential', \
-                                                    output ] )
+                    job.runningJob.errors.append( output )
+                    job.runningJob['statusHistory'].append(
+                        'Error with credential' )
                     continue
 
                 # purged: probably already retrieved. Archive
                 elif output.find( "has been purged" ) :
-                    job.runningJob['statusHistory'].append( output )
                     job.runningJob['statusHistory'].append(
                         'Job has been purged, recovering status' )
                     continue
 
                 # not ready for GO: waiting for next round
                 elif output.find( "Job current status doesn" ) != -1 :
-                    job.runningJob.errors.append(
-                        [ "output not available", output ] )
+                    job.runningJob.errors.append( output )
                     continue
 
             # retrieve files
@@ -523,20 +525,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if retrieved == 0:
                 job.runningJob['statusHistory'].append(
                     'Warning: non files retrieved' )
-                job.runningJob.errors.append( ['Missing Files' , \
-                                    'Warning: non files retrieved'] )
+                job.runningJob.errors.append( 'Warning: non files retrieved' )
 
             # got errors?
             if joberr != '' :
-                job.runningJob.errors.append(
-                    ['problems with output retrieval', joberr] )
+                job.runningJob['statusHistory'].append(
+                    'problems with output retrieval' )
+                job.runningJob.errors.append( joberr )
             else :
                 # try to purge files
                 try :
                     wmproxy.jobPurge( jobId )
                 except BaseException, err:
+                    job.runningJob.warnings.append("unable to purge WMS")
                     job.runningJob['statusHistory'].append(
-                        "WARNING : " + err.toString())
+                        "unable to purge WMS")
                 
 
     ##########################################################################

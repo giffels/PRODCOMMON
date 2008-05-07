@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.26 2008/04/29 08:15:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.26 $"
+__version__ = "$Id: Scheduler.py,v 1.27 2008/04/30 14:26:59 gcodispo Exp $"
+__revision__ = "$Revision: 1.27 $"
 
 
 ##########################################################################
@@ -368,7 +368,9 @@ class Scheduler(object):
                 raise SchedulerError('invalid object', str( obj ))
 
             # update object
-            obj['statusScheduler'] = "Purged"
+            obj['status'] = 'E'
+            obj['closed'] = 'Y'
+            obj['statusScheduler'] = "Cleared"
 
         # the object passed is a job
         elif type(obj) == Job :
@@ -380,7 +382,9 @@ class Scheduler(object):
                 raise SchedulerError('invalid object', str( obj.runningJob ))
 
             # update object
-            obj.runningJob['statusScheduler'] = "Purged"
+            obj.runningJob['status'] = 'E'
+            obj.runningJob['closed'] = 'Y'
+            obj.runningJob['statusScheduler'] = "Cleared"
 
         # the object passed is a Task
         elif type(obj) == Task :
@@ -396,7 +400,9 @@ class Scheduler(object):
 
             # update objects
             for job in obj.jobs:
-                job.runningJob['statusScheduler'] = "Purged"
+                job.runningJob['status'] = 'E'
+                job.runningJob['closed'] = 'Y'
+                job.runningJob['statusScheduler'] = "Cleared"
 
         # unknown object type
         else:

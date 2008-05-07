@@ -600,7 +600,16 @@ class BossLiteAPI(object):
         retrieve job information from db for jobs with name 'name'
         """
 
-        return self.loadJobsByAttr( { 'name' : jobName } )
+        jobList = self.loadJobsByAttr( { 'name' : jobName } )
+
+        if jobList is None or jobList == [] :
+            return None
+
+        if len (jobList) > 1 :
+            raise JobError("Multiple job instances corresponds to the" + \
+                     " name specified: %s" % jobName)
+            
+        return self.loadJobsByAttr( { 'name' : jobName } )[0]
 
     ##########################################################################
 
