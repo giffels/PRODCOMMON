@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.18 2008/05/06 21:33:37 ewv Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.19 2008/05/07 19:50:08 ewv Exp $"
+__version__ = "$Revision: 1.19 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -351,8 +351,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                            'postMortem called with empty logfile name')
 
     submitHost,jobId  = schedulerId.split('//')
-    fullFilename = outfile+'.LoggingInfo'
-    cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,fullFilename)
+    cmd = "condor_q -l  -name  %s %s > %s" % (submitHost,jobId,outfile)
     return self.ExecuteCommand(cmd)
 
 
