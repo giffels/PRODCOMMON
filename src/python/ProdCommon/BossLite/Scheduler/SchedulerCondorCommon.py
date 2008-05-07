@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.17 2008/05/05 18:39:03 ewv Exp $"
-__version__ = "$Revision: 1.17 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.18 2008/05/06 21:33:37 ewv Exp $"
+__version__ = "$Revision: 1.18 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -361,7 +361,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     retrieve scheduler specific job description
     """
 
-    return "Check jdl files in " + self.tmpDir + " after submit\n"
+    return "Check jdl files in " + self.condorTemp + " after submit\n"
 
 # Python handler from Brian Bockelman for faster XML
 #from xml.sax import make_parser
