@@ -507,6 +507,20 @@ class BossLiteAPI(object):
         return jobList
 
 
+    ##########################################################################
+
+    def getNewRunningInstance( self, job, runningAttrs = None ) :
+        """
+        create a new RunningInstance
+        """
+
+        if runningAttrs is None :
+            run = RunningJob()
+        else :
+            run = RunningJob(runningAttrs)
+
+        job.newRunningInstance( run, self.db )
+
 
     ##########################################################################
 

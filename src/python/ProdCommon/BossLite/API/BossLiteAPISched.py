@@ -106,20 +106,11 @@ class BossLiteAPISched(object):
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
-
-        # get new running instances
-        for job in task.jobs:
-            if job.runningJob is not None :
-                job.runningJob["closed"] = "Y"
-
-        # update changes
-        self.bossLiteSession.updateDB(task)
+        task = self.bossLiteSession.load( taskId, jobRange )[0]        
 
         # get new running instance
         for job in task.jobs:
-            job.runningJob = None
-            self.bossLiteSession.getRunningInstance(
+            self.bossLiteSession.getNewRunningInstance(
                 job, { 'schedulerAttributes' : schedulerAttributes }
                 )
 
