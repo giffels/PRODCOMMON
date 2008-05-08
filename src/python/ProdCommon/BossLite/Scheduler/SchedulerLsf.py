@@ -3,10 +3,10 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.7 2008/05/03 18:23:19 spiga Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.8 2008/05/04 08:25:49 spiga Exp $"
+__version__ = "$Revision: 1.8 $"
 
-import re,os
+import re, os
 
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -31,13 +31,17 @@ class SchedulerLsf (SchedulerInterface) :
             'Scheduled':'SS',
             'Running':'R',
             'RUN':'R',
-            'DONE':'SD',
+            'Done':'SD',
             'Cleared':'E',
             'EXIT':'DA',
             'Aborted':'A',
             'Cancelled':'K',
             'Unknown':'UN',
-            'Done(failed)':'DA'   
+            'Done(failed)':'DA',
+            'PSUSP' : 'DA',
+            'USUSP' : 'DA',
+            'SSUSP' : 'DA',
+            'UNKWN' : 'UN'
             }
         self.cpCmd  = 'cp'
         self.rfioSer= '' 
