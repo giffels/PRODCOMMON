@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.48 2008/05/07 17:29:25 gcodispo Exp $"
-__version__ = "$Revision: 1.48 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.49 2008/05/08 08:42:12 gcodispo Exp $"
+__version__ = "$Revision: 1.49 $"
 
 import sys
 import os
@@ -408,8 +408,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # the object passed is a Task
         elif type(obj) == Task :
 
-            if outdir == '' :
+            if outdir == '' and obj['outputDirectory'] is not None:
                 outdir = obj['outputDirectory']
+
+            if outdir != '' and not os.path.exists( outdir ) :
+                raise SchedulerError( 'Permission denied', \
+                                      'Unable to write files in ' + outdir )
+                
 
             # retrieve scheduler id list
             schedIdList = {}
@@ -503,7 +508,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
                 # retrieve file
-                dest = outdir + '/' + os.path.basename( m['name'] )
+                dest = os.path.join( outdir + '/' + \
+                                     os.path.basename(m['name']) )
                 command = "globus-url-copy -verbose " + m['name'] \
                           + " file://" + dest
                 msg = self.ExecuteCommand(command)
@@ -532,7 +538,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if joberr != '' :
                 job.runningJob['statusHistory'].append(
                     'problems with output retrieval' )
-                job.runningJob.errors.append( joberr )
+                job.runningJob.errors.qappend( joberr )
             else :
                 job.runningJob['statusHistory'].append(
                         'Output successfully retrieved' )
