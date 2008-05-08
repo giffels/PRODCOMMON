@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.47 2008/05/06 15:16:11 gcodispo Exp $"
-__version__ = "$Revision: 1.47 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.48 2008/05/07 17:29:25 gcodispo Exp $"
+__version__ = "$Revision: 1.48 $"
 
 import sys
 import os
@@ -357,6 +357,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 taskId, returnMap = \
                         self.wmproxySubmit( jdl, wms, sandboxFileList )
                 success = wms
+                actions.append( "Submitted successfully to : " + wms )
                 break
             except SchedulerError, err:
                 actions.append( "Failed submit to : " + wms )
@@ -533,6 +534,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     'problems with output retrieval' )
                 job.runningJob.errors.append( joberr )
             else :
+                job.runningJob['statusHistory'].append(
+                        'Output successfully retrieved' )
                 # try to purge files
                 try :
                     wmproxy.jobPurge( jobId )
