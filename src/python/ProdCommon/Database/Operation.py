@@ -84,16 +84,20 @@ class Operation:
         # make sure everything is in the right format
         if type(rows) == dict:
             rows = [rows]
-        
+        elif type(rows) == list:           
+           if type(rows[0]) not in  [list, dict]:
+              rows = [rows]  
+
         # if nothing to do return
         if len(rows) == 0:
             return
-
-        if type(rows[0]) == dict: 
+        column_names = None  
+        if type(rows[0]) in  [dict,list]: 
             if self.connection.connection_parameters['dbType'] == 'oracle':
               if len(rows) > 1:
                 raise RuntimeError('Operations not permitted: Please use insertBulk for inserting muliple rows in Oracle DB',1)
-            column_names = rows[0].keys()
+        if type(rows[0]) == dict: 
+           column_names = rows[0].keys()
         if type(rows[0]) == list:
             column_names = columns
         logging.debug("Inserting objects of type "+table_name)
@@ -164,8 +168,10 @@ class Operation:
                 else:
                    sqlStr+= column_name + '=\''+ str(row[i]) + '\''
                 i += 1
- 
+       
+        
         rowsModified = self.connection.execute(sqlStr)
+         
         return rowsModified
       
     def insert2update(self, table_name, rows , columns =[], encode = [], encodeb64 = []):
@@ -436,6 +442,184 @@ class Operation:
  
   
   
+    def insertWithBind (self, table_name, rows, columns = [], key =  None, encode = [], encodeb64 = []):
+        """
+        _insertWithBind_
+        Method that use bind params for inserting data in order to make efficient use of oracle shared pool. Let Oracle do 
+        soft parse rather than hard Parse
+
+        Argument:
+
+        table_name: Table name in which data will be inserted
+        rows:
+          if type(rows)== dict, THEN dict keys will be the column id's and dict values will be the values against those id's
+          if type(rows)==list, Then column will be the collumn id list and rows will be the data values against those id's
+
+        columns:
+          if type(rows)== dict, THEN columns will be a list containing name of columns to be inserted   
+
+        key: Dictionary of atmost one element where key will be collumn id and value will be sequence name attached to it
+        
+        Four Input Formats supported:
+           rows: dict containing one row data in the form of key/value pair         column : [] 
+           rows: list of dict where each dict show one particular row               column : []
+           rows: list of lists where each list show any particular row data         column: list of column names
+           rows: list contating one row data                                        column: list of column names        
+        """
+
+        #// Make sure that sequence is provided in correct format 
+        if key != None:
+
+            if type(key) == dict:
+
+                if len(key) > 1:
+                    raise ValueError('Invalid parameter: key, it must be a dictionary containing at most one element')
+            else:
+                raise ValueError('Invalid parameter: key, it must be a dictionary containing at most one element')
+
+
+        #//Assure correct format If only one row data is provided in dict format   
+        if type(rows) == dict:
+           
+           rows = [rows]
+
+        #//Assure correct format If only one row data is provided in a list 
+        elif type(rows) == list:
+           
+           if type(rows[0]) not in  [list, dict]:
+
+              rows = [rows]
+ 
+
+        if type(rows) != list:
+           raise ValueError ("Invalid row format provided. Please provide list of dictionaries")
+
+        #// if no row data then do nothing
+        if len(rows) == 0:
+           return
+
+        column_names = None
+        
+        #// Assiging to be inserted column names to separate list
+        if type(rows[0]) == dict:
+           column_names = rows[0].keys()
+          
+        else:
+           column_names = columns 
+           
+        sqlStr = "Insert into " + table_name + " ( "
+        
+        column = " "
+        bindParams = " " 
+        comma = False
+
+        #// Constructing comma separated string of column name 
+        #// Constructing bindparams of format :column         
+          
+        for item in column_names:
+
+           if comma:
+              column += ", "
+              bindParams += ", "
+           comma = True
+
+           column += item
+ 
+           #// preparing bind sql statement for both mysql, oracle dbtypes              
+
+           if self.connection.connection_parameters['dbType'] == 'oracle':
+              bindParams += ":" + item
+           elif self.connection.connection_parameters['dbType'] == 'mysql':
+              bindParams += "%s"
+           else:
+              raise RuntimeError ('dbType not supported',1)    
+
+        #// Adding sequence to raw sql incase of oracle
+        #// No need to add code for mysql as mysql picks auto incremented value automatically
+
+        if key !=None:
+
+          if self.connection.connection_parameters['dbType'] == 'oracle':
+
+             id = key.keys()[0]
+             if id not in column_names:
+                column += ", " + id
+                bindParams += "," + key[id] +".nextval "
+
+        sqlStr += column + " ) values ( " + bindParams + " ) "
+       
+
+        #// List containing bind parameters values to be passed to execute method in addition to bind param statment 
+        rowBind = []        
+
+               
+        #//Looping over multi-row inserts
+        for row in rows:
+           
+           #//If input row is provided as dict  
+
+           if type(row) == dict:              
+
+              for column_name in encode:
+                 if row.has_key(column_name):
+                    row[column_name] = base64.encodestring(cPickle.dumps(row[column_name]))
+
+              for column_name in encodeb64:
+                 if row.has_key(column_name):
+                    row[column_name] = base64.encodestring(row[column_name])
+
+              #// Separate bind param values format for oracle and mysql. 
+              #// Oracle supports list of dict where dict contains key/value pair of one row.
+              #// Mysql supports list of lists where each list show a unique row
+                           
+              if self.connection.connection_parameters['dbType'] == 'oracle':
+
+                 rowBind.append(row) 
+              elif self.connection.connection_parameters['dbType'] == 'mysql':
+                 rowBind.append(row.values())
+
+
+           elif type(row) == list:
+
+              tempOracle = {}
+              tempMysql = []
+              i = 0              
+              oraCheck = False
+              for column_name in column_names:
+
+
+                    if column_name in encode:
+                        entry = base64.encodestring(cPickle.dumps(row[i]))
+                    elif column_name in encodeb64:
+                        entry = base64.encodestring(row[i])
+                    else:
+                        entry = row[i]
+                    if self.connection.connection_parameters['dbType'] == 'oracle':
+                       oraCheck = True
+                       tempOracle[column_name] =  entry
+
+                    elif self.connection.connection_parameters['dbType'] == 'mysql':
+                       tempMysql.append(entry) 
+ 
+                    i = i+1
+
+              if oraCheck:
+                 rowBind.append(tempOracle)
+              else:
+                 rowBind.append(tempMysql)   
+                    
+                    
+        
+        resultSet = self.connection.session.execute(sqlStr, rowBind)
+        cursor = resultSet.cursor
+        rowsModified = cursor.rowcount
+        return rowsModified
+
+
+
+
+ 
   
-  
-  
+        
+
+
