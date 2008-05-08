@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.8 2008/05/04 08:25:49 spiga Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.9 2008/05/08 17:15:07 gcodispo Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import re, os
 
@@ -131,10 +131,10 @@ class SchedulerLsf (SchedulerInterface) :
         if task:
             subDir=task[ 'startDirectory' ]
             for inpFile in task[ 'globalSandbox' ].split(','):
-                txt += self.cpCmd+" "+self.rfioSer+subDir+inpFile+" . ; "
+                txt += self.cpCmd+" "+self.rfioSer+"/"+subDir+inpFile+" . ; "
         ## Job specific ISB
         for inpFile in job[ 'inputFiles' ]:
-            if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+inpFile+" .;"
+            if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+"/"+inpFile+" .;"
 
         ## Now the actual wrapper
         args = job[ 'arguments' ]
@@ -144,7 +144,7 @@ class SchedulerLsf (SchedulerInterface) :
         ## And finally copy back the output
         outputDir=task['outputDirectory']
         for outFile in job['outputFiles']:
-            txt += self.cpCmd+" "+outFile+" "+self.rfioSer+outputDir+"/. ; "
+            txt += self.cpCmd+" "+outFile+" "+self.rfioSer+"/"+outputDir+"/. ; "
 
         txt += "'"
 
