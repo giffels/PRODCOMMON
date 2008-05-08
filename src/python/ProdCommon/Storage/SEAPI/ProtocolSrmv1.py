@@ -27,8 +27,12 @@ class ProtocolSrmv1(Protocol):
         """
         srmcp
         """
-        fullSource = source.getLynk()
-        fullDest = dest.getLynk()
+        fullSource = "file:///" + str(source.workon)
+        fullDest = "file:///" + str(dest.workon)
+        if source.protocol != 'local':
+            fullSource = source.getLynk()
+        if dest.protocol != 'local':
+            fullDest = dest.getLynk()
 
         option = self._options + " -retry_num=1 "
         if proxy is not None:
