@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.9 2008/05/08 17:15:07 gcodispo Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.10 2008/05/08 18:06:47 spiga Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import re, os
 
@@ -23,25 +23,16 @@ class SchedulerLsf (SchedulerInterface) :
         # call super class init method
         super(SchedulerLsf, self).__init__(**args)
         self.statusMap = {
-            'Undefined':'UN',
-            'Submitted':'SU',
-            'Waiting':'SW',
-            'PEND':'SW',
-            'Ready':'SR',
-            'Scheduled':'SS',
-            'Running':'R',
-            'RUN':'R',
-            'Done':'SD',
-            'Cleared':'E',
-            'EXIT':'DA',
-            'Aborted':'A',
-            'Cancelled':'K',
-            'Unknown':'UN',
-            'Done(failed)':'DA',
+            'PEND'  : 'SW',
+            'RUN'   : 'R',
+            'EXIT'  : 'SD',
             'PSUSP' : 'DA',
             'USUSP' : 'DA',
             'SSUSP' : 'DA',
-            'UNKWN' : 'UN'
+            'UNKWN' : 'UN',
+            'DONE'  : 'SD',
+            'WAIT'  : 'SW',
+            'ZOMBI' : 'DA'
             }
         self.cpCmd  = 'cp'
         self.rfioSer= '' 
@@ -195,7 +186,7 @@ class SchedulerLsf (SchedulerInterface) :
             st=None
             if (mnotfound):
                 id=mnotfound.group(1)
-                st='Done'
+                st='DONE'
             else:
                 mfull= rfull.search(out)
                 if (mfull):
