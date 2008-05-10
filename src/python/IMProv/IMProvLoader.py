@@ -7,8 +7,8 @@ Sax based parser for reading an IMProv XML file and
 converting it into a tree of IMProvNodes
 
 """
-__version__ = "$Revision: 1.2 $"
-__revision__ = "$Id: IMProvLoader.py,v 1.2 2006/11/06 20:16:11 fvlingen Exp $"
+__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: IMProvLoader.py,v 1.3 2007/05/01 14:29:13 evansde Exp $"
 
 
 from xml.sax.handler import ContentHandler
@@ -31,8 +31,8 @@ class IMProvHandler(ContentHandler):
         ContentHandler.__init__(self)
         self._ParentDoc = None
         self._NodeStack = []
-        self._CharCache = ""
-       
+        self._CharCache = []
+        
     def startElement(self, name, attrs):
         """
         _startElement_
@@ -48,7 +48,7 @@ class IMProvHandler(ContentHandler):
             self._NodeStack.append(self._ParentDoc)
             return
         
-        self._CharCache = ""
+        self._CharCache = []
         newnode = IMProvNode(str(name))
         for key, value in attrs.items():
             newnode.attrs[key] = value
@@ -63,9 +63,9 @@ class IMProvHandler(ContentHandler):
 
         Override SAX endElement handler
         """
-        self._NodeStack[-1].chardata = str(self._CharCache.strip())
+        self._NodeStack[-1].chardata = ''.join(self._CharCache)
         self._NodeStack.pop()
-        self._CharCache = ""
+        self._CharCache = []
 
     def characters(self, data):
         """
@@ -73,8 +73,7 @@ class IMProvHandler(ContentHandler):
 
         Accumulate character data from an xml element
         """
-        self._CharCache += data
-        
+        self._CharCache.append(data)         
         
 
 def loadIMProvFile(filename):
