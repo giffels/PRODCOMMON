@@ -7,8 +7,8 @@ Sax based parser for reading an IMProv XML file and
 converting it into a tree of IMProvNodes
 
 """
-__version__ = "$Revision: 1.3 $"
-__revision__ = "$Id: IMProvLoader.py,v 1.3 2007/05/01 14:29:13 evansde Exp $"
+__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: IMProvLoader.py,v 1.4 2008/05/10 14:32:52 evansde Exp $"
 
 
 from xml.sax.handler import ContentHandler
@@ -63,7 +63,7 @@ class IMProvHandler(ContentHandler):
 
         Override SAX endElement handler
         """
-        self._NodeStack[-1].chardata = ''.join(self._CharCache)
+        self._NodeStack[-1].chardata = ''.join(self._CharCache).strip()
         self._NodeStack.pop()
         self._CharCache = []
 
