@@ -350,7 +350,11 @@ class CMSSWConfig:
         #  //
         # // Source
         #//
-        self.inputOverrideCatalog = overrideCatalogQ(improvNode)
+        inputOverrideCatalogs = overrideCatalogQ(improvNode)
+        if len(inputOverrideCatalogs) > 0:
+            self.overrideInputCatalog = inputOverrideCatalogs[-1]
+        else:
+            self.overrideInputCatalog = None
         for srcParam in srcParamQ(improvNode):
             parName = srcParam.attrs.get('Name', None)
             if parName == None:
@@ -362,7 +366,7 @@ class CMSSWConfig:
         srcTypeData = srcTypeQ(improvNode)
         if len(srcTypeData) > 0:
             self.sourceType = str(srcTypeData[-1])
-        self.inputOverrideCatalog
+
         #  //
         # // seeds
         #//
@@ -504,6 +508,14 @@ class CMSSWConfig:
         skipEv = self.sourceParams.get("skipEvents", None)
         if skipEv != None:
             cfg.inputSource.setSkipEvents(skipEv)
+
+        firstLumi = self.sourceParams.get("firstLuminosityBlock", None)
+        if firstLumi != None:
+            cfg.inputSource.setFirstLumi(firstLumi)
+
+        firstEvent = self.sourceParams.get("firstEvent", None)
+        if firstEvent != None:
+            cfg.inputSource.setFirstEvent(firstEvent)
 
         if self.inputOverrideCatalog not in (None, ''):
             cfg.inputSource.setOverrideCatalog(self.inputOverrideCatalog, 'override')    

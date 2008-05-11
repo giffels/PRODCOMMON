@@ -86,10 +86,17 @@ class CfgGenerator:
         skipEvents = args.get("skipEvents", None)
         if skipEvents != None:
             newCfg.sourceParams['skipEvents'] = skipEvents
+        firstEvent = args.get("firstEvent", None)
+        if firstEvent != None:
+            newCfg.sourceParams['firstEvent'] = firstEvent
 
         firstRun = args.get("firstRun", None)
         if firstRun != None:
             newCfg.sourceParams['firstRun'] = firstRun
+
+        firstLumi = args.get("firstLumi", None)
+        if firstLumi != None:
+            newCfg.sourceParams['firstLuminosityBlock'] = firstLumi
 
         fileNames = args.get("fileNames", None)
         if fileNames != None:

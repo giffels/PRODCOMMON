@@ -61,12 +61,12 @@ class InputSource:
         self.data.numberEventsInRun = CfgTypes.untracked(
             CfgTypes.uint32( numEvents))
 
-    def setfirstLumi(self, lumiId):
+    def setFirstLumi(self, lumiId):
         """
         set lumi id for this job
         """
         self.data.firstLuminosityBlock = CfgTypes.untracked(
-            CfgTypes.uint32(lumiId))
+            CfgTypes.uint32(int(lumiId)))
 
     def firstLumi(self):
         """
@@ -80,7 +80,8 @@ class InputSource:
         set first event number
 
         """
-        self.data.firstEvent = CfgTypes.untracked(CfgTypes.uint32(firstEv))
+        self.data.firstEvent = CfgTypes.untracked(
+            CfgTypes.uint32(int(firstEv)))
 
     def firstEvent(self):
         """
@@ -147,4 +148,6 @@ class InputSource:
         result['firstRun'] = self.firstRun()
         result['skipEvents'] = self.skipevents()
         result['overrideCatalog'] = self.overrideCatalog()
+        result['firstLuminosityBlock'] = self.firstLumi()
+        result['firstEvent'] = self.firstEvent()
         return result
