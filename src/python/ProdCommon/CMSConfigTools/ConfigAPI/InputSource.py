@@ -60,6 +60,36 @@ class InputSource:
         """
         self.data.numberEventsInRun = CfgTypes.untracked(
             CfgTypes.uint32( numEvents))
+
+    def setfirstLumi(self, lumiId):
+        """
+        set lumi id for this job
+        """
+        self.data.firstLuminosityBlock = CfgTypes.untracked(
+            CfgTypes.uint32(lumiId))
+
+    def firstLumi(self):
+        """
+        get first lumi id value
+        """
+        cfgType = getattr(self.data, "firstLuminosityBlock", _CfgNoneType())
+        return cfgType.value()
+    
+    def setFirstEvent(self, firstEv):
+        """
+        set first event number
+
+        """
+        self.data.firstEvent = CfgTypes.untracked(CfgTypes.uint32(firstEv))
+
+    def firstEvent(self):
+        """
+        get firstEvent value
+
+        """
+        cfgType = getattr(self.data, "firstEvent", _CfgNoneType())
+        return cfgType.value()
+        
         
     def fileNames(self):
         """ return value of fileNames, None if not provided """
