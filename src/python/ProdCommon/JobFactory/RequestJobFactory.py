@@ -76,6 +76,7 @@ class RequestJobFactory:
         self.workflowSpec = workflowSpec
         self.workingDir = workingDir
         self.count = args.get("InitialRun", 0)
+        self.jobnumber = 0
         self.totalEvents = totalEvents
         self.currentJob = None
         self.pileupDatasets = {}
@@ -146,7 +147,7 @@ class RequestJobFactory:
                 }
             result.append(jobDict)
             self.count += 1
-        
+            self.jobnumber += 1
         
 
         return result
@@ -210,14 +211,32 @@ class RequestJobFactory:
             if outMaxEv != None:
                 useOutputMaxEv = True
 
+        #  //
+        # // If we need to control event numbers, can do something like this
+        #//
+        #firstEventOffset = self.workflowSpec.parameters.get(
+        #    "EventNumberOffset", 0)
+        #firstEventValue = self.jobnumber * self.eventsPerJob
+        #firstEventValue += firstEventOffset
+
+        
+        
         if useOutputMaxEv:
-            jobCfg = generator(self.currentJob,
-                               maxEventsWritten = self.eventsPerJob,
-                               firstRun = self.count)
+            jobCfg = generator(
+                self.currentJob,
+                maxEventsWritten = self.eventsPerJob,
+                #firstEvent = firstEventValue,
+                firstRun = self.workflowSpec.workflowRunNumber(),
+                firstLumi = self.count)
         else:
-            jobCfg = generator(self.currentJob,
-                               maxEvents = self.eventsPerJob,
-                               firstRun = self.count)
+            jobCfg = generator(
+                self.currentJob,
+                maxEvents = self.eventsPerJob,
+                #firstEvent = firstEventValue,
+                firstRun = self.workflowSpec.workflowRunNumber(),
+                firstLumi = self.count)
+            
+            
         
         #  //
         # // Is there pileup for this node?
