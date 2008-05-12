@@ -579,19 +579,19 @@ class BossLiteAPI(object):
             jType = ''
 
         # load job from db        
-        runJobList = self.db.selectJoin( run, job, \
+        runJobList = self.db.selectJoin( job, run, \
                                          {'jobId' : 'jobId',
                                           'taskId' : 'taskId',
-                                          'submission' : 'submissionNumber'}, \
+                                          'submissionNumber' : 'submission'}, \
                                          strict=strict, jType=jType, \
                                          limit=limit, offset=offset )
         
         # recall jobs
-        for runningJob, job in  runJobList :
+        for job, runningJob in  runJobList :
             job.setRunningInstance( runningJob )
 
         # return
-        return [key[1] for key in runJobList]
+        return [key[0] for key in runJobList]
 
     ##########################################################################
 
