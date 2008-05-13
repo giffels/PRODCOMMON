@@ -21,7 +21,7 @@ setup (name='prodcommon',
                  'ProdCommon.DataMgmt.Pileup',
                  'ProdCommon.FwkJobRep',
                  'ProdCommon.JobFactory',
-		 'ProdCommon.MCPayloads',
+		          'ProdCommon.MCPayloads',
                  'ProdCommon.WebServiceClient',
                  'ProdCommon.WebServices',
                  'ProdCommon.ThreadTools',
@@ -30,6 +30,8 @@ setup (name='prodcommon',
                  'ProdCommon.BossLite.Common',
                  'ProdCommon.BossLite.DbObjects',
                  'ProdCommon.BossLite.Scheduler',
+                 'ProdCommon.SiteDB',
                  'ProdCommon.Storage',
-                 'ProdCommon.Storage.SEAPI'],)
+                 'ProdCommon.Storage.SEAPI',
+                 'ProdCommon.TrivialFileCatalog'],)
 
