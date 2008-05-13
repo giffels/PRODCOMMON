@@ -415,7 +415,7 @@ class Operation:
 
            if type(row) != dict:
               raise ValueError("Invalid row: Expecting Dictionary")
-
+           self.__lowerCaseFormat(row)
            for column_name in encode:
               if row.has_key(column_name):
                  row[column_name] = base64.encodestring(cPickle.dumps(row[column_name]))
@@ -425,8 +425,11 @@ class Operation:
                  row[column_name] = base64.encodestring(row[column_name])
 
         resultSet = None
+        
         try:
             if key != None:
+
+                self.__lowerCaseFormat(key)                
                 id = key.keys()[0]
                 resultSet = self.connection.session.execute(table.insert(values = {id:text(key[id]+'.nextval')}), rows)
             else:
@@ -616,6 +619,23 @@ class Operation:
         return rowsModified
 
 
+    def __lowerCaseFormat (self, input):
+        """
+        __lowerCaseDict__
+        Method to convert dictionary keys to lowercase
+
+        HACK to make queries sqlalchemy compatible because sqlalchemy only bind params if column names are provided in
+        lowercase
+        """
+
+        if type(input) == dict:
+
+           tempDict = input
+           for k,v in input.items():
+              
+              if not k.islower():
+                 tempDict[k.lower()] = v
+                 del tempDict[k]
 
 
  
