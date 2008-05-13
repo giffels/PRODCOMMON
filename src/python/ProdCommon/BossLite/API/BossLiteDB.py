@@ -224,7 +224,6 @@ class BossLiteDB(object):
         install MySQL database
         """
         import getpass
-        import socket
 
         # ask for password (optional)
         print

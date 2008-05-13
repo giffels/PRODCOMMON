@@ -899,8 +899,8 @@ updating the database server:
         # grant user
         query = 'GRANT UPDATE,SELECT,DELETE,INSERT ON ' + \
                 self.dbConfig['dbName'] + '.* TO \'' + \
-                self.dbConfig['user'] + '\'@\'' + socket.gethostname() \
-                + '\' IDENTIFIED BY \''+passwd+'\';'
+                self.dbConfig['user'] + '\'@\'' + self.dbConfig['host'] \
+                + '\' IDENTIFIED BY \'' + self.dbConfig['passwd'] + '\';'
         try:
             session.execute( query )
             session.commit()
