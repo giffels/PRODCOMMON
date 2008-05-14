@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.4 2008/04/07 15:48:18 gcodispo Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.5 2008/04/29 08:15:42 gcodispo Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -170,13 +170,28 @@ class SchedulerFake(SchedulerInterface) :
         # 2) just eventually copy the local output to the destination dir
         # 3) wrap a CLI command like glite-wms-job-output
 
-        out = "whatever" 
-        if out.find( 'error' ) >= 0 :
-            raise SchedulerError ( "Unable to retrieve output", out )
+        errorList = []
+
+        if type(obj) == Task :
+
+            if outdir == '' and obj['outputDirectory'] is not None:
+                outdir = obj['outputDirectory']
+
+            if outdir != '' and not os.path.exists( outdir ) :
+                raise SchedulerError( 'Permission denied', \
+                                      'Unable to write files in ' + outdir )
+                
+
+            # retrieve scheduler id list
+            schedIdList = {}
+            for job in obj.jobs:
+                if self.valid( job.runningJob ):
+                    # retrieve output
+                    # if error: job.runningJob.errors.append( error )
 
     ##########################################################################
 
-    def kill( self, schedIdList, service):
+    def kill( self, obj, service):
         """
         Kill jobs submitted to a given WMS. Does not perform status check
         """
@@ -184,10 +199,14 @@ class SchedulerFake(SchedulerInterface) :
         # several possibilities:
         # 1) connect to a service and perform a kill
         # 2) wrap a CLI command like glite-wms-job-cancel
-        
-        out = "whatever" 
-        if out.find( 'error' ) >= 0 :
-            raise SchedulerError ( "Unable to kill job", out )
+
+        if type(obj) == Task :
+
+            for job in obj.jobs:
+                if self.valid( job.runningJob ):
+                    # kill
+                    # if error: job.runningJob.errors.append( error )
+
 
     ##########################################################################
 
