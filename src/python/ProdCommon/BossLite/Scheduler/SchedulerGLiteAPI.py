@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.49 2008/05/08 08:42:12 gcodispo Exp $"
-__version__ = "$Revision: 1.49 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.50 2008/05/08 15:31:58 gcodispo Exp $"
+__version__ = "$Revision: 1.50 $"
 
 import sys
 import os
@@ -538,7 +538,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if joberr != '' :
                 job.runningJob['statusHistory'].append(
                     'problems with output retrieval' )
-                job.runningJob.errors.qappend( joberr )
+                job.runningJob.errors.append( joberr )
             else :
                 job.runningJob['statusHistory'].append(
                         'Output successfully retrieved' )
