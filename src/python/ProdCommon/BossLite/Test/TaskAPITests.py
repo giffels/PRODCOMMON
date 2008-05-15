@@ -132,6 +132,18 @@ class TaskAPITests(object):
         if self.schedSession is not None :
             return self.schedSession
 
+        if self.task is not None :
+            scheduler = None
+            for job in self.task.jobs :
+                if job.runningJob['scheduler'] is not None:
+                    scheduler = job.runningJob['scheduler']
+                    break
+ 
+            if scheduler is not None :
+                self.schedulerConfig['name'] = scheduler
+            if self.task['user_proxy'] is not None :
+                self.schedulerConfig['user_proxy'] = self.task['user_proxy']
+
         return BossLiteAPISched( self.bossSession, self.schedulerConfig)
 
 
@@ -407,7 +419,8 @@ def main():
     # initialize test session and load or create task
     bossSession = TaskAPITests(dbtype, installDB)
     bossSession.taskId = taskId
-    bossSession.taskName = taskName
+    if taskName is not None :
+        bossSession.taskName = taskName
     bossSession.jobRange = jobRange
     bossSession.outdir = outdir
     bossSession.testTask()
