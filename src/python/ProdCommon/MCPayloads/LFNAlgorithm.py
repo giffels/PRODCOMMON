@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.8 2007/09/17 08:29:00 evansde Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.9 2007/10/24 13:52:09 evansde Exp $"
+__version__ = "$Revision: 1.9 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -52,7 +52,12 @@ def unmergedLFNBase(workflowSpecInstance):
     category = workflowSpecInstance.requestCategory()
     result = os.path.join(_LFNBase, "unmerged", category)
     timestamp = workflowSpecInstance.requestTimestamp()
-    result = os.path.join(
+
+    if workflowSpecInstance.parameters.has_key('AcquisitionEra'):
+       acqEra=workflowSpecInstance.parameters['AcquisitionEra']
+       result=os.path.join(result,acqEra)
+    else:
+      result = os.path.join(
         result,
         makeTimestampString(timestamp),      # time/date
         workflowSpecInstance.workflowName()  # name of workflow/request
@@ -74,12 +79,16 @@ def mergedLFNBase(workflowSpecInstance, lfnGroup = None):
     category = workflowSpecInstance.requestCategory()
     result = os.path.join(_LFNBase, category)
     timestamp = workflowSpecInstance.requestTimestamp()
-    result = os.path.join(
+    if workflowSpecInstance.parameters.has_key('AcquisitionEra'):
+       acqEra=workflowSpecInstance.parameters['AcquisitionEra']
+       result=os.path.join(result,acqEra)
+    else:
+      result = os.path.join(
         result,
         makeTimestampString(timestamp),      # time/date
         workflowSpecInstance.workflowName()  # name of workflow/request
         )
-    if lfnGroup != None:
+      if lfnGroup != None:
         result += "/%s" % lfnGroup
     
     #  //
@@ -128,12 +137,15 @@ class DefaultLFNMaker:
             base = node.getParameter("MergedLFNBase")[0]
         mergedBase = node.getParameter("MergedLFNBase")[0]
 
-
+        acqEra=None
+        if node.hasParameter("AcquisitionEra"):
+          acqEra = node.getParameter("AcquisitionEra")[0]
         
         
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
+        
         for modName, outModule in node.cfgInterface.outputModules.items():
 
             
@@ -142,18 +154,59 @@ class DefaultLFNMaker:
                 msg = "OutputModule %s does not contain a fileName entry" % modName
                 raise RuntimeError, msg
 
-            filterName = outModule.get("filterName", None)
-            if filterName not in ("None", "none", None):
-                lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
-            else:
-                lfnGroup = str(self.lfnGroup)
+        #  //
+        # // Should be noted that this is transitioning here from the old
+        #//  lfn conventions to new -- with the line marked by the existence
+        #\\  of the AcquisitionEra parameter in the workflow
+        # \\ The new convention just takes from what was already defined
+        #  \\in the datasets and if necessary does minor surgery
+             
+            preserveLfnGroup = str(self.lfnGroup)
+
+            if acqEra ==None:
+              filterName = outModule.get("filterName", None)
+              if filterName not in ("None", "none", None):
+                 lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
+              else:
+                 lfnGroup = str(self.lfnGroup)
             
-            outModule['LFNBase'] = os.path.join(base,
-                                                outModule['dataTier'],
-                                                lfnGroup)
-            outModule['MergedLFNBase'] = os.path.join(mergedBase,
-                                                      outModule['dataTier'],
-                                                      lfnGroup)
+              outModule['LFNBase'] = os.path.join(base,
+                                                  outModule['dataTier'],
+                                                  lfnGroup)
+              outModule['MergedLFNBase'] = os.path.join(mergedBase,
+                                                        outModule['dataTier'],
+                                                        lfnGroup)
+            else:
+
+        #  //
+        # // hack for CSA08 production
+        #//
+
+              lastBit=outModule['processedDataset']
+
+        #  //but this guy has the AcquisitionEra at the beginning... delimited
+        # // by underscores... we don't need it twice...  we try to safely
+        #//  remove it from the beginning, basically punting if its not
+        #\\  disadvantage of getting this from the ds name is having to
+        # \\ then strip off -unmerged
+
+              thingtoStrip="%s_" % acqEra
+              mypieces=lastBit.split(thingtoStrip,1)
+              if len(mypieces)>1:  
+                remainingBits=mypieces[1].split("-unmerged",1)[0]
+              else:
+                remainingBits=lastBit            
+             
+              outModule['LFNBase'] = os.path.join(base,
+                                                  outModule['primaryDataset'],
+                                                  outModule['dataTier'],
+                                                  remainingBits,
+                                                  preserveLfnGroup)
+              outModule['MergedLFNBase'] = os.path.join(mergedBase,
+                                                  outModule['primaryDataset'],
+                                                  outModule['dataTier'],
+                                                  remainingBits,
+                                                  preserveLfnGroup)
 
         return
 

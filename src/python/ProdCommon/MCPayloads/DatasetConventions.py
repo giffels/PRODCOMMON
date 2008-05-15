@@ -103,6 +103,37 @@ def tier0ProcessedDatasetName(**args):
 
 
 
+def csa08ProcessedDatasetName (**args):
+    """
+    _csa08ProcessedDatasetName_
+
+    Create a dataset name based on csa08 conventions
+
+    """
+    checkArgs = ['AcquisitionEra','Conditions',
+                 'ProcessingVersion']
+
+    for arg in checkArgs:
+        if args.get(arg, None) == None:
+            msg = "%s Not Specified\n" % arg
+            msg += "This is required for a processed dataset name"
+            raise DatasetConvError(msg)
+
+    if args['FilterName'] in ("",None):
+       datasetName = "%s_%s_%s" % (args['AcquisitionEra'],args['Conditions'],
+                                   args['ProcessingVersion'])
+    else:
+       datasetName = "%s_%s_%s_%s" % (args['AcquisitionEra'],args['Conditions'],
+                                   args['FilterName'],args['ProcessingVersion'])
+
+
+    isUnmerged = args.get("Unmerged", False)
+    if isUnmerged:
+        datasetName += "-unmerged"
+    return datasetName
+
+
+
 def checkDataTier(dataTier):
     """
     _checkDataTier_

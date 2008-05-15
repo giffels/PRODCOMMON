@@ -55,6 +55,9 @@ class WorkflowMaker:
         self.configuration = None
         self.configurations = []
         self.psetHash = None
+        self.acquisitionEra = None
+        self.processingVersion = None
+        self.conditions = None
         
         self.options = {}
         self.options.setdefault('FakeHash', False)
@@ -125,6 +128,17 @@ class WorkflowMaker:
         """
         self.workflow.setRequestCategory(newCategory)
         return
+
+    def setAcquisitionEra(self,era):
+        """
+        _setAcquisitionEra_
+        
+        Sets the AcquisitionEra in the workflow 
+
+        """
+        self.workflow.setAcquisitionEra(era)
+        self.acquisitionEra=era
+
 
     
     def setActivity(self, activity):
@@ -353,14 +367,24 @@ class WorkflowMaker:
             primaryName = DatasetConventions.primaryDatasetName(
                                     PhysicsChannel = self.channel,
                                     )
-            processedName = DatasetConventions.processedDatasetName(
-                Version = self.cmsswVersion,
-                Label = self.label,
-                Group = self.group,
-                FilterName = filterName,
-                RequestId = self.requestId,
-                Unmerged = True
-                )
+            if self.acquisitionEra == None:
+              processedName = DatasetConventions.processedDatasetName(
+                  Version = self.cmsswVersion,
+                  Label = self.label,
+                  Group = self.group,
+                  FilterName = filterName,
+                  RequestId = self.requestId,
+                  Unmerged = True
+                  )
+            else:
+              processedName = DatasetConventions.csa08ProcessedDatasetName(
+                  AcquisitionEra = self.acquisitionEra,
+                  Conditions = self.workflow.parameters['Conditions'],
+                  ProcessingVersion = self.workflow.parameters['ProcessingVersion'],
+                  FilterName = filterName,
+                  Unmerged = True
+                  )
+
             dataTier = DatasetConventions.checkDataTier(dataTier)
 
             moduleInstance['primaryDataset'] = primaryName

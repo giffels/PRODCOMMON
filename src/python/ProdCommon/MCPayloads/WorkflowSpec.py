@@ -103,6 +103,16 @@ class WorkflowSpec:
         self.parameters['RequestCategory'] = category
         return
 
+    def setAcquisitionEra(self, era):
+        """
+        _setAcquisitionEra_
+        
+        set the Acquisition era value for the workflow
+     
+        """
+        self.parameters['AcquisitionEra'] = era
+
+
     def setActivity(self, activity):
         """
         _setWorkflowCategory_
