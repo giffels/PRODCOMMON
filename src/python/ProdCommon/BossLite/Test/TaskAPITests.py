@@ -27,8 +27,7 @@ class TaskAPITests(object):
         set parameters (possible values in comment)
         """
 
-        self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI',
-                                 'user_proxy' : '' }
+        self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI' }
         self.mySqlConfig = {'dbName':'BossLiteDB',
                     'host':'localhost',
                     'user':'BossLiteUser',
@@ -43,7 +42,7 @@ class TaskAPITests(object):
 
 
     ##########################################################################
-    def __init__(self, dbtype):
+    def __init__(self, dbtype, installDb=False):
         """
         __init__
         """
@@ -64,9 +63,9 @@ class TaskAPITests(object):
         self._Configure()
 
         if dbtype.lower() == 'sqlite' :
-            self.bossSession = self._SqLiteSession()
+            self.bossSession = self._SqLiteSession(installDb)
         elif dbtype.lower() == 'mysql' :
-            self.bossSession = self._MySqlSession()
+            self.bossSession = self._MySqlSession(installDb)
         else :
             print "bad db choice: '%s', allowed only 'SQLite' or 'MySQL'" % \
                   dbtype
@@ -74,7 +73,7 @@ class TaskAPITests(object):
         
 
     ##########################################################################
-    def _SqLiteSession(self):
+    def _SqLiteSession(self, installDb):
         """
         __sqLiteSession__
         """
@@ -88,9 +87,10 @@ class TaskAPITests(object):
         
         # db installed?
         try:
-            self.bossSession.installDB(
-                '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase-sqlite.sql'
-                )
+            if installDb :
+                self.bossSession.installDB(
+                    '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase-sqlite.sql'
+                    )
         except:
             pass
     
@@ -98,7 +98,7 @@ class TaskAPITests(object):
 
 
     ##########################################################################
-    def _MySqlSession(self):
+    def _MySqlSession(self, installDb):
         """
         __mySqlSession__
         """
@@ -113,9 +113,10 @@ class TaskAPITests(object):
     
         # db installed?
         try:
-            self.bossSession.installDB(
-                '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase.sql'
-                )
+            if installDb :
+                self.bossSession.installDB(
+                    '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase.sql'
+                    )
         except:
             pass
     
@@ -361,11 +362,12 @@ def main():
     taskName =  None
     dbtype = 'sqlite'
     outdir = None
+    installDB = False
 
     lOptions = [ func for func in TaskAPITests.__dict__.keys()
                  if func[0] != '_' ]
     lMethods = [ '--' + func for func in lOptions ]
-    lOptions.extend( ["help", 'test', 'db=', \
+    lOptions.extend( ["help", 'test', 'db=', 'installDB', \
                       'taskId=', 'taskName=', 'jobRange=', 'outdir='] )
 
     try:
@@ -389,6 +391,8 @@ def main():
             taskName = a
         elif o in ("--jobRange"):
             jobRange = a
+        elif o in ("--installDB"):
+            installDB = True
         elif o in ("--test"):
             test = True
         elif o in lMethods:
@@ -401,7 +405,7 @@ def main():
         sys.exit()
     
     # initialize test session and load or create task
-    bossSession = TaskAPITests(dbtype)
+    bossSession = TaskAPITests(dbtype, installDB)
     bossSession.taskId = taskId
     bossSession.taskName = taskName
     bossSession.jobRange = jobRange
