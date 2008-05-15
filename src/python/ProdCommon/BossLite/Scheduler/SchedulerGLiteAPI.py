@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.50 2008/05/08 15:31:58 gcodispo Exp $"
-__version__ = "$Revision: 1.50 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.51 2008/05/14 09:53:51 gcodispo Exp $"
+__version__ = "$Revision: 1.51 $"
 
 import sys
 import os
@@ -110,7 +110,28 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
     warnings = []
+    try:
+        envProxy = os.environ["X509_USER_PROXY"]
+    except KeyError:
+        envProxy = None
 
+    ##########################################################################
+    def hackEnv( self, restore = False ) :
+        """
+        a trick to reset X509_USER_PROXY when glite is not able to handle
+        explicit proxy
+        """
+
+        if self.envProxy is None :
+            return
+
+        if restore :
+            os.environ["X509_USER_PROXY"] = self.envProxy
+        else :
+            os.environ["X509_USER_PROXY"] = self.cert
+
+
+    ##########################################################################
     def mergeJDL( self, jdl, wms='', configfile='' ):
         """
         parse config files, merge jdl and retrieve wms list
@@ -450,6 +471,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             wms = 'https://' + wms + ':7443/glite_wms_wmproxy_server'
 
         # initialize wmproxy
+        self.hackEnv() ### TEMP FIX
         wmproxy = Wmproxy(wms, proxy=self.cert)
         wmproxy.soapInit()
 
@@ -549,6 +571,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     job.runningJob.warnings.append("unable to purge WMS")
                     job.runningJob['statusHistory'].append(
                         "unable to purge WMS")
+
+        self.hackEnv(restore=True) ### TEMP FIX
                 
 
     ##########################################################################
@@ -571,6 +595,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             wms = 'https://' + wms + ':7443/glite_wms_wmproxy_server'
 
         # initialize wmproxy
+        self.hackEnv() ### TEMP FIX
         wmproxy = Wmproxy(wms, self.cert)
         wmproxy.soapInit()
 
@@ -592,6 +617,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             except BaseException, err:
                 #print "WARNING : " + err.toString()
                 continue
+
+        self.hackEnv(restore=True) ### TEMP FIX
 
         # raise exception for failed operations
         if len( errors ) != 0 :
@@ -652,6 +679,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         endpoints = groupByWMS(
             jobs, self.cert, 'node', status_list=['Done'], allow=True
             )
+        self.hackEnv() ### TEMP FIX
         for wms, schedIdList in endpoints.iteritems():
             try:
                 wmproxy = Wmproxy( wms, self.cert )
@@ -661,6 +689,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             except BaseException, err:
                 pass
                 # print err.toString(), '\n\n'
+        self.hackEnv(restore=True) ### TEMP FIX
 
     ##########################################################################
 
