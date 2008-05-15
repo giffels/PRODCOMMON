@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.51 2008/05/14 09:53:51 gcodispo Exp $"
-__version__ = "$Revision: 1.51 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.52 2008/05/15 09:58:04 gcodispo Exp $"
+__version__ = "$Revision: 1.52 $"
 
 import sys
 import os
@@ -341,8 +341,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         """
 
-        wms = service
-        configfile = config
         # decode obj
         jdl, sandboxFileList = self.decode( obj, requirements )
 
@@ -352,7 +350,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         actions = []
 
         # handle wms and prepare jdl
-        jdl, endpoints = self.mergeJDL( jdl, wms, configfile )
+        jdl, endpoints = self.mergeJDL( jdl, service, config )
         if endpoints == [] :
             raise SchedulerError( "failed submission", "empty WMS list" )
 
@@ -697,13 +695,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         resources list match
         """
-        jdl = self.decode( obj, requirements)
-        configfile = config
-        wms = service
+        jdl = self.decode( obj, requirements)[0]
         matchingCEs = []
         errorList = []
 
-        jdl, endpoints = self.mergeJDL( jdl, wms, configfile)
+        jdl, endpoints = self.mergeJDL( jdl, service, config)
 
         # handle wms
         if endpoints == [] :
@@ -807,11 +803,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
 
         # decode obj
-        jdl, sandboxFileList = self.decode( obj, requirements )
-
-        # return values
-        taskId = ''
-        returnMap = {}
+        jdl = self.decode( obj, requirements )[0]
 
         # handle wms
         return self.mergeJDL( jdl, service, config )[0]
