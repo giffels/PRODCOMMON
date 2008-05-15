@@ -185,9 +185,7 @@ class TaskAPITests(object):
                 job = Job(parameters)
                 self.bossSession.getNewRunningInstance(job)
                 jobs.append(job)
-                
-                
-            self.task.addJobs(jobs)
+
             self.bossSession.saveTask( self.task )
     
             for job in self.task.jobs :
