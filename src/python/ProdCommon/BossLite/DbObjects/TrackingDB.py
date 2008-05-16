@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.15 2008/04/30 09:14:05 gcodispo Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: TrackingDB.py,v 1.16 2008/04/30 13:27:54 gcodispo Exp $"
+__revision__ = "$Revision: 1.16 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -382,7 +382,7 @@ class TrackingDB:
 
     ##########################################################################
 
-    def update(self, template):
+    def update(self, template, skipAttributes = None):
         """
         _update_
         """
@@ -392,14 +392,27 @@ class TrackingDB:
         tableIndexRes = [ template.mapping[key]
                           for key in template.__class__.tableIndex ]
 
+        if skipAttributes is None :
+            skipAttributes = {}
+
         # get specification for keys (if any)
         keys = [(template.mapping[key], template.data[key])
                              for key in tableIndex 
                              if template.data[key] is not None]
         keysSpec = " and ".join(['%s="%s"' % (key, value)
-                                     for key, value in keys
+                                 for key, value in keys
                                 ])
-        if keysSpec != "":
+
+        unlikeSpec = " and ".join(['%s!="%s"' % (key, value)
+                                   for key, value in skipAttributes.iteritems()
+                                   ])
+
+        if keysSpec != "" and unlikeSpec != "" :
+            keysSpec += ' and ' + unlikeSpec
+        elif unlikeSpec != "" :
+             keysSpec = unlikeSpec
+
+        if keysSpec != "" :
             keysSpec = ' where ' + keysSpec
 
         # define update list (does not include keys)

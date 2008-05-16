@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.13 2008/04/29 08:34:16 gcodispo Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: RunningJob.py,v 1.14 2008/05/07 16:53:35 gcodispo Exp $"
+__revision__ = "$Revision: 1.14 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -205,7 +205,7 @@ class RunningJob(DbObject):
 
         # update it on database
         try:
-            status = db.update(self)
+            status = db.update(self, {'closed' : 'Y'})
             # if status < 1:
             #     raise JobError("Cannot update job %s" % str(self))
 
