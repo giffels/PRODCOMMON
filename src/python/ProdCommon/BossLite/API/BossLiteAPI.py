@@ -440,17 +440,14 @@ class BossLiteAPI(object):
             if jobList is not None:
                 s = [ str(job['jobId']) for job in taskRange.jobs ]
                 jobList = [x for x in jobList if x not in s]
-                # s = set (
-                #     jobList + [ str(job['jobId']) for job in taskRange.jobs ]
-                #     )
-                # jobList = [x for x in s]
                 jobList.sort()
-            # elif len( taskRange.jobs ) != 0: 
-            #     jobList = [ str(job['jobId']) for job in taskRange.jobs ]
 
-            self.loadTaskJobs(taskRange, jobList, \
-                              jobAttributes, runningAttrs, strict=strict, \
-                              limit=limit, offset=offset  )
+            # no need to load if the task already has jobs
+            #    and no other jobs are requested
+            if taskRange.jobs == [] or jobList is not None :
+                self.loadTaskJobs(taskRange, jobList, \
+                                  jobAttributes, runningAttrs, strict=strict, \
+                                  limit=limit, offset=offset  )
             taskList.append( taskRange )
             return taskList
 
