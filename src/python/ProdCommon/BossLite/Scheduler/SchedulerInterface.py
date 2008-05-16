@@ -8,8 +8,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.18 2008/04/18 14:01:07 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.19 2008/04/29 08:15:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.19 $"
 
 class SchedulerInterface(object):
     """
@@ -139,7 +139,7 @@ class SchedulerInterface(object):
 
     ##########################################################################
     
-    def getOutput( self, obj, outdir='', service='' ):
+    def getOutput( self, obj, outdir='' ):
         """
         retrieve output or just put it in the destination directory
 
@@ -147,10 +147,9 @@ class SchedulerInterface(object):
         """
         raise NotImplementedError
 
-
     ##########################################################################
 
-    def kill( self, schedIdList, service ):
+    def kill( self, obj ):
         """
         kill the job instance
 
@@ -169,14 +168,14 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def purgeService( self, schedIdList ):
+    def purgeService( self, obj ):
         """
         purge the service used by the scheduler from job files
         not available for every scheduler
 
         does not return
         """
-        raise NotImplementedError
+        return
 
     ##########################################################################
 
@@ -187,6 +186,8 @@ class SchedulerInterface(object):
         """
         raise NotImplementedError
 
+    ##########################################################################
+    
     def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
         """
         perform a resources discovery
