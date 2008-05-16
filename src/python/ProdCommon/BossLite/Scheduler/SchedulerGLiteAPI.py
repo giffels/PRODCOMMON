@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.52 2008/05/15 09:58:04 gcodispo Exp $"
-__version__ = "$Revision: 1.52 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.53 2008/05/15 16:32:40 gcodispo Exp $"
+__version__ = "$Revision: 1.53 $"
 
 import sys
 import os
@@ -594,7 +594,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
-        wmproxy = Wmproxy(wms, self.cert)
+        wmproxy = Wmproxy(wms, proxy=self.cert)
         wmproxy.soapInit()
 
         # loop ove jobs
