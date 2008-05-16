@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.1 2008/02/08 18:11:41 gcodispo Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.2 2008/04/29 08:15:42 gcodispo Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import sys
 import os
@@ -137,16 +137,32 @@ class SchedulerGLite (SchedulerInterface) :
 
     ##########################################################################
 
-
-    def getOutput( self, schedIdList,  outdir, service ):
+    def getOutput( self, obj, outdir='' ):
         """
         retrieve job output
         """
 
-        for job in schedIdList:
+        schedIdList = []
+
+        # the object passed is a job
+        if type(obj) == Job and self.valid( obj.runningJob ):
+
+            # check for the RunningJob integrity
+            schedIdList = [ str( obj.runningJob['schedulerId'] ).strip() ]
+
+        # the object passed is a Task
+        elif type(obj) == Task :
+
+            for job in obj.jobs:
+                if not self.valid( job.runningJob ):
+                    continue
+                schedIdList.append(
+                    str( job.runningJob['schedulerId'] ).strip() )
+
+        for jobId in schedIdList: 
             command = "export X509_USER_PROXY=" + self.cert \
                       + "; glite-wms-job-output --noint --dir " \
-                      + outdir + " " + schedIdList
+                      + outdir + " " + jobId
             out = self.ExecuteCommand( command )
             if out.find("have been successfully retrieved") == -1 :
                 raise ( out )
@@ -154,17 +170,31 @@ class SchedulerGLite (SchedulerInterface) :
 
     ##########################################################################
 
-    def kill( self, schedIdList, service ):
+    def kill( self, obj ):
         """
         kill job
         """
 
-        for job in schedIdList:
-            command = "export X509_USER_PROXY=" + self.cert \
-                      + "; glite-wms-job-cancel --noint " + schedIdList
-            out = self.ExecuteCommand( command )
-            if out.find("glite-wms-job-cancel Success") == -1 :
-                raise ( out )
+        # the object passed is a job
+        if type(obj) == Job and self.valid( obj.runningJob ):
+
+            # check for the RunningJob integrity
+            schedIdList = str( obj.runningJob['schedulerId'] ).strip()
+
+        # the object passed is a Task
+        elif type(obj) == Task :
+
+            for job in obj.jobs:
+                if not self.valid( job.runningJob ):
+                    continue
+                schedIdList += " " + \
+                               str( job.runningJob['schedulerId'] ).strip()
+
+        command = "export X509_USER_PROXY=" + self.cert \
+                  + "; glite-wms-job-cancel --noint " + schedIdList
+        out = self.ExecuteCommand( command )
+        if out.find("glite-wms-job-cancel Success") == -1 :
+            raise ( out )
 
     ##########################################################################
 

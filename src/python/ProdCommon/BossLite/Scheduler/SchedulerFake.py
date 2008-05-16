@@ -3,9 +3,10 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.5 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.6 2008/05/14 09:52:19 gcodispo Exp $"
+__version__ = "$Revision: 1.6 $"
 
+import os
 import traceback
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -159,7 +160,7 @@ class SchedulerFake(SchedulerInterface) :
 
     ##########################################################################
 
-    def getOutput( self, obj, outdir='', service='' ):
+    def getOutput( self, obj, outdir='' ):
         """
         retrieve output or just put it in the destination directory
         """
@@ -188,10 +189,11 @@ class SchedulerFake(SchedulerInterface) :
                 if self.valid( job.runningJob ):
                     # retrieve output
                     # if error: job.runningJob.errors.append( error )
+                    pass
 
     ##########################################################################
 
-    def kill( self, obj, service):
+    def kill( self, obj ):
         """
         Kill jobs submitted to a given WMS. Does not perform status check
         """
@@ -206,11 +208,12 @@ class SchedulerFake(SchedulerInterface) :
                 if self.valid( job.runningJob ):
                     # kill
                     # if error: job.runningJob.errors.append( error )
+                    pass
 
 
     ##########################################################################
 
-    def purgeService( self, schedIdList ):
+    def purgeService( self, obj ):
         """
         Purge job (even bulk) from service
         """

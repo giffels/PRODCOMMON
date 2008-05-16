@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.10 2008/05/08 18:06:47 spiga Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.11 2008/05/09 09:27:41 gcodispo Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import re, os
 
@@ -210,7 +210,7 @@ class SchedulerLsf (SchedulerInterface) :
         return ret_map
 
 
-    def getOutput( self, schedIdList, outdir, service ):
+    def getOutput( self, schedIdList, outdir ):
         """
         retrieve output or just put it in the destination directory
 
@@ -219,7 +219,7 @@ class SchedulerLsf (SchedulerInterface) :
         #it should just move the output form where has been placed by LSF to the outdir location
 
 
-    def kill( self, schedIdList, service ):
+    def kill( self, obj ):
         """
         kill the job instance
 
@@ -227,8 +227,11 @@ class SchedulerLsf (SchedulerInterface) :
         """
         r = re.compile("Job <(\d+)> is being terminated")
         rFinished = re.compile("Job <(\d+)>: Job has already finished")
-        for jobid in schedIdList:
-            jobid = jobid.strip()
+        # for jobid in schedIdList:
+        for job in obj.jobs:
+            if not self.valid( job.runningJob ):
+                continue
+            jobid = str( job.runningJob['schedulerId'] ).strip()
             cmd='bkill '+str(jobid)
             out = self.ExecuteCommand(cmd)
             mFailed= rFinished.search(out)

@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.19 2008/05/07 19:50:08 ewv Exp $"
-__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.20 2008/05/07 20:07:55 ewv Exp $"
+__version__ = "$Revision: 1.20 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -285,17 +285,20 @@ class SchedulerCondorCommon(SchedulerInterface) :
     return bossIds
 
 
-  def kill( self, schedIdList, service):
+  def kill( self, obj ):
     """
     Kill jobs submitted to a given WMS. Does not perform status check
     """
 
-    for job in schedIdList:
-      submitHost,jobId  = job.split('//')
+    for job in obj.jobs:
+      if not self.valid( job.runningJob ):
+        continue
+      jobid = str( job.runningJob['schedulerId'] ).strip()
+      submitHost,jobId  = jobid.split('//')
       (input_file, output_file) = os.popen4("condor_rm -name  %s %s " % (submitHost,jobId))
 
 
-  def getOutput( self, obj, outdir='', service='' ):
+  def getOutput( self, obj, outdir='' ):
     """
     Retrieve (move) job output from cache directory to outdir
     User files from CondorG appear asynchronously in the cache directory
