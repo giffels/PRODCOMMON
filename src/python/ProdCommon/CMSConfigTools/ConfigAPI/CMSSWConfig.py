@@ -209,8 +209,6 @@ class CMSSWConfig:
         Return the original cfg file content
 
         """
-        if self.originalCfg == None:
-            return "NO CONFIG CONTENT AVAILABLE"
         return self.originalCfg
 
     def save(self):
