@@ -66,19 +66,22 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         #//
         self.cmsRunNode = self.cmsGenNode.newNode("cmsRun1")
         self.cmsRunNode.type = "CMSSW"
-        
+        self.cmsRunNode.addInputLink("cmsGen1", "cmsGen",
+                                     "source", True)
+        self.cmsRunNodes = [self.cmsRunNode]
         
         return
 
 
-    def setCMSSWVersion(self, version):
-        """
-        _setCMSSWVersion_
+#    def setCMSSWVersion(self, version):
+#        """
+#        _setCMSSWVersion_
+#
+#        """
+#        WorkflowMaker.setCMSSWVersion(self, version)
+#        self.cmsGenNode.application['Version'] = version
+#        return
 
-        """
-        WorkflowMaker.setCMSSWVersion(self, version)
-        self.cmsGenNode.application['Version'] = version
-        return
 
 
     def setCmsGenConfiguration(self, bigStringWeDontLookAt):
@@ -113,36 +116,8 @@ class CmsGenWorkflowMaker(WorkflowMaker):
                                                              selectionEff
         return
 
-        
-    def makeWorkflow(self):
-        """
-        _makeWorkflow_
 
-        Call this method to create the workflow spec instance when
-        done
-
-        """
-        self._ValidateCmsGen()
-       
-       
-        
-        #  //
-        # // Input link between cmsGen1 and cmsRun1
-        #//
-        
-        self.cmsRunNode.addInputLink("cmsGen1", "cmsGen",
-                                     "source", True)
-
-        #  //
-        # // Now use baseclass methods to populate cmsRun node
-        #//
-        WorkflowMaker.makeWorkflow(self)
-        
-        return self.workflow
-
-
-
-    def _ValidateCmsGen(self):
+    def _Validate(self):
         """
         _ValidateCmasGen_
 
@@ -156,5 +131,6 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         if self.cmsGenNode.applicationControls.get("generator", None) == None:
             msg = "No cmsGen generator option provided"
             raise RuntimeError, msg
-        return
+        
+        return WorkflowMaker._Validate(self)
         

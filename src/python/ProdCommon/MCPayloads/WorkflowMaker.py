@@ -51,8 +51,7 @@ class WorkflowMaker:
         self.label = label
         self.timestamp = int(time.time())
         self.channel = channel
-        self.cmsswVersion = None
-        self.configuration = None
+        self.cmsswVersions = []
         self.configurations = []
         self.psetHash = None
         self.acquisitionEra = None
@@ -102,17 +101,19 @@ class WorkflowMaker:
         self.cmsRunNode.name = "cmsRun1"
         self.cmsRunNode.type = "CMSSW"
         
-        self.topCmsRunNode = self.cmsRunNode
         self.cmsRunNodes = [self.cmsRunNode]
 
 
-    def appendCmsRunNode(self):
+    def chainCmsRunNode(self):
         """
         append a cmsRun config to the current cmsRun node and chain them
         """
-        newnode = self.cmsRunNode.newNode("cmsRun%s" % (len(self.cmsRunNodes) + 1))
+        newnode = self.cmsRunNode.newNode("cmsRun%s" % 
+                                          (len(self.cmsRunNodes) + 1))
         newnode.type = "CMSSW"
-        newnode.addInputLink(self.cmsRunNode.name, self.configurations[-1].outputModules.keys()[0], 'source')
+        newnode.addInputLink(self.cmsRunNode.name, 
+                             self.configurations[-1].outputModules.keys()[0],
+                             'source')
         self.cmsRunNode = newnode
         self.cmsRunNodes.append(newnode)
         #return self.cmsRunNode
@@ -159,7 +160,7 @@ class WorkflowMaker:
         Set the version of CMSSW to be used
 
         """
-        self.cmsswVersion = version
+        self.cmsswVersions.append(version)
         self.cmsRunNode.application['Version'] = version
         self.cmsRunNode.application['Executable'] = "cmsRun"
         self.cmsRunNode.application['Project'] = "CMSSW"
@@ -220,7 +221,6 @@ class WorkflowMaker:
             cfgContent.unpack(cfgData)
         
                 
-        self.configuration = cfgContent
         self.cmsRunNode.cfgInterface = cfgContent
         self.configurations.append(cfgContent)
         return
@@ -359,7 +359,6 @@ class WorkflowMaker:
         #  //
         # // Extract dataset info from cfg
         #//
-        #for outModName in self.configuration.outputModules.keys():
         for outModName in self.configurations[-1].outputModules.keys():
             moduleInstance = self.configurations[-1].getOutputModule(outModName)
             dataTier = moduleInstance['dataTier']
@@ -369,7 +368,7 @@ class WorkflowMaker:
                                     )
             if self.acquisitionEra == None:
               processedName = DatasetConventions.processedDatasetName(
-                  Version = self.cmsswVersion,
+                  Version = self.cmsswVersions[-1],
                   Label = self.label,
                   Group = self.group,
                   FilterName = filterName,
@@ -384,7 +383,7 @@ class WorkflowMaker:
                   FilterName = filterName,
                   Unmerged = True
                   )
-
+              
             dataTier = DatasetConventions.checkDataTier(dataTier)
 
             moduleInstance['primaryDataset'] = primaryName
@@ -437,10 +436,8 @@ class WorkflowMaker:
 
         """
         notNoneAttrs = [
-            "configuration",
             "psetHash",
             "requestId",
-            "cmsswVersion",
             "label",
             "group",
             "channel",
@@ -451,6 +448,13 @@ class WorkflowMaker:
                 msg = "Attribute Not Set: %s" % attrName
                 raise WorkflowMakerError(msg)
         
+        if not len(self.configurations):
+            msg = "Attribute Not Set: configurations"
+            raise WorkflowMakerError(msg)
+            
+        if len(self.configurations) != len(self.cmsswVersions):
+            msg = "len(self.configurations) != len(self.cmsswVersions)"
+            raise WorkflowMakerError(msg)
 
         return
 
