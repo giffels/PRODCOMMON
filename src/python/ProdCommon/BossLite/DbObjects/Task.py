@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.7 2008/04/22 14:36:47 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: Task.py,v 1.8 2008/04/23 17:27:11 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -88,8 +88,15 @@ class Task(DbObject):
                 )
 
         # insert job
-        self.jobIndex.append( job['jobId'] )
-        self.jobs.append(job)
+        pos = len( self.jobIndex )
+        while pos :
+            pos -= 1
+            if self.jobIndex[pos] < job['jobId']:
+                pos += 1
+                break
+
+        self.jobIndex.insert( pos, job['jobId'] )
+        self.jobs.insert( pos, job )
 
     ##########################################################################
 
@@ -97,7 +104,6 @@ class Task(DbObject):
         """
         append jobs into the task
         """
-
 
         for job in listOfJobs:
             self.appendJob(job)

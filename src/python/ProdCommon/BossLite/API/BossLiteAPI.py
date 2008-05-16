@@ -57,7 +57,8 @@ def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
             start = int( s )
             end = int( e )
         nList.extend( range( start, end+1 ) )
-        
+
+    nList.sort()
     return nList
 
 
@@ -434,14 +435,18 @@ class BossLiteAPI(object):
 
         # already loaded task?
         if type( taskRange ) == Task :
+
+            # provided a job list: load just missings
             if jobList is not None:
-                s = set (
-                    jobList + [ str(job['jobId']) for job in taskRange.jobs ]
-                    )
-                jobList = [x for x in s]
+                s = [ str(job['jobId']) for job in taskRange.jobs ]
+                jobList = [x for x in jobList if x not in s]
+                # s = set (
+                #     jobList + [ str(job['jobId']) for job in taskRange.jobs ]
+                #     )
+                # jobList = [x for x in s]
                 jobList.sort()
-            elif len( taskRange.jobs ) != 0: 
-                jobList = [ str(job['jobId']) for job in taskRange.jobs ]
+            # elif len( taskRange.jobs ) != 0: 
+            #     jobList = [ str(job['jobId']) for job in taskRange.jobs ]
 
             self.loadTaskJobs(taskRange, jobList, \
                               jobAttributes, runningAttrs, strict=strict, \
