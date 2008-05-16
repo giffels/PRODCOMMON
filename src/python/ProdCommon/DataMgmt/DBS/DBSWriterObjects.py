@@ -65,18 +65,24 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     exeName = datasetInfo['ApplicationName']
     appVersion = datasetInfo['ApplicationVersion']
     appFamily = datasetInfo["ApplicationFamily"]
-    psetHash = datasetInfo['PSetHash']
-    if psetHash.find(";"):
-        # no need for fake hash in new schema
-        psetHash = psetHash.split(";")[0]
-        psetHash = psetHash.replace("hash=", "")
         
     #
-    # HACK:  Problem with large PSets
+    # HACK:  Problem with large PSets (is this still relevant ?)
     #
-    psetContent = datasetInfo['PSetContent']
+    # Repacker jobs have no PSetContent/PSetHash
+    #
+    psetContent = datasetInfo.get('PSetContent',None)
     if psetContent == None:
-        psetContent = "PSET CONTENT NOT AVAILABLE"
+        psetContent = "PSET_CONTENT_NOT_AVAILABLE"
+    psetHash = datasetInfo.get('PSetHash',None)
+    if psetHash == None:
+        psetHash = "PSET_HASH_NOT_AVAILABLE"
+    else:
+        if psetHash.find(";"):
+            # no need for fake hash in new schema
+            psetHash = psetHash.split(";")[0]
+            psetHash = psetHash.replace("hash=", "")
+
     ## No more hacks
     #msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
     #msg += "TEST HACK USED FOR PSetContent\n" 
@@ -138,12 +144,22 @@ def createAlgorithmForInsert(datasetInfo):
     exeName = datasetInfo['ApplicationName']
     appVersion = datasetInfo['ApplicationVersion']
     appFamily = datasetInfo["ApplicationFamily"]
-    psetHash = datasetInfo['PSetHash']
-    if psetHash.find(";"):
-        # no need for fake hash in new schema
-        psetHash = psetHash.split(";")[0]
-        psetHash = psetHash.replace("hash=", "")
-    
+
+    #
+    # Repacker jobs have no PsetContent/PSetHash
+    #
+    psetContent = datasetInfo.get('PSetContent',None)
+    if psetContent == None:
+        psetContent = "PSET_CONTENT_NOT_AVAILABLE"
+    psetHash = datasetInfo.get('PSetHash',None)
+    if psetHash == None:
+        psetHash = "PSET_HASH_NOT_AVAILABLE"
+    else:
+        if psetHash.find(";"):
+            # no need for fake hash in new schema
+            psetHash = psetHash.split(";")[0]
+            psetHash = psetHash.replace("hash=", "")
+
     psetInstance = DbsQueryableParameterSet(
         Hash = psetHash)
     algorithmInstance = DbsAlgorithm(
@@ -249,8 +265,6 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
     else:
         fileType = 'EDM'
 
-
-
     #
     # FIXME: at this point I should use the mc or data event type from
     #        the jobreport. Until this is supported by the framework,
@@ -301,18 +315,19 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
 
             logging.debug("Lumi associated to file is: %s"%([x for x in lumiList]))
 
-
     #  //
     # // Dataset info related to files and creation of DbsFile object
     #// 
     for dataset in fjrFileInfo.dataset:
+
         primary = createPrimaryDataset(dataset)
         if jobType == "Merge":
             algo = createMergeAlgorithm(dataset)
         else:
             algo = createAlgorithmForInsert(dataset)
+
         processed = createProcessedDataset(primary, algo, dataset)
- 
+
         dbsFileInstance = DbsFile(
             Checksum = checksum,
             NumberOfEvents = nEvents, 
