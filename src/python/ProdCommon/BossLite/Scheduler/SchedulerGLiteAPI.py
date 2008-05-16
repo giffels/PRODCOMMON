@@ -115,6 +115,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     except KeyError:
         envProxy = None
 
+
     ##########################################################################
     def hackEnv( self, restore = False ) :
         """
@@ -165,9 +166,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         return jdl, endpoints
 
+
     ##########################################################################
-
-
     def parseConfig ( self, configfile, vo='cms' ):
         """
         Utility fuction
@@ -198,9 +198,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         return endpoints, cladadd
 
+
     ##########################################################################
-
-
     def wmproxySubmit( self, jdl, wms, sandboxFileList ) :
         """
         actual submission function
@@ -301,12 +300,25 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 
         return taskId, returnMap
 
-    ##########################################################################
 
+    ##########################################################################
     def delegateProxy( self, wms ):
         """
         delegate proxy to a wms
         """
+
+        ### # to use it asap:
+        ### proxycert = wmproxy.getProxyReq(delegationId)
+        ### result = wmproxy.signProxyReqStr(proxycert)
+        ### wmproxy.putProxy(delegationId,result )
+        
+        ### # possible right now:
+        ### proxycert = '"' + wmproxy.getProxyReq(delegationId) + '"'
+        ### os.system("glite-proxy-cert -p " + proxycert)
+        ### proxyres = open("proxyresult.log")
+        ### result = ''.join( proxyres.readlines() )
+        ### wmproxy.putProxy(delegationId,result )
+        ### proxyres.close()
 
         command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
                   + " --endpoint " + wms
@@ -319,8 +331,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if msg.find("Error -") >= 0 :
             self.warnings.append( "Warning : " + str( msg ) )
 
-    ##########################################################################
 
+    ##########################################################################
     def submit( self, obj, requirements='', config ='', service='' ):
         """
         user submission function
@@ -402,8 +414,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
-    def getOutput( self, obj, outdir='', service='' ):
+    def getOutput( self, obj, outdir='' ):
         """
         retrieve output or just put it in the destination directory
 
@@ -451,9 +462,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
 
-        
-    ##########################################################################
 
+    ##########################################################################
     def getWMSOutput( self, jobList,  outdir, service ):
         """
         Manage objects to retrieve the output
@@ -473,7 +483,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wmproxy = Wmproxy(wms, proxy=self.cert)
         wmproxy.soapInit()
 
-        # loop ove jobs
+        # loop over jobs
         for job in jobList:
 
             # skip malformed id
@@ -571,11 +581,51 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                         "unable to purge WMS")
 
         self.hackEnv(restore=True) ### TEMP FIX
-                
+
 
     ##########################################################################
+    def kill( self, obj ):
+        """
+        Kill jobs submitted to a given WMS. Does not perform status check
+        """
 
-    def kill( self, schedIdList, service):
+        # the object passed is a job
+        if type(obj) == Job :
+
+            # check for the RunningJob integrity
+            if not self.valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # kill the job
+            self.doWMScancel( [ obj ], obj.runningJob['service']  )
+
+            # errors?
+            if obj.runningJob.isError() :
+                raise SchedulerError( str( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] ))
+
+        # the object passed is a Task
+        elif type(obj) == Task :
+
+            # retrieve scheduler id list
+            schedIdList = {}
+            for job in obj.jobs:
+                if self.valid( job.runningJob ):
+                    if not schedIdList.has_key( job.runningJob['service'] ) :
+                        schedIdList[job.runningJob['service']] = []
+                    schedIdList[job.runningJob['service']].append( job )
+
+            # retrieve output for all jobs
+            for service, idList in schedIdList.iteritems() :
+                self.doWMScancel( idList, service )
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
+
+
+    ##########################################################################
+    def doWMScancel( self, jobList, service):
         """
         Kill jobs submitted to a given WMS. Does not perform status check
         """
@@ -584,9 +634,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wms = service.strip()
         if len(wms) == 0 :
             return
-
-        # prepare the list of possible exceptions
-        errors = {}
 
         # look for a well formed name
         if wms.find( 'https') < 0 :
@@ -597,100 +644,148 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wmproxy = Wmproxy(wms, proxy=self.cert)
         wmproxy.soapInit()
 
-        # loop ove jobs
-        for jobid in schedIdList:
+        # loop over jobs
+        for job in jobList:
 
             # skip malformed id
-            jobid = str( jobid ).strip()
-            if jobid is None or len(jobid) == 0 :
+            jobId = str( job.runningJob['schedulerId'] ).strip()
+            if jobId is None or len(jobId) == 0 :
                 continue
 
-            try :
-                wmproxy.jobCancel( jobid )
-            except BaseException, err:
-                errors[ jobid ] = err.toString()
-                continue
-            try :
-                wmproxy.jobPurge( jobid )
-            except BaseException, err:
-                #print "WARNING : " + err.toString()
-                continue
+            # eventual error container
+            joberr = ''
 
+            # get file list
+            try :
+                wmproxy.jobCancel( jobId )
+            except BaseException, err:
+                output = err.toString()
+                job.runningJob.errors.append( output )
+                job.runningJob['statusHistory'].append(
+                        'Failed Job Cancel' )
+
+            try :
+                wmproxy.jobPurge( jobId )
+            except BaseException, err:
+                # job.runningJob.warnings.append("unable to purge WMS")
+                # job.runningJob['statusHistory'].append("unable to purge WMS")
+                continue
         self.hackEnv(restore=True) ### TEMP FIX
 
-        # raise exception for failed operations
-        if len( errors ) != 0 :
-            raise SchedulerError(
-                'scheduler interaction failed for some jobs ', str(errors)
-                )
-
     ##########################################################################
-
-    def killCheck( self, schedIdList, idType = 'node' ):
-        """
-        Kill jobs querying WMS to LB, if the job status allows
-        If a list of parent id is used, must be idType='parent'
-        """
-
-        jobs = []
-        if len( schedIdList ) == 0:
-            return
-        elif type( schedIdList ) == str :
-            jobs = [ schedIdList ]
-        elif type( schedIdList ) == list :
-            jobs = schedIdList
-            
-        # retrieve wms
-        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
-        endpoints = groupByWMS(
-            jobs, self.cert, idType, \
-            status_list = ['Done', 'Aborted','Cancelled'],\
-            allow = False
-            )
-        
-        # actual kill
-        for wms, schedIdList in endpoints.iteritems():
-            try :
-                self.kill( wms, schedIdList )
-            except StandardError:
-                pass
-                # for job in schedIdList:
-                #     job.runningJob.errors.append( "failed" )
-
+    ### 
+    ###     def killCheck( self, schedIdList, idType = 'node' ):
+    ###         """
+    ###         Kill jobs querying WMS to LB, if the job status allows
+    ###         If a list of parent id is used, must be idType='parent'
+    ###         """
+    ### 
+    ###         jobs = []
+    ###         if len( schedIdList ) == 0:
+    ###             return
+    ###         elif type( schedIdList ) == str :
+    ###             jobs = [ schedIdList ]
+    ###         elif type( schedIdList ) == list :
+    ###             jobs = schedIdList
+    ###             
+    ###         # retrieve wms
+    ###         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
+    ###         endpoints = groupByWMS(
+    ###             jobs, self.cert, idType, \
+    ###             status_list = ['Done', 'Aborted','Cancelled'],\
+    ###             allow = False
+    ###             )
+    ###         
+    ###         # actual kill
+    ###         for wms, schedIdList in endpoints.iteritems():
+    ###             try :
+    ###                 self.kill( wms, schedIdList )
+    ###             except StandardError:
+    ###                 pass
+    ###                 # for job in schedIdList:
+    ###                 #     job.runningJob.errors.append( "failed" )
+    ### 
+    ### 
     ##########################################################################
-
-    def purgeService( self, schedIdList ):
+    def purgeService( self, obj ):
         """
         Purge job (even bulk) from wms
         """
 
-        jobs = []
-        if len( schedIdList ) == 0:
-            return
-        elif type( schedIdList ) == str :
-            jobs = [ schedIdList ]
-        elif type( schedIdList ) == list :
-            jobs = schedIdList
-        
-        # retrieve wms and get output
-        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
-        endpoints = groupByWMS(
-            jobs, self.cert, 'node', status_list=['Done'], allow=True
-            )
-        self.hackEnv() ### TEMP FIX
-        for wms, schedIdList in endpoints.iteritems():
-            try:
-                wmproxy = Wmproxy( wms, self.cert )
-                wmproxy.soapInit()
-                for jobid in schedIdList:
-                    wmproxy.jobPurge( jobid )
-            except BaseException, err:
-                pass
-                # print err.toString(), '\n\n'
-        self.hackEnv(restore=True) ### TEMP FIX
+        # the object passed is a job
+        if type(obj) == Job :
+
+            # check for the RunningJob integrity
+            if not self.valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+
+            # kill the job
+            self.purgeWMS( [ obj ], obj.runningJob['service']  )
+
+            # errors?
+            if obj.runningJob.isError() :
+                raise SchedulerError( str( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] ))
+
+        # the object passed is a Task
+        elif type(obj) == Task :
+
+            # retrieve scheduler id list
+            schedIdList = {}
+            for job in obj.jobs:
+                if self.valid( job.runningJob ):
+                    if not schedIdList.has_key( job.runningJob['service'] ) :
+                        schedIdList[job.runningJob['service']] = []
+                    schedIdList[job.runningJob['service']].append( job )
+
+            # retrieve output for all jobs
+            for service, idList in schedIdList.iteritems() :
+                self.purgeWMS( [ obj ], obj.runningJob['service']  )
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
+
 
     ##########################################################################
+    def purgeWMS( self, jobList, service ):
+        """
+        Kill jobs submitted to a given WMS. Does not perform status check
+        """
 
+        # skip empty endpoint
+        wms = service.strip()
+        if len(wms) == 0 :
+            return
+
+        # look for a well formed name
+        if wms.find( 'https') < 0 :
+            wms = 'https://' + wms + ':7443/glite_wms_wmproxy_server'
+
+        # initialize wmproxy
+        self.hackEnv() ### TEMP FIX
+        wmproxy = Wmproxy(wms, proxy=self.cert)
+        wmproxy.soapInit()
+
+        # loop over jobs
+        for job in jobList:
+
+            # skip malformed id
+            jobId = str( job.runningJob['schedulerId'] ).strip()
+            if jobId is None or len(jobId) == 0 :
+                continue
+
+            # purge
+            try :
+                wmproxy.jobPurge( jobId )
+            except BaseException, err:
+                # job.runningJob.warnings.append("unable to purge WMS")
+                # job.runningJob['statusHistory'].append("unable to purge WMS")
+                continue
+        self.hackEnv(restore=True) ### TEMP FIX
+
+
+    ##########################################################################
     def matchResources( self, obj, requirements='', config='', service='' ):
         """
         resources list match
@@ -749,8 +844,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         return matchingCEs
 
-    ##########################################################################
 
+    ##########################################################################
     def postMortem( self, schedulerId, outfile, service):
         """
         perform scheduler logging-info
@@ -766,7 +861,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
     def query(self, schedIdList, service='', objType='node') :
         """
         query status and eventually other scheduler related information
@@ -781,7 +875,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
     def fullPath( self, path, startdir ) :
         """
         should be in task/job to resolve input/output fullpaths
@@ -795,7 +888,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
     def jobDescription ( self, obj, requirements='', config='', service = '' ):
 
         """
@@ -825,7 +917,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-
     def singleApiJdl( self, job, requirements='' ) :
         """
         build a job jdl easy to be handled by the wmproxy API interface
@@ -880,8 +971,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # return values
         return jdl, filelist
 
-    ##########################################################################
 
+    ##########################################################################
     def collectionApiJdl( self, task, requirements='' ):
         """
         build a collection jdl easy to be handled by the wmproxy API interface
@@ -1088,5 +1179,5 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                 celist.append( ce )
 
         return celist
- 
+
 
