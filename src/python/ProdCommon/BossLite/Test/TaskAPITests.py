@@ -186,6 +186,7 @@ class TaskAPITests(object):
                 self.bossSession.getNewRunningInstance(job)
                 jobs.append(job)
 
+            self.task.addJobs(jobs)
             self.bossSession.saveTask( self.task )
     
             for job in self.task.jobs :
@@ -342,7 +343,8 @@ class TaskAPITests(object):
         __loadTask__
         """
 
-        self.task = self.bossSession.removeTask(self.taskId)
+        self.bossSession.removeTask(self.task)
+        self.task = None
 
 
     ##########################################################################
