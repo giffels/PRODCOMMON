@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.53 2008/05/15 16:32:40 gcodispo Exp $"
-__version__ = "$Revision: 1.53 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.55 2008/05/16 14:44:26 gcodispo Exp $"
+__version__ = "$Revision: 1.55 $"
 
 import sys
 import os
@@ -403,7 +403,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             job.runningJob.warnings.extend( self.warnings )
             job.runningJob['statusHistory'].extend( actions )
             if errors != '' :
-                job.runningJob.errors.append( errors )
+                if success is None :
+                    job.runningJob.errors.append( errors )
+                else :
+                    job.runningJob.warnings.append( errors )
         del self.warnings [:]
 
         # if submission failed, raise error

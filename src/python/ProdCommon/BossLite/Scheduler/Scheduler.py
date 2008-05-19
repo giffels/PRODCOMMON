@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.29 2008/05/16 14:44:05 gcodispo Exp $"
-__revision__ = "$Revision: 1.29 $"
+__version__ = "$Id: Scheduler.py,v 1.30 2008/05/19 12:58:22 gcodispo Exp $"
+__revision__ = "$Revision: 1.30 $"
 
 
 ##########################################################################
@@ -79,13 +79,14 @@ class Scheduler(object):
 
             for job in obj.jobs :
 
-                # evaluate errors:
-                if job.runningJob is not None and job.runningJob.isError() :
-                    errors += str( job.runningJob.errors )
-
                 # skip jobs not requested for action
-                # if not self.schedObj.valid(job.runningJob) :
-                #     continue
+                if job.runningJob is None or runningJob.active == False :
+                    continue
+
+                # evaluate errors:
+                elif job.runningJob.isError() :
+                    errors += str( job.runningJob.errors )
+                    continue
 
                 # update success jobs
                 job.runningJob['schedulerId'] = jobAttributes[ job['name'] ]

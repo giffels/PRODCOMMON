@@ -8,8 +8,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.19 2008/04/29 08:15:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.19 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.20 2008/05/16 14:44:05 gcodispo Exp $"
+__revision__ = "$Revision: 1.20 $"
 
 class SchedulerInterface(object):
     """
@@ -33,7 +33,7 @@ class SchedulerInterface(object):
         """
 
         if runningJob is not None \
-               and runningJob.active is not None \
+               and runningJob.active == True \
                and runningJob['schedulerId'] is not None \
                and runningJob['closed'] == "N" \
                and runningJob['status'] not in ['A', 'K', 'E'] :
