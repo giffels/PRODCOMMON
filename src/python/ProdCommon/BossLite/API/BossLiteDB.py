@@ -92,6 +92,7 @@ class BossLiteDB(object):
         # create a session and db access
         self.session = None
 
+
     ##########################################################################
     def connect ( self ) :
         """
@@ -99,7 +100,8 @@ class BossLiteDB(object):
         """
 
         # create a session and db access
-        self.session = SafeSession(dbInstance = self.dbInstance)
+        if self.session is None:
+            self.session = SafeSession(dbInstance = self.dbInstance)
         
 
     ##########################################################################
@@ -138,8 +140,7 @@ class BossLiteDB(object):
         """
 
         # db connect
-        if self.session is None :
-            self.connect()
+        self.connect()
 
         if (self.session.execute(query) > 0):
             out = self.session.fetchall()
@@ -157,8 +158,7 @@ class BossLiteDB(object):
         """
 
         # db connect
-        if self.session is None :
-            self.connect()
+        self.connect()
 
         if (self.session.execute(query) > 0):
             out = self.session.fetchone()[0]
@@ -176,8 +176,7 @@ class BossLiteDB(object):
         """
 
         # db connect
-        if self.session is None :
-            self.connect()
+        self.connect()
 
         # return query results
         self.session.execute( query )
@@ -192,8 +191,7 @@ class BossLiteDB(object):
         """
 
         # db connect
-        if self.session is None :
-            self.connect()
+        self.connect()
 
         # update
         obj.update(self.session)
