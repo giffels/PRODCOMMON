@@ -55,10 +55,6 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         self.cmsGenNode = self.workflow.payload
         self.cmsGenNode.name = "cmsGen1"
         self.cmsGenNode.type = "CmsGen"
-        self.cmsGenNode.application['Version'] = ""
-        self.cmsGenNode.application['Executable'] = "cmsGen"
-        self.cmsGenNode.application['Project'] = "CMSSW"
-        self.cmsGenNode.application['Architecture'] = ""
         self.cmsGenNode.configuration = None
 
         #  //
@@ -73,14 +69,17 @@ class CmsGenWorkflowMaker(WorkflowMaker):
         return
 
 
-#    def setCMSSWVersion(self, version):
-#        """
-#        _setCMSSWVersion_
-#
-#        """
-#        WorkflowMaker.setCMSSWVersion(self, version)
-#        self.cmsGenNode.application['Version'] = version
-#        return
+    def setCmsGenCMSSWVersion(self, version):
+        """
+        _setCMSSWVersion_
+
+        """
+        self.cmsGenNode.application['Executable'] = "cmsGen"
+        self.cmsGenNode.application['Project'] = "CMSSW"
+        self.cmsGenNode.application['Architecture'] = ""
+        self.cmsGenNode.application['Version'] = version
+
+        return
 
 
 
