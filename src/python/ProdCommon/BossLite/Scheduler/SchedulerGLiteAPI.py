@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.62 2008/05/20 16:07:26 gcodispo Exp $"
-__version__ = "$Revision: 1.62 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.59 2008/05/20 11:26:33 afanfani Exp $"
+__version__ = "$Revision: 1.59 $"
 
 import sys
 import os
@@ -117,9 +117,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
         # skipWMSAuth 
-        self.skipWMSAuth = args.get( "skipWMSAuth", 0 )
-        # vo 
-        self.vo = args.get( "vo", "cms" )
+        self.skipWMSAuth=args.get("skipWMSAuth",0)
 
 
     ##########################################################################
@@ -174,7 +172,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def parseConfig ( self, configfile ):
+    def parseConfig ( self, configfile, vo='cms' ):
         """
         Utility fuction
         
@@ -187,7 +185,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         try:
             if ( len(configfile) == 0 ):
                 configfile = "%s/etc/%s/glite_wms.conf" \
-                             % ( os.environ['GLITE_LOCATION'], self.vo )
+                             % ( os.environ['GLITE_LOCATION'], vo )
 
             fileh = open( configfile, "r" )
             configClad = fileh.read().strip()
@@ -314,7 +312,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             raise SchedulerError("failed submission to " + wms, \
-                                 err.toString() + ' : ' + str(err) )
+                           err.toString() + ' : ' + str(err))
         except SchedulerError, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             SchedulerError( "failed submission to " + wms, err )
@@ -556,6 +554,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     job.runningJob['statusHistory'].append(
                         'error retrieving output' )
                     continue
+
 
             # retrieve files
             retrieved = 0
@@ -1144,7 +1143,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):        
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -1152,14 +1151,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         celist = []
 
-        # set to None invalid entries
-        if seList == [''] or seList == []:
+        if seList == ['']:
             seList = None
-        # set to None invalid entries
-        if whitelist == [''] or whitelist == []:
+        if blacklist == ['']:
+            blacklist = None
+        if whitelist == ['']:
             whitelist = None
-        # set to [] invalid entries so that the lopp does't need checks
-        if blacklist == [''] or blacklist == None:
+
+        if blacklist is None :
             blacklist = []
 
         if len( tags ) != 0 :
@@ -1171,7 +1170,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         command = "export X509_USER_PROXY=" + self.cert + '; '
 
         if seList == None :
-            command += " lcg-info --vo " + self.vo + " --list-ce --query " + \
+            command += " lcg-info --vo " + vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out = self.ExecuteCommand( command )
             out = out.split()
@@ -1179,22 +1178,23 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    for ceb in blacklist :
-                        if ce.find(ceb) > 0:
-                            passblack = 0
+                    if len(blacklist) > 0:
+                        for ceb in blacklist :
+                            if ce.find(ceb) > 0:
+                                passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None or len(whitelist)==0 :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew) >= 0:
+                            if ce.find(cew)>=0:
                                 celist.append( ce )
 
             return celist
 
         for se in seList :
-            singleComm = command + " lcg-info --vo " + self.vo + \
+            singleComm = command + " lcg-info --vo " + vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
@@ -1204,21 +1204,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    for ceb in blacklist :
-                        if ce.find(ceb) > 0:
-                            passblack = 0
+                    if len(blacklist) > 0:
+                        for ceb in blacklist :
+                            if ce.find(ceb) > 0:
+                                passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None or len(whitelist)==0 :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew) >= 0:
+                            if ce.find(cew)>=0:
                                 celist.append( ce )
-
-            # a site matching is enough
-            if not full and celist != []:
-                break
 
         return celist
 
