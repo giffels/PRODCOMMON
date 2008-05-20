@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.57 2008/05/20 10:24:38 gcodispo Exp $"
-__version__ = "$Revision: 1.57 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.58 2008/05/20 10:33:45 gcodispo Exp $"
+__version__ = "$Revision: 1.58 $"
 
 import sys
 import os
@@ -105,7 +105,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    skipWMSAuth = False
 
     warnings = []
     try:
@@ -117,9 +116,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
-
-        if args.has_key( "skipWMSAuth" ) :
-            self.skipWMSAuth = ( args['skipWMSAuth'].lower() == 'true' )
+        # skipWMSAuth 
+        self.skipWMSAuth=args.get("skipWMSAuth",0)
 
 
     ##########################################################################
@@ -215,7 +213,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # initialize wms connection
         wmproxy = Wmproxy(wms, proxy=self.cert)
         
-        if not self.skipWMSAuth :
+        if self.skipWMSAuth :
             try :
                 wmproxy.setAuth(0)
                 # UI 3.1: missing method
