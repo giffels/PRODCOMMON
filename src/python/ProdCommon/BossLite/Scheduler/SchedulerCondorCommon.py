@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.20 2008/05/07 20:07:55 ewv Exp $"
-__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.21 2008/05/16 14:44:52 gcodispo Exp $"
+__version__ = "$Revision: 1.21 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -293,8 +293,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
     for job in obj.jobs:
       if not self.valid( job.runningJob ):
         continue
-      jobid = str( job.runningJob['schedulerId'] ).strip()
-      submitHost,jobId  = jobid.split('//')
+      schedulerId = str(job.runningJob['schedulerId']).strip()
+      submitHost,jobId  = schedulerId.split('//')
       (input_file, output_file) = os.popen4("condor_rm -name  %s %s " % (submitHost,jobId))
 
 
