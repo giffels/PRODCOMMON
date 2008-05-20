@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.21 2008/05/16 14:44:52 gcodispo Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.22 2008/05/20 15:36:40 ewv Exp $"
+__version__ = "$Revision: 1.22 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -205,7 +205,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
     query status of jobs
     """
-    from xml.dom.minidom import parse
+    from xml.sax import make_parser
+    from CondorHandler import CondorHandler
+    from xml.sax.handler import feature_external_ges
 
     jobIds = {}
     bossIds = {}
@@ -224,10 +226,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
     # Get a list of the schedd's that were used to submit this task
     for id in schedIdList:
 
-      bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default?
+      bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default
       schedd = id.split('//')[0]
       job    = id.split('//')[1]
-        # fill dictionary
+
+      # Fill dictionary of schedd and job #'s to check
       if schedd in jobIds.keys():
         jobIds[schedd].append(job)
       else :
@@ -243,32 +246,25 @@ class SchedulerCondorCommon(SchedulerInterface) :
       output_file.readline()
       output_file.readline()
 
-      # Start parsing XML
-      dom = parse(output_file)
-      classAd = dom.getElementsByTagName("classads")[0]
-      jobList = classAd.getElementsByTagName("c")  # Jobs are "c" elements
-      for job in jobList:
-        globalJobId = ''
-        jobId = 0
-        jobStatus = None
-        gridJobId = None
+      handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', 'MATCH_GLIDEIN_Gatekeeper'])
+      parser = make_parser()
+      parser.setContentHandler(handler)
+      parser.setFeature(feature_external_ges, False)
+      parser.parse(output_file)
+      jobDicts = handler.getJobInfo()
+      for globalJobId in jobDicts.keys():
+        host,task,jobId = globalJobId.split("#")
+        jobStatus = jobDicts[globalJobId].get('JobStatus',None)
+
+        # Host can be either in GridJobId or Glidein match
         execHost = None
-        adList = job.getElementsByTagName("a")     # Job attributes are "a" elements
-        for ad in adList:
-          name = ad.getAttribute('n')
-          if name=="JobStatus":
-            jobStatus = (ad.getElementsByTagName("i")[0]).firstChild.data
-          if name=="GlobalJobId":
-            globalJobId = (ad.getElementsByTagName("s")[0]).firstChild.data
-            host,task,jobId = globalJobId.split("#")
-          if name=="GridJobId":
-            idString = ad.getElementsByTagName("s")
-            if idString:
-              gridJobId = (idString[0]).firstChild.data
-              URI = gridJobId.split(' ')[1]
-              execHost = URI.split(':')[0]
-          if name=="MATCH_GLIDEIN_Gatekeeper":
-            execHost = (ad.getElementsByTagName("s")[0]).firstChild.data
+        gridJobId = jobDicts[globalJobId].get('GridJobId',None)
+        if gridJobId:
+          URI = gridJobId.split(' ')[1]
+          execHost = URI.split(':')[0]
+        glideinHost = jobDicts[globalJobId].get('MATCH_GLIDEIN_Gatekeeper',None)
+        if glideinHost:
+          execHost = glideinHost
 
         # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
         if bossIds.has_key(schedd+'//'+jobId):
@@ -364,55 +360,3 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
 
     return "Check jdl files in " + self.condorTemp + " after submit\n"
-
-# Python handler from Brian Bockelman for faster XML
-#from xml.sax import make_parser
-#from xml.sax.handler import ContentHandler, feature_external_ges
-
-#class CondorHandler(ContentHandler):
-
-    #def __init__(self, idx, attrlist=[]):
-        #self.attrlist = attrlist
-        #self.idxAttr = idx
-
-    #def startDocument(self):
-        #self.attrInfo = ''
-        #self.jobInfo = {}
-
-    #def startElement(self, name, attrs):
-        #if name == 'c':
-            #self.curJobInfo = {}
-        #elif name == 'a':
-            #self.attrName = str(attrs.get('n', 'Unknown'))
-            #self.attrInfo = ''
-        #else:
-            #pass
-
-    #def endElement(self, name):
-        #if name == 'c':
-            #idx = self.curJobInfo.get(self.idxAttr, None)
-            #if idx:
-                #self.jobInfo[idx] = self.curJobInfo
-        #elif name == 'a':
-            #if self.attrName in self.attrlist or len(self.attrlist) == 0:
-                #self.curJobInfo[self.attrName] = self.attrInfo
-        #else:
-            #pass
-
-    #def characters(self, ch):
-        #self.attrInfo += str(ch)
-
-    #def getJobInfo(self):
-        #return self.jobInfo
-
-#if __name__ == '__main__':
-    #timer = -time.time()
-    #handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', \
-        #'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
-    #parser = make_parser()
-    #parser.setContentHandler(handler)
-    #parser.setFeature(feature_external_ges, False)
-    #parser.parse(open(sys.argv[1], 'r'))
-    #timer += time.time()
-    #print "Parsing took %.2f seconds." % timer
-    #print >> sys.stderr, handler.getJobInfo()
