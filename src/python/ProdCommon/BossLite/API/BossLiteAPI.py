@@ -9,32 +9,18 @@ __revision__ = "$Revision"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
+import copy
 
-# Database imports
-from ProdCommon.Database.SafeSession import SafeSession
-from ProdCommon.BossLite.DbObjects.TrackingDB import TrackingDB
-
-try:
-    from ProdCommon.Database.MysqlInstance import MysqlInstance
-except ImportError :
-    pass
-    #print "Warning: missing MySQL\n"
-
-try:
-    from ProdCommon.Database.SqliteInstance import SqliteInstance
-except ImportError :
-    pass
-    #print "Warning: missing pysqlite2\n"
-    
 # Task and job objects
+from ProdCommon.BossLite.DbObjects.TrackingDB import TrackingDB
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import TaskError
+from ProdCommon.BossLite.Common.Exceptions import JobError
 from ProdCommon.BossLite.Common.Exceptions import DbError
+from ProdCommon.BossLite.API.BossLiteDB import BossLiteDB
 
-from os.path import expandvars
-import copy
 
 
 ##########################################################################
@@ -47,7 +33,7 @@ def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
         return [ str(nRange) ]
 
     nList = []
-        
+
     for subRange in nRange.split( listSep ) :
         if subRange.find( rangeSep ) == -1 :
             start = int( subRange )
@@ -57,7 +43,7 @@ def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
             start = int( s )
             end = int( e )
         nList.extend( range( start, end+1 ) )
-
+ 
     nList.sort()
     return nList
 
@@ -90,44 +76,9 @@ class BossLiteAPI(object):
             
         """
 
-        # database
-        self.database = database       # "MySQL" or "SQLite"
-
-        # MySQL: get DB configuration from config file
-        if self.database == "MySQL":
-            # update db config
-            self.dbConfig =  {'dbName':'BossLiteDB',
-                              'user':'BossLiteUser',
-                              'passwd':'BossLitePass',
-                              'socketFileLocation':'',
-                              'host':'',
-                              'portNr':'',
-                              'refreshPeriod' : 4*3600 ,
-                              'maxConnectionAttempts' : 5,
-                              'dbWaitingTime' : 10 
-                              }
-            dbConfig['socketFileLocation'] = expandvars( 
-                dbConfig['socketFileLocation']
-                )
-            self.dbConfig.update( dbConfig )
-
-            # create DB instance
-            self.dbInstance = MysqlInstance(self.dbConfig)
-
-        else:
-            # update db config
-            self.dbConfig =  {'dbName':'BossLiteDB'}
-            dbConfig['dbName'] = expandvars( dbConfig['dbName'] )
-            self.dbConfig.update( dbConfig )
-
-            # create DB instance
-            self.dbInstance = SqliteInstance(self.dbConfig)
-
-        # create a session and db access
-        self.session = None
+        self.bossLiteDB = BossLiteDB( database, dbConfig )
         self.db = None
-        # self.session = SafeSession(dbInstance = self.dbInstance)
-        # self.db = TrackingDB(self.session)
+
 
     ##########################################################################
     def connect ( self ) :
@@ -135,22 +86,28 @@ class BossLiteAPI(object):
         recreate a session and db access
         """
 
-        # create a session and db access
-        self.session = SafeSession(dbInstance = self.dbInstance)
-        self.db = TrackingDB(self.session)
-        
+        # open Db and create a db access
+        self.bossLiteDB.connect()
+        self.db = TrackingDB(self.bossLiteDB.session)
+
 
     ##########################################################################
-    def close ( self ) :
+    def updateDB( self, obj ) :
         """
-        close session and db access
+        update any object table in the DB
+        works for tasks, jobs, runningJobs
         """
 
-        self.session.close()
-        self.db = None
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # update
+        obj.update(self.db)
+        self.bossLiteDB.session.commit()
+
 
     ##########################################################################
-        
     def declare( self, xml, proxyFile=None ) :
         """
         register job related informations in the db
@@ -187,7 +144,6 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-
     def saveTask( self, task ):
         """
         register task related informations in the db
@@ -201,7 +157,7 @@ class BossLiteAPI(object):
         try :
             task.updateInternalData()
             task.save(self.db)
-            self.session.commit()
+            self.bossLiteDB.session.commit()
         except TaskError, err:
             if str(err).find( 'column name is not unique') == -1 :
                 self.removeTask( task )
@@ -210,8 +166,8 @@ class BossLiteAPI(object):
 
         return task
 
-    ##########################################################################
 
+    ##########################################################################
     def removeTask( self, task ):
         """
         register task related informations in the db
@@ -222,7 +178,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # remove jobs in db with non relational checks
-        if self.database == "SQLite":
+        if self.bossLiteDB.database == "SQLite":
 
             # load running jobs
             rjob = RunningJob( { 'taskId' : task['id'] } )
@@ -238,51 +194,14 @@ class BossLiteAPI(object):
 
         # remove task
         task.remove( self.db )
-        self.session.commit()
+        self.bossLiteDB.session.commit()
 
         task = None
 
         return task
 
-    ##########################################################################
-
-        
-    def installDB( self, schemaLocation ) :
-        """
-        install database
-        """
-
-        schemaLocation = expandvars( schemaLocation )
-
-        if self.database == "MySQL":
-            self.installMySQL( schemaLocation )
-
-        elif self.database == "SQLite":
-            self.installSQlite( schemaLocation )
-
-        else:
-            raise NotImplementedError
-
-        
-    ##########################################################################
-        
-    def updateDB( self, obj ) :
-        """
-        update any object table in the DB
-        works for tasks, jobs, runningJobs
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # update
-        obj.update(self.db)
-        self.session.commit()
-
 
     ##########################################################################
-
     def loadTask( self, taskId, deep=True ) :
         """
         retrieve task information from db using task id
@@ -302,8 +221,8 @@ class BossLiteAPI(object):
 
         return task
 
+
     ##########################################################################
-        
     def loadTaskByName( self, name, deep=True ) :
         """
         retrieve task information from db for task 'name'
@@ -322,8 +241,8 @@ class BossLiteAPI(object):
         
         return task
 
+
     ##########################################################################
-        
     def loadTasksByUser( self, user, deep=True ) :
         """
         retrieve task information from db for task owned by user
@@ -341,9 +260,9 @@ class BossLiteAPI(object):
         taskList = self.db.select(task, deep)
         
         return taskList
-  
+
+
     ##########################################################################
-        
     def loadTasksByProxy( self, name, deep=True ) :
         """
         retrieve task information from db for all tasks
@@ -363,8 +282,8 @@ class BossLiteAPI(object):
         
         return taskList
 
-    ##########################################################################
 
+    ##########################################################################
     def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
         """
         retrieve task information from db using task id
@@ -402,8 +321,8 @@ class BossLiteAPI(object):
 
         return task
 
+
     ##########################################################################
-        
     def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
         """
         retrieve information from db for:
@@ -467,10 +386,9 @@ class BossLiteAPI(object):
             taskList.append( task )
                 
         return taskList
-    
+
+
     ##########################################################################
-
-
     def loadJob( self, taskId, jobId ) :
         """
         retrieve job information from db using task and job id
@@ -489,8 +407,8 @@ class BossLiteAPI(object):
 
         return job
 
-    ##########################################################################
 
+    ##########################################################################
     def loadJobsByAttr( self, jobAttributes ) :
         """
         retrieve job information from db for job matching attributes
@@ -510,7 +428,6 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-
     def getNewRunningInstance( self, job, runningAttrs = None ) :
         """
         create a new RunningInstance
@@ -525,7 +442,6 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-
     def getRunningInstance( self, job, runningAttrs = None ) :
         """
         retrieve RunningInstance where existing or create it
@@ -549,8 +465,8 @@ class BossLiteAPI(object):
 
             job.newRunningInstance( run, self.db )
 
-    ##########################################################################
 
+    ##########################################################################
     def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True, limit=None, offset=None ) :
         """
         retrieve job information from db for job
@@ -589,14 +505,14 @@ class BossLiteAPI(object):
                                          limit=limit, offset=offset )
         
         # recall jobs
-        for job, runningJob in  runJobList :
+        for job, runningJob in runJobList :
             job.setRunningInstance( runningJob )
 
         # return
         return [key[0] for key in runJobList]
 
-    ##########################################################################
 
+    ##########################################################################
     def loadJobByName( self, jobName ) :
         """
         retrieve job information from db for jobs with name 'name'
@@ -613,9 +529,8 @@ class BossLiteAPI(object):
             
         return self.loadJobsByAttr( { 'name' : jobName } )[0]
 
-    ##########################################################################
 
-        
+    ##########################################################################
     def loadCreated( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs created but not submitted using:
@@ -644,7 +559,6 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-
     def loadSubmitted( self, attributes = None, limit=None, offset=None  ) :
         """
         retrieve information from db for jobs submitted using:
@@ -662,9 +576,8 @@ class BossLiteAPI(object):
         return self.loadJobsByRunningAttr(
             attributes, limit=limit, offset=offset )
 
-    ##########################################################################
 
-        
+    ##########################################################################
     def loadEnded( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs successfully using:
@@ -682,9 +595,8 @@ class BossLiteAPI(object):
         return self.loadJobsByRunningAttr(
             attributes, limit=limit, offset=offset )
 
-    ##########################################################################
 
-        
+    ##########################################################################
     def loadFailed( self, attributes = None, limit=None, offset=None ) :
         """
         retrieve information from db for jobs aborted/killed using:
@@ -710,8 +622,8 @@ class BossLiteAPI(object):
         
         return jobList
 
-    ##########################################################################
 
+    ##########################################################################
     def loadJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
         """
         retrieve job templates with distinct job attribute 
@@ -733,8 +645,8 @@ class BossLiteAPI(object):
 
         return jobList
 
-    ##########################################################################
 
+    ##########################################################################
     def loadRunJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
         """
         retrieve job templates with distinct job attribute 
@@ -756,8 +668,8 @@ class BossLiteAPI(object):
 
         return jobList
 
-    ##########################################################################
 
+    ##########################################################################
     ## DanieleS.    
     def loadJobDist( self, taskId, value ) :
         """
@@ -797,9 +709,7 @@ class BossLiteAPI(object):
         return jobList
 
 
-
     ##########################################################################
-  
     def archive( self, obj ):
         """
         set a flag/index to closed
@@ -811,7 +721,7 @@ class BossLiteAPI(object):
 
         # update object
         obj.update(self.db)
-        self.session.commit()
+        self.bossLiteDB.session.commit()
 
         # the object passed is a Job
         if type(obj) == Job :
@@ -823,153 +733,15 @@ class BossLiteAPI(object):
             for job in obj.jobs:
                 job.closeRunningInstance( self.db )
 
-        self.session.commit()
-
-    ##########################################################################
-
-    def installMySQL( self, schemaLocation ) :
-        """
-        install MySQL database
-        """
-        import getpass
-        import socket
-
-        # ask for password (optional)
-        print
-        userName = raw_input(
-"""
-Please provide the mysql user name (typically "root") for updating the
-database server (leave empty if not needed): ')
-""" )
-
-        if userName == '' :
-            userName = 'root'
-            print
-            
-        passwd = getpass.getpass(
-"""Please provide mysql passwd associated to this user name for
-updating the database server:
-""" )
-
-        # define connection type
-        from copy import deepcopy
-        rootConfig = deepcopy( self.dbConfig )
-        rootConfig.update(
-            { 'dbName' : 'mysql', 'user' : userName, 'passwd' : passwd }
-            )
-        dbInstance = MysqlInstance( rootConfig )
-        session = SafeSession( dbInstance = dbInstance )
-
-        # check if db exists
-        create = True
-        query = "show databases like '" + self.dbConfig['dbName'] + "'"
-        try:
-            session.execute( query )
-            session.commit()
-            results = session.fetchall()
-            if results[0][0] == self.dbConfig['dbName'] :
-                print "DB ", self.dbConfig['dbName'], "already exists.\n"
-                create = False
-        except IndexError :
-            pass
-        except Exception, msg:
-            raise DbError(str(msg))
-
-        # create db
-        if create :
-            query = 'create database ' + self.dbConfig['dbName']
-            try:
-                session.execute( query )
-                session.commit()
-            except Exception, msg:
-                raise DbError(str(msg))
-        
-
-        # create tables
-        queries = open(schemaLocation).read()
-        try:
-            session.execute( 'use ' + self.dbConfig['dbName'] )
-            session.commit()
-            for query in queries.split(';') :
-                if query.strip() == '':
-                    continue
-                session.execute( query )
-                session.commit()
-        except Exception, msg:
-            raise DbError(str(msg))
-
-        # grant user
-        query = 'GRANT UPDATE,SELECT,DELETE,INSERT ON ' + \
-                self.dbConfig['dbName'] + '.* TO \'' + \
-                self.dbConfig['user'] + '\'@\'' + self.dbConfig['host'] \
-                + '\' IDENTIFIED BY \'' + self.dbConfig['passwd'] + '\';'
-        try:
-            session.execute( query )
-            session.commit()
-        except Exception, msg:
-            raise DbError(str(msg))
-
-        # close session
-        session.close()
+        self.bossLiteDB.session.commit()
 
 
     ##########################################################################
-
-        
-    def installSQlite( self, schemaLocation ) :
-        """
-        install SQLite database
-        """
-
-        # create a session and db access
-        session = SafeSession(dbInstance = self.dbInstance)
-
-
-        # execute check query
-        query = "select tbl_name from sqlite_master where tbl_name='bl_task'"
-
-        try:
-            # if bl_task exists, no further operations are needed
-            session.execute( query )
-            results = session.fetchall()
-            if results[0][0] == self.dbConfig['dbName'] :
-                print "DB ", self.dbConfig['dbName'], "already exists.\n"
-                return
-            session.close()
-            return
-        except IndexError :
-            pass
-        except StandardError:
-            pass
-
-        try:
-            # if bl_task exists, no further operations are needed
-            session.execute("select count(*) from bl_task")
-            session.close()
-            return
-        except StandardError:
-            pass
-
-
-        # execute query
-        queries = open(schemaLocation).read()
-        try:
-            for query in queries.split(';') :
-                session.execute(query)
-        except Exception, msg:
-            raise DbError(str(msg))
-
-        # close session
-        session.close()
-
-
-    ##########################################################################
-
-
     def deserialize( self, xmlFilePath ) :
         """
         obtain task object from XML object
         """
+
         from xml.dom import minidom
         doc = minidom.parse( xmlFilePath )
 
@@ -1013,8 +785,8 @@ updating the database server:
        
         return taskInfo, jobs, runningJobsAttribs
 
-    ##########################################################################
 
+    ##########################################################################
     def serialize( self, task ):
         """
         obtain XML object from task object
@@ -1067,7 +839,6 @@ updating the database server:
 
         # print cfile.toprettyxml().replace('\&quot;','') 
         return cfile.toprettyxml().replace('\&quot;','')
-
 
 
     ##########################################################################
