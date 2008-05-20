@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.59 2008/05/20 11:26:33 afanfani Exp $"
-__version__ = "$Revision: 1.59 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.60 2008/05/20 13:25:59 gcodispo Exp $"
+__version__ = "$Revision: 1.60 $"
 
 import sys
 import os
@@ -118,6 +118,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         super(SchedulerGLiteAPI, self).__init__(**args)
         # skipWMSAuth 
         self.skipWMSAuth = args.get( "skipWMSAuth", 0 )
+        # vo 
+        self.vo = args.get( "vo", "cms" )
 
 
     ##########################################################################
@@ -172,7 +174,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def parseConfig ( self, configfile, vo='cms' ):
+    def parseConfig ( self, configfile ):
         """
         Utility fuction
         
@@ -185,7 +187,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         try:
             if ( len(configfile) == 0 ):
                 configfile = "%s/etc/%s/glite_wms.conf" \
-                             % ( os.environ['GLITE_LOCATION'], vo )
+                             % ( os.environ['GLITE_LOCATION'], self.vo )
 
             fileh = open( configfile, "r" )
             configClad = fileh.read().strip()
@@ -1134,7 +1136,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):        
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -1161,7 +1163,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         command = "export X509_USER_PROXY=" + self.cert + '; '
 
         if seList == None :
-            command += " lcg-info --vo " + vo + " --list-ce --query " + \
+            command += " lcg-info --vo " + self.vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out = self.ExecuteCommand( command )
             out = out.split()
@@ -1184,7 +1186,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             return celist
 
         for se in seList :
-            singleComm = command + " lcg-info --vo " + vo + \
+            singleComm = command + " lcg-info --vo " + self.vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
@@ -1207,7 +1209,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                 celist.append( ce )
 
             # a site matching is enough
-            if celist != []:
+            if not full and celist != []:
                 break
 
         return celist

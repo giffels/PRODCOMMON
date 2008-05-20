@@ -232,13 +232,13 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
         """
 
-        return self.scheduler.lcgInfo( tags, seList, blacklist, whitelist, vo )
+        return self.scheduler.lcgInfo( tags, seList, blacklist, whitelist, full)
 
 
     ##########################################################################

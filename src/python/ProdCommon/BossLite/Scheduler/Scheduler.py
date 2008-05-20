@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.31 2008/05/19 13:14:53 gcodispo Exp $"
-__revision__ = "$Revision: 1.31 $"
+__version__ = "$Id: Scheduler.py,v 1.32 2008/05/19 13:51:28 gcodispo Exp $"
+__revision__ = "$Revision: 1.32 $"
 
 
 ##########################################################################
@@ -352,13 +352,13 @@ class Scheduler(object):
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
         """
 
-        return self.schedObj.lcgInfo( tags, seList, blacklist, whitelist, vo )
+        return self.schedObj.lcgInfo(tags, seList, blacklist, whitelist, full)
 
 
     ##########################################################################

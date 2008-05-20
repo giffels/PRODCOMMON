@@ -8,8 +8,8 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.20 2008/05/16 14:44:05 gcodispo Exp $"
-__revision__ = "$Revision: 1.20 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.21 2008/05/19 13:14:53 gcodispo Exp $"
+__revision__ = "$Revision: 1.21 $"
 
 class SchedulerInterface(object):
     """
@@ -188,7 +188,7 @@ class SchedulerInterface(object):
 
     ##########################################################################
     
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         perform a resources discovery
         returns a list of resulting sites
