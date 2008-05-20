@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.61 2008/05/20 13:50:23 gcodispo Exp $"
-__version__ = "$Revision: 1.61 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.62 2008/05/20 16:07:26 gcodispo Exp $"
+__version__ = "$Revision: 1.62 $"
 
 import sys
 import os
@@ -129,7 +129,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         explicit proxy
         """
 
-        if self.envProxy is None :
+        if self.envProxy is None or self.cert == '':
             return
 
         if restore :
