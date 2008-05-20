@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.56 2008/05/19 13:14:53 gcodispo Exp $"
-__version__ = "$Revision: 1.56 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.57 2008/05/20 10:24:38 gcodispo Exp $"
+__version__ = "$Revision: 1.57 $"
 
 import sys
 import os
@@ -119,7 +119,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         super(SchedulerGLiteAPI, self).__init__(**args)
 
         if args.has_key( "skipWMSAuth" ) :
-            self.skipWMSAuth = ( args["skipWMSAuth"] == True )
+            self.skipWMSAuth = ( args['skipWMSAuth'].lower() == 'true' )
+
 
     ##########################################################################
     def hackEnv( self, restore = False ) :
