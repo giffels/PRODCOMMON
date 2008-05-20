@@ -346,6 +346,20 @@ class TaskAPITests(object):
         self.bossSession.removeTask(self.task)
         self.task = None
 
+    ##########################################################################
+    def _SQL(self) :
+        """
+        ____SQL__
+        """
+
+        results = self.bossSession.bossLiteDB.select(self.query)
+        if results is None:
+            return
+        for row in results:
+            for field in row :
+                print field,
+            print ''
+
 
     ##########################################################################
 
@@ -375,11 +389,12 @@ def main():
     dbtype = 'sqlite'
     outdir = None
     installDB = False
+    query = None
 
     lOptions = [ func for func in TaskAPITests.__dict__.keys()
                  if func[0] != '_' ]
     lMethods = [ '--' + func for func in lOptions ]
-    lOptions.extend( ["help", 'test', 'db=', 'installDB', \
+    lOptions.extend( ["help", 'test', 'db=', 'installDB', 'sql=', \
                       'taskId=', 'taskName=', 'jobRange=', 'outdir='] )
 
     try:
@@ -405,12 +420,20 @@ def main():
             jobRange = a
         elif o in ("--installDB"):
             installDB = True
+        elif o in ("--sql"):
+            query = a
         elif o in ("--test"):
             test = True
         elif o in lMethods:
             actions.append( o[2:] )
         else :
             assert False, "unhandled option"
+
+    if query is not None and actions == []:
+        bossSession = TaskAPITests(dbtype, installDB)
+        bossSession.query = query
+        bossSession._SQL()
+        sys.exit()
 
     if taskId is None and taskName is None and not test:
         usage(lMethods)
@@ -421,12 +444,13 @@ def main():
     bossSession.taskId = taskId
     if taskName is not None :
         bossSession.taskName = taskName
+    bossSession.query = query
     bossSession.jobRange = jobRange
     bossSession.outdir = outdir
     bossSession.testTask()
 
     for a in actions :
-        print a
+        print 'action : ', a
         TaskAPITests.__dict__[a](bossSession)
 
 
