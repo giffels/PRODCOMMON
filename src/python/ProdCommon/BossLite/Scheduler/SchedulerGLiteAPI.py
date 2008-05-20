@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.58 2008/05/20 10:33:45 gcodispo Exp $"
-__version__ = "$Revision: 1.58 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.59 2008/05/20 11:26:33 afanfani Exp $"
+__version__ = "$Revision: 1.59 $"
 
 import sys
 import os
@@ -117,7 +117,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
         # skipWMSAuth 
-        self.skipWMSAuth=args.get("skipWMSAuth",0)
+        self.skipWMSAuth = args.get( "skipWMSAuth", 0 )
 
 
     ##########################################################################
@@ -1142,14 +1142,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         celist = []
 
-        if seList == ['']:
+        # set to None invalid entries
+        if seList == [''] or seList == []:
             seList = None
-        if blacklist == ['']:
-            blacklist = None
-        if whitelist == ['']:
+        # set to None invalid entries
+        if whitelist == [''] or whitelist == []:
             whitelist = None
-
-        if blacklist is None :
+        # set to [] invalid entries so that the lopp does't need checks
+        if blacklist == [''] or blacklist == None:
             blacklist = []
 
         if len( tags ) != 0 :
@@ -1169,17 +1169,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    if len(blacklist) > 0:
-                        for ceb in blacklist :
-                            if ce.find(ceb) > 0:
-                                passblack = 0
+                    for ceb in blacklist :
+                        if ce.find(ceb) > 0:
+                            passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None or len(whitelist)==0 :
+                    if whitelist is None :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew)>=0:
+                            if ce.find(cew) >= 0:
                                 celist.append( ce )
 
             return celist
@@ -1195,18 +1194,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    if len(blacklist) > 0:
-                        for ceb in blacklist :
-                            if ce.find(ceb) > 0:
-                                passblack = 0
+                    for ceb in blacklist :
+                        if ce.find(ceb) > 0:
+                            passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None or len(whitelist)==0 :
+                    if whitelist is None :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew)>=0:
+                            if ce.find(cew) >= 0:
                                 celist.append( ce )
+
+            # a site matching is enough
+            if celist != []:
+                break
 
         return celist
 
