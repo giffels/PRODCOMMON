@@ -353,6 +353,14 @@ class CMSSWConfig:
             self.overrideInputCatalog = inputOverrideCatalogs[-1]
         else:
             self.overrideInputCatalog = None
+
+        #  //
+        # // input files
+        #//
+        inpFiles = srcFileQ(improvNode)
+        for inpFile in inpFiles:
+            self.inputFiles.append(str(inpFile))
+            
         for srcParam in srcParamQ(improvNode):
             parName = srcParam.attrs.get('Name', None)
             if parName == None:
