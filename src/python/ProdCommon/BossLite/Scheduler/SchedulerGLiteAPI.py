@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.60 2008/05/20 13:25:59 gcodispo Exp $"
-__version__ = "$Revision: 1.60 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.61 2008/05/20 13:50:23 gcodispo Exp $"
+__version__ = "$Revision: 1.61 $"
 
 import sys
 import os
@@ -313,7 +313,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise SchedulerError("failed submission to " + wms, err.toString())
+            raise SchedulerError("failed submission to " + wms, \
+                                 err.toString() + ' : ' + str(err) )
         except SchedulerError, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             SchedulerError( "failed submission to " + wms, err )
@@ -529,7 +530,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
             except BaseException, err:
-                output = err.toString()
+                output = err.toString() + ' : ' + str(err)
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
@@ -539,7 +540,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
                 # purged: probably already retrieved. Archive
-                elif output.find( "has been purged" ) :
+                elif output.find( "has been purged" ) != -1 :
                     job.runningJob['statusHistory'].append(
                         'Job has been purged, recovering status' )
                     continue
@@ -547,6 +548,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # not ready for GO: waiting for next round
                 elif output.find( "Job current status doesn" ) != -1 :
                     job.runningJob.errors.append( output )
+                    continue
+
+                # not ready for GO: waiting for next round
+                else :
+                    job.runningJob.errors.append( output )
+                    job.runningJob['statusHistory'].append(
+                        'error retrieving output' )
                     continue
 
             # retrieve files
@@ -691,7 +699,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 wmproxy.jobCancel( jobId )
             except BaseException, err:
-                output = err.toString()
+                output = err.toString() + ' : ' + str(err)
                 job.runningJob.errors.append( output )
                 job.runningJob['statusHistory'].append(
                         'Failed Job Cancel' )
