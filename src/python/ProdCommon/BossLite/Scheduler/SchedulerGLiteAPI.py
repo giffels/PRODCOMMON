@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.55 2008/05/16 14:44:26 gcodispo Exp $"
-__version__ = "$Revision: 1.55 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.59 2008/05/20 11:26:33 afanfani Exp $"
+__version__ = "$Revision: 1.59 $"
 
 import sys
 import os
@@ -101,19 +101,23 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     """
     basic class to handle glite jobs through wmproxy API
     """
-    def __init__( self, **args ):
-
-        # call super class init method
-        super(SchedulerGLiteAPI, self).__init__(**args)
 
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
+
     warnings = []
     try:
         envProxy = os.environ["X509_USER_PROXY"]
     except KeyError:
         envProxy = None
+
+    def __init__( self, **args ):
+
+        # call super class init method
+        super(SchedulerGLiteAPI, self).__init__(**args)
+        # skipWMSAuth 
+        self.skipWMSAuth=args.get("skipWMSAuth",0)
 
 
     ##########################################################################
@@ -123,7 +127,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         explicit proxy
         """
 
-        if self.envProxy is None :
+        if self.envProxy is None or self.cert == '':
             return
 
         if restore :
@@ -200,6 +204,31 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
+    def wmproxyInit( self, wms, delegate=False ) :
+        """
+        initialize Wmproxy and perform everything needed
+        """
+        
+
+        # initialize wms connection
+        wmproxy = Wmproxy(wms, proxy=self.cert)
+        
+        if self.skipWMSAuth :
+            try :
+                wmproxy.setAuth(0)
+                # UI 3.1: missing method
+            except AttributeError:
+                pass
+
+        wmproxy.soapInit()
+        # delegate proxy
+        if delegate :
+            self.delegateProxy( wms )
+
+        return wmproxy
+
+
+    ##########################################################################
     def wmproxySubmit( self, jdl, wms, sandboxFileList ) :
         """
         actual submission function
@@ -217,11 +246,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 raise SchedulerError( "existing " + self.SandboxDir, error )
 
             # initialize wms connection
-            wmproxy = Wmproxy(wms, proxy=self.cert)
-            wmproxy.soapInit()
-
-            # delegate proxy
-            self.delegateProxy( wms )
+            wmproxy = self.wmproxyInit( wms, delegate = True )
 
             # register job: time consumng operation
             task = wmproxy.jobRegister ( jdl, self.delegationId )
@@ -286,7 +311,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise SchedulerError("failed submission to " + wms, err.toString())
+            raise SchedulerError("failed submission to " + wms, \
+                           err.toString() + ' : ' + str(err))
         except SchedulerError, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             SchedulerError( "failed submission to " + wms, err )
@@ -483,8 +509,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
-        wmproxy = Wmproxy(wms, proxy=self.cert)
-        wmproxy.soapInit()
+
+        # initialize wms connection
+        wmproxy = self.wmproxyInit( wms )
 
         # loop over jobs
         for job in jobList:
@@ -501,7 +528,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
             except BaseException, err:
-                output = err.toString()
+                output = err.toString() + ' : ' + str(err)
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
@@ -511,7 +538,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
                 # purged: probably already retrieved. Archive
-                elif output.find( "has been purged" ) :
+                elif output.find( "has been purged" ) != -1 :
                     job.runningJob['statusHistory'].append(
                         'Job has been purged, recovering status' )
                     continue
@@ -520,6 +547,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 elif output.find( "Job current status doesn" ) != -1 :
                     job.runningJob.errors.append( output )
                     continue
+
+                # not ready for GO: waiting for next round
+                else :
+                    job.runningJob.errors.append( output )
+                    job.runningJob['statusHistory'].append(
+                        'error retrieving output' )
+                    continue
+
 
             # retrieve files
             retrieved = 0
@@ -644,8 +679,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
-        wmproxy = Wmproxy(wms, proxy=self.cert)
-        wmproxy.soapInit()
+
+        # initialize wms connection
+        wmproxy = self.wmproxyInit( wms )
 
         # loop over jobs
         for job in jobList:
@@ -662,7 +698,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 wmproxy.jobCancel( jobId )
             except BaseException, err:
-                output = err.toString()
+                output = err.toString() + ' : ' + str(err)
                 job.runningJob.errors.append( output )
                 job.runningJob['statusHistory'].append(
                         'Failed Job Cancel' )
@@ -767,8 +803,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
-        wmproxy = Wmproxy(wms, proxy=self.cert)
-        wmproxy.soapInit()
+
+        # initialize wms connection
+        wmproxy = self.wmproxyInit( wms )
 
         # loop over jobs
         for job in jobList:
@@ -825,10 +862,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 
                 # delegate proxy
                 self.delegateProxy( wms )
-                
+
                 # initialize wms connection
-                wmproxy = Wmproxy(wms, self.cert)
-                wmproxy.soapInit()
+                wmproxy = self.wmproxyInit( wms )
 
                 # list match
                 matchingCEs = wmproxy.jobListMatch(jdl, "bossproxy")
