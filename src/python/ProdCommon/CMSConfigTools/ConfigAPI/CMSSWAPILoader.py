@@ -115,6 +115,7 @@ class CMSSWAPILoader:
             msg += " CMS_PATH=%s\n Architecture=%s\n" % (
                 self.cmsPath, self.arch)
             msg += " Version=%s\n" % self.version
+            raise RuntimeError, msg
 
         searchPaths = ["/", # allow absolute cfg file paths
             os.path.join(self.cmsPath, self.arch, "cms", "cmssw" ,
@@ -141,6 +142,9 @@ class CMSSWAPILoader:
         except Exception, ex:
             msg = "Error importing FWCore.ParameterSet modules:\n"
             msg += "%s\n" % str(ex)
+            sys.path.remove(self.pythonLib)
+            self.rollbackImporter.uninstall()
+            self.rollbackImporter = None
             raise RuntimeError, msg
         os.environ['CMSSW_SEARCH_PATH'] = self.cmsswSearchPath
         self.loaded = True
