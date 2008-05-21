@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.22 2008/05/20 15:36:40 ewv Exp $"
-__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.23 2008/05/20 22:16:24 ewv Exp $"
+__version__ = "$Revision: 1.23 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -30,11 +30,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
   def __init__( self, **args ):
     # call super class init method
     super(SchedulerCondorCommon, self).__init__(**args)
-
     self.hostname   = getfqdn()
     self.condorTemp = args['tmpDir']
     self.batchSize  = 20 # Number of jobs to submit per site before changing CEs
-
 
   def submit( self, obj, requirements='', config ='', service='' ):
     """
