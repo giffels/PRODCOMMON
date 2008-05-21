@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.6 2008/04/29 16:43:02 ewv Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.7 2008/05/21 19:26:20 ewv Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import re
 import os
@@ -27,8 +27,10 @@ class SchedulerCondor(SchedulerCondorCommon) :
     # call super class init method
     super(SchedulerCondor, self).__init__(**args)
 
+
   def checkUserProxy( self, cert='' ):
     return
+
 
   def jobDescription ( self, obj, requirements='', config='', service = '' ):
     """
@@ -36,8 +38,10 @@ class SchedulerCondor(SchedulerCondorCommon) :
     return it as a string
     """
 
+
   def findExecHost(self, requirements=''):
     return self.hostname
+
 
   def inputFiles(self,globalSandbox):
     #filelist = ''
@@ -51,6 +55,7 @@ class SchedulerCondor(SchedulerCondorCommon) :
     #return filelist[:-1]
     return ''
 
+
   def decode  ( self, obj, requirements='' ):
       """
       prepare file for submission
@@ -60,6 +65,7 @@ class SchedulerCondor(SchedulerCondorCommon) :
           return self.singleApiJdl(obj, requirements)
       elif type(obj) == Task :
           return self.collectionApiJdl(obj, requirements)
+
 
   def singleApiJdl( self, job, requirements='' ):
       """
@@ -91,6 +97,7 @@ class SchedulerCondor(SchedulerCondorCommon) :
 
       filelist = ''
       return jdl, filelist
+
 
   def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
     """
