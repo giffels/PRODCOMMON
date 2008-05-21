@@ -5,10 +5,12 @@ Parser for XML output of condor_q
 Original version by Brian Bockelman
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.22 2008/05/20 15:36:40 ewv Exp $"
-__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: CondorHandler.py,v 1.1 2008/05/20 22:16:24 ewv Exp $"
+__version__ = "$Revision: 1.1 $"
 
 from xml.sax.handler import ContentHandler, feature_external_ges
+from xml.sax import make_parser
+import sys
 
 class CondorHandler(ContentHandler):
 
@@ -47,14 +49,11 @@ class CondorHandler(ContentHandler):
         return self.jobInfo
 
 if __name__ == '__main__':
-    timer = -time.time()
     handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', \
         'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
     parser = make_parser()
     parser.setContentHandler(handler)
     parser.setFeature(feature_external_ges, False)
-    parser.parse(open(sys.argv[1], 'r'))
-    timer += time.time()
-    print "Parsing took %.2f seconds." % timer
+    parser.parse(open('test.xml', 'r'))
     print >> sys.stderr, handler.getJobInfo()
 

@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.24 2008/05/21 19:26:20 ewv Exp $"
-__version__ = "$Revision: 1.24 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.25 2008/05/21 19:30:21 ewv Exp $"
+__version__ = "$Revision: 1.25 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -245,7 +245,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
       output_file.readline()
       output_file.readline()
 
-      handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', 'MATCH_GLIDEIN_Gatekeeper'])
+      handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', 'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
       parser = make_parser()
       parser.setContentHandler(handler)
       parser.setFeature(feature_external_ges, False)
