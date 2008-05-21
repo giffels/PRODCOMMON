@@ -15,18 +15,6 @@ from os.path import expandvars
 from ProdCommon.Database.SafeSession import SafeSession
 from ProdCommon.BossLite.Common.Exceptions import DbError
 
-try:
-    from ProdCommon.Database.MysqlInstance import MysqlInstance
-except ImportError :
-    pass
-    #print "Warning: missing MySQL\n"
-
-try:
-    from ProdCommon.Database.SqliteInstance import SqliteInstance
-except ImportError :
-    pass
-    #print "Warning: missing pysqlite2\n"
-
 
 ##########################################################################
 
@@ -34,7 +22,7 @@ class BossLiteDB(object):
     """
     High level API class for DB queries.
     It allows load/operate/update DB using free format queries
-    
+
     """
 
     def __init__(self, database, dbConfig):
@@ -51,9 +39,9 @@ class BossLiteDB(object):
                'portNr':'',
                'refreshPeriod' : 4*3600 ,
                'maxConnectionAttempts' : 5,
-               'dbWaitingTime' : 10 
+               'dbWaitingTime' : 10
               }
-            
+
         """
 
         # database
@@ -70,14 +58,15 @@ class BossLiteDB(object):
                               'portNr':'',
                               'refreshPeriod' : 4*3600 ,
                               'maxConnectionAttempts' : 5,
-                              'dbWaitingTime' : 10 
+                              'dbWaitingTime' : 10
                               }
-            dbConfig['socketFileLocation'] = expandvars( 
+            dbConfig['socketFileLocation'] = expandvars(
                 dbConfig['socketFileLocation']
                 )
             self.dbConfig.update( dbConfig )
 
             # create DB instance
+            from ProdCommon.Database.MysqlInstance import MysqlInstance
             self.dbInstance = MysqlInstance(self.dbConfig)
 
         else:
@@ -87,6 +76,7 @@ class BossLiteDB(object):
             self.dbConfig.update( dbConfig )
 
             # create DB instance
+            from ProdCommon.Database.SqliteInstance import SqliteInstance
             self.dbInstance = SqliteInstance(self.dbConfig)
 
         # create a session and db access
@@ -102,7 +92,7 @@ class BossLiteDB(object):
         # create a session and db access
         if self.session is None:
             self.session = SafeSession(dbInstance = self.dbInstance)
-        
+
 
     ##########################################################################
     def close ( self ) :
@@ -182,7 +172,7 @@ class BossLiteDB(object):
         self.session.execute( query )
         self.session.commit()
 
-        
+
     ##########################################################################
     def updateDB( self, obj ) :
         """
@@ -234,7 +224,7 @@ database server (leave empty if not needed): ')
         if userName == '' :
             userName = 'root'
             print
-            
+
         passwd = getpass.getpass(
 """Please provide mysql passwd associated to this user name for
 updating the database server:
@@ -274,7 +264,6 @@ updating the database server:
             except Exception, msg:
                 session.close()
                 raise DbError(str(msg))
-        
 
         # create tables
         queries = open(schemaLocation).read()
@@ -351,6 +340,7 @@ updating the database server:
 
         # close session
         session.close()
+
 
     ##########################################################################
 

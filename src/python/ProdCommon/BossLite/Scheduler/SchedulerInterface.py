@@ -8,15 +8,15 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 #from subprocess import Popen, PIPE, STDOUT
 from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.21 2008/05/19 13:14:53 gcodispo Exp $"
-__revision__ = "$Revision: 1.21 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.22 2008/05/20 13:50:23 gcodispo Exp $"
+__revision__ = "$Revision: 1.22 $"
 
 class SchedulerInterface(object):
     """
     Upper layer for scheduler interaction
-    
+
     """
- 
+
     def __init__(self, **args):
         """
         initialization
@@ -29,7 +29,7 @@ class SchedulerInterface(object):
     def valid( self, runningJob ) :
         """
         evaluate if the runningJob is valid for scheduler interaction
-        
+
         """
 
         if runningJob is not None \
@@ -46,9 +46,8 @@ class SchedulerInterface(object):
     def ExecuteCommand( self, command, timeout = 600 ):
         """
         _ExecuteCommand_
-        
+
         Util it execute the command provided in a popen object with a timeout
-        
         """
 
         #p = Popen( command, shell=True,
@@ -78,10 +77,10 @@ class SchedulerInterface(object):
             output = output.split("timeleft  :")[1].strip()
         except IndexError:
             raise SchedulerError("Missing Proxy", "Missing Proxy")
-    
+
         if output == "0:00:00":
             raise SchedulerError("Proxy Expired", "Proxy Expired")
-    
+
     ##########################################################################
 
     def jobDescription ( self, obj, requirements='', config='', service = '' ):
@@ -90,7 +89,7 @@ class SchedulerInterface(object):
         return it as a string
         """
         raise NotImplementedError
-    
+
     ##########################################################################
 
     def decode ( self, obj, requirements='' ) :
@@ -99,10 +98,10 @@ class SchedulerInterface(object):
 
         used by self.submit(), return everithing is needed
         for the actual submission
-        
+
         """
         raise NotImplementedError
-    
+
     ##########################################################################
 
     def submit ( self, obj, requirements='', config='', service = '' ) :
@@ -120,12 +119,12 @@ class SchedulerInterface(object):
         raise NotImplementedError
 
     ##########################################################################
-    
+
     def query(self, schedIdList, service='', objType='node') :
         """
         query status and eventually other scheduler related information
         It may use single 'node' scheduler id or bulk id for association
-        
+
         return jobAttributes
 
         where jobAttributes is a map of the format:
@@ -133,12 +132,12 @@ class SchedulerInterface(object):
                                     [ key : val ]
                         ]
            where key can be any parameter of the Job object and at least status
-                        
+
         """
         raise NotImplementedError
 
     ##########################################################################
-    
+
     def getOutput( self, obj, outdir='' ):
         """
         retrieve output or just put it in the destination directory
@@ -187,10 +186,12 @@ class SchedulerInterface(object):
         raise NotImplementedError
 
     ##########################################################################
-    
+
     def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         perform a resources discovery
         returns a list of resulting sites
         """
         raise NotImplementedError
+
+    ##########################################################################

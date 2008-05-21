@@ -9,15 +9,15 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.32 2008/05/19 13:51:28 gcodispo Exp $"
-__revision__ = "$Revision: 1.32 $"
+__version__ = "$Id: Scheduler.py,v 1.33 2008/05/20 13:50:23 gcodispo Exp $"
+__revision__ = "$Revision: 1.33 $"
 
 
 ##########################################################################
 class Scheduler(object):
     """
     Upper layer for scheduler interaction
-    
+
     """
 
     def __init__(self, scheduler, parameters = None):
@@ -70,7 +70,7 @@ class Scheduler(object):
             obj.runningJob['schedulerParentId'] = obj.runningJob['schedulerId']
             obj.runningJob['scheduler'] = self.scheduler
             obj.runningJob['service'] = service
-            
+
         # update multiple jobs of a task
         elif type( obj ) == Task :
 
@@ -231,7 +231,7 @@ class Scheduler(object):
 
             # error messages collector
             errors = ''
-    
+
             # update objects
             for job in obj.jobs:
 
@@ -252,7 +252,6 @@ class Scheduler(object):
             if errors != '' :
                 raise SchedulerError('interaction failed for some jobs', \
                                      errors )
-        
 
         # unknown object type
         else:
@@ -391,7 +390,7 @@ class Scheduler(object):
 
             # error messages collector
             errors = ''
-    
+
             # update objects
             for job in obj.jobs:
 
@@ -412,7 +411,6 @@ class Scheduler(object):
             if errors != '' :
                 raise SchedulerError('interaction failed for some jobs', \
                                      errors )
-        
 
         # unknown object type
         else:

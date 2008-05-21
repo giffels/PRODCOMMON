@@ -26,7 +26,7 @@ from ProdCommon.BossLite.API.BossLiteDB import BossLiteDB
 ##########################################################################
 def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
     """
-    Utility for parsing ranges and/or lists of tasks/jobs    
+    Utility for parsing ranges and/or lists of tasks/jobs
     """
 
     if type( nRange ) == int or type( nRange ) == long:
@@ -43,7 +43,7 @@ def parseRange(  nRange, rangeSep = ':', listSep = ',' ) :
             start = int( s )
             end = int( e )
         nList.extend( range( start, end+1 ) )
- 
+
     nList.sort()
     return nList
 
@@ -54,7 +54,6 @@ class BossLiteAPI(object):
     """
     High level API class for DBObjets.
     It allows load/operate/update jobs and taks using just id ranges
-    
     """
 
     def __init__(self, database, dbConfig):
@@ -71,9 +70,9 @@ class BossLiteAPI(object):
                'portNr':'',
                'refreshPeriod' : 4*3600 ,
                'maxConnectionAttempts' : 5,
-               'dbWaitingTime' : 10 
+               'dbWaitingTime' : 10
               }
-            
+
         """
 
         self.bossLiteDB = BossLiteDB( database, dbConfig )
@@ -114,7 +113,7 @@ class BossLiteAPI(object):
         """
 
         taskInfo, jobInfos, rjAttrs = self.deserialize( xml )
-       
+
         # reconstruct task
         task = Task( taskInfo )
         task['user_proxy'] = proxyFile
@@ -238,7 +237,7 @@ class BossLiteAPI(object):
 
         # load task
         task.load(self.db, deep)
-        
+
         return task
 
 
@@ -258,7 +257,7 @@ class BossLiteAPI(object):
 
         # load task
         taskList = self.db.select(task, deep)
-        
+
         return taskList
 
 
@@ -279,7 +278,7 @@ class BossLiteAPI(object):
 
         # load task
         taskList = self.db.select(task, deep)
-        
+
         return taskList
 
 
@@ -333,7 +332,7 @@ class BossLiteAPI(object):
         In some way these shuold be the option to build the query.
         Maybe, same options should be used also in
         loadSubmitted, loadCreated, loadEnded, loadFailed
-         
+
         Takes the highest submission number for each job
         """
 
@@ -380,11 +379,11 @@ class BossLiteAPI(object):
             self.loadTaskJobs( task, jobList, jobAttributes, \
                                runningAttrs, strict=strict, \
                                limit=limit, offset=offset )
-            
+
             # update task list
             task.updateInternalData()
             taskList.append( task )
-                
+
         return taskList
 
 
@@ -421,7 +420,7 @@ class BossLiteAPI(object):
         # creating jobs
         job = Job( jobAttributes )
 
-        # load job from db        
+        # load job from db
         jobList = self.db.select(job)
 
         return jobList
@@ -496,14 +495,14 @@ class BossLiteAPI(object):
         else :
             jType = ''
 
-        # load job from db        
+        # load job from db
         runJobList = self.db.selectJoin( job, run, \
                                          {'jobId' : 'jobId',
                                           'taskId' : 'taskId',
                                           'submissionNumber' : 'submission'}, \
                                          strict=strict, jType=jType, \
                                          limit=limit, offset=offset )
-        
+
         # recall jobs
         for job, runningJob in runJobList :
             job.setRunningInstance( runningJob )
@@ -526,7 +525,7 @@ class BossLiteAPI(object):
         if len (jobList) > 1 :
             raise JobError("Multiple job instances corresponds to the" + \
                      " name specified: %s" % jobName)
-            
+
         return self.loadJobsByAttr( { 'name' : jobName } )[0]
 
 
@@ -536,7 +535,7 @@ class BossLiteAPI(object):
         retrieve information from db for jobs created but not submitted using:
         - range of tasks
         - range of jobs inside a task
-        
+
         Takes the highest submission number for each job
         """
 
@@ -564,7 +563,7 @@ class BossLiteAPI(object):
         retrieve information from db for jobs submitted using:
         - range of tasks
         - range of jobs inside a task
-        
+
         Takes the highest submission number for each job
         """
 
@@ -583,7 +582,7 @@ class BossLiteAPI(object):
         retrieve information from db for jobs successfully using:
         - range of tasks
         - range of jobs inside a task
-        
+
         Takes the highest submission number for each job
         """
 
@@ -602,7 +601,7 @@ class BossLiteAPI(object):
         retrieve information from db for jobs aborted/killed using:
         - range of tasks
         - range of jobs inside a task
-        
+
         Takes the highest submission number for each job
         """
 
@@ -614,19 +613,19 @@ class BossLiteAPI(object):
         # load aborted
         jobList = self.loadJobsByRunningAttr(
             attributes, limit=limit, offset=offset )
-        
+
         # load killed
         attributes['status'] = 'K'
         jobList.extend( self.loadJobsByRunningAttr(
             attributes, limit=limit, offset=offset ) )
-        
+
         return jobList
 
 
     ##########################################################################
     def loadJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
         """
-        retrieve job templates with distinct job attribute 
+        retrieve job templates with distinct job attribute
         """
 
         # db connect
@@ -649,7 +648,7 @@ class BossLiteAPI(object):
     ##########################################################################
     def loadRunJobDistinct( self, taskId, distinctAttr, jobAttributes=None ):
         """
-        retrieve job templates with distinct job attribute 
+        retrieve job templates with distinct job attribute
         """
 
         # db connect
@@ -670,10 +669,10 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-    ## DanieleS.    
+    ## DanieleS.
     def loadJobDist( self, taskId, value ) :
         """
-        retrieve job distinct job attribute 
+        retrieve job distinct job attribute
         """
 
         # db connect
@@ -692,7 +691,7 @@ class BossLiteAPI(object):
     ## DanieleS. NOTE: ToBeRevisited
     def loadJobDistAttr( self, taskId, value_1, value_2, alist ) :
         """
-        retrieve job distinct job attribute 
+        retrieve job distinct job attribute
         """
 
         # db connect
@@ -727,7 +726,6 @@ class BossLiteAPI(object):
         if type(obj) == Job :
             obj.closeRunningInstance( self.db )
 
-        
         # the object passed is a Task
         elif type(obj) == Task :
             for job in obj.jobs:
@@ -774,7 +772,7 @@ class BossLiteAPI(object):
             jobs.append(jobInfo)
 
             rjAttrs = {}
-            rjl = jobNode.getElementsByTagName("RunningJob") 
+            rjl = jobNode.getElementsByTagName("RunningJob")
             if len(rjl) > 0:
                 rjNode = rjl[0]
                 for i in range(rjNode.attributes.length):
@@ -782,7 +780,7 @@ class BossLiteAPI(object):
                     val = str(rjNode.attributes.item(i).value)
                     rjAttrs[key] = val
             runningJobsAttribs[ jobInfo['name'] ] = copy.deepcopy(rjAttrs)
-       
+
         return taskInfo, jobs, runningJobsAttribs
 
 
@@ -837,7 +835,7 @@ class BossLiteAPI(object):
         root.appendChild(node)
         cfile.appendChild(root)
 
-        # print cfile.toprettyxml().replace('\&quot;','') 
+        # print cfile.toprettyxml().replace('\&quot;','')
         return cfile.toprettyxml().replace('\&quot;','')
 
 

@@ -21,7 +21,7 @@ class BossLiteAPISched(object):
     """
     High level API class for DBObjcets and Scheduler interaction.
     It allows load/operate/update jobs and taks using just id ranges
-    
+
     """
 
     def __init__(self, bossLiteSession, schedulerConfig):
@@ -29,19 +29,19 @@ class BossLiteAPISched(object):
         initialize the scheduler API instance
 
         - bossLiteSession is a BossLiteAPI instance
- 
+
         - schedulerConfig is a dictionary with the format
            {'name' : 'SchedulerGLiteAPI',
             'user_proxy' : '/proxy/path',
             'service' : 'https://wms104.cern.ch:7443/glite_wms_wmproxy_server',
             'config' : '/etc/glite_wms.conf' }
-            
+
         """
 
         # use bossLiteSession for DB interactions
         if type( bossLiteSession ) is not BossLiteAPI:
             raise TypeError( "first argument must be a BossLiteAPI object")
-        
+
         self.bossLiteSession = bossLiteSession
 
         # update scheduler config
@@ -55,11 +55,10 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-
     def submit( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         eventually creates running instances and submit to the scheduler
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -89,13 +88,12 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-
     def resubmit( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         archive existing submission an create a new entry for the next
         submission (i.e. duplicate the entry with an incremented
         submission number) instances and submit to the scheduler
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -106,7 +104,7 @@ class BossLiteAPISched(object):
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]        
+        task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         # get new running instance
         for job in task.jobs:
@@ -129,7 +127,7 @@ class BossLiteAPISched(object):
     def query( self, taskId, jobRange='all', queryType='node', runningAttrs=None, strict=True ):
         """
         query status and eventually other scheduler related information
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -156,11 +154,10 @@ class BossLiteAPISched(object):
 
     ##########################################################################
 
-
     def getOutput( self, taskId, jobRange='all', outdir='' ):
         """
         retrieve output or just put it in the destination directory
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -182,11 +179,11 @@ class BossLiteAPISched(object):
         return task
 
     ##########################################################################
-    
+
     def kill( self, taskId, jobRange='all' ):
         """
         kill the job instance
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -202,7 +199,7 @@ class BossLiteAPISched(object):
 
         # update
         self.bossLiteSession.updateDB(task)
-        
+
         # return task updated
         return task
 
@@ -211,7 +208,7 @@ class BossLiteAPISched(object):
     def matchResources( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ) :
         """
         perform a resources discovery
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -238,15 +235,14 @@ class BossLiteAPISched(object):
         returns a list of resulting sites
         """
 
-        return self.scheduler.lcgInfo( tags, seList, blacklist, whitelist, full)
-
+        return self.scheduler.lcgInfo(tags, seList, blacklist, whitelist, full)
 
     ##########################################################################
-        
+
     def jobDescription ( self, taskId, jobRange='all', requirements='', schedulerAttributes=None ):
         """
         query status and eventually other scheduler related information
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
@@ -273,14 +269,14 @@ class BossLiteAPISched(object):
         """
         purge the service used by the scheduler from job files
         not available for every scheduler
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
              ['a',b','c']
              'all'
         """
-        
+
         # load task
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
@@ -295,7 +291,7 @@ class BossLiteAPISched(object):
     def postMortem ( self, taskId, jobRange='all', outfile='loggingInfo.log') :
         """
         execute any post mortem command such as logging-info
-        
+
         - taskId can be both a Task object or the task id
         - jobRange can be of the form:
              'a,b:c,d,e'
