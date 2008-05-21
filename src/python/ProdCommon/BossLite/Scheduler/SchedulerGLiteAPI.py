@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.59 2008/05/20 11:26:33 afanfani Exp $"
-__version__ = "$Revision: 1.59 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.64 2008/05/20 17:40:53 afanfani Exp $"
+__version__ = "$Revision: 1.64 $"
 
 import sys
 import os
@@ -1143,7 +1143,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):        
+    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -1151,14 +1151,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         
         celist = []
 
-        if seList == ['']:
+        # set to None invalid entries
+        if seList == [''] or seList == []:
             seList = None
-        if blacklist == ['']:
-            blacklist = None
-        if whitelist == ['']:
+        # set to None invalid entries
+        if whitelist == [''] or whitelist == []:
             whitelist = None
-
-        if blacklist is None :
+        # set to [] invalid entries so that the lopp does't need checks
+        if blacklist == [''] or blacklist == None:
             blacklist = []
 
         if len( tags ) != 0 :
@@ -1170,7 +1170,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         command = "export X509_USER_PROXY=" + self.cert + '; '
 
         if seList == None :
-            command += " lcg-info --vo " + vo + " --list-ce --query " + \
+            command += " lcg-info --vo " + self.vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out = self.ExecuteCommand( command )
             out = out.split()
@@ -1178,23 +1178,22 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    if len(blacklist) > 0:
-                        for ceb in blacklist :
-                            if ce.find(ceb) > 0:
-                                passblack = 0
+                    for ceb in blacklist :
+                        if ce.find(ceb) > 0:
+                            passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None or len(whitelist)==0 :
+                    if whitelist is None :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew)>=0:
+                            if ce.find(cew) >= 0:
                                 celist.append( ce )
 
             return celist
 
         for se in seList :
-            singleComm = command + " lcg-info --vo " + vo + \
+            singleComm = command + " lcg-info --vo " + self.vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
@@ -1204,18 +1203,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
-                    if len(blacklist) > 0:
-                        for ceb in blacklist :
-                            if ce.find(ceb) > 0:
-                                passblack = 0
+                    for ceb in blacklist :
+                        if ce.find(ceb) > 0:
+                            passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None or len(whitelist)==0 :
+                    if whitelist is None :
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew)>=0:
+                            if ce.find(cew) >= 0:
                                 celist.append( ce )
+
+            # a site matching is enough
+            if not full and celist != []:
+                break
 
         return celist
 
