@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.64 2008/05/20 17:40:53 afanfani Exp $"
-__version__ = "$Revision: 1.64 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.65 2008/05/21 13:11:07 gcodispo Exp $"
+__version__ = "$Revision: 1.65 $"
 
 import sys
 import os
@@ -34,9 +34,10 @@ except StandardError, e:
 def processRow ( row ):
     """
     Utility fuction
-    
+
     Process jdl line, smart comment handling
     """
+
     row = row.strip()
     if len( row ) == 0 :
         raise StandardError
@@ -57,9 +58,10 @@ def processRow ( row ):
 def processClassAd( classAd ):
     """
     Utility fuction
-    
+
     extract entries from a jdl
     """
+
     endpoints = []
     cladDict = {}
     configfile = ""
@@ -92,11 +94,11 @@ def processClassAd( classAd ):
                 cladDict[ key ] = val
     except StandardError:
         raise SchedulerError( "bad jdl ", traceback.format_exc() )
-    
+
     return cladDict, endpoints, configfile
 
 
-    ##########################################################################
+##########################################################################
 class SchedulerGLiteAPI(SchedulerInterface) :
     """
     basic class to handle glite jobs through wmproxy API
@@ -116,9 +118,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
-        # skipWMSAuth 
+        # skipWMSAuth
         self.skipWMSAuth=args.get("skipWMSAuth",0)
-
+        # vo
+        self.vo = args.get( "vo", "cms" )
 
     ##########################################################################
     def hackEnv( self, restore = False ) :
@@ -141,7 +144,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         parse config files, merge jdl and retrieve wms list
         """
-        
+
         try:
             schedClassad = ""
             endpoints = []
@@ -156,7 +159,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 endpoints, schedClassad = self.parseConfig ( configfile )
             else :
                 tmp, schedClassad = self.parseConfig ( configfile )
-                
+
             begin = ''
             jdl.strip()
             if jdl[0] == '[' :
@@ -172,10 +175,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def parseConfig ( self, configfile, vo='cms' ):
+    def parseConfig ( self, configfile ):
         """
         Utility fuction
-        
+
         extract entries from glite config files
         """
 
@@ -185,7 +188,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         try:
             if ( len(configfile) == 0 ):
                 configfile = "%s/etc/%s/glite_wms.conf" \
-                             % ( os.environ['GLITE_LOCATION'], vo )
+                             % ( os.environ['GLITE_LOCATION'], self.vo )
 
             fileh = open( configfile, "r" )
             configClad = fileh.read().strip()
@@ -208,11 +211,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         initialize Wmproxy and perform everything needed
         """
-        
 
         # initialize wms connection
         wmproxy = Wmproxy(wms, proxy=self.cert)
-        
+
         if self.skipWMSAuth :
             try :
                 wmproxy.setAuth(0)
@@ -232,14 +234,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     def wmproxySubmit( self, jdl, wms, sandboxFileList ) :
         """
         actual submission function
-        
+
         provides the interaction with the wmproxy.
         needs some cleaning
         """
 
         returnMap = {}
         taskId = ''
-    
+
         try :
             # first check if the sandbox dir can be created
             if os.path.exists( self.SandboxDir ) != 0:
@@ -253,7 +255,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # retrieve parent id
             taskId = str( task.getJobId() )
-            
+
             # retrieve nodes id
             dag = task.getChildren()
             for job in dag:
@@ -304,7 +306,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # start job!
             wmproxy.jobStart(taskId)
-            
+
             # cleaning up everything: delete temporary files and exit
             if sandboxFileList != '' :
                 os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
@@ -323,7 +325,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                                      sys.exc_info()[2]) )
             raise SchedulerError( "failed submission to " + wms, error )
 
-                
+
         return taskId, returnMap
 
 
@@ -337,7 +339,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         ### proxycert = wmproxy.getProxyReq(delegationId)
         ### result = wmproxy.signProxyReqStr(proxycert)
         ### wmproxy.putProxy(delegationId,result )
-        
+
         ### # possible right now:
         ### proxycert = '"' + wmproxy.getProxyReq(delegationId) + '"'
         ### os.system("glite-proxy-cert -p " + proxycert)
@@ -348,7 +350,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
                   + " --endpoint " + wms
-        
+
         if self.cert != '' :
             command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
 
@@ -362,7 +364,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     def submit( self, obj, requirements='', config ='', service='' ):
         """
         user submission function
-        
+
         takes as arguments:
         - a finite, dedicated jdl
         - eventually a wms list
@@ -376,7 +378,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         successfully submission and a map associating the jobname to the
         node id. If the submission is not bulk, the parent id is the node
         id of the unique entry of the map
-        
         """
 
         # decode obj
@@ -473,7 +474,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if outdir != '' and not os.path.exists( outdir ) :
                 raise SchedulerError( 'Permission denied', \
                                       'Unable to write files in ' + outdir )
-                
 
             # retrieve scheduler id list
             schedIdList = {}
@@ -712,13 +712,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.hackEnv(restore=True) ### TEMP FIX
 
     ##########################################################################
-    ### 
+    ###
     ###     def killCheck( self, schedIdList, idType = 'node' ):
     ###         """
     ###         Kill jobs querying WMS to LB, if the job status allows
     ###         If a list of parent id is used, must be idType='parent'
     ###         """
-    ### 
+    ###
     ###         jobs = []
     ###         if len( schedIdList ) == 0:
     ###             return
@@ -726,7 +726,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     ###             jobs = [ schedIdList ]
     ###         elif type( schedIdList ) == list :
     ###             jobs = schedIdList
-    ###             
+    ###
     ###         # retrieve wms
     ###         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import groupByWMS
     ###         endpoints = groupByWMS(
@@ -734,7 +734,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     ###             status_list = ['Done', 'Aborted','Cancelled'],\
     ###             allow = False
     ###             )
-    ###         
+    ###
     ###         # actual kill
     ###         for wms, schedIdList in endpoints.iteritems():
     ###             try :
@@ -743,8 +743,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     ###                 pass
     ###                 # for job in schedIdList:
     ###                 #     job.runningJob.errors.append( "failed" )
-    ### 
-    ### 
+    ###
+    ###
     ##########################################################################
     def purgeService( self, obj ):
         """
@@ -859,7 +859,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 else :
                     seen.append( wms)
                 errorList.append( "ListMatch to : " + wms )
-                
+
                 # delegate proxy
                 self.delegateProxy( wms )
 
@@ -888,11 +888,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     def postMortem( self, schedulerId, outfile, service):
         """
         perform scheduler logging-info
-        
+
         """
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
-            
+
         if self.cert != '' :
             command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
 
@@ -904,7 +904,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
-        
+
         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
              checkJobs, checkJobsBulk
         if objType == 'node':
@@ -1006,7 +1006,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # blindly append user requirements
         jdl += requirements + '\n]\n'
-        
+
         # return values
         return jdl, filelist
 
@@ -1017,7 +1017,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         build a collection jdl easy to be handled by the wmproxy API interface
         and gives back the list of input files for a better handling
         """
-        
+
         # general part for task
         jdl = "[\n"
         jdl += 'Type = "collection";\n'
@@ -1044,7 +1044,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     filelist += filename + ' '
                     commonFiles += "root.inputsandbox[%d]," % ISBindex
                     ISBindex += 1
-        else :            
+        else :
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
                 jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
@@ -1071,7 +1071,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         for job in task.jobs :
             jdl += '[\n'
             jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
-            jdl += 'Executable = "%s";\n' % job[ 'executable' ] 
+            jdl += 'Executable = "%s";\n' % job[ 'executable' ]
             jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
             if job[ 'standardInput' ] != '':
                 jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
@@ -1115,7 +1115,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 jdl += 'InputSandbox = {%s};\n'% localfiles[:-1]
             jdl += '],\n'
         jdl  = jdl[:-2] + "\n};\n"
-        
+
         # global sandbox definition
         if globalSandbox != '' :
             jdl += "InputSandbox = {%s};\n"% (globalSandbox[:-1])
@@ -1148,7 +1148,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         execute a resources discovery through bdii
         returns a list of resulting sites
         """
-        
+
         celist = []
 
         # set to None invalid entries
