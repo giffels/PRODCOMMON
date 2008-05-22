@@ -158,7 +158,8 @@ class BossLiteAPI(object):
             task.save(self.db)
             self.bossLiteDB.session.commit()
         except TaskError, err:
-            if str(err).find( 'column name is not unique') == -1 :
+            if str(err).find( 'column name is not unique') == -1 and \
+                   str(err).find( 'Duplicate entry') == -1 :
                 self.removeTask( task )
                 task = None
             raise err
