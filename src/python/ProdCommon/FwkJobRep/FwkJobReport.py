@@ -22,10 +22,10 @@ class FwkJobReport:
     Framework Job Report container and interface object
 
     """
-    def __init__(self, name = None):
+    def __init__(self, name = None, jobSpecId = None):
         self.name = name
         self.status = None
-        self.jobSpecId = None
+        self.jobSpecId = jobSpecId
         self.jobType = None
         self.workflowSpecId = None
         self.files = []
