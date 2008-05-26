@@ -281,7 +281,7 @@ class BossLiteAPISched(object):
         task = self.bossLiteSession.load( taskId, jobRange )[0]
 
         # purge task
-        self.bossLiteSession.purgeService( task )
+        self.scheduler.purgeService( task )
 
         # update
         self.bossLiteSession.updateDB(task)
