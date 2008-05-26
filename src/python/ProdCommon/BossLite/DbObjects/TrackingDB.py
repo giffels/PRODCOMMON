@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.16 2008/04/30 13:27:54 gcodispo Exp $"
-__revision__ = "$Revision: 1.16 $"
+__version__ = "$Id: TrackingDB.py,v 1.17 2008/05/16 14:12:08 gcodispo Exp $"
+__revision__ = "$Revision: 1.17 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -45,7 +45,7 @@ class TrackingDB:
         fieldList = ','.join([x[0] for x in fields])
         valueList = ','.join([x[1] for x in fields])
 
-        # prepare query 
+        # prepare query
         query = 'insert into ' + obj.tableName + '(' + fieldList + ') ' + \
                        'values(' + valueList + ')'
 
@@ -132,7 +132,7 @@ class TrackingDB:
                 # mark them as existing in database
                 obj.existsInDataBase = True
 
-            # add to list 
+            # add to list
             theList.append(obj)
 
         # return the list
@@ -183,7 +183,7 @@ class TrackingDB:
 
         # get all information
         results = self.session.fetchall()
-        
+
         # build objects
         theList = []
         for row in results:
@@ -213,7 +213,7 @@ class TrackingDB:
                 # mark them as existing in database
                 obj.existsInDataBase = True
 
-            # add to list 
+            # add to list
             theList.append(obj)
 
         # return the list
@@ -325,14 +325,14 @@ class TrackingDB:
             # create a single object
             template = deepcopy(template)
             obj = type(template)()
-            
+
             # create a single object
             jTemplate = deepcopy(jTemplate)
             jObj = type(jTemplate)()
 
             # fill fields
             for key, value in zip(objectFields, row):
-                    
+
                 # check for NULLs
                 if value is None:
                     obj[key] = deepcopy(template.defaults[key])
@@ -354,7 +354,7 @@ class TrackingDB:
 
             # fill fields
             for key, value in zip(jObjectFields, row[size:]):
-                
+
                 # check for NULLs
                 if value is None:
                     jObj[key] = deepcopy(jTemplate.defaults[key])
@@ -397,7 +397,7 @@ class TrackingDB:
 
         # get specification for keys (if any)
         keys = [(template.mapping[key], template.data[key])
-                             for key in tableIndex 
+                             for key in tableIndex
                              if template.data[key] is not None]
         keysSpec = " and ".join(['%s="%s"' % (key, value)
                                  for key, value in keys
@@ -426,7 +426,7 @@ class TrackingDB:
         # return if there are no fields to update
         if listOfFields == "":
             return 0
-         
+
         # prepare query
         query = 'update ' + tableName + ' set  ' + listOfFields + \
                 keysSpec
@@ -490,7 +490,7 @@ class TrackingDB:
         # return it
         return fields
 
-    ##DanieleS NOTE: ToBeRevisited 
+    ##DanieleS NOTE: ToBeRevisited
     def distinctAttr(self, template, value_1 , value_2, alist ,  strict = True):
         """
         _distinctAttr_
@@ -511,7 +511,7 @@ class TrackingDB:
                 dbFields = [val]
                 objectFields = [key]
             if key == value_2:
-                field = val 
+                field = val
         #        break
         # get matching information from template
      #   fields = self.getFields(template)
@@ -539,7 +539,7 @@ class TrackingDB:
 
         # get all information
         results = self.session.fetchall()
-        
+
         # build objects
         theList = []
         for row in results:
@@ -569,7 +569,7 @@ class TrackingDB:
                 # mark them as existing in database
                 obj.existsInDataBase = True
 
-            # add to list 
+            # add to list
             theList.append(obj)
 
         # return the list
@@ -577,7 +577,7 @@ class TrackingDB:
 
 
 
-    ### DanieleS 
+    ### DanieleS
     def distinct(self, template, value_1 , strict = True):
         """
         _distinct_
@@ -625,7 +625,7 @@ class TrackingDB:
 
         # get all information
         results = self.session.fetchall()
-        
+
         # build objects
         theList = []
         for row in results:
@@ -655,7 +655,7 @@ class TrackingDB:
                 # mark them as existing in database
                 obj.existsInDataBase = True
 
-            # add to list 
+            # add to list
             theList.append(obj)
 
         # return the list
