@@ -212,6 +212,7 @@ class BossLiteDB(object):
         install MySQL database
         """
         import getpass
+        from ProdCommon.Database.MysqlInstance import MysqlInstance
 
         # ask for password (optional)
         print
