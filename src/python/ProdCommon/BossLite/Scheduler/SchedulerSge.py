@@ -3,11 +3,6 @@
 basic SGE CLI interaction class
 """
 
-#
-# author: Hartmut Stadie <stadie@mail.desy.de> Inst. f. Experimentalphysik; Universitaet Hamburg
-#
-
-
 __revision__ = "$Id: SchedulerSge.py,v 1.8 2008/05/04 08:25:49 spiga Exp $"
 __version__ = "$Revision: 1.8 $"
 
