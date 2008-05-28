@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.65 2008/05/21 13:11:07 gcodispo Exp $"
-__version__ = "$Revision: 1.65 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.66 2008/05/21 13:20:37 gcodispo Exp $"
+__version__ = "$Revision: 1.66 $"
 
 import sys
 import os
@@ -779,7 +779,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # retrieve output for all jobs
             for service, idList in schedIdList.iteritems() :
-                self.purgeWMS( [ obj ], obj.runningJob['service']  )
+                self.purgeWMS( idList, service )
 
         # unknown object type
         else:
