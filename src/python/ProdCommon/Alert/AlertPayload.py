@@ -14,6 +14,10 @@ class AlertPayload(dict):
 
     Object representing a Alert generated be PA components
 
+    Severity : MinorAlert, WarningAlert, ErrorAlert, CriticalAlert
+    Component : ProdAgent Component Name (ID?)
+    Message : Alert message
+    Time : Alert creation time
     """
     def __init__(self):
         dict.__init__(self)
