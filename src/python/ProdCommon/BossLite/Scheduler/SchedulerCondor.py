@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.7 2008/05/21 19:26:20 ewv Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.8 2008/05/21 19:30:21 ewv Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import re
 import os
@@ -91,9 +91,10 @@ class SchedulerCondor(SchedulerCondorCommon) :
       jdl += 'stream_output = false\n'
       jdl += 'stream_error  = false\n'
       jdl += 'notification  = never\n'
-      jdl += 'should_transfer_files   = NO\n'
       jdl += 'copy_to_spool           = false\n'
-      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
+      #jdl += 'should_transfer_files   = YES\n'
+      #jdl += 'when_to_transfer_output = ON_EXIT\n'
+      #jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
 
       filelist = ''
       return jdl, filelist
