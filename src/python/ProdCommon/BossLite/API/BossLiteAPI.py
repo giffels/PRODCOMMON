@@ -107,6 +107,24 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
+    def updateRunningInstances( self, task, notSkipClosed=True ) :
+        """
+        update runningInstances of a task in the DB
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # update
+        for job in task.jobs:
+            if self.runningJob is not None:
+                job.runningJob.update(self.db, notSkipClosed)
+
+        self.bossLiteDB.session.commit()
+
+
+    ##########################################################################
     def declare( self, xml, proxyFile=None ) :
         """
         register job related informations in the db

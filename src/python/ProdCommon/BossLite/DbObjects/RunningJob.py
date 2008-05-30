@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.14 2008/05/07 16:53:35 gcodispo Exp $"
-__revision__ = "$Revision: 1.14 $"
+__version__ = "$Id: RunningJob.py,v 1.15 2008/05/16 14:12:08 gcodispo Exp $"
+__revision__ = "$Revision: 1.15 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -203,9 +203,15 @@ class RunningJob(DbObject):
             except ValueError :
                 pass
 
+        # skip closed jobs?
+        if deep :
+            skipAttributes = None
+        else :
+            skipAttributes = {'closed' : 'Y'}
+
         # update it on database
         try:
-            status = db.update(self, {'closed' : 'Y'})
+            status = db.update(self, skipAttributes)
             # if status < 1:
             #     raise JobError("Cannot update job %s" % str(self))
 

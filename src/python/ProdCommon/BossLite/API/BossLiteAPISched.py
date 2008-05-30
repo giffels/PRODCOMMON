@@ -173,7 +173,7 @@ class BossLiteAPISched(object):
         self.scheduler.getOutput( task, outdir )
 
         # update
-        self.bossLiteSession.updateDB(task)
+        self.bossLiteSession.updateRunningInstances(task, notSkipClosed=False)
 
         # return task updated
         return task
