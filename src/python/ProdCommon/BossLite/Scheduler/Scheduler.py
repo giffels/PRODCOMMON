@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.34 2008/05/21 14:58:18 gcodispo Exp $"
-__revision__ = "$Revision: 1.34 $"
+__version__ = "$Id: Scheduler.py,v 1.35 2008/05/21 19:26:20 ewv Exp $"
+__revision__ = "$Revision: 1.35 $"
 
 
 ##########################################################################
@@ -118,9 +118,10 @@ class Scheduler(object):
         retrieve scheduler specific job description
         """
 
-        return self.schedObj.jobDescription( obj, self.parameters['config'], \
-                                             self.parameters['service'], \
-                                             requirements )
+        return self.schedObj.jobDescription(
+            obj, requirements = requirements,  \
+            config = self.parameters['config'], \
+            service = self.parameters['service'] )
 
 
     ##########################################################################
