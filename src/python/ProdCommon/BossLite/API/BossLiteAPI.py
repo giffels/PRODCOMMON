@@ -118,7 +118,7 @@ class BossLiteAPI(object):
 
         # update
         for job in task.jobs:
-            if self.runningJob is not None:
+            if job.runningJob is not None:
                 job.runningJob.update(self.db, notSkipClosed)
 
         self.bossLiteDB.session.commit()
