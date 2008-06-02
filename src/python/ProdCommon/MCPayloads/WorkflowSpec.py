@@ -38,7 +38,7 @@ class WorkflowSpec:
         self.parameters.setdefault("RequestTimestamp", int(time.time()))
         self.parameters.setdefault("RequestCategory", "PreProd")
         self.parameters.setdefault("WorkflowType", "Processing")
-        self.parameters.setdefault("UseLumiserverUrl", "")
+        self.parameters.setdefault("WorkflowRunNumber", 1)
         self.pythonLibs = []
         self._NodeMap = {}
 
@@ -123,24 +123,22 @@ class WorkflowSpec:
         self.parameters["Activity"] = activity
         return
 
-    def lumiserverUrl(self):
+    def workflowRunNumber(self):
         """
-         _lumiserverUrl_
+         _workflowRunNumber_
 
-         Get the Lumiserver URL, if any. If it's not set, then lumiserver
-         will not be used
+         get the workflow run number
          
         """
-        return self.parameters['UseLumiserverUrl']
+        return self.parameters['WorkflowRunNumber']
 
-    def setLumiserverUrl(self,url):
+    def setWorkflowRunNumber(self, runNumber):
         """
-        _setLumiserverUrl_
+        _setWorkflowRunNumber_
 
-        Sets the lumiserver Url, which also triggers T0 code to request the
-        LumiServer and add LumiData into config file
+        Set the workflow run number parameter
         """
-        self.parameters['UseLumiserverUrl']=url
+        self.parameters['WorkflowRunNumber'] = runNumber
         return
 
 
