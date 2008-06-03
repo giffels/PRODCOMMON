@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.66 2008/05/21 13:20:37 gcodispo Exp $"
-__version__ = "$Revision: 1.66 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.67 2008/05/28 14:43:20 gcodispo Exp $"
+__version__ = "$Revision: 1.67 $"
 
 import sys
 import os
@@ -40,7 +40,7 @@ def processRow ( row ):
 
     row = row.strip()
     if len( row ) == 0 :
-        raise StandardError
+        return None, None
     if row[0] == '#' :
         try:
             row = row[ row.find('\n') : ].strip()
@@ -50,8 +50,9 @@ def processRow ( row ):
     index = row.find('=')
     key = row[0:index].strip().lower()
     val = row[index+1:].strip()
-    if len(key) == 0 :
-        raise StandardError
+
+    if key == '' or val == '' :
+        raise ValueError( row )
     return key, val
 
 
@@ -65,33 +66,86 @@ def processClassAd( classAd ):
     endpoints = []
     cladDict = {}
     configfile = ""
+    
+    if classAd.strip() == '' :
+        raise SchedulerError( "bad jdl ", "empty classAd" )
+    while classAd[0] == '[':
+        classAd = classAd[1:-1].strip()
+    if classAd.find("WmsClient") >= 0 :
+        classAd = (classAd.split("WmsClient")[1]).strip()
+        while classAd[0] == '[' or classAd[0] == '=' :
+            classAd = classAd[1:-1].strip()
+
+    # location of a subsection
+    index = classAd.find( '[' )
+    while index > 0 :
+
+        # start of the jdl key
+        start = classAd.rfind( ';', 0, index )
+    
+        # stop of the jdl key
+        stop = classAd.rfind( ']' )
+
+        # key from start to index
+        key = classAd[ start + 1 : classAd.find( '=', start, index ) ]
+
+        # value from index to stop
+        if key.lower() != "wmsconfig"  :
+            cladDict[key] = classAd[ index : stop + 1 ]
+
+        # continue parsing of the jdl
+        classAd = classAd[ : start ] + classAd[ stop + 1: ]
+        index = classAd.find( '[' )
+
+    # return
+    retCladDict, endpoints, configfile = processClassAdBlock( classAd.strip() )
+    cladDict.update( retCladDict )
+    return cladDict, endpoints, configfile
+
+
+def processClassAdBlock( classAd ):
+    """
+    Utility fuction
+
+    extract entries from a jdl block
+    """
+
+    endpoints = []
+    cladDict = {}
+    configfile = ""
 
     try:
-        if len(classAd) == 0 :
-            raise SchedulerError( "bad jdl ", "empty classAd" )
+
+        # strip external '[]' pairs
         while classAd[0] == '[':
             classAd = classAd[1:-1].strip()
-        if classAd.find("WmsClient") >= 0 :
-            classAd = (classAd.split("WmsClient")[1]).strip()
-            while classAd[0] == '[' or classAd[0] == '=' :
-                classAd = classAd[1:-1].strip()
+
+        # create attributes map and loop for wms detection
         cladMap = classAd.split(';')
         for p in cladMap:
+
             p = p.strip()
             try:
                 key, val = processRow ( p )
-            except StandardError:
-                continue
+            except ValueError, err:
+                raise SchedulerError( "bad jdl key", err )
+
+            # take wms config file location
             if ( key == "wmsconfig" ) :
                 configfile = val.replace("\"", "")
+
+            # extract wms
             elif ( key == "wmproxyendpoints" ) :
                 wmsList = val[ val.find('{') +1 : val.find('}') ].split('\n')
                 for wms in wmsList:
                     wms = wms[ : wms.find('#') ].replace("\"", "").strip()
                     if wms != '' :
                         endpoints.append( wms )
-            else :
+
+            # handle not empty pairs
+            elif key is not None:
                 cladDict[ key ] = val
+
     except StandardError:
         raise SchedulerError( "bad jdl ", traceback.format_exc() )
 
@@ -119,7 +173,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
         # skipWMSAuth
-        self.skipWMSAuth=args.get("skipWMSAuth",0)
+        self.skipWMSAuth = args.get("skipWMSAuth", 0)
         # vo
         self.vo = args.get( "vo", "cms" )
 
@@ -165,6 +219,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if jdl[0] == '[' :
                 begin = '[\n'
                 jdl = begin + schedClassad + jdl[1:]
+                
         except SchedulerError, err:
             raise err
         except StandardError:
