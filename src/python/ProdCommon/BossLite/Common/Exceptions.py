@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.1 2007/12/21 09:09:29 ckavka Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: Exceptions.py,v 1.2 2008/05/19 13:17:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.2 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 class JobError(Exception):
@@ -51,6 +51,12 @@ class SchedulerError(Exception):
 	self.message = message
 
     def __str__(self):
-        return repr(self.value + ' \t ' + self.message)
+        return self.value + '\n' + self.message
+
+    def description(self):
+        return self.value
+
+    def message(self):
+        return self.message
 
 
