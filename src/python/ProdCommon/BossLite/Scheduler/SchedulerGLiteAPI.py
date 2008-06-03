@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.67 2008/05/28 14:43:20 gcodispo Exp $"
-__version__ = "$Revision: 1.67 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.68 2008/06/03 15:41:52 gcodispo Exp $"
+__version__ = "$Revision: 1.68 $"
 
 import sys
 import os
@@ -150,6 +150,20 @@ def processClassAdBlock( classAd ):
         raise SchedulerError( "bad jdl ", traceback.format_exc() )
 
     return cladDict, endpoints, configfile
+
+
+def formatWmpError( wmpError ) :
+    """
+    format wmproxy BaseException
+    """
+
+    error = wmpError.toString() + '\n'
+
+
+    for key in list( wmpError ):
+        error += str( key ) + '\n'
+
+    return error
 
 
 ##########################################################################
@@ -368,8 +382,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise SchedulerError("failed submission to " + wms, \
-                           err.toString() + ' : ' + str(err))
+            # raise SchedulerError("failed submission to " + wms, \
+            #                err.toString() + ' : ' + str(err))
+            raise SchedulerError( "failed submission to " + wms, \
+                                  formatWmpError( err ) )
         except SchedulerError, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             SchedulerError( "failed submission to " + wms, err )
@@ -583,7 +599,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
             except BaseException, err:
-                output = err.toString() + ' : ' + str(err)
+                output = formatWmpError( err )
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
@@ -753,7 +769,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 wmproxy.jobCancel( jobId )
             except BaseException, err:
-                output = err.toString() + ' : ' + str(err)
+                output = formatWmpError( err )
                 job.runningJob.errors.append( output )
                 job.runningJob['statusHistory'].append(
                         'Failed Job Cancel' )
@@ -1075,7 +1091,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # general part for task
         jdl = "[\n"
-        jdl += 'Type = "collection";\n'
+        jdl += 'ype = "collection";\n'
 
         # global task attributes :
         # \\ the list of files for the JDL common part
