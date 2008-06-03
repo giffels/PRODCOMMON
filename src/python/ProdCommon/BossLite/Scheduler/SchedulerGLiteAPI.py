@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.68 2008/06/03 15:41:52 gcodispo Exp $"
-__version__ = "$Revision: 1.68 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.69 2008/06/03 16:40:53 gcodispo Exp $"
+__version__ = "$Revision: 1.69 $"
 
 import sys
 import os
@@ -161,7 +161,10 @@ def formatWmpError( wmpError ) :
 
 
     for key in list( wmpError ):
-        error += str( key ) + '\n'
+        if type( key ) == int:
+            error += 'Error Number : ' + str( key ) + '\n'
+        else :
+            error += str( key ) + '\n'
 
     return error
 
@@ -1091,7 +1094,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # general part for task
         jdl = "[\n"
-        jdl += 'ype = "collection";\n'
+        jdl += 'Type = "collection";\n'
 
         # global task attributes :
         # \\ the list of files for the JDL common part
