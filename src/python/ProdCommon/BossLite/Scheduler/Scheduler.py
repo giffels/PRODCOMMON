@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.35 2008/05/21 19:26:20 ewv Exp $"
-__revision__ = "$Revision: 1.35 $"
+__version__ = "$Id: Scheduler.py,v 1.36 2008/05/30 13:42:25 gcodispo Exp $"
+__revision__ = "$Revision: 1.36 $"
 
 
 ##########################################################################
@@ -70,6 +70,7 @@ class Scheduler(object):
             obj.runningJob['schedulerParentId'] = obj.runningJob['schedulerId']
             obj.runningJob['scheduler'] = self.scheduler
             obj.runningJob['service'] = service
+            obj.runningJob['processStatus'] = 'not_handled'
 
         # update multiple jobs of a task
         elif type( obj ) == Task :
@@ -95,6 +96,7 @@ class Scheduler(object):
                 job.runningJob['scheduler'] = self.scheduler
                 job.runningJob['service'] = service
                 job.runningJob['statusScheduler'] = 'Submitted'
+                job.runningJob['processStatus'] = 'not_handled'
                 if bulkId is None :
                     job.runningJob['schedulerParentId'] = \
                                                   job.runningJob['schedulerId']
