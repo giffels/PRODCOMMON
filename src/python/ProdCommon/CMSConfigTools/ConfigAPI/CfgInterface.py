@@ -139,8 +139,56 @@ class CfgInterface:
         seedList = list(seeds)
         if "RandomNumberGeneratorService" not in self.data.services.keys():
             return
-        svc = self.data.services["RandomNumberGeneratorService"]
 
+
+        if self.hasOldSeeds():
+            self.insertOldSeeds(*seeds)
+            return
+
+        #  //
+        # // Use seed service utility to generate seeds on the fly
+        #//
+        svc = self.data.services["RandomNumberGeneratorService"]
+        try:
+            from IOMC.RandomEngine.RandomServiceHelper import RandomNumberServiceHelper
+        except ImportError:
+            msg = "Unable to import RandomeNumberServiceHelper"
+            print msg
+            raise RuntimeError, msg
+        randHelper = RandomNumberServiceHelper(svc)
+        randHelper.populate()
+        svc.saveFileName = CfgTypes.untracked(
+            CfgTypes.string("RandomEngineState.log"))
+        
+        return
+
+
+    def hasOldSeeds(self):
+        """
+        _hasOldSeeds_
+
+        Check to see if old or new seed service format is used
+
+        """
+        svc = self.data.services["RandomNumberGeneratorService"]
+        srcSeedVec = getattr(svc, "sourceSeedVector",
+                             Utilities._CfgNoneType()).value()
+        srcSeed = getattr(svc, "sourceSeed",
+                          Utilities._CfgNoneType()).value()
+
+        testSeed = (srcSeedVec != None) or (srcSeed != None)
+        return testSeed
+        
+
+    def insertOldSeeds(self, *seeds):
+        """
+        _insertOldSeeds_
+
+        Backwards compatibility methods
+        
+        """
+        seedList = list(seeds)
+        svc = self.data.services["RandomNumberGeneratorService"]        
         #  //=====Old methods, keep for backwards compat.=======
         # // 
         #//
@@ -166,21 +214,6 @@ class CfgInterface:
         #  //
         # //
         #//====End old stuff======================================
-
-        #  //
-        # // Use seed service utility to generate seeds on the fly
-        #//
-        try:
-            from IOMC.RandomEngine.RandomServiceHelper import RandomNumberServiceHelper
-        except ImportError:
-            # old release
-            return
-
-        randHelper = RandomNumberServiceHelper(svc)
-        randHelper.populate()
-        svc.saveFileName = CfgTypes.untracked(
-            CfgTypes.string("RandomEngineState.log"))
-        
         return
     
     def configMetadata(self):
