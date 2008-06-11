@@ -29,22 +29,22 @@ class PerformanceReport:
 
     Standardized object for storing/parsing/persisting
     performance reports as part of a job report
-    
+
     """
     def __init__(self):
         self.cpus = {}
         self.memory = {}
         self.summaries = {}
         self.modules = {}
-        
-        
+
+
 
     def addCPU(self, core, speed, desc):
         """
         _addCPU_
 
         Add a record of a CPU on the node where the job was run
-        
+
         """
         self.cpus[core] = {
             "Speed" : speed,
@@ -90,15 +90,15 @@ class PerformanceReport:
         """
         if not self.modules.has_key(moduleName):
             self.modules[moduleName] = {}
-            
+
         if not self.modules[moduleName].has_key(metricClass):
             self.modules[moduleName][metricClass] = []
-        
+
         self.modules[moduleName][metricClass].append(metrics)
         return
 
-    
-        
+
+
     def save(self):
         """
         _save_
@@ -115,7 +115,7 @@ class PerformanceReport:
             [ cpuNode.addNode(IMProvNode("Property", y, Name = x))
               for x,y in cpuInfo.items() ]
             cpu.addNode(cpuNode)
-            
+
         mem = IMProvNode("Memory")
         result.addNode(mem)
         [ mem.addNode(IMProvNode("Property", y, Name = x))
@@ -143,7 +143,7 @@ class PerformanceReport:
                       for x,y in m.items() ]
                     for m in metrics
                     ]
-                
+
                 result.addNode(modNode)
 
         return result
@@ -174,14 +174,14 @@ class PerformanceReport:
                 if child.attrs.get('Name', None) == 'Speed':
                     speed = str(child.chardata)
             self.addCPU(core, speed, desc)
-            
+
         for mem in memQ(improvNode):
             name = mem.attrs.get("Name", None)
             if name == None: continue
             self.memory[str(name)] = str(mem.chardata)
 
 
-        
+
         for summNode in summaryQ(improvNode):
             metricName = summNode.attrs.get("Metric", None)
             if metricName == None: continue
@@ -191,8 +191,8 @@ class PerformanceReport:
                 metVal = metric.attrs.get("Value", None)
                 if metName == None: continue
                 metrics[str(metName)] = str(metVal)
-                
-            self.addSummary(metricName, **metrics)
+
+            self.addSummary(str(metricName), **metrics)
 
         for modNode in moduleQ(improvNode):
             metricName = modNode.attrs.get("Metric", None)
@@ -205,8 +205,8 @@ class PerformanceReport:
                 metVal = metric.attrs.get("Value", None)
                 if metName == None: continue
                 metrics[str(metName)] = str(metVal)
-            self.addModule(metricName, modName, **metrics)
-            
+            self.addModule(str(metricName), modName, **metrics)
+
         return
-    
-            
+
+
