@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.25 2008/05/21 19:30:21 ewv Exp $"
-__version__ = "$Revision: 1.25 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.26 2008/05/21 19:49:44 ewv Exp $"
+__version__ = "$Revision: 1.26 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -64,6 +64,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
     else:
       os.mkdir(self.condorTemp)
 
+    # Get list of schedd's
+
+    scheddList = None
+    nSchedd    = 0
+    if 'CMS_SCHEDD_LIST' in os.environ:
+      scheddList = os.environ['CMS_SCHEDD_LIST'].split(',')
+      nSchedd    = len(scheddList)
+
     configfile = config
 
     taskId = ''
@@ -75,7 +83,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
       raise NotImplementedError
     elif type(obj) == Task :
       taskId = obj['name']
+      jobCount = 0
       for job in obj.getJobs():
+        submitOptions = ''
+        if scheddList:
+          schedd = scheddList[jobCount%nSchedd]
+          submitOptions += '-name %s ' % schedd
+
         requirements = obj['jobType']
         execHost = self.findExecHost(requirements)
         filelist = self.inputFiles(obj['globalSandbox'])
@@ -99,7 +113,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jdlFile = open(jdlFileName, 'w')
         jdlFile.write(jdl)
         jdlFile.close()
-        stdout, stdin, stderr = popen2.popen3('condor_submit '+jdlFileName)
+
+        stdout, stdin, stderr = popen2.popen3('condor_submit '+submitOptions+jdlFileName)
 
         # Parse output, build numbers
         for line in stdout:
@@ -114,6 +129,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           print stdout.readlines()
           print stderr.readlines()
         os.chdir(cacheDir)
+        jobCount += 1
 
     success = self.hostname
 

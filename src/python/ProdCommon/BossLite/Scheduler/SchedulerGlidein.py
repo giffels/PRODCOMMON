@@ -3,10 +3,11 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.7 2008/04/25 19:55:05 ewv Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.8 2008/04/29 08:15:42 gcodispo Exp $"
+__version__ = "$Revision: 1.8 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
+import os
 
 class SchedulerGlidein(SchedulerCondorCommon) :
   """
@@ -26,6 +27,16 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       jdl = 'Universe = vanilla\n'
       superJdl, filelist = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
       jdl += superJdl
+
+      x509 = None
+      x509tmp = '/tmp/x509up_u'+str(os.getuid())
+      if 'X509_USER_PROXY' in os.environ:
+         x509 = os.environ['X509_USER_PROXY']
+      elif os.path.isfile(x509tmp):
+         x509 = x509tmp
+
+      if x509:
+        jdl += 'x509userproxy = %s\n' % x509
 
       # Optional parameters that may be put in after the conversion from Perl to Python and escapes are fixed
       jdl += '+JOB_Site = "$$(GLIDEIN_Site:Unknown)" \n'
