@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.11 2008/05/09 09:27:41 gcodispo Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.12 2008/05/16 14:44:52 gcodispo Exp $"
+__version__ = "$Revision: 1.12 $"
 
 import re, os
 
@@ -105,7 +105,7 @@ class SchedulerLsf (SchedulerInterface) :
                 print m
                 print "Job NOT submitted"
                 print out
-            raise (out)
+            raise SchedulerError('Cannot submit ',out)
         taskId = None 
         #print "Your job identifier is: ", taskId, queue
         map={ job['name'] : jobId }
