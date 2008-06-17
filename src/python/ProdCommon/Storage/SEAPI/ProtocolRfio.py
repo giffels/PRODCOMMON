@@ -82,6 +82,9 @@ class ProtocolRfio(Protocol):
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
+    def deleteRec(self, source):
+        self.delete(source)
+
     def delete(self, source):
         """
         rfrm

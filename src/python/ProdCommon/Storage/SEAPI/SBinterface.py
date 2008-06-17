@@ -88,6 +88,14 @@ class SBinterface:
             self.storage1.action.delete(self.storage1)
         self.storage1.workon = ""
 
+    def deleteRec( self, source, proxy = None ):
+        self.storage1.workon = source
+        if self.useProxy:
+            self.storage1.action.delete(self.storage1, proxy)
+        else:
+            self.storage1.action.delete(self.storage1)
+        self.storage1.workon = ""
+
     def getSize( self, source, proxy = None ):
         self.storage1.workon = source
         if self.useProxy:

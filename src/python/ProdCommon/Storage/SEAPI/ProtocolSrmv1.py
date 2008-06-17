@@ -62,6 +62,9 @@ class ProtocolSrmv1(Protocol):
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
+    def deleteRec(self, source, proxy = None):
+        self.delete(source, proxy)
+
     def delete(self, source, proxy = None):
         """
         srm-advisory-delete

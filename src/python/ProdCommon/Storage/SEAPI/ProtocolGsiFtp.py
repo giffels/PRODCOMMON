@@ -68,9 +68,75 @@ class ProtocolGsiFtp(Protocol):
         self.copy(source, dest, proxy)
         self.delete(source, proxy)
 
+    def getWalkList(self, source, proxy):
+        filelist = []
+        dirlist = []
+        for k, v in self.listPath(source, proxy).items():
+            if v == "d":
+                source.workon = k
+                dirlist.append(k)
+                filelistT, dirlistT = self.getWalkList(source, proxy)
+                dirlist += dirlistT
+                filelist += filelistT
+            elif v == "f":
+                filelist.append(k)
+        return filelist, dirlist
+
+    def deleteRec(self, source, proxy):
+        filelist, dirlist = self.getWalkList(source, proxy)
+        for file in filelist:
+            source.workon = file 
+            self.delete(source, proxy)
+            source.workon = ""
+        dirlist.reverse()
+        for dir in dirlist:
+            source.workon = dir
+            self.delete(source, proxy)
+            source.workon = ""
+
+    def listPath(self, source, proxy):
+        """
+        list of dir [edg-gridftp-ls]
+        """
+        fullSource = source.getLynk()
+        options = " --verbose "
+        if proxy is not None:
+            options = "--proxy=" + str(proxy)
+            self.checkUserProxy(proxy)
+
+        cmd = "edg-gridftp-ls " + options + " " + fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+
+        if exitcode != 0: 
+            raise OperationException("Error listing [" +source.workon+ "]", \
+                                      outputs, outputs )
+
+        dirname = {}
+        for file in outputs.split('\n'):
+            if len(file) > 0 and file != None:
+                basename = file.split(" ")[-1].replace("\r", "")
+                if basename != "." and basename != "..":
+                    import os
+                    if file[0] == "-":
+                        dirname.setdefault(os.path.join(source.workon, basename), "f")
+                    elif file[0] == "d":
+                        dirname.setdefault(os.path.join(source.workon, basename), "d")
+        return dirname
+
+    def checkNotDir(self, source, proxy):
+        dirall = self.listPath(source, proxy)
+        flag = False
+        for k, v in dirall.items(): 
+            if v == "f":
+                flag = True
+            else:
+                flag = False
+                break;
+        return flag
+
     def delete(self, source, proxy):
         """
-        edg-gridftp-rm
+        edg-gridftp-rm/dir
         """
         fullSource = source.getLynk()
 
@@ -79,8 +145,12 @@ class ProtocolGsiFtp(Protocol):
             options = "--proxy=" + str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rm " + options + " " + fullSource
-
+        cmd = ""
+        if self.checkNotDir(source, proxy):
+            cmd = "edg-gridftp-rm " + options + " " + fullSource
+        else:
+            cmd = "edg-gridftp-rmdir " + options + " " + fullSource
+            
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###

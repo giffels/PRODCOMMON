@@ -71,6 +71,9 @@ class ProtocolSrmv2(Protocol):
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
+    def deleteRec(self, source, proxy):
+        self.delete(source, proxy)
+
     def delete(self, source, proxy = None):
         """
         srmrm

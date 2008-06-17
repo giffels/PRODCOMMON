@@ -18,6 +18,12 @@ class Protocol(object):
         """
         raise NotImplementedError
 
+    def deleteRec(self, source):
+        """
+        delete dir and subdir/file
+        """
+        raise NotImplementedError
+
     def delete(self, source):
         """
         delete a file (or a path)
