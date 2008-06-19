@@ -5,8 +5,11 @@ _AlertPayload_
 Object representing a Alert
 
 """
+import os
 import pickle
 from time import strftime
+from ProdCommon.MCPayloads.UUID import makeUUID
+from ProdAgentCore.Configuration import ProdAgentConfiguration
 
 class AlertPayload(dict):
     """
@@ -19,14 +22,16 @@ class AlertPayload(dict):
     Message : Alert message
     Time : Alert creation time
     """
-    def __init__(self):
+    def __init__(self, **args):
         dict.__init__(self)
         self.setdefault("Severity", None)
         self.setdefault("Component", None)
         self.setdefault("Message", None)
         self.setdefault("Time", strftime("%Y-%m-%d %H:%M:%S"))
-        
-    def save(self, fileName):
+        self.setdefault('FileName', None)
+        self.update(**args)  
+
+    def save(self):
         """
         _save_
 
@@ -36,12 +41,28 @@ class AlertPayload(dict):
         output = None
         try:
             try:
-                output = open(fileName, 'wb')
+                config = os.environ.get("PRODAGENT_CONFIG", None)
+                if config == None:
+                   msg = "No ProdAgent Config file provided\n"
+                   raise RuntimeError, msg
+
+                cfgObject = ProdAgentConfiguration()
+                cfgObject.loadFromFile(config)
+                alertHandlerConfig = cfgObject.get("AlertHandler")
+                workingDir = alertHandlerConfig['ComponentDir']  
+
+
+                dir = os.path.join(os.path.expandvars(workingDir),'Alerts')
+
+                if not os.path.exists(dir): 
+                   os.mkdir(dir)
+                self.FileName = os.path.join(dir,"alert-%s.dat" %makeUUID())
+                output = open(self.FileName, 'wb')
                 pickle.dump(self, output)
             except Exception, ex:
                 # to do: Exception handling
                 print ex
-                raise RuntimeError
+                raise RuntimeError, str(ex)
         finally:
             if output:
                 output.close()
@@ -57,6 +78,7 @@ class AlertPayload(dict):
 
         """
         pickledFile = None
+        
         try:
             try:
                 pickledFile = open(fileName, 'rb')
@@ -77,11 +99,11 @@ if __name__ == "__main__":
     alert["Component"] = "Test"
     alert["Message"] = "Test Message"
     
-    alert.save("testPickle.pkl")
+    alert.save()
     
     print alert
     
     alert1 = AlertPayload()
-    alert1.load("testPickle.pkl")
+    alert1.load(alert.FileName)
     
     print alert1
