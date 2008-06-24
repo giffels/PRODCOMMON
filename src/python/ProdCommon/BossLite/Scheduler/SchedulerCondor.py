@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.8 2008/05/21 19:30:21 ewv Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.9 2008/05/30 18:18:46 ewv Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import re
 import os
@@ -92,6 +92,18 @@ class SchedulerCondor(SchedulerCondorCommon) :
       jdl += 'stream_error  = false\n'
       jdl += 'notification  = never\n'
       jdl += 'copy_to_spool           = false\n'
+
+      x509 = None
+      x509tmp = '/tmp/x509up_u'+str(os.getuid())
+      if 'X509_USER_PROXY' in os.environ:
+         x509 = os.environ['X509_USER_PROXY']
+      elif os.path.isfile(x509tmp):
+         x509 = x509tmp
+
+      if x509:
+        print "Adding user proxy ",x509
+        jdl += 'x509userproxy = %s\n' % x509
+
       #jdl += 'should_transfer_files   = YES\n'
       #jdl += 'when_to_transfer_output = ON_EXIT\n'
       #jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
