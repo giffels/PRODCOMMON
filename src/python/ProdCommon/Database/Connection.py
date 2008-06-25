@@ -417,7 +417,7 @@ class Connection:
 
           self.execute('COMMIT')
           self.session.commit()
-          self.queryCollection = []
+          self.queryCollection = [] 
   
           logging.debug("Transaction Committed")                
    
@@ -439,7 +439,7 @@ class Connection:
 
           self.execute('ROLLBACK')
           self.session.rollback()
-          self.queryCollection = []
+          self.queryCollection = [] 
 
           logging.debug("Transaction rolled back")
           
@@ -447,7 +447,7 @@ class Connection:
 
        return #// rollback
 
-    def execute (self, sqlQuery):
+    def execute (self, sqlQuery, bindParams = None):
 
        """
        _execute_
@@ -468,11 +468,11 @@ class Connection:
        try:        
          
            
-          self.resultProxy = self.session.execute(sqlQuery)
+          self.resultProxy = self.session.execute(sqlQuery, bindParams)
           
           cursor = self.resultProxy.cursor
           rowsModified = cursor.rowcount
-          self.queryCollection.append(sqlQuery)
+          self.queryCollection.append([sqlQuery,bindParams])
 
           return rowsModified               
    
@@ -490,11 +490,11 @@ class Connection:
 
           #// Redo the last query which hasn't been cached into queryCollection instance
           
-          self.resultProxy = self.session.execute(sqlQuery)
+          self.resultProxy = self.session.execute(sqlQuery, bindParams)
           cursor = self.resultProxy.cursor
           rowsModified = cursor.rowcount
 
-          self.queryCollection.append (sqlQuery)
+          self.queryCollection.append ([sqlQuery, bindParams])
           return rowsModified          
        
     def  refreshSession(self):
@@ -596,7 +596,7 @@ class Connection:
              
              for query in self.queryCollection:
                    
-                self.session.execute(query) 
+                self.session.execute(query[0],query[1]) 
 
        except Exception,ex:
           
