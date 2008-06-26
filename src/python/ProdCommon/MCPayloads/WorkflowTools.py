@@ -45,8 +45,8 @@ def createPSetHash(cfgFile):
     An Exception will be raised if the command fails
 
     """
-    hashFile = "%s.hash" % cfgFile
-    pop = popen2.Popen4("EdmConfigHash < %s > %s " % (cfgFile, hashFile))
+
+    pop = popen2.Popen4("edmConfigHash  %s  " % cfgFile)
     pop.wait()
     exitStatus = pop.poll()
     if exitStatus:
@@ -54,7 +54,7 @@ def createPSetHash(cfgFile):
         msg += pop.fromchild.read()
         raise RuntimeError, msg
 
-    content = file(hashFile).read()
+    content = pop.fromchild.read()
     return content.strip()
 
 
@@ -64,7 +64,7 @@ def createPythonConfig(cfgFile):
 
     Generate a Python Config from the cfgFile provided.
     Return the location of that file (Will be cfgFile.pycfg
-    
+
     """
     pycfgFile = cfgFile.replace(".cfg", ".pycfg")
     pop = popen2.Popen4("EdmConfigToPython < %s > %s " % (cfgFile, pycfgFile))
@@ -74,11 +74,11 @@ def createPythonConfig(cfgFile):
         msg = "Error creating Python cfg file:\n"
         msg += pop.fromchild.read()
         raise RuntimeError, msg
-    
+
     #  //
     # // Check that python file is valid
     #//
-    
+
     pop = popen2.Popen4("%s %s" % (sys.executable, pycfgFile))
     pop.wait()
     exitStatus = pop.poll()
@@ -92,7 +92,7 @@ def createPythonConfig(cfgFile):
 
 
 
-            
+
 def addStageOutNode(cmsRunNode, nodeName):
     """
     _addStageOutNode_
@@ -100,7 +100,7 @@ def addStageOutNode(cmsRunNode, nodeName):
     Given a cmsRun Node add a StageOut node to it with the name provided
 
     """
-    
+
     stageOut = cmsRunNode.newNode(nodeName)
     stageOut.type = "StageOut"
     stageOut.application["Project"] = ""
@@ -118,7 +118,7 @@ def addLogArchNode(cmsRunNode, nodeName):
     Given a cmsRun Node add a LogArch node to it with the name provided
 
     """
-    
+
     stageOut = cmsRunNode.newNode(nodeName)
     stageOut.type = "LogArchive"
     stageOut.application["Project"] = ""
@@ -126,7 +126,7 @@ def addLogArchNode(cmsRunNode, nodeName):
     stageOut.application["Architecture"] = ""
     stageOut.application["Executable"] = "RuntimeLogArch.py" # binary name
     stageOut.configuration = ""
-    
+
     return
 
 def addCleanUpNode(cmsRunNode, nodeName):
@@ -155,7 +155,7 @@ def addStageOutOverride(stageOutNode, command, option, seName, lfnPrefix):
     attribute
 
     """
-    
+
     override = IMProvNode("Override")
 
     override.addNode(IMProvNode("command", command))
@@ -172,7 +172,7 @@ def generateFilenames(workflowSpec):
     Generate the LFN names for the workflowSpec instance provided
 
     """
-    
+
     mergedLFNBase(workflowSpec)
     unmergedLFNBase(workflowSpec)
     return
@@ -199,7 +199,7 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
     else:
         pycfgFileContent = args['PyCfg']
 
-    
+
 
     if args.get("PSetHash", None) == None:
         realPSetHash = createPSetHash(cfgFile)
@@ -207,7 +207,7 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
         realPSetHash = args['PSetHash']
 
 
-    #  // 
+    #  //
     # // Create a new WorkflowSpec and set its name
     #//
     spec = WorkflowSpec()
@@ -219,12 +219,12 @@ def createProductionWorkflow(prodName, cmsswVersion, cfgFile = None,
     cmsRun = spec.payload
     populateCMSRunNode(cmsRun, "cmsRun1", cmsswVersion, pycfgFileContent, realPSetHash,
                        timestamp, prodName, physicsGroup = args.get("physicsGroup", "NoPhysicsGroup"), processingLabel=args.get("processingLabel", "Test07"), fakeHash = args.get("FakeHash", False))
-    
-    
+
+
     addStageOutNode(cmsRun, "stageOut1")
     generateFilenames(spec)
     return spec
-    
+
 
 def addPileupToSpec(spec, pileupDataset, filesPerJob, **options):
     """
@@ -246,7 +246,7 @@ def addPileupToSpec(spec, pileupDataset, filesPerJob, **options):
     """
 
     dbsContacts = {}
-    
+
     dbsContacts["DBSURL"] = options.get(
         "DBSURL",
         "http://cmsdbs.cern.ch/cms/prod/comp/DBS/CGIServer/prodquery")
@@ -266,7 +266,7 @@ def addPileupToSpec(spec, pileupDataset, filesPerJob, **options):
         msg += "Couldnt find node in spec named: %s\n" % nodeName
         raise RuntimeError, msg
 
-    
+
 
     puPrimary = pileupDataset.split("/")[1]
     puTier = pileupDataset.split("/")[2]
@@ -274,7 +274,7 @@ def addPileupToSpec(spec, pileupDataset, filesPerJob, **options):
     puDataset = nodeInstance.addPileupDataset(puPrimary, puTier, puProc)
     puDataset['FilesPerJob'] = filesPerJob
     puDataset.update(dbsContacts)
-    
+
     return
 
 
@@ -287,4 +287,4 @@ def createProcessingWorkflow(**args):
     """
     pass
 
-    
+
