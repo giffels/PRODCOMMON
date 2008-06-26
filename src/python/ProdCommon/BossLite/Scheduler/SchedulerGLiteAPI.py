@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.70 2008/06/03 17:07:14 gcodispo Exp $"
-__version__ = "$Revision: 1.70 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.71 2008/06/26 15:02:10 gcodispo Exp $"
+__version__ = "$Revision: 1.71 $"
 
 import sys
 import os
@@ -88,12 +88,18 @@ def processClassAd( classAd ):
         stop = classAd.rfind( ']' )
 
         # key from start to index
-        key = classAd[ start + 1 : classAd.find( '=', start, index ) ]
+        key = classAd[ start + 1 : classAd.find( '=', start, index ) ].strip()
+
+        # extract JdlDefaultAttributes
+        if key.lower() == "jdldefaultattributes" :
+            retCladDict, endpoints, configfile = \
+                         processClassAdBlock( classAd[ index : stop + 1 ] )
+            cladDict.update( retCladDict ) 
 
         # value from index to stop
-        if key.lower() != "wmsconfig"  :
+        elif key.lower() != "wmsconfig" :
             cladDict[key] = classAd[ index : stop + 1 ]
-
+                
         # continue parsing of the jdl
         classAd = classAd[ : start ] + classAd[ stop + 1: ]
         index = classAd.find( '[' )
@@ -143,7 +149,7 @@ def processClassAdBlock( classAd ):
                 for wms in wmsList:
                     wms = wms[ : wms.find('#') ].replace("\"", "").strip()
                     if wms != '' :
-                        endpoints.append( wms )
+                        endpoints.append( wms )             
 
             # handle not empty pairs
             elif key is not None:
@@ -516,7 +522,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         success = None
         seen = []
         endpoints = self.wmsResolve( endpoints )
-
+        print jdl
         for wms in endpoints :
             try :
                 wms = wms.replace("\"", "").strip()
