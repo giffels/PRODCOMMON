@@ -8,6 +8,9 @@ This Wrapper class integrates the sqlalchemy functionality at the backend to dea
 The main objective was to separate out the connection part from the operations part. It allows operation class to connect tomultiple databases at a time.  
 
 """
+
+import base64
+import cPickle
 import logging
 import threading
 from ProdCommon.Core.ProdException import ProdException
@@ -460,7 +463,7 @@ class Connection:
        since last commit     
 
        """
-
+       
        if self.session is None:
           logging.debug("No connection found, Object already been closed")
           raise ProdException(exceptions[4003], 4003) 
@@ -790,6 +793,7 @@ class Connection:
                 result[i][attr] =  \
                 cPickle.loads(base64.decodestring(result[i][attr]))
              for attr in decode64:
+                
                 result[i][attr] =  \
                 base64.decodestring(result[i][attr])
 
