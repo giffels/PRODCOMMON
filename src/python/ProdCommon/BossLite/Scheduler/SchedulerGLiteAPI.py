@@ -3,12 +3,13 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.69 2008/06/03 16:40:53 gcodispo Exp $"
-__version__ = "$Revision: 1.69 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.70 2008/06/03 17:07:14 gcodispo Exp $"
+__version__ = "$Revision: 1.70 $"
 
 import sys
 import os
 import traceback
+import socket
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
@@ -136,7 +137,9 @@ def processClassAdBlock( classAd ):
 
             # extract wms
             elif ( key == "wmproxyendpoints" ) :
-                wmsList = val[ val.find('{') +1 : val.find('}') ].split('\n')
+                wmsListStr = val[ val.find('{') +1 : val.find('}') ].replace(
+                    ',', '\n')
+                wmsList = wmsListStr.split('\n')
                 for wms in wmsList:
                     wms = wms[ : wms.find('#') ].replace("\"", "").strip()
                     if wms != '' :
@@ -276,6 +279,40 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             cladadd += k + ' = ' + v + ';\n'
 
         return endpoints, cladadd
+
+
+    ##########################################################################
+    def wmsResolve( self, aliasEndpoints ) :
+        """
+        resolve Wmproxy from alias
+        """
+
+        wmsList = []
+        for aliasWms in aliasEndpoints :
+
+            aliasWms = aliasWms.replace("\"", "").strip()
+            if  len( aliasWms ) == 0 or aliasWms[0]=='#':
+                continue
+
+            # name composition
+            st = aliasWms.find( 'https://' )
+            if st == 0:
+                wmsHostName, post = aliasWms[8:].split(':')
+                pre = 'https://'
+                post = ':' + post
+
+            else :
+                wmsHostName = aliasWms
+                pre = 'https://'
+                post = ':7443/glite_wms_wmproxy_server'
+
+            # retrieve all associed ip addresses
+            (hostname, aliaslist, ipaddrlist) = \
+                       socket.gethostbyname_ex ( wmsHostName )
+            for wms in ipaddrlist :                
+                wmsList.append( pre + socket.gethostbyaddr( wms )[0] + post )
+
+        return wmsList
 
 
     ##########################################################################
@@ -478,6 +515,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         errors = ''
         success = None
         seen = []
+        endpoints = self.wmsResolve( endpoints )
+
         for wms in endpoints :
             try :
                 wms = wms.replace("\"", "").strip()
@@ -914,9 +953,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if endpoints == [] :
             raise SchedulerError( "failed submission", "empty WMS list" )
 
-        # jdl ready!
-        seen = []
-
         # emulate ui round robin
         try :
             import random
@@ -924,6 +960,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         except ImportError:
             errorList.append(
                 "random access to wms not allowed, using sequential access" )
+
+        # jdl ready!
+        seen = []
+        endpoints = self.wmsResolve( endpoints )
 
         for wms in endpoints :
             try :
