@@ -11,8 +11,8 @@ import os
 import select, signal, fcntl
 from os import popen4
 
-__version__ = "$Id: $"
-__revision__ = "$Revision: $"
+__version__ = "$Id: System.py,v 1.1 2008/06/27 10:48:21 gcodispo Exp $"
+__revision__ = "$Revision: 1.1 $"
 
 
 def setPgid():
@@ -39,14 +39,16 @@ def executeCommand( command, timeout=None ):
     # playing with fd
     fd = p.stdout.fileno()
     flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags| os.O_NONBLOCK)
+    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
     # return values
     timedOut = False
     outc = []
+
     while 1:
         (r,w,e) = select.select([fd], [], [], timeout)
-        if r == [] and w == [] and e == [] :
+
+        if fd not in r :
             timedOut = True
             break
 
@@ -62,49 +64,9 @@ def executeCommand( command, timeout=None ):
         p.wait()
         p.stdout.close()
         del( p )
-        raise TimeOut( timeout, start, time.time() )
+        raise TimeOut( ''.join(outc), timeout, start, time.time() )
     
     return ''.join(outc)
-
-
-    # // first possibility
-    # p = Popen( command, shell=True,
-    #            stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True )
-
-    # os.setpgid( p.pid, 0 )
-
-    # while p.poll() is None and time.time() < finish :
-    #     pass #FIXME more CPU friendly
-
-    # result = self.p.poll();
-    # if result is None:
-    #     os.killpg( os.getpgid(p.pid), signal.SIGKILL)
-
-    # msg = p.stdout.read()
-
-
-    # // second possibility
-    # p = Popen( command, shell=True,
-    #            stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True )
-
-    # os.setpgid( p.pid, 0 )
-
-    # timedOut = True
-    # while time.time() < finish:
-    #     (r,w,e) = select.select([p.pid],[],[],self.timeout)
-    #     if len(r) >= 0:
-    #         timedOut = False
-    #         break
-    # 
-    # if timedOut :
-    #     os.killpg( os.getpgid(p.pid), signal.SIGKILL)
-
-    # msg = p.stdout.read()
-
-    # // third possibility
-    # pin, pout = popen4( command )
-    # msg = pout.read()
-    # return msg
 
 
 

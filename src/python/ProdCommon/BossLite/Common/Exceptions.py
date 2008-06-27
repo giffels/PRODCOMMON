@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.3 2008/06/03 17:15:40 gcodispo Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: Exceptions.py,v 1.4 2008/06/27 10:48:21 gcodispo Exp $"
+__revision__ = "$Revision: 1.4 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 class JobError(Exception):
@@ -64,7 +64,8 @@ class TimeOut(Exception):
     operation timed out
     """
 
-    def __init__(self, value, start=None, stop=None):
+    def __init__(self, partialOut, value, start=None, stop=None):
+        self.partialOut = partialOut
         self.value = value
 	self.start = start
 	self.stop = stop
@@ -75,6 +76,9 @@ Command Timed Out after %d seconds
 issued at %d
 ended at %d
         """ % (self.value, self.start, self.stop )
+
+    def commandOutput( self ) :
+        return self.partialOut
 
 
 
