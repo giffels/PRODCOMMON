@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.71 2008/06/26 15:02:10 gcodispo Exp $"
-__version__ = "$Revision: 1.71 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.72 2008/06/26 16:45:53 gcodispo Exp $"
+__version__ = "$Revision: 1.72 $"
 
 import sys
 import os
@@ -362,6 +362,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if os.path.exists( self.SandboxDir ) != 0:
                 raise SchedulerError( "existing " + self.SandboxDir, error )
 
+            # initialize wmproxy
+            self.hackEnv() ### TEMP FIX
+        
             # initialize wms connection
             wmproxy = self.wmproxyInit( wms, delegate = True )
 
@@ -421,6 +424,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # start job!
             wmproxy.jobStart(taskId)
+
+            self.hackEnv(restore=True) ### TEMP FIX
 
             # cleaning up everything: delete temporary files and exit
             if sandboxFileList != '' :
