@@ -302,42 +302,42 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-    def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
-        """
-        retrieve task information from db using task id
-        and defined static/running attributes.
-        Does not allow load of jobs without running instance
-        """
-
-        # db connect
-        if self.db is None :
-            self.connect()
-
-        # defining defaults
-        if jobAttributes is None :
-            jobAttributes = {}
-
-        # load all jobs
-        if jobList is None :
-            jobAttributes['taskId'] = int( task['id'] )
-            jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
-                                               all, strict=strict, \
-                                               limit=limit, offset=offset )
-            task.appendJobs( jobs )
-
-        # load jobs from list
-        else :
-            for jobId in jobList:
-                if task.getJob( jobId ) is None :
-                    jobAttributes['jobId']  = int( jobId )
-                    jobAttributes['taskId'] = int( task['id'] )
-                    jobs = self.loadJobsByRunningAttr(
-                        runningAttrs, jobAttributes, all, \
-                        strict=strict, limit=limit, offset=offset )
-                    if len( jobs) == 1 :
-                        task.appendJob( jobs[0] )
-
-        return task
+    # def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
+    #     """
+    #     retrieve task information from db using task id
+    #     and defined static/running attributes.
+    #     Does not allow load of jobs without running instance
+    #     """
+    # 
+    #     # db connect
+    #     if self.db is None :
+    #         self.connect()
+    # 
+    #     # defining defaults
+    #     if jobAttributes is None :
+    #         jobAttributes = {}
+    #     
+    #     # load all jobs
+    #     if jobList is None :
+    #         jobAttributes['taskId'] = int( task['id'] )
+    #         jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
+    #                                            all, strict=strict, \
+    #                                            limit=limit, offset=offset )
+    #         task.appendJobs( jobs )
+    #     
+    #     # load jobs from list
+    #     else :
+    #         for jobId in jobList:
+    #             if task.getJob( jobId ) is None :
+    #                 jobAttributes['jobId']  = int( jobId )
+    #                 jobAttributes['taskId'] = int( task['id'] )
+    #                 jobs = self.loadJobsByRunningAttr(
+    #                     runningAttrs, jobAttributes, all, \
+    #                     strict=strict, limit=limit, offset=offset )
+    #                 if len( jobs) == 1 :
+    #                     task.appendJob( jobs[0] )
+    # 
+    #     return task
 
 
     ##########################################################################
@@ -361,6 +361,8 @@ class BossLiteAPI(object):
 
         # defining default
         taskList = []
+        if jobAttributes is None :
+            jobAttributes = {}
 
         # identify jobRange
         if type( jobRange ) == list :
@@ -376,15 +378,25 @@ class BossLiteAPI(object):
             # provided a job list: load just missings
             if jobList is not None:
                 s = [ str(job['jobId']) for job in taskRange.jobs ]
-                jobList = [x for x in jobList if x not in s]
+                jobList = [str(x) for x in jobList if str(x) not in s]
                 jobList.sort()
+            if jobList == [] :
+                jobList = None
 
             # no need to load if the task already has jobs
             #    and no other jobs are requested
             if taskRange.jobs == [] or jobList is not None :
-                self.loadTaskJobs(taskRange, jobList, \
-                                  jobAttributes, runningAttrs, strict=strict, \
-                                  limit=limit, offset=offset  )
+                # new
+                jobAttributes['taskId'] = int( taskRange['id'] )
+                jobs = self.loadJobsByRunningAttr( runningAttrs, \
+                                                   jobAttributes, \
+                                                   strict=strict, \
+                                                   limit=limit, offset=offset,\
+                                                   jobList=jobList )
+                taskRange.appendJobs( jobs )
+                # self.loadTaskJobs(taskRange, jobList, \
+                #                   jobAttributes, runningAttrs, strict=strict, \
+                #                   limit=limit, offset=offset  )
             taskList.append( taskRange )
             return taskList
 
@@ -395,9 +407,17 @@ class BossLiteAPI(object):
             task = Task()
             task['id'] = int( taskId )
             task.load( self.db, deep = False )
-            self.loadTaskJobs( task, jobList, jobAttributes, \
-                               runningAttrs, strict=strict, \
-                               limit=limit, offset=offset )
+            # new
+            jobAttributes['taskId'] = int( task['id'] )
+            jobs = self.loadJobsByRunningAttr( runningAttrs, \
+                                               jobAttributes, \
+                                               strict=strict, \
+                                               limit=limit, offset=offset, \
+                                               jobList=jobList )
+            task.appendJobs( jobs )
+            # self.loadTaskJobs( task, jobList, jobAttributes, \
+            #                    runningAttrs, strict=strict, \
+            #                    limit=limit, offset=offset )
 
             # update task list
             task.updateInternalData()
@@ -485,7 +505,7 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-    def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True, limit=None, offset=None ) :
+    def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True, limit=None, offset=None, jobList=None ) :
         """
         retrieve job information from db for job
         whose running instance match attributes
@@ -514,13 +534,20 @@ class BossLiteAPI(object):
         else :
             jType = ''
 
+        # load bunch of jobs?
+        if jobList is None or jobList == [] :
+            inList = None
+        else :
+            inList = {'jobId' : jobList}
+
         # load job from db
         runJobList = self.db.selectJoin( job, run, \
                                          {'jobId' : 'jobId',
                                           'taskId' : 'taskId',
                                           'submissionNumber' : 'submission'}, \
                                          strict=strict, jType=jType, \
-                                         limit=limit, offset=offset )
+                                         limit=limit, offset=offset, \
+                                         inList=inList )
 
         # recall jobs
         for job, runningJob in runJobList :

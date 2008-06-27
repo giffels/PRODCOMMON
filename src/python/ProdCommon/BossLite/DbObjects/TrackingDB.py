@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.17 2008/05/16 14:12:08 gcodispo Exp $"
-__revision__ = "$Revision: 1.17 $"
+__version__ = "$Id: TrackingDB.py,v 1.18 2008/05/26 13:49:58 gcodispo Exp $"
+__revision__ = "$Revision: 1.18 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -221,7 +221,7 @@ class TrackingDB:
 
     ##########################################################################
 
-    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType='', limit=None, offset=None):
+    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType='', limit=None, offset=None, inList=None):
         """
         _selectJoin_
 
@@ -252,12 +252,23 @@ class TrackingDB:
         # get matching information from join template
         jFields = self.getFields(jTemplate)
 
+        # evaluate eventual lists
+        if inList is None :
+            listOfFields = ''
+        else :
+            for key in inList.keys() :
+                k = template.__class__.fields[key]
+                listOfFields = 't1.' + k + ' in (' + \
+                                ','.join( str(val ) for val in inList[key]) + ') ' 
+        if listOfFields != "" :
+            listOfFields += ' and '
+
         # determine if comparison is strict or not
         if strict:
             operator = '='
         else:
             operator = ' like '
-        listOfFields = ' and '.join([('t1.%s'+ operator +'%s') % (key, value)
+        listOfFields += ' and '.join([('t1.%s'+ operator +'%s') % (key, value)
                                      for key, value in fields
                                 ])
         jListOfFields = ' and '.join([('t2.%s'+ operator +'%s') \
