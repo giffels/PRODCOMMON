@@ -13,8 +13,14 @@ import base64
 import cPickle
 import logging
 from ProdCommon.Database.Connection import Connection
-from sqlalchemy import MetaData, Table
-from sqlalchemy.sql import text
+
+try:
+   from sqlalchemy import MetaData, Table
+   from sqlalchemy.sql import text
+except:
+   raise RuntimeError(1,"sqlalchemy could not be found. Make sure it is "+  \
+                         "installed. For further details look at " + \
+                         "http://www.sqlalchemy.org/docs/04/intro.html")
 
 
 class Operation:
@@ -37,7 +43,7 @@ class Operation:
     def __getattr__ (self,name):
         
         #  //
-        # // Giving the access to the following method of Connection class through Operation instance.
+        # // Giving access to the following methods of Connection class through Operation instance.
         #//
           
         if (name in ['commit','rollback','close','execute']):        
@@ -55,8 +61,7 @@ class Operation:
            self.__dict__['metaData'] = val
 
 
-    def insert(self,table_name, rows , columns =[], encode = [], encodeb64 = [], \
-        duplicate = False):
+    def insert(self,table_name, rows , columns =[], key = None, encode = [], encodeb64 = []):
         """
         _insert_
       
@@ -66,13 +71,21 @@ class Operation:
         Argument:
          
         table_name: Table name in which data will be inserted
+        key: Dictionary of atmost one element where key will be collumn id and value will be sequence name attached to it
         rows:
           if type(rows)== dict, THEN keys will be the column id's and rows.values() will be the values against those id's    
           if type(rows)==list, Then column will be the collumn id list and rows will be the data values against those id's
            
 
         """
-         
+        #// Redirecting call to insert method that use bind variables to insert records. 
+ 
+        return self.insertWithBind (table_name, rows, columns, key, encode, encodeb64) 
+
+
+        #// Below is the Implementation that does not use bind variables
+
+   
         #  //
         # // CHECK VALIDITY OF ARGUMENTS PASSED
         #//
@@ -174,10 +187,7 @@ class Operation:
          
         return rowsModified
       
-    def insert2update(self, table_name, rows , columns =[], encode = [], encodeb64 = []):
-        self.insert(table_name, rows, columns, encode, encodeb64, duplicate = True)
-
-  
+ 
   
     def retrieve(self, table_name, values, columns=[], decode=[], decodeb64=[]):
        """
@@ -196,7 +206,7 @@ class Operation:
        List containing rows as dictionaries   
 
        """
-       
+   
        if  ((type(values) not in [dict])  or (type(columns) not in [list])):
            raise ValueError("Invalid Argument type provided")
 
@@ -205,7 +215,12 @@ class Operation:
        if len(values) == 0:
           return
 
+       #// column names of bind params list 
+       column_names = values.keys()
+
        logging.debug("Retrieving objects of type %s" % table_name)
+       
+       #// Constructing sql statement now
 
        sqlStr = 'SELECT '
        if ( len(columns) == 0 ):
@@ -220,19 +235,63 @@ class Operation:
        sqlStr += ' FROM %s WHERE ' % table_name
 
        entry_and=False
+
+       #// Variables to hold bind params. Incase of oracle there will be named parameters but for mysql there would
+       #// be positional arguments as lists. 
+       oraBind = {}
+       mysqlBind = [] 
+
        for value_name in values.keys():
           if entry_and:
              sqlStr += 'and '
           entry_and=True
           sqlStr += value_name
-          if type(values[value_name]) == list:
-             sqlStr += " in %s" % str(tuple(values[value_name]))
-          else:
-             sqlStr += " = '%s'" % values[value_name]      
-       
-        
+          
 
-       self.connection.execute(sqlStr)
+             
+          if type(values[value_name]) == list:
+             sqlStr += " in ("
+             i = 0
+             sep = False
+             for item in values[value_name]:
+                if sep:
+                   sqlStr += ","
+
+                sep = True 
+
+                #// Horrible hack to separate out oracle based syntax from mysql
+                if self.connection.connection_parameters['dbType'] == 'oracle': 
+                   sqlStr += ":" + value_name + str(i)
+                   oraBind[value_name + str(i)] = item 
+
+                elif self.connection.connection_parameters['dbType'] == 'mysql':
+                     sqlStr += "%s"
+                     mysqlBind.append(item)
+                else:
+                     raise RuntimeError ('dbType not supported',1)
+
+        
+                i = i + 1   
+             sqlStr += " ) " 
+
+          else:
+      
+             #// Horrible hack to separate out oracle based syntax from mysql
+             if self.connection.connection_parameters['dbType'] == 'oracle':
+                sqlStr += " = :%s " % value_name
+                oraBind[value_name] = values[value_name] 
+
+             elif self.connection.connection_parameters['dbType'] == 'mysql':
+                sqlStr += " = %s " 
+                mysqlBind.append(values[value_name])
+
+
+        
+       if len(mysqlBind) !=0 : 
+           self.connection.execute(sqlStr, bindParams = mysqlBind)
+       else:
+           self.connection.execute(sqlStr, bindParams = oraBind)
+
          
        return self.connection.convert(rows=self.connection.fetchall(),oneItem=False,decode=[],decode64=decodeb64)
   
@@ -254,7 +313,14 @@ class Operation:
 
         if len(rows)==0:
             return []
+
+        #// Variables to hold bind params. Incase of oracle there will be named parameters but for mysql there would
+        #// be positional arguments as lists.
           
+        oraBind = {}
+        mysqlBind = []
+
+        #// Constructing sql statement now
         if rows is not None :
            sqlStr = "DELETE FROM %s WHERE " % table_name
            sqlStr += "  "
@@ -262,19 +328,55 @@ class Operation:
            entry_and=False
            for key_name in rows.keys():
              if entry_and:
-                sqlStr += 'and '
+                sqlStr += ' and '
              entry_and=True
              sqlStr += key_name
 
              if type(rows[key_name]) == list:
-                sqlStr += " in %s" % str(tuple(rows[key_name]))
+                sqlStr += " in ( "
+                i = 0
+                for item in rows[key_name]:
+
+                     #// Adding bind parameters [Different syntax for oracle and mysql]
+                     if self.connection.connection_parameters['dbType'] == 'oracle':
+                        sqlStr += ":" + key_name + str(i)
+                        oraBind[key_name + str(i)] = item
+
+                     elif self.connection.connection_parameters['dbType'] == 'mysql':
+                          sqlStr += "%s"
+                          mysqlBind.append(item)
+                     else:
+                          raise RuntimeError ('dbType not supported',1)
+                     sqlStr += " ,"
+                     i = i+1
+
+                sqlStr = sqlStr.rstrip(',') + ')'
              else:
-                sqlStr += " = '%s'" % rows[key_name]   
-        
-        
-        rowsModified = self.connection.execute(sqlStr)
+                 sqlStr += " = "   
+
+                 if self.connection.connection_parameters['dbType'] == 'oracle':
+           
+                      sqlStr += ":" + key_name
+                      oraBind[key_name] = rows[key_name] 
+
+
+                 elif self.connection.connection_parameters['dbType'] == 'mysql':
+                     sqlStr += "%s"
+                     mysqlBind.append(rows[key_name])
+                 else:
+                     raise RuntimeError ('dbType not supported',1)
+       
+         
+        rowsModified = None
+
+        if len(mysqlBind) !=0 :
+            rowsModified = self.connection.execute(sqlStr, bindParams = mysqlBind)
+        else:
+            rowsModified = self.connection.execute(sqlStr, bindParams = oraBind)
+ 
         return rowsModified
-    
+
+   
     def update(self, table_name, rows, columns = [], keys = {}, encode = [], encodeb64 = []):
         """
         update method to update the table rows based on the primary keys provided
@@ -301,11 +403,19 @@ class Operation:
            logging.info('Nothing to update')     
            return
 
+        #// Variables to hold bind params. Incase of oracle there will be named parameters but for mysql there would
+        #// be positional arguments as lists.
+
+        oraBind = {}
+        mysqlBind = []
+
         if type(rows) == dict: 
             column_names = rows.keys()
         if type(rows) == list:
             column_names = columns
         logging.debug("Updating objects of type "+table_name)
+
+        #// Constructing sql statement 
         sqlStr = "UPDATE "+table_name+" SET "
         row_comma = False
         if row_comma:
@@ -323,10 +433,23 @@ class Operation:
                 if entry_comma:
                     sqlStr += ', '
                 entry_comma = True
-                if entry == "LAST_INSERT_ID()":
-                    sqlStr += column_name + "=\'" + entry + "\'"
+      
+                sqlStr += column_name + " = "
+               
+                #// Adding bind variables to sql query
+                if self.connection.connection_parameters['dbType'] == 'oracle':
+                   sqlStr += ":" + column_name
+                   oraBind[column_name] = entry
+
+                elif self.connection.connection_parameters['dbType'] == 'mysql':
+                     sqlStr += "%s"
+                     mysqlBind.append(entry)
                 else:
-                    sqlStr += column_name + "=\'" +str(entry)+ '\''
+                     raise RuntimeError ('dbType not supported',1)
+
+
+    
+        #// if type(rows) is not dict        
         else:
             i=0
             for column_name in column_names:
@@ -339,16 +462,32 @@ class Operation:
                 if entry_comma:
                     sqlStr += ', '
                 entry_comma = True
-                if entry == "LAST_INSERT_ID()":
-                    sqlStr += column_name + "=\'" + entry + "\'"
+ 
+
+                sqlStr += column_name + " = "
+
+                #// Adding bind variables
+                if self.connection.connection_parameters['dbType'] == 'oracle':
+                   sqlStr += ":" + column_name
+                   oraBind[column_name] = entry
+
+                elif self.connection.connection_parameters['dbType'] == 'mysql':
+                     sqlStr += "%s"
+                     mysqlBind.append(entry)
                 else:
-                    sqlStr += column_name + "=\'" +str(entry)+ '\''
-                i += 1
-         
+                     raise RuntimeError ('dbType not supported',1)
+
+
+ 
+
+                i = i + 1
+
+        #// Constructing where clause of sql statement 
         if keys is not None :            
            sqlStr += " WHERE "
 
            entry_and=False
+           j = 0
            for key_name in keys.keys():
              if entry_and:
                 sqlStr += ' and '
@@ -359,8 +498,11 @@ class Operation:
 
              if type(values) != list:
                  values = [values]
+
+             #// if values are more than 1 than combine them in 'IN' clause
              if len(values) > 1:
                  sqlStr += " in ("
+                 i = 0
                  for value in values:
                      if key_name in encode:
                          entry = base64.encodestring(cPickle.dumps(value))
@@ -368,8 +510,23 @@ class Operation:
                          entry = base64.encodestring(value)
                      else:
                          entry = value
-                     sqlStr += "'%s'," % entry
+
+                     #// Adding Bind variables for attributes in 'IN' clause 
+                     if self.connection.connection_parameters['dbType'] == 'oracle':
+                        sqlStr += ":" + key_name + str(i)
+                        oraBind[key_name + str(i)] = entry
+
+                     elif self.connection.connection_parameters['dbType'] == 'mysql':
+                          sqlStr += "%s"
+                          mysqlBind.append(entry)
+                     else:
+                          raise RuntimeError ('dbType not supported',1)
+                     i = i+1 
+
+                     sqlStr += " ,"
                  sqlStr = sqlStr.rstrip(',') + ')'
+             
+             #// If there is single value then no need of 'IN' clause     
              else:
                  value = values[0]
                  if key_name in encode:
@@ -378,9 +535,36 @@ class Operation:
                      entry = base64.encodestring(value)
                  else:
                      entry = value
-                 sqlStr += " = '%s'" % entry
+                 sqlStr += " = "
+             
+                 #// Adding bind variables
+                 if self.connection.connection_parameters['dbType'] == 'oracle':
 
-        rowsModified=self.connection.execute(sqlStr)
+                   if oraBind.has_key(key_name):
+                      
+                      sqlStr += ":" + key_name + str(j)
+                      oraBind[key_name+str(j)] = entry
+                      j = j+1
+                   else:
+                      sqlStr += ":" + key_name 
+                      oraBind[key_name] = entry
+
+
+                 elif self.connection.connection_parameters['dbType'] == 'mysql':
+                     sqlStr += "%s"
+                     mysqlBind.append(entry)
+                 else:
+                     raise RuntimeError ('dbType not supported',1)
+
+
+    
+        rowsModified = None
+
+        if len(mysqlBind) !=0 :
+            rowsModified = self.connection.execute(sqlStr, bindParams = mysqlBind)
+        else:
+            rowsModified = self.connection.execute(sqlStr, bindParams = oraBind)
+
         return rowsModified
 
   
@@ -388,7 +572,7 @@ class Operation:
         """
         _arrayInsert_
 
-        Method that inserts muliple rows in one go.
+        Method that inserts muliple rows in one go. This method uses SQLAlchemy's support for bulk insert 
         Argument:
 
         table_name: Table name in which data will be inserted
@@ -518,7 +702,7 @@ class Operation:
 
         #// Constructing comma separated string of column name 
         #// Constructing bindparams of format :column         
-          
+         
         for item in column_names:
 
            if comma:
@@ -529,8 +713,9 @@ class Operation:
            column += item
  
            #// preparing bind sql statement for both mysql, oracle dbtypes              
-
-           if self.connection.connection_parameters['dbType'] == 'oracle':
+           
+                              
+           if self.connection.connection_parameters['dbType'] == 'oracle': 
               bindParams += ":" + item
            elif self.connection.connection_parameters['dbType'] == 'mysql':
               bindParams += "%s"
@@ -612,10 +797,10 @@ class Operation:
                  rowBind.append(tempMysql)   
                     
                     
-        
-        resultSet = self.connection.session.execute(sqlStr, rowBind)
-        cursor = resultSet.cursor
-        rowsModified = cursor.rowcount
+  
+         
+        rowsModified = self.connection.execute(sqlStr, rowBind)
+      
         return rowsModified
 
 
