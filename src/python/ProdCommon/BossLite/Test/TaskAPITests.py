@@ -42,8 +42,8 @@ class TaskAPITests(object):
                     'dbWaitingTime' : 10 
                     }
         self.sqliteConfig = {'dbName':'BossLiteDB'}
-        from ProdAgentDB.Config import defaultConfig as dbConfig
-        self.mySqlConfig = dbConfig
+        # from ProdAgentDB.Config import defaultConfig as dbConfig
+        # self.mySqlConfig = dbConfig
 
     ##########################################################################
     def __init__(self, dbtype, installDb=False):
