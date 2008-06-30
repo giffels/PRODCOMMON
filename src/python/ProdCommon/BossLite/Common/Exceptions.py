@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.4 2008/06/27 10:48:21 gcodispo Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: Exceptions.py,v 1.5 2008/06/27 14:30:16 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 class JobError(Exception):
@@ -48,15 +48,23 @@ class SchedulerError(Exception):
 
     def __init__(self, value, message):
         self.value = value
-	self.message = message
+        self.message = message
 
     def __str__(self):
         return self.value + '\n' + self.message
 
     def description(self):
+        """
+        returns a short description of the exception
+        """
+
         return self.value
 
-    def message(self):
+    def errorDump(self):
+        """
+        returns the original error message 
+        """
+
         return self.message
 
 class TimeOut(Exception):
@@ -67,8 +75,8 @@ class TimeOut(Exception):
     def __init__(self, partialOut, value, start=None, stop=None):
         self.partialOut = partialOut
         self.value = value
-	self.start = start
-	self.stop = stop
+        self.start = start
+        self.stop = stop
 
     def __str__(self):
         return """
@@ -78,6 +86,10 @@ ended at %d
         """ % (self.value, self.start, self.stop )
 
     def commandOutput( self ) :
+        """
+        returns the partial output recorded before timeout
+        """
+
         return self.partialOut
 
 

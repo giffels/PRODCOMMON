@@ -27,6 +27,9 @@ class TaskAPITests(object):
         set parameters (possible values in comment)
         """
 
+        self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI',
+        "config" : "/bohome/grandi/UI/3.1.13-0/glite/etc/cms/glite_wms.conf" }
+
         self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI' }
         self.mySqlConfig = {'dbName':'BossLiteDB',
                     'host':'localhost',
@@ -39,7 +42,8 @@ class TaskAPITests(object):
                     'dbWaitingTime' : 10 
                     }
         self.sqliteConfig = {'dbName':'BossLiteDB'}
-
+        from ProdAgentDB.Config import defaultConfig as dbConfig
+        self.mySqlConfig = dbConfig
 
     ##########################################################################
     def __init__(self, dbtype, installDb=False):
@@ -239,10 +243,14 @@ class TaskAPITests(object):
 
         if self.task is None :
             self.task = self.testTask()
-
+        
+        from ProdCommon.BossLite.Common.Exceptions import SchedulerError
         schedSession = self.schedulerSession()
-        self.task = schedSession.resubmit( self.task, self.jobRange )
-        self.printTask()
+        try :
+            self.task = schedSession.resubmit( self.task, self.jobRange )
+            self.printTask()
+        except SchedulerError, err:
+            print str(err)
 
 
     ##########################################################################
@@ -276,6 +284,7 @@ class TaskAPITests(object):
         
         if self.task is None :
             self.task = self.testTask()
+
 
         schedSession = self.schedulerSession()
         print schedSession.jobDescription( self.task, self.jobRange )

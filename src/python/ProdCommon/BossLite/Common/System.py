@@ -9,10 +9,9 @@ from subprocess import Popen, PIPE, STDOUT
 import time
 import os
 import select, signal, fcntl
-from os import popen4
 
-__version__ = "$Id: System.py,v 1.1 2008/06/27 10:48:21 gcodispo Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: System.py,v 1.2 2008/06/27 14:30:16 gcodispo Exp $"
+__revision__ = "$Revision: 1.2 $"
 
 
 def setPgid():
@@ -46,7 +45,7 @@ def executeCommand( command, timeout=None ):
     outc = []
 
     while 1:
-        (r,w,e) = select.select([fd], [], [], timeout)
+        (r, w, e) = select.select([fd], [], [], timeout)
 
         if fd not in r :
             timedOut = True
