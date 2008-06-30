@@ -4,12 +4,13 @@ _SchedulerInterface_
 
 """
 
+from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
-#from subprocess import Popen, PIPE, STDOUT
-from os import popen4
 
-__version__ = "$Id: SchedulerInterface.py,v 1.22 2008/05/20 13:50:23 gcodispo Exp $"
-__revision__ = "$Revision: 1.22 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.23 2008/05/21 14:58:18 gcodispo Exp $"
+__revision__ = "$Revision: 1.23 $"
+
+
 
 class SchedulerInterface(object):
     """
@@ -23,6 +24,7 @@ class SchedulerInterface(object):
         """
 
         self.cert = args['user_proxy']
+        self.timeout = args.get("timeout", None)
         self.checkUserProxy( self.cert )
 
     ##########################################################################
@@ -43,20 +45,28 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def ExecuteCommand( self, command, timeout = 600 ):
+    def ExecuteCommand( self, command ):
         """
         _ExecuteCommand_
 
         Util it execute the command provided in a popen object with a timeout
         """
 
-        #p = Popen( command, shell=True,
-        #           stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True )
-        #msg = p.stdout.read()
+        return executeCommand( command, self.timeout )
 
-        pin, pout = popen4( command )
-        msg = pout.read()
-        return msg
+    ##########################################################################
+
+    def setTimeout( self, timeout ):
+        """
+        _setTimeout_
+
+        Redefine timeout value
+        """
+
+        if timeout is not None:
+            timeout = int ( timeout )
+            
+        self.timeout = timeout
 
     ##########################################################################
 

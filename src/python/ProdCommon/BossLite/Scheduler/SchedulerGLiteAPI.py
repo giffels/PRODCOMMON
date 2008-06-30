@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.73 2008/06/27 14:29:46 gcodispo Exp $"
-__version__ = "$Revision: 1.73 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.74 2008/06/30 13:04:53 gcodispo Exp $"
+__version__ = "$Revision: 1.74 $"
 
 import sys
 import os
@@ -527,7 +527,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         success = None
         seen = []
         endpoints = self.wmsResolve( endpoints )
-        print jdl
+
         for wms in endpoints :
             try :
                 wms = wms.replace("\"", "").strip()
