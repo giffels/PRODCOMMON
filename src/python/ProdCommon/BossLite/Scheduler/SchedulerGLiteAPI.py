@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.72 2008/06/26 16:45:53 gcodispo Exp $"
-__version__ = "$Revision: 1.72 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.73 2008/06/27 14:29:46 gcodispo Exp $"
+__version__ = "$Revision: 1.73 $"
 
 import sys
 import os
@@ -549,8 +549,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
 
-        # log warnings
+        # handle jobs
         for job in obj.jobs :
+
+            # wmproxy converts . to _ in jobIds - convert back
+            if job['name'].count('.'):
+                wmproxy_name = job['name'].replace('.', '_')
+                returnMap[job['name']] = returnMap.pop(wmproxy_name)
+
+            # log warnings
             job.runningJob.warnings.extend( self.warnings )
             job.runningJob['statusHistory'].extend( actions )
             if errors != '' :
