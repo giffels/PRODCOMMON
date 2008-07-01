@@ -282,24 +282,45 @@ def madgraph():
     Generator dependent from here
     """
     # First line in the config file is the generator name
+    # Second line is the process name
+    # Third line is the tarball name incl version of madgraph
     file      = open(cfgFile, 'r')
     generatorLine    = file.readline() # Not used
-    nameLabelLine    = file.readline()
-    nameLabel        = nameLabelLine.split('\n')
-    tarballAreaLabel = file.readline()
-    tarballArea      = tarballAreaLabel.split('\n')
+    nameLabel    = file.readline().strip()
+    tarballName      = file.readline().strip() 
 
-    if tarballArea[0].strip() == "NONE":
-        msg  = "wget --no-check-certificate -O %s.tar.gz \"http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/RobertoChierici/MadGraphCompiledTarballs/%s.tar.gz?view=co\";" % (nameLabel[0].strip(),nameLabel[0].strip())
-        msg += "tar xvzf %s.tar.gz;" % nameLabel[0].strip()
-        os.system(msg)
-    else:
-        msg  = "wget --no-check-certificate -O %s.tar.gz \"%s/%s.tar.gz\";" % (nameLabel[0].strip(),tarballArea[0].strip(),nameLabel[0].strip())
-        msg += "tar xvzf %s.tar.gz;" % nameLabel[0].strip()
-        msg += "cd madevent;"
-        msg += "./bin/compile dynamic;"
-        msg += "./bin/clean4grid;"
-        os.system(msg)
+    #  //
+    # // Build tarball location within release structure
+    #//
+    if os.environ.get("CMS_PATH", None) == None:
+        msg = "Error: CMS_PATH variable not set"
+        raise RuntimeError, msg
+    if os.environ.get("SCRAM_ARCH", None) == None:
+        msg = "Error: SCRAM_ARCH variable not set"
+        raise RuntimeError, msg
+    
+
+    tarballLocation = "%s/%s/generatorData/" % (os.environ['CMS_PATH'],
+                                                os.environ['SCRAM_ARCH'])
+    tarballLocation += "madgraph/"
+    tarballLocation += "%s/" % nameLabel
+    tarballLocation += "%s" % tarballName
+    if not os.path.exists(tarballLocation):
+        msg = "Error: Madgraph Tarball Location not found:\n"
+        msg += tarballLocation
+        msg += "\nDoes not exist"
+        raise RuntimeError(msg)
+
+    #  //
+    # // unpack the tarball and set up the software
+    #//
+    setupCommand = "/bin/cp %s . \n" % tarballLocation
+    setupCommand += "tar -zxvf %s\n" % os.path.basename(tarballLocation)
+    setupCommand += "cd madevent;"
+    setupCommand += "./bin/compile dynamic;"
+    setupCommand += "./bin/clean4grid;"
+    os.system(setupCommand)
+
 
     numberOfSeedsNeeded = 1
     random.seed(int(seeds))
