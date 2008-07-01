@@ -145,11 +145,11 @@ class ProtocolGsiFtp(Protocol):
             options = "--proxy=" + str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = ""
-        if self.checkNotDir(source, proxy):
-            cmd = "edg-gridftp-rm " + options + " " + fullSource
-        else:
-            cmd = "edg-gridftp-rmdir " + options + " " + fullSource
+        cmd = "edg-gridftp-rm " + options + " " + fullSource
+        #if self.checkNotDir(source, proxy):
+        #    cmd = "edg-gridftp-rm " + options + " " + fullSource
+        #else:
+        #    cmd = "edg-gridftp-rmdir " + options + " " + fullSource
             
         exitcode, outputs = self.executeCommand(cmd)
 
