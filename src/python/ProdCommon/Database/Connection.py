@@ -152,8 +152,11 @@ class Connection:
        return    #// init method
 
     def __del__ (self):
-        
-        self.close()
+       
+        try: 
+           self.close()
+        except:
+           return
         
 
 

@@ -36,7 +36,10 @@ class Operation:
 
     def __del__ (self):
 
-        del self.connection
+        try:
+           del self.connection
+        except:
+           return 
         
         
     
