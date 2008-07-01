@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.18 2008/05/26 13:49:58 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: TrackingDB.py,v 1.19 2008/06/27 16:20:38 gcodispo Exp $"
+__revision__ = "$Revision: 1.19 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -100,37 +100,12 @@ class TrackingDB:
         except Exception, msg:
             raise DbError(msg)
 
-        # get all information
-        results = self.session.fetchall()
-
-        # build objects
+        # get all information and build objects
         theList = []
-        for row in results:
+        for row in self.session.fetchall():
 
-            # create a single object
-            template = deepcopy(template)
-            obj = type(template)()
-
-            # fill fields
-            for key, value in zip(objectFields, row):
-
-                # check for NULLs
-                if value is None:
-                    obj[key] = deepcopy( template.defaults[key] )
-
-                # check for lists
-                elif type(template.defaults[key]) == list:
-                    try :
-                        obj[key] = eval(value)
-                    except SyntaxError:
-                        obj[key] = [ value ]
-
-                # other objects get casted automatically
-                else:
-                    obj[key] = value
-
-                # mark them as existing in database
-                obj.existsInDataBase = True
+            # fill object
+            obj = self.fillObject( row, template, objectFields )
 
             # add to list
             theList.append(obj)
@@ -188,30 +163,8 @@ class TrackingDB:
         theList = []
         for row in results:
 
-            # create a single object
-            template = deepcopy(template)
-            obj = type(template)()
-
-            # fill fields
-            for key, value in zip(objectFields, row):
-
-                # check for NULLs
-                if value is None:
-                    obj[key] = deepcopy( template.defaults[key] )
-
-                # check for lists
-                elif type(template.defaults[key]) == list:
-                    try :
-                        obj[key] = eval(value)
-                    except SyntaxError:
-                        obj[key] = [ value ]
-
-                # other objects get casted automatically
-                else:
-                    obj[key] = value
-
-                # mark them as existing in database
-                obj.existsInDataBase = True
+            # fill object
+            obj = self.fillObject( row, template, objectFields )
 
             # add to list
             theList.append(obj)
@@ -325,65 +278,15 @@ class TrackingDB:
         except Exception, msg:
             raise DbError(msg)
 
-        # get all information
-        results = self.session.fetchall()
-
         # build objects
         theList = []
         size =  len( mapping )
-        for row in results:
-
-            # create a single object
-            template = deepcopy(template)
-            obj = type(template)()
-
-            # create a single object
-            jTemplate = deepcopy(jTemplate)
-            jObj = type(jTemplate)()
-
-            # fill fields
-            for key, value in zip(objectFields, row):
-
-                # check for NULLs
-                if value is None:
-                    obj[key] = deepcopy(template.defaults[key])
-
-                # check for lists
-                elif type(template.defaults[key]) == list:
-                    try :
-                        obj[key] = eval(value)
-                    except SyntaxError:
-                        obj[key] = [ value ]
-
-                # other objects get casted automatically
-                else:
-                    obj[key] = value
-
-                # mark them as existing in database
-                obj.existsInDataBase = True
-
-
-            # fill fields
-            for key, value in zip(jObjectFields, row[size:]):
-
-                # check for NULLs
-                if value is None:
-                    jObj[key] = deepcopy(jTemplate.defaults[key])
-
-                # check for lists
-                elif type(jTemplate.defaults[key]) == list:
-                    try :
-                        jObj[key] = eval(value)
-                    except SyntaxError:
-                        jObj[key] = [ value ]
-
-                # other jObjects get casted automatically
-                else:
-                    jObj[key] = value
-
-                # mark them as existing in database
-                jObj.existsInDataBase = True
-
+        for row in self.session.fetchall():
+        
+            # fill objects
+            obj = self.fillObject( row, template, objectFields )
+            jObj = self.fillObject( row[size:], jTemplate, jObjectFields )
+        
             # add to list
             theList.append((obj, jObj))
 
@@ -421,7 +324,7 @@ class TrackingDB:
         if keysSpec != "" and unlikeSpec != "" :
             keysSpec += ' and ' + unlikeSpec
         elif unlikeSpec != "" :
-             keysSpec = unlikeSpec
+            keysSpec = unlikeSpec
 
         if keysSpec != "" :
             keysSpec = ' where ' + keysSpec
@@ -483,6 +386,8 @@ class TrackingDB:
         # return number of rows removed
         return rows
 
+    ##########################################################################
+
     def getFields(self, obj):
         """
         prepare field sections in query
@@ -501,6 +406,39 @@ class TrackingDB:
         # return it
         return fields
 
+
+    ##########################################################################
+
+    def fillObject( self, dbRow, template, objectFields ):
+
+        # create a single object
+        obj = type(template)()
+ 
+        # fill fields
+        for key, value in zip(objectFields, dbRow):
+ 
+            # check for NULLs
+            if value is None:
+                obj[key] = deepcopy( template.defaults[key] )
+ 
+            # check for lists
+            elif type(template.defaults[key]) == list:
+                try :
+                    obj[key] = eval(value)
+                except SyntaxError:
+                    obj[key] = [ value ]
+ 
+            # other objects get casted automatically
+            else:
+                obj[key] = value
+ 
+            # mark them as existing in database
+            obj.existsInDataBase = True
+ 
+        return obj
+
+    ##########################################################################
+    
     ##DanieleS NOTE: ToBeRevisited
     def distinctAttr(self, template, value_1 , value_2, alist ,  strict = True):
         """
@@ -556,7 +494,7 @@ class TrackingDB:
         for row in results:
 
             # create a single object
-            template = deepcopy(template)
+            # template = deepcopy(template)
             obj = type(template)()
 
             # fill fields
@@ -642,7 +580,7 @@ class TrackingDB:
         for row in results:
 
             # create a single object
-            template = deepcopy(template)
+            # template = deepcopy(template)
             obj = type(template)()
 
             # fill fields
