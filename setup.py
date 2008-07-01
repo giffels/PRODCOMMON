@@ -33,5 +33,6 @@ setup (name='prodcommon',
                  'ProdCommon.SiteDB',
                  'ProdCommon.Storage',
                  'ProdCommon.Storage.SEAPI',
+                 'ProdCommon.Alert',
                  'ProdCommon.TrivialFileCatalog'],)
 
