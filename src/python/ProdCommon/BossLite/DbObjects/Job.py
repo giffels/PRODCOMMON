@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.11 2008/04/29 08:34:16 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: Job.py,v 1.12 2008/04/30 11:01:34 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -78,8 +78,6 @@ class Job(DbObject):
 
         # call super class init method
         super(Job, self).__init__(parameters)
-
-        self.privateData = deepcopy(self.__class__.private)
 
         # initialize running job
         self.runningJob = None
