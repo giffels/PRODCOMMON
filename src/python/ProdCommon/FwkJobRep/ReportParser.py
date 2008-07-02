@@ -21,14 +21,14 @@ class FwkJobRepHandler(ContentHandler):
     """
     _FwkJobRepHandler_
 
-    SAX Content Handler implementation to build 
+    SAX Content Handler implementation to build
     instances of FwkJobReport and populate it
 
     Multiple job reports in a file are supported, since the plan
     is to concatenate them at the end of a job from multiple outputs
 
     instances of FwkJobReport are stored in self.results as a list
-    
+
     """
     def __init__(self):
         ContentHandler.__init__(self)
@@ -49,7 +49,7 @@ class FwkJobRepHandler(ContentHandler):
         # // container for results
         #//
         self.results = []
-        
+
 
         #  //
         # // Response methods to start of elements based on element name
@@ -111,8 +111,8 @@ class FwkJobRepHandler(ContentHandler):
             value = str(attrs.get("Value"))
             self.currentDict[str(name)] = value
         pass
-    
-        
+
+
     def startElement(self, name, attrs):
         """
         _startElement_
@@ -138,7 +138,7 @@ class FwkJobRepHandler(ContentHandler):
         response(name)
         self._CharCache = ""
         return
-        
+
     def characters(self, data):
         """
         _characters_
@@ -157,7 +157,7 @@ class FwkJobRepHandler(ContentHandler):
     def inFile(self):
         """boolean test to see if state is in a file block"""
         return self.currentFile != None
-    
+
 
     def newReport(self, name, attrs):
         """
@@ -199,7 +199,7 @@ class FwkJobRepHandler(ContentHandler):
         """new File tag encountered"""
         self.currentFile = self.currentReport.newFile()
         self.currentDict = self.currentFile
-        
+
     def endFile(self, name):
         """ end of file tag encountered"""
         self.currentFile = None
@@ -209,13 +209,13 @@ class FwkJobRepHandler(ContentHandler):
         """new InputFile tag encountered"""
         self.currentFile = self.currentReport.newInputFile()
         self.currentDict = self.currentFile
-        
+
     def endInputFile(self, name):
         """ end of InputFile tag encountered"""
         self.currentFile = None
         self.currentDict = None
 
-    
+
 
     def newDataset(self, name, attrs):
         """ start of Dataset tag within a File tag"""
@@ -230,7 +230,7 @@ class FwkJobRepHandler(ContentHandler):
             return
         self.currentDict = self.currentFile
 
-    
+
     def exitCode(self, name, attrs):
         """
         handle an ExitCode node, extract the value attr and add it to
@@ -245,7 +245,7 @@ class FwkJobRepHandler(ContentHandler):
             self.currentReport.exitCode = int(value)
         return
 
-        
+
     def fillDictionary(self, name):
         """
         _fillDictionary_
@@ -268,7 +268,7 @@ class FwkJobRepHandler(ContentHandler):
 
         """
         self.currentFile.state = str(attrs.get('Value', "closed"))
-   
+
 
     def endBranch(self, name):
         """
@@ -300,7 +300,7 @@ class FwkJobRepHandler(ContentHandler):
         """
         self.currentFile.addInputFile(self.currentInputDict['PFN'],
                                       self.currentInputDict['LFN'])
-                                      
+
         self.currentInputDict = None
         self.currentDict = self.currentFile
 
@@ -344,7 +344,7 @@ class FwkJobRepHandler(ContentHandler):
             return
         self.currentReport.addSkippedFile(str(pfn), str(lfn))
         return
-        
+
 
     def checksum(self, name, attrs):
         """
@@ -353,7 +353,7 @@ class FwkJobRepHandler(ContentHandler):
         Handle a checksum element start
         """
         self.currentCksum = attrs.get("Algorithm", None)
-        
+
 
     def endChecksum(self, name):
         """
@@ -391,7 +391,7 @@ class FwkJobRepHandler(ContentHandler):
         _frameworkError_
 
         Start Error message in job report
-        
+
         """
         if self.currentReport == None:
             return
@@ -414,7 +414,7 @@ class FwkJobRepHandler(ContentHandler):
         self.currentDict['Description'] = str(self._CharCache)
         self.currentDict == None
         return
-    
+
     def timingService(self, name, attrs):
         """
         _timingService_
@@ -427,7 +427,7 @@ class FwkJobRepHandler(ContentHandler):
         self.inTiming = True
         self.currentDict = self.currentReport.timing
         return
-    
+
     def endTimingService(self, name):
         """
         _endTimingService_
@@ -441,7 +441,7 @@ class FwkJobRepHandler(ContentHandler):
         self.inTiming = False
         self.currentDict = None
         return
-    
+
     def storageStatistics(self, name):
         """
         _storageStatistics_
@@ -488,10 +488,10 @@ class FwkJobRepHandler(ContentHandler):
             self.currentDict[key] = val
             return
         return
-    
-            
-        
-        
+
+
+
+
 def readJobReport(filename):
     """
     _readJobReport_
@@ -501,7 +501,7 @@ def readJobReport(filename):
 
     Instantiate a new ContentHandler and run it over the file producing
     a list of FwkJobReport instances
-    
+
     """
     #handler = FwkJobRepHandler()
     #parser = make_parser()
@@ -519,9 +519,6 @@ def readJobReport(filename):
     try:
         improvDoc = loadIMProvFile(filename)
     except Exception, ex:
-        msg = "Error parsing JobReport File: %s\n" % filename
-        msg += str(ex)
-        print msg
         return []
     result = []
     reportQ = IMProvQuery("FrameworkJobReport")
