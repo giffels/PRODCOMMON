@@ -4,11 +4,9 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.12 2008/04/30 11:01:34 gcodispo Exp $"
-__revision__ = "$Revision: 1.12 $"
+__version__ = "$Id: Job.py,v 1.13 2008/07/02 07:41:36 gcodispo Exp $"
+__revision__ = "$Revision: 1.13 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
-
-from copy import deepcopy
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -305,6 +303,10 @@ class Job(DbObject):
         close the running instance.
         it should be only one but ignore if there are more than one...
         """
+
+        # do not do anything if the job is not completely defined
+        if not self.valid(['jobId', 'taskId']):
+            return
 
         # create template
         template = RunningJob()
