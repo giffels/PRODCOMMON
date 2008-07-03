@@ -302,45 +302,6 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-    # def loadTaskJobs( self, task, jobList=None, jobAttributes=None, runningAttrs=None, all=False, strict=True, limit=None, offset=None ) :
-    #     """
-    #     retrieve task information from db using task id
-    #     and defined static/running attributes.
-    #     Does not allow load of jobs without running instance
-    #     """
-    # 
-    #     # db connect
-    #     if self.db is None :
-    #         self.connect()
-    # 
-    #     # defining defaults
-    #     if jobAttributes is None :
-    #         jobAttributes = {}
-    #     
-    #     # load all jobs
-    #     if jobList is None :
-    #         jobAttributes['taskId'] = int( task['id'] )
-    #         jobs = self.loadJobsByRunningAttr( runningAttrs, jobAttributes, \
-    #                                            all, strict=strict, \
-    #                                            limit=limit, offset=offset )
-    #         task.appendJobs( jobs )
-    #     
-    #     # load jobs from list
-    #     else :
-    #         for jobId in jobList:
-    #             if task.getJob( jobId ) is None :
-    #                 jobAttributes['jobId']  = int( jobId )
-    #                 jobAttributes['taskId'] = int( task['id'] )
-    #                 jobs = self.loadJobsByRunningAttr(
-    #                     runningAttrs, jobAttributes, all, \
-    #                     strict=strict, limit=limit, offset=offset )
-    #                 if len( jobs) == 1 :
-    #                     task.appendJob( jobs[0] )
-    # 
-    #     return task
-
-
-    ##########################################################################
     def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
         """
         retrieve information from db for:
@@ -394,9 +355,6 @@ class BossLiteAPI(object):
                                                    limit=limit, offset=offset,\
                                                    jobList=jobList )
                 taskRange.appendJobs( jobs )
-                # self.loadTaskJobs(taskRange, jobList, \
-                #                   jobAttributes, runningAttrs, strict=strict, \
-                #                   limit=limit, offset=offset  )
             taskList.append( taskRange )
             return taskList
 
@@ -415,9 +373,6 @@ class BossLiteAPI(object):
                                                limit=limit, offset=offset, \
                                                jobList=jobList )
             task.appendJobs( jobs )
-            # self.loadTaskJobs( task, jobList, jobAttributes, \
-            #                    runningAttrs, strict=strict, \
-            #                    limit=limit, offset=offset )
 
             # update task list
             task.updateInternalData()
@@ -827,6 +782,7 @@ class BossLiteAPI(object):
                     rjAttrs[key] = val
             runningJobsAttribs[ jobInfo['name'] ] = copy.deepcopy(rjAttrs)
 
+        # return objects
         return taskInfo, jobs, runningJobsAttribs
 
 
@@ -835,6 +791,7 @@ class BossLiteAPI(object):
         """
         obtain XML object from task object
         """
+
         from xml.dom import minidom
 
         cfile = minidom.Document()
@@ -854,6 +811,7 @@ class BossLiteAPI(object):
         node = cfile.createElement("TaskJobs")
         for job in task.jobs:
             subNode = cfile.createElement("Job")
+            subNode.setAttribute('jobId',  str(job['jobId']) )
             subNode.setAttribute('name', str(job['name']) )
             subNode.setAttribute('executable', str(job['executable']) )
             subNode.setAttribute('arguments', str(job['arguments']) )
@@ -861,19 +819,22 @@ class BossLiteAPI(object):
             subNode.setAttribute('standardOutput', str(job['standardOutput']) )
             subNode.setAttribute('standardError', str(job['standardError']) )
             subNode.setAttribute('logFile', str(job['logFile']) )
-            subNode.setAttribute('inputFiles', str( ','.join(job['inputFiles'])) )
-            subNode.setAttribute('outputFiles', str( ','.join(job['outputFiles'])) )
+            subNode.setAttribute('inputFiles', \
+                                 str( ','.join(job['inputFiles'])) )
+            subNode.setAttribute('outputFiles', \
+                                 str( ','.join(job['outputFiles'])) )
             subNode.setAttribute('fileBlock', str( job['fileBlock']) )
-            subNode.setAttribute('submissionNumber',  str(job['submissionNumber']) )
-            #
-            dlsD = ','.join(job['dlsDestination'])
-            subNode.setAttribute('dlsDestination', dlsD )
+            subNode.setAttribute('submissionNumber', \
+                                 str(job['submissionNumber']) )
+            subNode.setAttribute('dlsDestination', \
+                                 ','.join(job['dlsDestination']) )
             node.appendChild(subNode)
 
             if job.runningJob is not None:
                 subSubNode = cfile.createElement("RunningJob")
                 for key in job.runningJob.fields:
-                    if not job.runningJob[key] or key in ['id', 'jobId', 'taskId', 'submission'] :
+                    if not job.runningJob[key] \
+                           or key in ['id', 'taskId', 'submission'] :
                         continue
                     subSubNode.setAttribute(key, str(job.runningJob[key]) )
                 subNode.appendChild(subSubNode)
@@ -881,7 +842,7 @@ class BossLiteAPI(object):
         root.appendChild(node)
         cfile.appendChild(root)
 
-        # print cfile.toprettyxml().replace('\&quot;','')
+        # return xml string
         return cfile.toprettyxml().replace('\&quot;','')
 
 
