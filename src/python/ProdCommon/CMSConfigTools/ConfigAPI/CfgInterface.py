@@ -30,6 +30,9 @@ class CfgInterface:
     """
     def __init__(self, cfgInstance):
         self.data = cfgInstance
+        if not self.data.source:
+            msg = "The config file has no Source"
+            raise RuntimeError, msg
         self.inputSource = InputSource(self.data.source)
         self.outputModules = {}
         for omodName in self.data.outputModules:
@@ -39,11 +42,11 @@ class CfgInterface:
             self.data.maxEvents = CfgTypes.untracked(
                 CfgTypes.PSet()
                 )
-            
-        
+
+
         self.maxEvents = MaxEvents(self.data.maxEvents)
-        
-            
+
+
     def clone(self):
         """
         _clone_
@@ -53,7 +56,7 @@ class CfgInterface:
         """
         return copy.deepcopy(self)
 
-    
+
     def __str__(self):
         """string rep of self: give python format PSet"""
         return self.data.dumpConfig()
@@ -65,9 +68,9 @@ class CfgInterface:
 
         return refs to MixingModules if present.
         Otherwise return None.
-        
+
         """
-        result = []        
+        result = []
         prodsAndFilters = {}
         prodsAndFilters.update(self.data.producers)
         prodsAndFilters.update(self.data.filters)
@@ -126,7 +129,7 @@ class CfgInterface:
             for fileName in fileList:
                 secSource.fileNames.append(str(fileName))
                 print "PileupFile: %s " % str(fileName)
-                
+
         return
 
     def insertSeeds(self, *seeds):
@@ -159,7 +162,7 @@ class CfgInterface:
         randHelper.populate()
         svc.saveFileName = CfgTypes.untracked(
             CfgTypes.string("RandomEngineState.log"))
-        
+
         return
 
 
@@ -178,19 +181,19 @@ class CfgInterface:
 
         testSeed = (srcSeedVec != None) or (srcSeed != None)
         return testSeed
-        
+
 
     def insertOldSeeds(self, *seeds):
         """
         _insertOldSeeds_
 
         Backwards compatibility methods
-        
+
         """
         seedList = list(seeds)
-        svc = self.data.services["RandomNumberGeneratorService"]        
+        svc = self.data.services["RandomNumberGeneratorService"]
         #  //=====Old methods, keep for backwards compat.=======
-        # // 
+        # //
         #//
         srcSeedVec = getattr(svc, "sourceSeedVector",
                              Utilities._CfgNoneType()).value()
@@ -200,8 +203,8 @@ class CfgInterface:
             seedList = seedList[numReq+1:]
             svc.sourceSeedVector = CfgTypes.untracked(
                 CfgTypes.vuint32(seedsReq))
-            
-        
+
+
         else:
             svc.sourceSeed = CfgTypes.untracked(
                 CfgTypes.uint32(seedList.pop(0)))
@@ -215,7 +218,7 @@ class CfgInterface:
         # //
         #//====End old stuff======================================
         return
-    
+
     def configMetadata(self):
         """
         _configMetadata_
@@ -231,8 +234,8 @@ class CfgInterface:
         for pname in cfgMeta.parameterNames_():
             result[pname] = getattr(cfgMeta, pname).value()
         return result
-            
-    
+
+
     def seedCount(self):
         """
         _seedCount_
@@ -241,7 +244,7 @@ class CfgInterface:
 
         """
         return Utilities.seedCount(self.data)
-    
+
     def validateForProduction(self):
         """
         _validateForProduction_
@@ -253,14 +256,14 @@ class CfgInterface:
 
         """
         Utilities.checkMessageLoggerSvc(self.data)
-        
+
         Utilities.checkConfigMetadata(self.data)
 
         for outMod in self.outputModules.values():
             Utilities.checkOutputModule(outMod.data)
-            
+
         return
-        
+
 
     def validateForRuntime(self):
         """
@@ -271,5 +274,5 @@ class CfgInterface:
 
         """
         pass
-        
-        
+
+
