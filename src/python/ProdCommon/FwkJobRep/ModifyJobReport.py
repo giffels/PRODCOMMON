@@ -75,7 +75,7 @@ def modifyFile(file, n_job, seName):
     if (seName == ''):
         newPfn = pref + '_' + n_job + '.' + suff
     else:    
-        newPfn = seName + path + pref + '_' + n_job + '.' + suff
+        newPfn = path + pref + '_' + n_job + '.' + suff
     print "newPfn = ", newPfn  
 
     newLfn = for_lfn + pref + '_' + n_job + '.' + suff 
