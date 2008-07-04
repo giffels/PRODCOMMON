@@ -3,55 +3,113 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.5 2008/06/27 14:30:16 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: Exceptions.py,v 1.6 2008/06/30 15:41:04 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
-class JobError(Exception):
+class BossLiteError(Exception):
+    """
+    errors base class
+    """
+
+    def __init__(self, value):
+        """
+        __init__
+        """
+        
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(BossLiteError, self).__init__(value)
+        Exception.__init__( self  )
+        self.value = self.__class__.__name__
+        self.msg = value
+
+    def __str__(self):
+        """
+        __str__
+        """
+
+        return repr(self.msg)
+
+    def message(self):
+        """
+        error description
+        """
+
+        return self.msg
+    
+
+class JobError(BossLiteError):
     """
     errors with jobs
     """
 
     def __init__(self, value):
-        self.value = value
+        """
+        __init__
+        """
+        
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(JobError, self).__init__(value)
+        BossLiteError.__init__( self, value )
 
-    def __str__(self):
-        return repr(self.value)
 
-class TaskError(Exception):
+class TaskError(BossLiteError):
     """
     errors with tasks
     """
 
     def __init__(self, value):
-        self.value = value
+        """
+        __init__
+        """
+        
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(TaskError, self).__init__(value)
+        BossLiteError.__init__( self, value )
 
-    def __str__(self):
-        return repr(self.value)
 
-class DbError(Exception):
+class DbError(BossLiteError):
     """
-    MySQL, SQLLite and possible other exceptions errors are redirected to
+    MySQL, SQLite and possible other exceptions errors are redirected to
     this exception type
     """
 
     def __init__(self, value):
-        self.value = value
+        """
+        __init__
+        """
+        
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(DbError, self).__init__(value)
+        BossLiteError.__init__( self, value )
 
-    def __str__(self):
-        return repr(self.value)
-
-class SchedulerError(Exception):
+class SchedulerError(BossLiteError):
     """
     scheduler errors
     """
 
-    def __init__(self, value, message):
+    def __init__(self, value, msg):
+        """
+        __init__
+        """
+
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(SchedulerError, self).__init__(value)
+        BossLiteError.__init__(self, value)
         self.value = value
-        self.message = message
+        self.msg = msg
 
     def __str__(self):
-        return self.value + '\n' + self.message
+        """
+        __str__
+        """
+
+        return self.value + '\n' + self.msg
 
     def description(self):
         """
@@ -65,25 +123,30 @@ class SchedulerError(Exception):
         returns the original error message 
         """
 
-        return self.message
+        return self.msg
 
-class TimeOut(Exception):
+
+class TimeOut(BossLiteError):
     """
     operation timed out
     """
 
     def __init__(self, partialOut, value, start=None, stop=None):
+        """
+        __init__
+        """
+
         self.partialOut = partialOut
-        self.value = value
+        self.timeout = value
         self.start = start
         self.stop = stop
-
-    def __str__(self):
-        return """
-Command Timed Out after %d seconds
-issued at %d
-ended at %d
-        """ % (self.value, self.start, self.stop )
+        self.value = \
+              "Command Timed Out after %d seconds, issued at %d, ended at %d" \
+              % (self.timeout, self.start, self.stop )
+        # // the stupid python does not follow its rules:
+        # // Exception does not inherit from object, no way to call super
+        # super(TimeOut, self).__init__(self.__str__())
+        BossLiteError.__init__(self, self.value)
 
     def commandOutput( self ) :
         """
@@ -91,6 +154,10 @@ ended at %d
         """
 
         return self.partialOut
+
+
+
+
 
 
 
