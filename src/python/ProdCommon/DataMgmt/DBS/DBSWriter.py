@@ -88,6 +88,8 @@ class _CreateMergeDatasetOperator:
             self.apiRef.insertMergedDataset(
                 inputDataset, processedDataset, mergeAlgo)
             logging.debug("ProcessedDataset: %s"%processedDataset)
+            logging.debug("inputDataset: %s"%inputDataset)
+            logging.debug("mergeAlgo: %s"%mergeAlgo)
         return
     
             
@@ -289,6 +291,8 @@ class DBSWriter:
                 for mergedFile in fileList:
                     mergedFile['Block'] = fileBlock
                     affectedBlocks.add(fileBlock['Name'])
+                    msg="calling: self.dbs.insertMergedFile(%s, %s)" % (str(mergedFile['ParentList']),str(mergedFile))
+                    logging.debug(msg)
                     try:
                         self.dbs.insertMergedFile(mergedFile['ParentList'],
                                                   mergedFile)
