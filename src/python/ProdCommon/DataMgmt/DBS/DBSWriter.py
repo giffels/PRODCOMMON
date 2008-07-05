@@ -309,6 +309,9 @@ class DBSWriter:
                 # // Processing files
                 #//
                 affectedBlocks.add(fileBlock['Name'])
+                msg="calling: self.dbs.insertFiles(%s, %s, %s)" % (str(procDataset),str(list(fileList)),str(fileBlock))
+                logging.debug(msg)
+
                 try:
                     self.dbs.insertFiles(procDataset, list(fileList),
                                          fileBlock)
