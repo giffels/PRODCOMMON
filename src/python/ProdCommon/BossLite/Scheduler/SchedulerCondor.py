@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.9 2008/05/30 18:18:46 ewv Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.10 2008/06/24 16:52:12 ewv Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import re
 import os
@@ -101,7 +101,6 @@ class SchedulerCondor(SchedulerCondorCommon) :
          x509 = x509tmp
 
       if x509:
-        print "Adding user proxy ",x509
         jdl += 'x509userproxy = %s\n' % x509
 
       #jdl += 'should_transfer_files   = YES\n'
