@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.26 2008/05/21 19:49:44 ewv Exp $"
-__version__ = "$Revision: 1.26 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.27 2008/06/11 20:36:05 ewv Exp $"
+__version__ = "$Revision: 1.27 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -14,6 +14,7 @@ import os
 import popen2
 import re
 import shutil
+import cStringIO
 
 from socket import getfqdn
 
@@ -253,13 +254,23 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     for schedd in jobIds.keys() :
       condor_status = {}
-      cmd = 'condor_q -xml -name ' + schedd + ' ' + os.environ['USER']
-      (input_file, output_file) = os.popen4(cmd)
+      cmd = 'condor_q -xml '
+      if schedd != self.hostname:
+        cmd += '-name ' + schedd + ' '
+      cmd += os.environ['USER']
+      (input_file, output_fp) = os.popen4(cmd)
 
       # Throw away first three lines. Junk
-      output_file.readline()
-      output_file.readline()
-      output_file.readline()
+      output_fp.readline()
+      output_fp.readline()
+      output_fp.readline()
+
+      output_file = cStringIO.StringIO(output_fp.read())
+
+      # If the command succeeded, close returns None
+      # Otherwise, close returns the exit code
+      if output_fp.close():
+        raise SchedulerError("condor_q command failed.")
 
       handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', 'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
       parser = make_parser()
