@@ -6,6 +6,9 @@ API for dealing with retrieving information from SiteDB
 
 """
 
+__revision__ = "$Id: CondorHandler.py,v 1.2 2008/05/21 19:49:44 ewv Exp $"
+__version__ = "$Revision: 1.2 $"
+
 import urllib
 import cStringIO
 import tokenize
@@ -13,6 +16,11 @@ import tokenize
 class SiteDBJSON:
 
   SITEDB_JSON="https://cmsweb.cern.ch/sitedb/sitedb/json/index/"
+
+  def dnUserName(self,dn):
+    userinfo = self.getJSON("dnUserName", dn=dn)
+    userName = userinfo['user']
+    return userName
 
 
   def getJSON(self,service, **args):
@@ -48,7 +56,7 @@ class SiteDBJSON:
         key = self._parse(token, src)
         token = src.next()
         if token[1] != ":":
-	  raise SyntaxError("malformed dictionary")
+	  raise SyntaxError("Malformed dictionary")
         value = self._parse(src.next(), src)
         out[key] = value
         token = src.next()
@@ -72,7 +80,7 @@ class SiteDBJSON:
       except ValueError:
         return float(token[1])
     else:
-      raise SyntaxError("malformed expression")
+      raise SyntaxError("Malformed expression")
 
 
   def dictParser(self,source):
