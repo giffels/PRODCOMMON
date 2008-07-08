@@ -6,8 +6,8 @@ API for dealing with retrieving information from SiteDB
 
 """
 
-__revision__ = "$Id: CondorHandler.py,v 1.2 2008/05/21 19:49:44 ewv Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SiteDB.py,v 1.4 2008/07/08 19:35:07 ewv Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import urllib
 import cStringIO
@@ -17,10 +17,38 @@ class SiteDBJSON:
 
   SITEDB_JSON="https://cmsweb.cern.ch/sitedb/sitedb/json/index/"
 
+
   def dnUserName(self,dn):
     userinfo = self.getJSON("dnUserName", dn=dn)
     userName = userinfo['user']
     return userName
+
+
+  def CMSNametoCE(self,CMSName):
+    ceList = self.CMSNametoList(CMSName,'CE')
+    return ceList
+
+
+  def CMSNametoSE(self,CMSName):
+    seList = self.CMSNametoList(CMSName,'SE')
+    return seList
+
+
+  def CMSNametoList(self,CMSName,kind):
+    CMSName = CMSName.replace('*','%')
+    CMSName = CMSName.replace('?','_')
+    theInfo = self.getJSON("CMSNameto"+kind, name=CMSName)
+
+    theList = []
+    for index in theInfo:
+      try:
+        item = theInfo[index]['name']
+        if item:
+          theList.append(item)
+      except KeyError:
+        pass
+
+    return theList
 
 
   def getJSON(self,service, **args):
@@ -94,7 +122,9 @@ if __name__ == '__main__':
 
     mySiteDB = SiteDBJSON()
 
-    print mySiteDB.getJSON("dnUserName", dn="/C=UK/O=eScience/OU=Bristol/L=IS/CN=simon metson")
+    print "Username for Simon Metson:",mySiteDB.dnUserName(dn="/C=UK/O=eScience/OU=Bristol/L=IS/CN=simon metson")
 
-    print mySiteDB.getJSON("CEtoCMSName", name="cmsosgce.fnal.gov")
+    print "CMS name for FNAL:",mySiteDB.getJSON("CEtoCMSName", name="cmsosgce.fnal.gov")
+    print "Tier 1 CEs:",mySiteDB.CMSNametoCE("T1")
+    print "Tier 1 SEs:",mySiteDB.CMSNametoSE("T1")
 
