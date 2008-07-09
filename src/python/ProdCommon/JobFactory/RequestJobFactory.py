@@ -75,7 +75,7 @@ class RequestJobFactory:
     def __init__(self, workflowSpec, workingDir, totalEvents, **args):
         self.workflowSpec = workflowSpec
         self.workingDir = workingDir
-        self.count = args.get("InitialRun", 0)
+        self.count = args.get("InitialRun", 1)
         self.jobnumber = 0
         self.totalEvents = totalEvents
         self.currentJob = None
