@@ -48,7 +48,7 @@ def listFilesInRun(reader, datasetName, runNumber):
     fileList = reader.dbs.listFiles(
         path = datasetName,
         runNumber = runNumber)
-    return [ x['LogicalFileName'] for x in fileList] 
+    return [ x['LogicalFileName'] for x in fileList]
 
 
 
@@ -92,7 +92,7 @@ class GeneratorMaker(dict):
                                      payloadNode.applicationControls)
             self[payloadNode.name] = generator
             return
-            
+
         if payloadNode.configuration in ("", None):
             #  //
             # // Isnt a config file
@@ -107,8 +107,8 @@ class GeneratorMaker(dict):
             # // Cant read config file => not a config file
             #//
             return
-    
-        
+
+
 
 
 
@@ -126,7 +126,7 @@ class RunJobFactory:
         self.workflowSpec = workflowSpec
         self.dbsUrl = dbsUrl
         self.count = 0
-        
+
         siteName = args.get("SiteName", None)
         self.allowedSites = []
         if siteName != None:
@@ -135,19 +135,19 @@ class RunJobFactory:
 
         self.currentJob = None
         self.currentJobDef = None
-        
+
         if args.has_key("InputDataset"):
             self.useInputDataset = args['InputDataset']
-            
-        
-        
+
+
+
         self.generators = GeneratorMaker()
         self.generators(self.workflowSpec.payload)
 
 
-        
-        
-            
+
+
+
         #  //
         # // Cache Area for JobSpecs
         #//
@@ -156,10 +156,10 @@ class RunJobFactory:
             "%s-Cache" %self.workflowSpec.workflowName())
         if not os.path.exists(self.specCache):
             os.makedirs(self.specCache)
-            
 
 
-        
+
+
     def __call__(self):
         """
         _operator()_
@@ -167,7 +167,7 @@ class RunJobFactory:
         Generate the appropriate number of job specs based on the
         workflow and settings in the file
 
-        """        
+        """
         result = []
         for jobDef in self.processDataset():
             self.count = jobDef['RunNumber']
@@ -179,10 +179,11 @@ class RunJobFactory:
                 "WorkflowSpecId" : self.workflowSpec.workflowName(),
                 "WorkflowPriority" : 10,
                 "Sites" : jobDef['SENames'],
+                "Run" : jobDef['RunNumber'],
                 }
             result.append(jobDict)
 
-            
+
         return result
 
 
@@ -194,7 +195,7 @@ class RunJobFactory:
         and override it
 
         """
-        self.useInputDataset = imputDataset
+        self.useInputDataset = inputDataset
         return
 
 
@@ -205,18 +206,18 @@ class RunJobFactory:
         Import the Dataset contents and create a set of jobs from it
 
         """
-        
+
         #  //
         # // Now create the job definitions
         #//
         logging.debug("AllowedSites = %s" % self.allowedSites)
-        
+
         jobDefs = splitDatasetByRun(self.inputDataset(),
                                     self.dbsUrl)
         [ x.__setitem__('SENames', self.allowedSites) for x in jobDefs]
         return jobDefs
-    
-        
+
+
 
 
     def inputDataset(self):
@@ -238,8 +239,8 @@ class RunJobFactory:
             return None
 
         return inputDataset.name()
-        
-            
+
+
     def createJobSpec(self, jobDef):
         """
         _createJobSpec_
@@ -271,52 +272,52 @@ class RunJobFactory:
             os.makedirs(specCacheDir)
         jobSpecFile = os.path.join(specCacheDir,
                                    "%s-JobSpec.xml" % jobName)
-        
-        
+
+
 
         #  //
         # // Add site pref if set
         #//
         for site in jobDef['SENames']:
             jobSpec.addWhitelistSite(site)
-            
-        
+
+
         jobSpec.save(jobSpecFile)
-        
+
         return jobSpecFile
-        
-        
+
+
     def generateJobConfig(self, jobSpecNode):
         """
         _generateJobConfig_
-        
+
         Operator to act on a JobSpecNode tree to convert the template
         config file into a JobSpecific Config File
-                
+
         """
         if jobSpecNode.name not in self.generators.keys():
             return
 
         generator = self.generators[jobSpecNode.name]
-        
-        
+
+
         maxEvents = self.currentJobDef.get("MaxEvents", None)
         skipEvents = self.currentJobDef.get("SkipEvents", None)
-        
+
         args = {
             'fileNames' : self.currentJobDef['LFNS'],
             'maxEvents' : -1,
             }
-            
+
 
         jobCfg = generator(self.currentJob, **args)
-            
 
-        
+
+
         jobSpecNode.cfgInterface = jobCfg
         return
-    
 
 
-    
+
+
 
