@@ -76,7 +76,7 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
         psetContent = "PSET_CONTENT_NOT_AVAILABLE"
     psetHash = datasetInfo.get('PSetHash',None)
     if psetHash == None:
-        psetHash = "PSET_HASH_NOT_AVAILABLE"
+        psetHash = "NO_PSET_HASH"
     else:
         if psetHash.find(";"):
             # no need for fake hash in new schema
@@ -153,7 +153,7 @@ def createAlgorithmForInsert(datasetInfo):
         psetContent = "PSET_CONTENT_NOT_AVAILABLE"
     psetHash = datasetInfo.get('PSetHash',None)
     if psetHash == None:
-        psetHash = "PSET_HASH_NOT_AVAILABLE"
+        psetHash = "NO_PSET_HASH"
     else:
         if psetHash.find(";"):
             # no need for fake hash in new schema
