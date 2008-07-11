@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.8 2008/04/23 17:27:11 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: Task.py,v 1.9 2008/05/16 10:11:33 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -65,10 +65,11 @@ class Task(DbObject):
         # call super class init method
         super(Task, self).__init__(parameters)
 
-        # initialize job set struture
+        # initialize job set structure
         self.jobs = []
         self.jobLoaded = 0
         self.jobIndex = []
+        self.warnings = []
 
     ##########################################################################
 
