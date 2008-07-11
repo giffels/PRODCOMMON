@@ -3,8 +3,8 @@
 BossLite logging facility
 """
 
-__version__ = "$Id: BossLiteLogger.py,v 1.0 2008/06/30 15:41:04 gcodispo Exp $"
-__revision__ = "$Revision: 1.0 $"
+__version__ = "$Id: BossLiteLogger.py,v 1.1 2008/07/04 10:13:54 gcodispo Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Giuseppe.Codispoti@cern.ch"
 
 from ProdCommon.BossLite.Common.Exceptions import BossLiteError
@@ -17,7 +17,7 @@ class BossLiteLogger(object):
 
     # default values for fields
     defaults = [ 'errors', 'warnings', 'type', 'description', \
-                 'affectedJobs', 'message', 'partialOutput' ]
+                 'jobWarnings', 'jobErrors', 'message', 'partialOutput' ]
 
     def __init__(self, task=None, exception=None):
         """
@@ -26,12 +26,34 @@ class BossLiteLogger(object):
 
         self.data = {}
         self.data['type'] = 'log'
-        errors = []
-        warnings = []
-        affectedJobs = []
-        wAffectedJobs = []
+        errors = {}
+        warnings = {}
 
-        # handle di exception
+        # handle task
+        if task is not None :
+
+            if task.warnings != [] :
+                self.data['type'] = 'warning'
+                self.data['warnings'] = task.warnings
+
+            for job in task.jobs:
+                # evaluate errors
+                if job.runningJob.isError() :
+                    errors[job['jobId']] = job.runningJob.errors
+                    
+                # evaluate warning
+                if job.runningJob.warnings != [] :
+                    warnings[job['jobId']] = job.runningJob.warnings
+
+            if warnings != {}:
+                self.data['type'] = 'warning'
+                self.data['jobWarnings'] = warnings
+            
+            if errors != {} :
+                self.data['type'] = 'error'
+                self.data['jobErrors'] = errors
+
+        # handle exception
         if isinstance( exception, BossLiteError ) :
             self.data['type'] = 'error'
             self.data['description'] = exception.value
@@ -39,27 +61,6 @@ class BossLiteLogger(object):
             if isinstance( exception, TimeOut ) :
                 self.data['partialOutput'] = exception.commandOutput()
 
-        if task is not None :
-            for job in task.jobs:
-                # evaluate errors
-                if job.runningJob.isError() :
-                    errors.append( job.runningJob.errors )
-                    affectedJobs.append( job['jobId'] )
-                    
-                # evaluate warning
-                if job.runningJob.warnings != [] :
-                    warnings.append( job.runningJob.warnings )
-                    wAffectedJobs.append( job['jobId'] )
-
-
-        if self.data['type'] == 'log' :
-            if warnings != []:
-                self.data['type'] = 'warning'
-                self.data['affectedJobs'] = wAffectedJobs
-            
-            if errors != [] :
-                self.data['type'] = 'error'
-                self.data['affectedJobs'] = affectedJobs
 
     def __getitem__(self, field):
         """
