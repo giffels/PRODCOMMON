@@ -670,6 +670,26 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
+    def getTaskFromJob( self, job):
+        """
+        retrieve Task object from Job object and perform association
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating task
+        task = self.loadTask(job['taskId'], False)
+
+        # perform association
+        task.appendJob( job )
+
+        # return task
+        return task
+
+
+    ##########################################################################
     ## DanieleS.
     def loadJobDist( self, taskId, value ) :
         """
