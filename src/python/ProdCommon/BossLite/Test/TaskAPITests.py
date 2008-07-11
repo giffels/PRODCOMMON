@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-_Test__
+__TaskAPITest__
 
 """
 
@@ -13,6 +13,11 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.API.BossLiteAPI import  BossLiteAPI
 from ProdCommon.BossLite.API.BossLiteAPISched import  BossLiteAPISched
+from ProdCommon.BossLite.Common.BossLiteLogger import BossLiteLogger
+from ProdCommon.BossLite.Common.Exceptions import BossLiteError
+from ProdCommon.BossLite.Test.DbConfig import dbConfig, dbType
+from ProdCommon.BossLite.Test.SchedulerConfig import schedulerConfig
+import traceback
 
 import sys, getopt
 
@@ -22,41 +27,13 @@ class TaskAPITests(object):
     """
 
     ##########################################################################
-    def _Configure(self):
-        """
-        set parameters (possible values in comment)
-        """
-
-        self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI',
-        "config" : "/bohome/grandi/UI/3.1.13-0/glite/etc/cms/glite_wms.conf" }
-
-        self.schedulerConfig = { 'name' : 'SchedulerGLiteAPI' }
-        self.mySqlConfig = {'dbName':'BossLiteDB',
-                    'host':'localhost',
-                    'user':'BossLiteUser',
-                    'passwd':'BossLitePass',
-                    'socketFileLocation':'$HOME/PRODAGENT_WORKDIR/mysqldata/mysql.sock',
-                    'portNr':'',
-                    'refreshPeriod' : 4*3600 ,
-                    'maxConnectionAttempts' : 5,
-                    'dbWaitingTime' : 10 
-                    }
-        self.sqliteConfig = {'dbName':'BossLiteDB'}
-        # from ProdAgentDB.Config import defaultConfig as dbConfig
-        # self.mySqlConfig = dbConfig
-
-    ##########################################################################
     def __init__(self, dbtype, installDb=False):
         """
         __init__
         """
         
-        self.database = ""       # "MySQL" or "SQLite"
         self.bossSession = None
         self.schedSession = None
-        self.mySqlConfig = None
-        self.sqliteConfig = None
-        self.schedulerConfig = None
         self.task = None
         self.jobRange = 'all'
         self.outdir = None
@@ -64,7 +41,9 @@ class TaskAPITests(object):
         self.taskName =  'test_task'
 
         # read configuration
-        self._Configure()
+        self.database = dbType
+        self.dbConfig = dbConfig
+        self.schedulerConfig = schedulerConfig
 
         if dbtype.lower() == 'sqlite' :
             self.bossSession = self._SqLiteSession(installDb)
@@ -87,12 +66,13 @@ class TaskAPITests(object):
 
         # BossLiteApi session
         self.database = "SQLite"
-        self.bossSession = BossLiteAPI( self.database, self.sqliteConfig )
+        
+        self.bossSession = BossLiteAPI( self.database, self.dbConfig )
         
         # db installed?
         try:
             if installDb :
-                self.bossSession.installDB(
+                self.bossSession.bossLiteDB.installDB(
                     '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase-sqlite.sql'
                     )
         except:
@@ -113,12 +93,12 @@ class TaskAPITests(object):
         self.database = "MySQL"
     
         # BossLiteApi session
-        self.bossSession = BossLiteAPI( self.database, self.mySqlConfig )
+        self.bossSession = BossLiteAPI( self.database, self.dbConfig )
     
         # db installed?
         try:
             if installDb :
-                self.bossSession.installDB(
+                self.bossSession.bossLiteDB.installDB(
                     '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase.sql'
                     )
         except:
@@ -133,22 +113,16 @@ class TaskAPITests(object):
         __schedulerSession__
         """
 
-        if self.schedSession is not None :
+        if self.schedSession is not None:
             return self.schedSession
 
-        if self.task is not None :
-            scheduler = None
-            for job in self.task.jobs :
-                if job.runningJob['scheduler'] is not None:
-                    scheduler = job.runningJob['scheduler']
-                    break
- 
-            if scheduler is not None :
-                self.schedulerConfig['name'] = scheduler
-            if self.task['user_proxy'] is not None :
-                self.schedulerConfig['user_proxy'] = self.task['user_proxy']
-
-        return BossLiteAPISched( self.bossSession, self.schedulerConfig)
+        try: 
+            self.schedSession = BossLiteAPISched( self.bossSession, \
+                                                  self.schedulerConfig, \
+                                                  self.task )
+            return self.schedSession
+        except :
+            print 'OK : ', BossLiteAPISched.bossLiteLogger()
 
 
     ##########################################################################
@@ -163,7 +137,10 @@ class TaskAPITests(object):
             else :
                 self.task = self.bossSession.loadTaskByName( self.taskName )
             print "Task loaded..."
-        except:
+        except BossLiteError, e:
+
+            print BossLiteLogger( self.task, e )
+ 
             taskParams = {'name' : self.taskName,
                           'globalSandbox' : '/etc/redhat-release' }
             
@@ -177,14 +154,14 @@ class TaskAPITests(object):
                           'outputFiles' : ['out.txt']}
     #                      'outputFiles' : ['err.txt', 'out.txt', '.BrokerInfo']}
             jobs = []
-            for jobId in range(1, 10):
+            for jobId in range(1, 51):
                 parameters['name'] = 'job' + str(jobId)
                 job = Job(parameters)
                 self.bossSession.getNewRunningInstance(job)
                 jobs.append(job)
     
             parameters['arguments'] = 'ciao2'
-            for jobId in range(10, 12):
+            for jobId in range(51, 101):
                 parameters['name'] = 'job' + str(jobId)
                 job = Job(parameters)
                 self.bossSession.getNewRunningInstance(job)
@@ -293,13 +270,14 @@ class TaskAPITests(object):
     ##########################################################################
     def query(self) :
         """
-        __queryTask__
+        __query__
         """
-        
+
         if self.task is None :
             self.task = self.testTask()
     
         schedSession = self.schedulerSession()
+
         self.task = schedSession.query( self.task, self.jobRange )
         self.printTask()
         del schedSession
@@ -403,8 +381,8 @@ def main():
     lOptions = [ func for func in TaskAPITests.__dict__.keys()
                  if func[0] != '_' ]
     lMethods = [ '--' + func for func in lOptions ]
-    lOptions.extend( ["help", 'test', 'db=', 'installDB', 'sql=', \
-                      'taskId=', 'taskName=', 'jobRange=', 'outdir='] )
+    lOptions.extend( ["help", 'test', 'installDB', \
+                      'sql=', 'taskId=', 'taskName=', 'jobRange=', 'outdir='] )
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "ho:v", lOptions)
@@ -417,8 +395,6 @@ def main():
         if o in ("-h", "--help"):
             usage(lMethods)
             sys.exit()
-        elif o in ("--db"):
-            dbtype = a
         elif o in ("--outdir"):
             outdir = a
         elif o in ("--taskId"):
@@ -460,12 +436,15 @@ def main():
 
     for a in actions :
         print 'action : ', a
-        TaskAPITests.__dict__[a](bossSession)
+        try:
+            TaskAPITests.__dict__[a](bossSession)
+            print BossLiteLogger( bossSession.task )
+        except Exception, e:
+            print BossLiteLogger( bossSession.task, e )
 
 
 ########## END MAIN ##########
 
 if __name__ == "__main__":
     main()
-
 
