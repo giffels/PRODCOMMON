@@ -35,7 +35,7 @@ class FileInfo(dict):
         self.setdefault("ModuleLabel", None)
         self.setdefault("Catalog", None)
         self.setdefault("OutputModuleClass", None)
-        
+        self.setdefault("MergedBySize", "False")
 
         #  //
         # // Is this an input or output file?
