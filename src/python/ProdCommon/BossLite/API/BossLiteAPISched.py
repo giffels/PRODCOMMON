@@ -4,8 +4,9 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id"
-__revision__ = "$Revision"
+
+__version__ = "$Id: BossLiteAPI.py, v 1.23 2008/07/10 13:12:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.23 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -14,6 +15,9 @@ from ProdCommon.BossLite.API.BossLiteAPI import BossLiteAPI
 
 # Scheduler interaction
 from ProdCommon.BossLite.Scheduler import Scheduler
+from ProdCommon.BossLite.Common.BossLiteLogger import BossLiteLogger
+from ProdCommon.BossLite.Common.Exceptions import BossLiteError
+
 
 ##########################################################################
 
@@ -24,7 +28,28 @@ class BossLiteAPISched(object):
 
     """
 
-    def __init__(self, bossLiteSession, schedulerConfig):
+    logger = None
+
+    @classmethod
+    def bossLiteLogger( cls ):
+        """
+        returns a static instance of the BossLiteLogger to help error retrieval
+        """
+
+        return cls.logger
+
+    
+    @classmethod
+    def setLogger( cls, logger ):
+        """
+        set a static instance of the BossLiteLogger to help error retrieval
+        """
+
+        cls.logger = logger
+        return cls.logger
+
+
+    def __init__(self, bossLiteSession, schedulerConfig, task=None):
         """
         initialize the scheduler API instance
 
@@ -38,20 +63,48 @@ class BossLiteAPISched(object):
 
         """
 
+        # reset BossLiteLogger
+        self.setLogger( None )
+
         # use bossLiteSession for DB interactions
         if type( bossLiteSession ) is not BossLiteAPI:
             raise TypeError( "first argument must be a BossLiteAPI object")
 
         self.bossLiteSession = bossLiteSession
+        #global GlobalLogger
 
         # update scheduler config
         self.schedConfig = {'user_proxy' : '', 'service' : '', 'config' : '' }
         self.schedConfig.update( schedulerConfig )
 
+        # something to be retrieved from task object?
+        if task is not None :
+
+            # retrieve scheduler
+            # FIXME : to be replaced with a task specific field
+            for job in task.jobs :
+                if job.runningJob['scheduler'] is not None:
+                    scheduler = job.runningJob['scheduler']
+                    break
+            if scheduler is not None :
+                self.schedConfig['name'] = scheduler
+
+            # retrieve proxy
+            if task['user_proxy'] is not None:
+                self.schedConfig['name'] = scheduler
+
         # scheduler
-        self.scheduler = Scheduler.Scheduler(
-            schedulerConfig['name'], self.schedConfig
-            )
+        try :
+            self.scheduler = Scheduler.Scheduler(
+                schedulerConfig['name'], self.schedConfig
+                )
+        except BossLiteError, e:
+
+            # update & set logger
+            self.setLogger( BossLiteLogger( task, e ))
+
+            # re-throw exception
+            raise e
 
     ##########################################################################
 
@@ -69,19 +122,34 @@ class BossLiteAPISched(object):
                         to be applyed at the job level
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = None
 
-        # create or load running instances
-        for job in task.jobs:
-            if job.runningJob is not None :
-                job.runningJob['schedulerAttributes'] = schedulerAttributes
+        try:
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # scheduler submit
-        self.scheduler.submit( task, requirements )
+            # create or load running instances
+            for job in task.jobs:
+                if job.runningJob is not None :
+                    job.runningJob['schedulerAttributes'] = schedulerAttributes
+                
+            # scheduler submit
+            self.scheduler.submit( task, requirements )
 
-        # update
-        self.bossLiteSession.updateDB(task)
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
 
         # return updated task
         return task
@@ -103,23 +171,38 @@ class BossLiteAPISched(object):
         - jobAttributes is a map of running attributes
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = None
 
-        # get new running instance
-        for job in task.jobs:
-            self.bossLiteSession.getNewRunningInstance(
-                job, { 'schedulerAttributes' : schedulerAttributes }
-                )
+        try:
 
-        # scheduler submit
-        self.scheduler.submit( task, requirements )
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # update
-        self.bossLiteSession.updateDB(task)
+            # get new running instance
+            for job in task.jobs:
+                self.bossLiteSession.getNewRunningInstance(
+                    job, { 'schedulerAttributes' : schedulerAttributes }
+                    )
 
+            # scheduler submit
+            self.scheduler.submit( task, requirements )
 
-        # return task updated
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
+
+        # return updated task
         return task
 
     ##########################################################################
@@ -138,16 +221,32 @@ class BossLiteAPISched(object):
         - all: if False, only jobs with non closed running instances are loaded
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange, \
-                                          runningAttrs=runningAttrs, \
-                                          strict=strict )[0]
+        task = None
 
-        # scheduler query
-        self.scheduler.query( task, queryType )
+        try:
 
-        # update
-        self.bossLiteSession.updateDB(task)
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange, \
+                                              runningAttrs=runningAttrs, \
+                                              strict=strict )[0]
+
+            # scheduler query
+            self.scheduler.query( task, queryType )
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
 
         # return task updated
         return task
@@ -166,14 +265,30 @@ class BossLiteAPISched(object):
         - outdir is the output directory for files retrieved
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = None
 
-        # scheduler query
-        self.scheduler.getOutput( task, outdir )
+        try:
 
-        # update
-        self.bossLiteSession.updateRunningInstances(task, notSkipClosed=False)
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+            # scheduler query
+            self.scheduler.getOutput( task, outdir )
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
 
         # return task updated
         return task
@@ -191,14 +306,30 @@ class BossLiteAPISched(object):
              'all'
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = None
 
-        # scheduler query
-        self.scheduler.kill( task )
+        try:
 
-        # update
-        self.bossLiteSession.updateDB(task)
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+            # scheduler query
+            self.scheduler.kill( task )
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
 
         # return task updated
         return task
@@ -216,16 +347,39 @@ class BossLiteAPISched(object):
              'all'
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = None
 
-        # retrieve running instances
-        for job in task.jobs:
-            if job.runningJob is not None :
-                job.runningJob['schedulerAttributes'] = schedulerAttributes
+        try:
 
-        # scheduler query
-        return self.scheduler.matchResources( task, requirements )
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+            # retrieve running instances
+            for job in task.jobs:
+                if job.runningJob is not None :
+                    job.runningJob['schedulerAttributes'] = schedulerAttributes
+
+            # scheduler matchResources
+            resources = self.scheduler.matchResources( task, requirements )
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
+
+        # return list of sites
+        return resources
+
 
     ##########################################################################
 
@@ -235,7 +389,24 @@ class BossLiteAPISched(object):
         returns a list of resulting sites
         """
 
-        return self.scheduler.lcgInfo(tags, seList, blacklist, whitelist, full)
+        task = None
+
+        try:
+
+            # scheduler matchResources
+            resources = self.scheduler.lcgInfo( tags, seList, \
+                                                blacklist, whitelist, full )
+
+        except BossLiteError, e:
+
+            # set logger
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
+
+        # return list of sites
+        return resources
 
     ##########################################################################
 
@@ -253,15 +424,30 @@ class BossLiteAPISched(object):
                         to be applyed at the job level
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # retrieve running instances
-        for job in task.jobs:
-            if job.runningJob is not None :
-                job.runningJob['schedulerAttributes'] = schedulerAttributes
+        task = None
 
-        return self.scheduler.jobDescription ( task, requirements )
+        try:
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+            # retrieve running instances
+            for job in task.jobs:
+                if job.runningJob is not None :
+                    job.runningJob['schedulerAttributes'] = schedulerAttributes
+
+            jdString = self.scheduler.jobDescription ( task, requirements )
+
+        except BossLiteError, e:
+
+            # set logger
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
+
+        # return updated task
+        return jdString
 
     ##########################################################################
 
@@ -277,14 +463,33 @@ class BossLiteAPISched(object):
              'all'
         """
 
-        # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
 
-        # purge task
-        self.scheduler.purgeService( task )
+        task = None
 
-        # update
-        self.bossLiteSession.updateDB(task)
+        try:
+            # load task
+            task = self.bossLiteSession.load( taskId, jobRange )[0]
+
+            # purge task
+            self.scheduler.purgeService( task )
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task ) )
+
+        except BossLiteError, e:
+
+            # update & set logger
+            self.bossLiteSession.updateRunningInstances( task, \
+                                                         notSkipClosed=False )
+            self.setLogger( BossLiteLogger( task, e ) )
+
+            # re-throw exception
+            raise e
+
+        # return updated task
+        return task
 
     ##########################################################################
 
