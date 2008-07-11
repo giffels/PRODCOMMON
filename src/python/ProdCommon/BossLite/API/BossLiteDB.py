@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
-_BossLiteAPI_
+_BossLiteDB_
 
 """
 
-__version__ = "$Id"
-__revision__ = "$Revision"
+__version__ = "$Id: BossLiteDB.py, v 1.5 2008/07/10 13:12:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
