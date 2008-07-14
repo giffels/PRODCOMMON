@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py, v 1.58 2008/07/10 13:12:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.58 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.59 2008/07/11 15:41:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.59 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -18,7 +18,6 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import TaskError
 from ProdCommon.BossLite.Common.Exceptions import JobError
-from ProdCommon.BossLite.Common.Exceptions import DbError
 from ProdCommon.BossLite.API.BossLiteDB import BossLiteDB
 
 
@@ -56,7 +55,7 @@ class BossLiteAPI(object):
     It allows load/operate/update jobs and taks using just id ranges
     """
 
-    def __init__(self, database, dbConfig):
+    def __init__(self, database, dbConfig=None, pool=None, makePool=False):
         """
         initialize the API instance
         - database can be both MySQl or SQLite
@@ -73,9 +72,16 @@ class BossLiteAPI(object):
                'dbWaitingTime' : 10
               }
 
+        Passing only dbConfig, a SafeSession will be used for db connection.
+        Passing a pool or setting makePool, a pool of SafeSession (SafePool)
+        will be used, enabling a better multithread usage
         """
 
-        self.bossLiteDB = BossLiteDB( database, dbConfig )
+        if pool is None and makePool == False:
+            self.bossLiteDB = BossLiteDB( database, dbConfig )
+        else :
+            from ProdCommon.BossLite.API.BossLitePoolDB import BossLitePoolDB
+            self.bossLiteDB = BossLitePoolDB( database, dbConfig, pool )
         self.db = None
 
 

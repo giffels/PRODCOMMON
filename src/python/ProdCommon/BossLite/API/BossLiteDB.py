@@ -4,8 +4,8 @@ _BossLiteDB_
 
 """
 
-__version__ = "$Id: BossLiteDB.py, v 1.5 2008/07/10 13:12:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: BossLiteDB.py,v 1.6 2008/07/11 15:41:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -24,6 +24,17 @@ class BossLiteDB(object):
     It allows load/operate/update DB using free format queries
 
     """
+
+    dbConfig =  {'dbName':'BossLiteDB',
+                 'user':'BossLiteUser',
+                 'passwd':'BossLitePass',
+                 'socketFileLocation':'',
+                 'host':'',
+                 'portNr':'',
+                 'refreshPeriod' : 4*3600 ,
+                 'maxConnectionAttempts' : 5,
+                 'dbWaitingTime' : 10
+                 }
 
     def __init__(self, database, dbConfig):
         """
@@ -49,19 +60,10 @@ class BossLiteDB(object):
 
         # MySQL: get DB configuration from config file
         if self.database == "MySQL":
+
             # update db config
-            self.dbConfig =  {'dbName':'BossLiteDB',
-                              'user':'BossLiteUser',
-                              'passwd':'BossLitePass',
-                              'socketFileLocation':'',
-                              'host':'',
-                              'portNr':'',
-                              'refreshPeriod' : 4*3600 ,
-                              'maxConnectionAttempts' : 5,
-                              'dbWaitingTime' : 10
-                              }
-            dbConfig['socketFileLocation'] = expandvars(
-                dbConfig['socketFileLocation']
+            self.dbConfig['socketFileLocation'] = expandvars(
+                self.dbConfig['socketFileLocation']
                 )
             self.dbConfig.update( dbConfig )
 
