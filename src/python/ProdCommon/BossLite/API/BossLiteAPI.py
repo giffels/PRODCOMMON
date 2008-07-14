@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.59 2008/07/11 15:41:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.59 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.60 2008/07/14 13:20:09 gcodispo Exp $"
+__revision__ = "$Revision: 1.60 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -78,10 +78,11 @@ class BossLiteAPI(object):
         """
 
         if pool is None and makePool == False:
-            self.bossLiteDB = BossLiteDB( database, dbConfig )
+            self.bossLiteDB = BossLiteDB( database, dbConfig=dbConfig )
         else :
             from ProdCommon.BossLite.API.BossLitePoolDB import BossLitePoolDB
-            self.bossLiteDB = BossLitePoolDB( database, dbConfig, pool )
+            self.bossLiteDB = BossLitePoolDB( database, dbConfig=dbConfig, \
+                                              pool=pool )
         self.db = None
 
 
