@@ -7,8 +7,8 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.24 2008/06/30 13:12:04 gcodispo Exp $"
-__revision__ = "$Revision: 1.24 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.25 2008/07/04 09:39:24 gcodispo Exp $"
+__revision__ = "$Revision: 1.25 $"
 
 
 
@@ -25,7 +25,6 @@ class SchedulerInterface(object):
 
         self.cert = args['user_proxy']
         self.timeout = args.get("timeout", None)
-        self.checkUserProxy( self.cert )
 
     ##########################################################################
     def valid( self, runningJob ) :
@@ -70,7 +69,7 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def checkUserProxy( self, cert='' ):
+    def checkUserProxy( self ):
         """
         Retrieve the user proxy for the task
         If the proxy is valid pass, otherwise raise an axception
@@ -78,8 +77,8 @@ class SchedulerInterface(object):
 
         command = 'voms-proxy-info'
 
-        if cert != '' :
-            command += ' --file ' + cert
+        if self.cert != '' :
+            command += ' --file ' + self.cert
 
         output = self.ExecuteCommand( command )
 
