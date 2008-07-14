@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPI.py, v 1.23 2008/07/10 13:12:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.23 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.24 2008/07/11 15:40:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.24 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -23,30 +23,10 @@ from ProdCommon.BossLite.Common.Exceptions import BossLiteError
 
 class BossLiteAPISched(object):
     """
-    High level API class for DBObjcets and Scheduler interaction.
+    High level API class for DBObjects and Scheduler interaction.
     It allows load/operate/update jobs and taks using just id ranges
 
     """
-
-    logger = None
-
-    @classmethod
-    def bossLiteLogger( cls ):
-        """
-        returns a static instance of the BossLiteLogger to help error retrieval
-        """
-
-        return cls.logger
-
-    
-    @classmethod
-    def setLogger( cls, logger ):
-        """
-        set a static instance of the BossLiteLogger to help error retrieval
-        """
-
-        cls.logger = logger
-        return cls.logger
 
 
     def __init__(self, bossLiteSession, schedulerConfig, task=None):
@@ -63,8 +43,8 @@ class BossLiteAPISched(object):
 
         """
 
-        # reset BossLiteLogger
-        self.setLogger( None )
+        # set BossLiteLogger
+        self.bossLiteLogger = None
 
         # use bossLiteSession for DB interactions
         if type( bossLiteSession ) is not BossLiteAPI:
@@ -94,17 +74,19 @@ class BossLiteAPISched(object):
                 self.schedConfig['name'] = scheduler
 
         # scheduler
-        try :
-            self.scheduler = Scheduler.Scheduler(
-                schedulerConfig['name'], self.schedConfig
-                )
-        except BossLiteError, e:
+        self.scheduler = Scheduler.Scheduler(
+            schedulerConfig['name'], self.schedConfig
+            )
 
-            # update & set logger
-            self.setLogger( BossLiteLogger( task, e ))
 
-            # re-throw exception
-            raise e
+    ##########################################################################
+    def getLogger(self):
+        """
+        returns the BossLiteLogger object
+        """
+
+        return self.bossLiteLogger
+
 
     ##########################################################################
 
@@ -139,14 +121,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -190,14 +172,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -236,14 +218,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -278,14 +260,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -319,14 +301,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -365,14 +347,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -400,7 +382,7 @@ class BossLiteAPISched(object):
         except BossLiteError, e:
 
             # set logger
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -441,7 +423,7 @@ class BossLiteAPISched(object):
         except BossLiteError, e:
 
             # set logger
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
@@ -476,14 +458,14 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task ) )
+            self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
 
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.setLogger( BossLiteLogger( task, e ) )
+            self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
             raise e
