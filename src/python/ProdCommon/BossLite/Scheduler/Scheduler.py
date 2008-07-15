@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.37 2008/06/04 09:18:50 gcodispo Exp $"
-__revision__ = "$Revision: 1.37 $"
+__version__ = "$Id: Scheduler.py,v 1.38 2008/07/14 13:27:32 gcodispo Exp $"
+__revision__ = "$Revision: 1.38 $"
 
 
 ##########################################################################
@@ -47,7 +47,6 @@ class Scheduler(object):
             msg = 'Cannot create scheduler ' + self.scheduler + ' '
             raise SchedulerError(msg, str(e))
 
-        self.validProxy = None
 
     ##########################################################################
     def submit ( self, obj, requirements='' ) :
@@ -55,9 +54,8 @@ class Scheduler(object):
         set up submission parameters and submit
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # delegate submission to scheduler plugin
         jobAttributes, bulkId, service = self.schedObj.submit(\
@@ -137,9 +135,8 @@ class Scheduler(object):
         query status and eventually other scheduler related information
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # the object passed is a runningJob: query and update
         if type(obj) == RunningJob :
@@ -220,9 +217,8 @@ class Scheduler(object):
         retrieve output or just put it in the destination directory
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # perform action
         self.schedObj.getOutput( obj, outdir )
@@ -280,9 +276,8 @@ class Scheduler(object):
         kill the job instance
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # perform action
         self.schedObj.kill( obj )
@@ -334,9 +329,8 @@ class Scheduler(object):
         execute any post mortem command such as logging-info
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
@@ -369,9 +363,8 @@ class Scheduler(object):
         perform a resources discovery
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         return self.schedObj.matchResources( obj, requirements, \
                                              self.parameters['config'], \
@@ -385,9 +378,8 @@ class Scheduler(object):
         returns a list of resulting sites
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         return self.schedObj.lcgInfo(tags, seList, blacklist, whitelist, full)
 
@@ -399,9 +391,8 @@ class Scheduler(object):
         not available for every scheduler
         """
 
-        # if is the first operation, check the proxy
-        if self.validProxy is None :
-            self.schedObj.checkUserProxy()
+        # check the proxy
+        self.schedObj.checkUserProxy()
 
         # perform action
         self.schedObj.purgeService( obj  )

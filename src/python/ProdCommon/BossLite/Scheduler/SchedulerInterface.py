@@ -7,8 +7,8 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.25 2008/07/04 09:39:24 gcodispo Exp $"
-__revision__ = "$Revision: 1.25 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.26 2008/07/14 13:27:32 gcodispo Exp $"
+__revision__ = "$Revision: 1.26 $"
 
 
 
@@ -25,6 +25,7 @@ class SchedulerInterface(object):
 
         self.cert = args['user_proxy']
         self.timeout = args.get("timeout", None)
+        self.validProxy = None
 
     ##########################################################################
     def valid( self, runningJob ) :
@@ -75,6 +76,9 @@ class SchedulerInterface(object):
         If the proxy is valid pass, otherwise raise an axception
         """
 
+        if self.validProxy is not None :
+            return self.validProxy
+
         command = 'voms-proxy-info'
 
         if self.cert != '' :
@@ -84,11 +88,16 @@ class SchedulerInterface(object):
 
         try:
             output = output.split("timeleft  :")[1].strip()
+            self.validProxy = False
         except IndexError:
             raise SchedulerError("Missing Proxy", output.strip())
 
         if output == "0:00:00":
+            self.validProxy = False
             raise SchedulerError("Proxy Expired", output.strip())
+
+        self.validProxy = True
+        return self.validProxy
 
     ##########################################################################
 
