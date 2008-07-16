@@ -55,7 +55,7 @@ class AlertPayload(dict):
                 dir = os.path.join(os.path.expandvars(workingDir),'Alerts')
 
                 if not os.path.exists(dir): 
-                   os.mkdir(dir)
+                   os.makedirs(dir)
                 self.FileName = os.path.join(dir,"alert-%s.dat" %makeUUID())
                 output = open(self.FileName, 'wb')
                 pickle.dump(self, output)
