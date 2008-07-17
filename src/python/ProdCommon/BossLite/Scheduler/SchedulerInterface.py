@@ -7,8 +7,8 @@ _SchedulerInterface_
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.26 2008/07/14 13:27:32 gcodispo Exp $"
-__revision__ = "$Revision: 1.26 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.27 2008/07/15 10:08:51 gcodispo Exp $"
+__revision__ = "$Revision: 1.27 $"
 
 
 
@@ -88,8 +88,8 @@ class SchedulerInterface(object):
 
         try:
             output = output.split("timeleft  :")[1].strip()
-            self.validProxy = False
         except IndexError:
+            self.validProxy = False
             raise SchedulerError("Missing Proxy", output.strip())
 
         if output == "0:00:00":
