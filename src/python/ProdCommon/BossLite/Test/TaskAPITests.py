@@ -116,13 +116,10 @@ class TaskAPITests(object):
         if self.schedSession is not None:
             return self.schedSession
 
-        try: 
-            self.schedSession = BossLiteAPISched( self.bossSession, \
+        self.schedSession = BossLiteAPISched( self.bossSession, \
                                                   self.schedulerConfig, \
                                                   self.task )
-            return self.schedSession
-        except :
-            print 'OK : ', BossLiteAPISched.bossLiteLogger()
+        return self.schedSession
 
 
     ##########################################################################
@@ -138,8 +135,8 @@ class TaskAPITests(object):
                 self.task = self.bossSession.loadTaskByName( self.taskName )
             print "Task loaded..."
         except BossLiteError, e:
+            print "Task not found... declaring"
 
-            print BossLiteLogger( self.task, e )
  
             taskParams = {'name' : self.taskName,
                           'globalSandbox' : '/etc/redhat-release' }
@@ -221,13 +218,9 @@ class TaskAPITests(object):
         if self.task is None :
             self.task = self.testTask()
         
-        from ProdCommon.BossLite.Common.Exceptions import SchedulerError
         schedSession = self.schedulerSession()
-        try :
-            self.task = schedSession.resubmit( self.task, self.jobRange )
-            self.printTask()
-        except SchedulerError, err:
-            print str(err)
+        self.task = schedSession.resubmit( self.task, self.jobRange )
+        self.printTask()
 
 
     ##########################################################################
@@ -339,7 +332,7 @@ class TaskAPITests(object):
         ____SQL__
         """
 
-        results = self.bossSession.bossLiteDB.select(self.query)
+        results = self.bossSession.bossLiteDB.select(self.sqlQuery)
         if results is None:
             return
         for row in results:
@@ -376,7 +369,7 @@ def main():
     dbtype = 'sqlite'
     outdir = None
     installDB = False
-    query = None
+    sqlQuery = None
 
     lOptions = [ func for func in TaskAPITests.__dict__.keys()
                  if func[0] != '_' ]
@@ -406,7 +399,7 @@ def main():
         elif o in ("--installDB"):
             installDB = True
         elif o in ("--sql"):
-            query = a
+            sqlQuery = a
         elif o in ("--test"):
             test = True
         elif o in lMethods:
@@ -414,9 +407,9 @@ def main():
         else :
             assert False, "unhandled option"
 
-    if query is not None and actions == []:
+    if sqlQuery is not None and actions == []:
         bossSession = TaskAPITests(dbtype, installDB)
-        bossSession.query = query
+        bossSession.sqlQuery = sqlQuery
         bossSession._SQL()
         sys.exit()
 
@@ -429,7 +422,7 @@ def main():
     bossSession.taskId = taskId
     if taskName is not None :
         bossSession.taskName = taskName
-    bossSession.query = query
+    bossSession.sqlQuery = sqlQuery
     bossSession.jobRange = jobRange
     bossSession.outdir = outdir
     bossSession.testTask()
