@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.7 2008/07/04 10:13:54 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: Exceptions.py,v 1.8 2008/07/17 13:15:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -99,7 +99,7 @@ class SchedulerError(BossLiteError):
     scheduler errors
     """
 
-    def __init__(self, value, msg):
+    def __init__(self, value, msg, command=None):
         """
         __init__
         """
@@ -110,6 +110,7 @@ class SchedulerError(BossLiteError):
         BossLiteError.__init__(self, value)
         self.value = value
         self.msg = msg
+        self.data['Command'] = command
 
     def __str__(self):
         """
@@ -138,18 +139,19 @@ class TimeOut(BossLiteError):
     operation timed out
     """
 
-    def __init__(self, partialOut, value, start=None, stop=None):
+    def __init__(self, command, partialOut, value, start=None, stop=None):
         """
         __init__
         """
 
-        self.partialOut = partialOut
         self.timeout = value
         self.start = start
         self.stop = stop
         self.value = \
               "Command Timed Out after %d seconds, issued at %d, ended at %d" \
               % (self.timeout, self.start, self.stop )
+        self.data['Command'] = command
+        self.data['partialOutput'] = partialOut
         # // the stupid python does not follow its rules:
         # // Exception does not inherit from object, no way to call super
         # super(TimeOut, self).__init__(self.__str__())
@@ -160,7 +162,7 @@ class TimeOut(BossLiteError):
         returns the partial output recorded before timeout
         """
 
-        return self.partialOut
+        return self.data['partialOutput']
 
 
 

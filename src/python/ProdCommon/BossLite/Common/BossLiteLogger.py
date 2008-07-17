@@ -3,12 +3,11 @@
 BossLite logging facility
 """
 
-__version__ = "$Id: BossLiteLogger.py,v 1.2 2008/07/11 14:33:30 gcodispo Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: BossLiteLogger.py,v 1.3 2008/07/17 13:15:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Giuseppe.Codispoti@cern.ch"
 
 from ProdCommon.BossLite.Common.Exceptions import BossLiteError
-from ProdCommon.BossLite.Common.Exceptions import TimeOut
 
 class BossLiteLogger(object):
     """
@@ -16,8 +15,8 @@ class BossLiteLogger(object):
     """
 
     # default values for fields
-    defaults = [ 'errors', 'warnings', 'type', 'description', \
-                 'jobWarnings', 'jobErrors', 'message', 'partialOutput' ]
+    defaults = [ 'errors', 'warnings', 'type', 'description', 'message', \
+                 'command', 'jobWarnings', 'jobErrors', 'partialOutput' ]
 
     def __init__(self, task=None, exception=None):
         """
@@ -64,8 +63,6 @@ class BossLiteLogger(object):
             self.data['type'] = 'error'
             self.data['description'] = exception.value
             self.data['message'] = exception.message()
-            if isinstance( exception, TimeOut ) :
-                self.data['partialOutput'] = exception.commandOutput()
             for key, val in exception.data.iteritems():
                 self.data[key] = val
 
