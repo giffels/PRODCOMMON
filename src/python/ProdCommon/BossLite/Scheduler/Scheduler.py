@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.38 2008/07/14 13:27:32 gcodispo Exp $"
-__revision__ = "$Revision: 1.38 $"
+__version__ = "$Id: Scheduler.py,v 1.39 2008/07/15 10:08:51 gcodispo Exp $"
+__revision__ = "$Revision: 1.39 $"
 
 
 ##########################################################################
@@ -43,9 +43,8 @@ class Scheduler(object):
         except KeyError, e:
             msg = 'Scheduler interface' + self.scheduler + 'not found'
             raise SchedulerError(msg, str(e))
-        except ImportError, e:
-            msg = 'Cannot create scheduler ' + self.scheduler + ' '
-            raise SchedulerError(msg, str(e))
+        except Exception, e:
+            raise SchedulerError(e.__class__.__name__, str(e))
 
 
     ##########################################################################
