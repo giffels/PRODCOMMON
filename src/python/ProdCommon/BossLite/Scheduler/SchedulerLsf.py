@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.12 2008/05/16 14:44:52 gcodispo Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.13 2008/06/12 19:06:47 fanzago Exp $"
+__version__ = "$Revision: 1.13 $"
 
 import re, os
 
@@ -105,7 +105,7 @@ class SchedulerLsf (SchedulerInterface) :
                 print m
                 print "Job NOT submitted"
                 print out
-            raise SchedulerError('Cannot submit ',out)
+            raise SchedulerError('Cannot submit ', out, command)
         taskId = None 
         #print "Your job identifier is: ", taskId, queue
         map={ job['name'] : jobId }
@@ -236,7 +236,7 @@ class SchedulerLsf (SchedulerInterface) :
             out = self.ExecuteCommand(cmd)
             mFailed= rFinished.search(out)
             if mFailed:
-                raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out )
+                raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out, cmd )
             pass
         pass
 
@@ -254,4 +254,4 @@ class SchedulerLsf (SchedulerInterface) :
         returns a list of resulting sites
         """
 
-        return  seList
+        return seList
