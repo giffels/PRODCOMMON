@@ -34,6 +34,7 @@ class FileInfo(dict):
         self.setdefault("SEName", None)
         self.setdefault("ModuleLabel", None)
         self.setdefault("Catalog", None)
+        self.setdefault("Checksum", None)
         self.setdefault("OutputModuleClass", None)
         self.setdefault("MergedBySize", "False")
 
