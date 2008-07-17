@@ -3,31 +3,29 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.74 2008/06/30 13:04:53 gcodispo Exp $"
-__version__ = "$Revision: 1.74 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.75 2008/07/10 13:12:24 gcodispo Exp $"
+__version__ = "$Revision: 1.75 $"
+__author__ = "Giuseppe.Codispoti@bo.infn.it"
 
-import sys
 import os
-import traceback
 import socket
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
-from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
 #
 # Import gLite specific modules
 try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
-except StandardError, e:
+except StandardError, stde:
     warn = \
          """
          missing glite environment.
          Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
          """
-    raise ImportError(warn + str(e))
+    raise ImportError(warn + str(stde))
 
 
 ##########################################################################
@@ -134,8 +132,8 @@ def processClassAdBlock( classAd ):
             p = p.strip()
             try:
                 key, val = processRow ( p )
-            except ValueError, err:
-                raise SchedulerError( "bad jdl key", err )
+            except ValueError:
+                raise SchedulerError( "bad jdl key", p )
 
             # take wms config file location
             if ( key == "wmsconfig" ) :
@@ -155,8 +153,8 @@ def processClassAdBlock( classAd ):
             elif key is not None:
                 cladDict[ key ] = val
 
-    except StandardError:
-        raise SchedulerError( "bad jdl ", traceback.format_exc() )
+    except StandardError, e:
+        raise SchedulerError( "bad jdl ", str(e) )
 
     return cladDict, endpoints, configfile
 
@@ -248,9 +246,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 
         except SchedulerError, err:
             raise err
-        except StandardError:
-            error = str ( traceback.format_exc() )
-            raise SchedulerError( "failed submission", error )
 
         return jdl, endpoints
 
@@ -360,7 +355,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         try :
             # first check if the sandbox dir can be created
             if os.path.exists( self.SandboxDir ) != 0:
-                raise SchedulerError( "existing " + self.SandboxDir, error )
+                raise SchedulerError( 'unable to create ' + self.SandboxDir, \
+                                      'already exist' )
 
             # initialize wmproxy
             self.hackEnv() ### TEMP FIX
@@ -390,22 +386,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 os.makedirs( basedir )
 
                 # copy files in the directory
-                msg = \
-                    self.ExecuteCommand(
-                    "cp %s %s" % (sandboxFileList, basedir)
-                    )
+                command = "cp %s %s" % (sandboxFileList, basedir)
+                msg = self.ExecuteCommand( command )
                 if msg != '' :
-                    raise SchedulerError( "cp error", msg )
+                    raise SchedulerError( "cp error", msg, command )
 
-                # zip sandbox + chmod workarond for the wms
+                # zip sandbox + chmod workaround for the wms
                 msg = self.ExecuteCommand(
-                    "chmod 773 " + self.SandboxDir +"; chmod 773 " \
+                    "chmod 773 " + self.SandboxDir + "; chmod 773 " \
                     + self.SandboxDir + "/*"
                     )
-                msg = self.ExecuteCommand(
-                    "tar pczf %s %s/*"%(self.zippedISB, basedir))
+                command = "tar pczf %s %s/*" % (self.zippedISB, basedir)
+                msg = self.ExecuteCommand( command )
                 if msg != '' :
-                    raise SchedulerError( "tar error", msg )
+                    raise SchedulerError( "tar error", msg, command )
 
                 # copy file to the wms (also usable curl)
                 #
@@ -420,7 +414,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 msg = self.ExecuteCommand(command)
                 if msg.upper().find("ERROR") >= 0 \
                        or msg.find("wrong format") >= 0 :
-                    raise SchedulerError( "globus-url-copy error", msg )
+                    raise SchedulerError("globus-url-copy error", msg, command)
 
             # start job!
             wmproxy.jobStart(taskId)
@@ -433,20 +427,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            # raise SchedulerError("failed submission to " + wms, \
-            #                err.toString() + ' : ' + str(err))
-            raise SchedulerError( "failed submission to " + wms, \
-                                  formatWmpError( err ) )
-        except SchedulerError, err:
+            raise err
+        except Exception, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            SchedulerError( "failed submission to " + wms, err )
-        except StandardError:
-            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            error = str ( traceback.format_exception(sys.exc_info()[0],
-                                                     sys.exc_info()[1],
-                                                     sys.exc_info()[2]) )
-            raise SchedulerError( "failed submission to " + wms, error )
-
+            raise err
 
         return taskId, returnMap
 
@@ -508,7 +492,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # return values
         taskId = ''
         returnMap = {}
-        actions = []
+        # actions = []
 
         # handle wms and prepare jdl
         jdl, endpoints = self.mergeJDL( jdl, service, config )
@@ -535,15 +519,17 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     seen.append( wms)
-                actions.append( "Submitting to : " + wms )
+                # actions.append( "Submitting to : " + wms )
                 taskId, returnMap = \
                         self.wmproxySubmit( jdl, wms, sandboxFileList )
                 success = wms
-                actions.append( "Submitted successfully to : " + wms )
+                # actions.append( "Submitted successfully to : " + wms )
                 break
-            except SchedulerError, err:
-                actions.append( "Failed submit to : " + wms )
-                errors += str( err )
+            
+            except BaseException, err:
+                # actions.append( "Failed submit to : " + wms )
+                errors += 'failed to submit to ' + wms + \
+                          ' : ' + formatWmpError( err )
                 continue
 
         # clean files
@@ -554,18 +540,17 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # wmproxy converts . to _ in jobIds - convert back
             if job['name'].count('.'):
-                wmproxy_name = job['name'].replace('.', '_')
-                returnMap[job['name']] = returnMap.pop(wmproxy_name)
+                wmproxyName = job['name'].replace('.', '_')
+                returnMap[job['name']] = returnMap.pop(wmproxyName)
 
-            # log warnings
-            job.runningJob.warnings.extend( self.warnings )
-            job.runningJob['statusHistory'].extend( actions )
-            if errors != '' :
-                if success is None :
-                    job.runningJob.errors.append( errors )
-                else :
-                    job.runningJob.warnings.append( errors )
+        # log warnings
+        obj.warnings.extend( self.warnings )
         del self.warnings [:]
+        if errors != '' :
+            if success is not None :
+                obj.warnings.append( errors )
+            else :
+                success = None
 
         # if submission failed, raise error
         if success is None :
@@ -664,14 +649,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
                     job.runningJob.errors.append( output )
-                    job.runningJob['statusHistory'].append(
-                        'Error with credential' )
+                    # job.runningJob['statusHistory'].append(
+                    #     'Error with credential' )
                     continue
 
                 # purged: probably already retrieved. Archive
                 elif output.find( "has been purged" ) != -1 :
-                    job.runningJob['statusHistory'].append(
+                    job.runningJob.warnings.append( 
                         'Job has been purged, recovering status' )
+                    # job.runningJob['statusHistory'].append(
+                    #     'Job has been purged, recovering status' )
                     continue
 
                 # not ready for GO: waiting for next round
@@ -682,8 +669,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # not ready for GO: waiting for next round
                 else :
                     job.runningJob.errors.append( output )
-                    job.runningJob['statusHistory'].append(
-                        'error retrieving output' )
+                    # job.runningJob['statusHistory'].append(
+                    #     'error retrieving output' )
                     continue
 
 
@@ -714,7 +701,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 msg = self.ExecuteCommand(command)
                 if msg.upper().find("ERROR") >= 0 or \
                        msg.find("wrong format") >= 0 :
-                    joberr = msg + '; '
+                    joberr = '[ ' + command + ' ] : ' + msg + '; '
                     continue
 
                 # check file size
@@ -729,25 +716,25 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # no files?
             if retrieved == 0:
-                job.runningJob['statusHistory'].append(
-                    'Warning: non files retrieved' )
+                # job.runningJob['statusHistory'].append(
+                #     'Warning: non files retrieved' )
                 job.runningJob.errors.append( 'Warning: non files retrieved' )
 
             # got errors?
             if joberr != '' :
-                job.runningJob['statusHistory'].append(
-                    'problems with output retrieval' )
+                # job.runningJob['statusHistory'].append(
+                #     'problems with output retrieval' )
                 job.runningJob.errors.append( joberr )
             else :
-                job.runningJob['statusHistory'].append(
-                        'Output successfully retrieved' )
+                # job.runningJob['statusHistory'].append(
+                #         'Output successfully retrieved' )
                 # try to purge files
                 try :
                     wmproxy.jobPurge( jobId )
                 except BaseException, err:
                     job.runningJob.warnings.append("unable to purge WMS")
-                    job.runningJob['statusHistory'].append(
-                        "unable to purge WMS")
+                    # job.runningJob['statusHistory'].append(
+                    #     "unable to purge WMS")
 
         self.hackEnv(restore=True) ### TEMP FIX
 
@@ -831,8 +818,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             except BaseException, err:
                 output = formatWmpError( err )
                 job.runningJob.errors.append( output )
-                job.runningJob['statusHistory'].append(
-                        'Failed Job Cancel' )
+                # job.runningJob['statusHistory'].append(
+                #         'Failed Job Cancel' )
 
             try :
                 wmproxy.jobPurge( jobId )
@@ -1258,7 +1245,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             while requirements[0] == '[':
                 requirements = requirements[1:-1].strip()
             jdl += '\n' + requirements + '\n'
-        except :
+        except Exception:
             pass
 
         # useful attributes if the transfer is not direct to the WN
