@@ -94,6 +94,8 @@ class InputLink(dict):
                    the data to be input.
 
     InputSource - name of the PoolSource that the input data will be fed to.
+    AppearStandalone - boolean whether to combine with the previous step and 
+                        discard intermediate files
     
     """
     def __init__(self, **args):
@@ -116,6 +118,12 @@ class InputLink(dict):
             key = str(node.name)
             val = str(node.attrs['Value'])
             self[key] = val
+            
+        if self.get("AppearStandalone", "false").lower() in ("true", "yes"):
+            self["AppearStandalone"] = True
+        else:
+            self["AppearStandalone"] = False
+            
         return
     
                           
@@ -247,7 +255,7 @@ class PayloadNode:
         return newDataset
     
     def addInputLink(self, nodeName, nodeOutputModName,
-                     thisNodeSourceName = None, skipCfgCheck = False):
+                     thisNodeSourceName = None, AppearStandalone = False, skipCfgCheck = False):
         """
         _addInputLink_
 
@@ -282,7 +290,8 @@ class PayloadNode:
         #//
         link = InputLink(InputNode = nodeName,
                          InputSource = thisNodeSourceName,
-                         OutputModule = nodeOutputModName)
+                         OutputModule = nodeOutputModName,
+                         AppearStandalone = AppearStandalone)
         self._InputLinks.append(link)
 
         return

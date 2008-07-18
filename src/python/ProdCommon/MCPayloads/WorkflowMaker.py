@@ -53,7 +53,8 @@ class WorkflowMaker:
         self.channel = channel
         self.cmsswVersions = []
         self.configurations = []
-        self.psetHash = None
+        self.psetHashes = {}
+        self.origCfgs = {}
         self.acquisitionEra = None
         self.processingVersion = None
         self.conditions = None
@@ -104,16 +105,19 @@ class WorkflowMaker:
         self.cmsRunNodes = [self.cmsRunNode]
 
 
-    def chainCmsRunNode(self):
+    def chainCmsRunNode(self, stageOutIntermediates = False):
         """
         append a cmsRun config to the current cmsRun node and chain them
         """
+        if stageOutIntermediates: #Do we want to keep cmsRunNode's products?
+            WorkflowTools.addStageOutNode(self.cmsRunNode,
+                        "stageOut%s" % self.cmsRunNode.name.strip("cmsRun"))
         newnode = self.cmsRunNode.newNode("cmsRun%s" % 
                                           (len(self.cmsRunNodes) + 1))
         newnode.type = "CMSSW"
-        newnode.addInputLink(self.cmsRunNode.name, 
-                             self.configurations[-1].outputModules.keys()[0],
-                             'source')
+        for outmodule in self.configurations[-1].outputModules.keys():
+            newnode.addInputLink(self.cmsRunNode.name, outmodule,
+                        'source', AppearStandalone = not stageOutIntermediates)
         self.cmsRunNode = newnode
         self.cmsRunNodes.append(newnode)
         #return self.cmsRunNode
@@ -235,7 +239,14 @@ class WorkflowMaker:
         CALL THIS METHOD AFTER setConfiguration
         
         """
-        self.cmsRunNode.cfgInterface.originalCfg = honkingGreatString
+        sep = '\n\n### Next chained config file ###\n\n'
+        cfg = ''
+        for link in self.cmsRunNode._InputLinks:
+            if link['AppearStandalone']:
+                cfg = '%s%s%s' % (cfg, self.origCfgs[link['InputNode']], sep)
+        cfg = '%s%s' % (cfg, honkingGreatString)
+        self.cmsRunNode.cfgInterface.originalCfg = cfg
+        self.origCfgs[self.cmsRunNode.name] = cfg
         return
         
     def setPSetHash(self, hashValue):
@@ -243,9 +254,16 @@ class WorkflowMaker:
         _setPSetHash_
 
         Set the value for the PSetHash
+        
+        If any InputLinks are present thier pset hashes are prepended
 
         """
-        self.psetHash = hashValue
+        hash = ''
+        for link in self.cmsRunNode._InputLinks:
+            if link['AppearStandalone']:
+                hash = '%s%s_' % (hash, self.psetHashes[link['InputNode']])
+        hash = '%s%s' % (hash, hashValue)
+        self.psetHashes[self.cmsRunNode.name] = hash                           
         return
         
 
@@ -324,6 +342,13 @@ class WorkflowMaker:
 
         """
         self._Validate()
+        
+        #  //
+        # // Add Stage Out node
+        #//
+        WorkflowTools.addStageOutNode(self.cmsRunNode,
+                        "stageOut%s" % self.cmsRunNode.name.strip("cmsRun"))
+        WorkflowTools.addLogArchNode(self.cmsRunNode, "logArchive")
 
         #  //
         # // Input Dataset?
@@ -359,66 +384,78 @@ class WorkflowMaker:
         #  //
         # // Extract dataset info from cfg
         #//
-        for outModName in self.configurations[-1].outputModules.keys():
-            moduleInstance = self.configurations[-1].getOutputModule(outModName)
-            dataTier = moduleInstance['dataTier']
-            filterName = moduleInstance["filterName"]
-            primaryName = DatasetConventions.primaryDatasetName(
-                                    PhysicsChannel = self.channel,
-                                    )
-            if self.acquisitionEra == None:
-              processedName = DatasetConventions.processedDatasetName(
-                  Version = self.cmsswVersions[-1],
-                  Label = self.label,
-                  Group = self.group,
-                  FilterName = filterName,
-                  RequestId = self.requestId,
-                  Unmerged = True
-                  )
-            else:
-              processedName = DatasetConventions.csa08ProcessedDatasetName(
-                  AcquisitionEra = self.acquisitionEra,
-                  Conditions = self.workflow.parameters['Conditions'],
-                  ProcessingVersion = self.workflow.parameters['ProcessingVersion'],
-                  FilterName = filterName,
-                  Unmerged = True
-                  )
-              
-            dataTier = DatasetConventions.checkDataTier(dataTier)
-
-            moduleInstance['primaryDataset'] = primaryName
-            moduleInstance['processedDataset'] = processedName
-
-            outDS = self.cmsRunNode.addOutputDataset(primaryName, 
-                                                     processedName,
-                                                     outModName)
+        datasets = {}
+        for cmsRunNode, config in zip(self.cmsRunNodes, self.configurations):
             
-            outDS['DataTier'] = dataTier
-            outDS["ApplicationName"] = \
-                                     self.cmsRunNode.application["Executable"]
-            outDS["ApplicationFamily"] = outModName
-            outDS["PhysicsGroup"] = self.group
-            outDS["ApplicationFamily"] = outModName
-
-
-            if self.inputDataset['IsUsed']:
-                outDS['ParentDataset'] = self.inputDataset['DatasetName']
+            # Ignore nodes that don't save any output
+            if not [child for child in cmsRunNode.children if \
+                                                    child.type == 'StageOut']:
+                continue
+            
+            for outModName in config.outputModules.keys():
+                moduleInstance = config.getOutputModule(outModName)
+                dataTier = moduleInstance['dataTier']
+                filterName = moduleInstance["filterName"]
+                primaryName = DatasetConventions.primaryDatasetName(
+                                        PhysicsChannel = self.channel,
+                                        )
+                if self.acquisitionEra == None:
+                  processedName = DatasetConventions.processedDatasetName(
+                      Version = cmsRunNode.application['Version'],
+                      Label = self.label,
+                      Group = self.group,
+                      FilterName = filterName,
+                      RequestId = self.requestId,
+                      Unmerged = True
+                      )
+                else:
+                  processedName = DatasetConventions.csa08ProcessedDatasetName(
+                      AcquisitionEra = self.acquisitionEra,
+                      Conditions = self.workflow.parameters['Conditions'],
+                      ProcessingVersion = self.workflow.parameters['ProcessingVersion'],
+                      FilterName = filterName,
+                      Unmerged = True
+                      )
+                  
+                dataTier = DatasetConventions.checkDataTier(dataTier)
+    
+                moduleInstance['primaryDataset'] = primaryName
+                moduleInstance['processedDataset'] = processedName
+    
+                outDS = cmsRunNode.addOutputDataset(primaryName, 
+                                                         processedName,
+                                                         outModName)
                 
-            if self.options['FakeHash']:
-                guid = makeUUID()
-                outDS['PSetHash'] = "hash=%s;guid=%s" % (self.psetHash,
-                                                         guid)
-            else:
-                outDS['PSetHash'] = self.psetHash
+                outDS['DataTier'] = dataTier
+                outDS["ApplicationName"] = \
+                                         cmsRunNode.application["Executable"]
+                outDS["ApplicationFamily"] = outModName
+                outDS["PhysicsGroup"] = self.group
+    
+                # check for input dataset for first node
+                if self.inputDataset['IsUsed'] and cmsRunNode == self.cmsRunNodes[0]:
+                    outDS['ParentDataset'] = self.inputDataset['DatasetName']
+                # check for staged out intermediates
+                elif cmsRunNode != self.cmsRunNodes[0]:
+                    for inputLink in cmsRunNode._InputLinks:
+                        if not inputLink["AppearStandalone"]:
+                            # TODO: Wont work if more than one InputLink exists
+                            outDS['ParentDataset'] = datasets['%s:%s' % (inputLink['InputNode'],
+                                                                    inputLink['OutputModule'])]
 
-            
-            
-                    
-        #  //
-        # // Add Stage Out node
-        #//
-        WorkflowTools.addStageOutNode(self.cmsRunNode, "stageOut1")
-        WorkflowTools.addLogArchNode(self.cmsRunNode, "logArchive")
+                if self.options['FakeHash']:
+                    guid = makeUUID()
+                    outDS['PSetHash'] = "hash=%s;guid=%s" % \
+                            (self.psetHashes[cmsRunNode.name], guid)
+                else:
+                    outDS['PSetHash'] = self.psetHashes[cmsRunNode.name]
+
+                # record output in case used as input to a later node
+                datasets['%s:%s' % (cmsRunNode.name, outModName)] = \
+                                "/%s/%s/%s" % ( outDS['PrimaryDataset'],
+                                                  outDS['ProcessedDataset'],
+                                                  outDS['DataTier'])
+
         WorkflowTools.generateFilenames(self.workflow)
         
         
@@ -436,7 +473,6 @@ class WorkflowMaker:
 
         """
         notNoneAttrs = [
-            "psetHash",
             "requestId",
             "label",
             "group",
