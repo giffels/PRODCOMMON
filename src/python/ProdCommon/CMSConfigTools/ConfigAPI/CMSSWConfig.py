@@ -28,7 +28,7 @@ from IMProv.IMProvDoc import IMProvDoc
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 from IMProv.IMProvLoader import loadIMProvString
-    
+
 
 class CMSSWConfigExtension:
     """
@@ -76,10 +76,10 @@ class CMSSWConfigExtension:
             print msg
             self.pickledData = unzipData
         return
-        
-        
-        
-        
+
+
+
+
 
 
 class CMSSWConfig:
@@ -112,11 +112,20 @@ class CMSSWConfig:
             'input' : None,
             'output' : None,
             }
-        
+
         #  //
         # // Pileup/Mixing Module tinkering
         #//
         self.pileupFiles = []
+        self.beamHaloPlusFiles = []
+        self.beamHaloMinusFiles  = []
+        self.cosmicPileupFiles = []
+
+        #  //
+        # // conditions tag
+        #//
+        self.conditionsTag = None
+        #process.GlobalTag.globaltag = 'IDEAL_V5::All'
 
         #  //
         # // cfg metadata used for creating datasets
@@ -149,7 +158,7 @@ class CMSSWConfig:
         newExt = CMSSWConfigExtension(extName, dataObject)
         self.extensions[extName] = newExt
         return
-        
+
 
 
     def setInputMaxEvents(self, maxEvents):
@@ -161,7 +170,7 @@ class CMSSWConfig:
         """
         self.maxEvents["input"] = maxEvents
         return
-    
+
 
     def setOutputMaxEvents(self, maxEvents, modName = None):
         """
@@ -176,8 +185,8 @@ class CMSSWConfig:
         else:
             self.maxEvents[modName] = maxEvents
         return
-    
-        
+
+
 
     def getOutputModule(self, moduleName):
         """
@@ -239,7 +248,7 @@ class CMSSWConfig:
             sourceNode.addNode(
                 IMProvNode("SourceType", None, Value = self.sourceType))
         result.addNode(sourceNode)
-        
+
         seedNode = IMProvNode("Seeds")
         seedNode.addNode(
             IMProvNode("RequiredSeeds",
@@ -248,7 +257,7 @@ class CMSSWConfig:
         if len(self.seeds) > 0:
             [ seedNode.addNode(IMProvNode(
                 "RandomSeed", None, Value=str(x))) for x in self.seeds ]
-        
+
         result.addNode(seedNode)
 
         #  //
@@ -260,6 +269,25 @@ class CMSSWConfig:
             [ pileupFiles.addNode(IMProvNode("File", str(x)))
               for x in self.pileupFiles ]
             pileupNode.addNode(pileupFiles)
+        if len(self.beamHaloPlusFiles) > 0:
+            bhPlusFiles = IMProvNode("BeamHaloPlusFiles")
+            [ bhPlusFiles.addNode(IMProvNode("File", str(x)))
+              for x in self.beamHaloPlusFiles ]
+            pileupNode.addNode(bhPlusFiles)
+        if len(self.beamHaloMinusFiles) > 0:
+            bhMinusFiles = IMProvNode("BeamHaloMinusFiles")
+            [ bhMinusFiles.addNode(IMProvNode("File", str(x)))
+              for x in self.beamHaloMinusFiles ]
+            pileupNode.addNode(bhMinusFiles)
+
+        if len(self.cosmicPileupFiles) > 0:
+            cosmicFiles = IMProvNode("CosmicPileupFiles")
+            [ cosmicFiles.addNode(IMProvNode("File", str(x)))
+              for x in self.cosmicPileupFiles ]
+            pileupNode.addNode(cosmicFiles)
+
+
+
         result.addNode(pileupNode)
 
         #  //
@@ -279,17 +307,25 @@ class CMSSWConfig:
                     key, str(val)
                     ))
         result.addNode(outNode)
-        
+
         #  //
         # // Save maxEvents settings
         #//
         maxEvNode = IMProvNode("MaxEvents")
-        
+
         [ maxEvNode.addNode(IMProvNode(x[0], None, Value = str(x[1])))
                             for x in self.maxEvents.items() if x[1] != None ]
-            
+
         result.addNode(maxEvNode)
 
+        #  //
+        # // Save conditions tag
+        #//
+        if self.conditionsTag == None:
+            condNode = IMProvNode("ConditionsTag")
+        else:
+            condNode = IMProvNode("ConditionsTag", str(self.conditionsTag))
+        result.addNode(condNode)
 
         #  //
         # // Save config metadata
@@ -299,7 +335,7 @@ class CMSSWConfig:
         [ cfgMetaNode.addNode(
             IMProvNode(x[0], None, Value = str(x[1])))
           for x in self.configMetadata.items() if x[1] != None ]
-        
+
         result.addNode(cfgMetaNode)
 
         #  //
@@ -310,7 +346,7 @@ class CMSSWConfig:
         else:
             zipData = zlib.compress(self.rawCfg)
             data = base64.encodestring(zipData)
-            
+
         configNode = IMProvNode("ConfigData", data, Encoding="base64")
         result.addNode(configNode)
 
@@ -319,7 +355,7 @@ class CMSSWConfig:
             origCfgNode = IMProvNode("OriginalCfg",
                                      origData, Encoding="base64")
             result.addNode(origCfgNode)
-            
+
         #  //
         # // Extensions
         #//
@@ -327,7 +363,7 @@ class CMSSWConfig:
         for extName, extInstance in self.extensions.items():
             extNode.addNode(extInstance.save())
         result.addNode(extNode)
-        
+
         return result
 
 
@@ -338,7 +374,7 @@ class CMSSWConfig:
         populate this instance from the node provided
 
         """
-     
+
         srcFileQ = IMProvQuery("/CMSSWConfig/Source/InputFiles/File[text()]")
         srcParamQ = IMProvQuery("/CMSSWConfig/Source/Parameter")
         seedReqQ = IMProvQuery("/CMSSWConfig/Seeds/RequiredSeeds[attribute(\"Value\")]")
@@ -360,7 +396,7 @@ class CMSSWConfig:
         inpFiles = srcFileQ(improvNode)
         for inpFile in inpFiles:
             self.inputFiles.append(str(inpFile))
-            
+
         for srcParam in srcParamQ(improvNode):
             parName = srcParam.attrs.get('Name', None)
             if parName == None:
@@ -385,6 +421,31 @@ class CMSSWConfig:
         #//
         puFileQ = IMProvQuery("/CMSSWConfig/Pileup/PileupFiles/File[text()]")
         self.pileupFiles = puFileQ(improvNode)
+
+        bhPlusFileQ = IMProvQuery(
+            "/CMSSWConfig/Pileup/BeamHaloPlusFiles/File[text()]")
+        self.beamHaloPlusFiles = bhPlusFileQ(improvNode)
+
+        bhMinusFileQ = IMProvQuery(
+            "/CMSSWConfig/Pileup/BeamHaloMinusFiles/File[text()]")
+        self.beamHaloMinusFiles = bhMinusFileQ(improvNode)
+
+        cosmicFileQ = IMProvQuery(
+            "/CMSSWConfig/Pileup/CosmicPileupFiles/File[text()]")
+        self.cosmicPileupFiles = cosmicFileQ(improvNode)
+
+        #  //
+        # // conditions tag
+        #//
+        condQ = IMProvQuery("/CMSSWConfig/ConditionsTag[text()]")
+        condTags = condQ(improvNode)
+        if len(condTags) == 0:
+            self.conditionsTag = None
+        else:
+            condTag = condTags[-1]
+            if len(condTag.strip()) == 0:
+                condTag = None
+            self.conditionsTag = condTag
 
         #  //
         # // maxEvents
@@ -413,7 +474,7 @@ class CMSSWConfig:
           for x in cfgMetaQ(improvNode)]
 
 
-        
+
 
         #  //
         # // data
@@ -447,11 +508,11 @@ class CMSSWConfig:
             newExt = CMSSWConfigExtension(nodeName)
             newExt.load(extNode)
             self.extensions[nodeName] = newExt
-            
-            
+
+
 
         return
-    
+
     def pack(self):
         """
         _pack_
@@ -471,7 +532,7 @@ class CMSSWConfig:
         node = loadIMProvString(strRep)
         self.load(node)
         return
-    
+
 
 
     def makeConfiguration(self):
@@ -492,7 +553,7 @@ class CMSSWConfig:
             msg += "Only available with scram runtime environment:\n"
             msg += str(ex)
             raise RuntimeError, msg
-        
+
         from ProdCommon.CMSConfigTools.ConfigAPI.CfgInterface import CfgInterface
 
         cfgInstance = pickle.loads(self.rawCfg)
@@ -506,11 +567,11 @@ class CMSSWConfig:
         if self.extensions.has_key("SecondaryInputFiles"):
             cfg.inputSource.setSecondaryFileNames(
                 *self.extensions["SecondaryInputFiles"].data)
-            
+
         firstRun = self.sourceParams.get("firstRun", None)
         if firstRun != None:
             cfg.inputSource.setFirstRun(firstRun)
-            
+
         skipEv = self.sourceParams.get("skipEvents", None)
         if skipEv != None:
             cfg.inputSource.setSkipEvents(skipEv)
@@ -524,8 +585,8 @@ class CMSSWConfig:
             cfg.inputSource.setFirstEvent(firstEvent)
 
         if self.inputOverrideCatalog not in (None, ''):
-            cfg.inputSource.setOverrideCatalog(self.inputOverrideCatalog, 'override')    
-            
+            cfg.inputSource.setOverrideCatalog(self.inputOverrideCatalog, 'override')
+
         #  //
         # // maxEvents PSet
         #//
@@ -544,7 +605,15 @@ class CMSSWConfig:
         #//
         seedslist = [ int(x) for x in self.seeds ]
         cfg.insertSeeds(*seedslist)
-        
+
+        #  //
+        # // set conditions tag
+        #//
+        if self.conditionsTag != None:
+            cfg.setConditionsTag(self.conditionsTag)
+
+
+
 
         #  //
         # //  output modules
@@ -565,11 +634,22 @@ class CMSSWConfig:
         # // Pileup Files
         #//
         cfg.insertPileupFiles(*self.pileupFiles)
-        
-        
+
+        if len(self.beamHaloPlusFiles) > 0:
+            cfg.setPileupFilesForSource("beamhalo_plus",
+                                        *self.beamHaloPlusFiles)
+        if len(self.beamHaloMinusFiles) > 0:
+            cfg.setPileupFilesForSource("beamhalo_minus",
+                                        *self.beamHaloMinusFiles)
+        if len(self.cosmicPileupFiles) > 0:
+            cfg.setPileupFilesForSource("cosmics",
+                                        *self.cosmicPileupFiles)
+
+
+
         return cfg.data
-        
-                
+
+
     def loadConfiguration(self, cfgInstance):
         """
         _loadConfiguration_
@@ -586,7 +666,7 @@ class CMSSWConfig:
             msg += "Only available with scram runtime environment:\n"
             msg += str(ex)
             raise RuntimeError, msg
-        
+
         from ProdCommon.CMSConfigTools.ConfigAPI.CfgInterface import CfgInterface
         self.rawCfg = pickle.dumps(cfgInstance)
         cfgInterface = CfgInterface(cfgInstance)
@@ -615,15 +695,20 @@ class CMSSWConfig:
             newMod.update(modParams)
 
         #  //
-        # // ConfigMetadata 
+        # // ConfigMetadata
         #//
         self.configMetadata.update(cfgInterface.configMetadata())
+
+        #  //
+        # // conditions tag
+        #//
+        self.conditionsTag = cfgInterface.getConditionsTag()
 
         #  //
         # // Pileup Files
         #//
         self.pileupFiles = cfgInterface.pileupFileList()
-        
+
         return cfgInterface
 
 

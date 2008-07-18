@@ -59,7 +59,39 @@ class CfgInterface:
 
     def __str__(self):
         """string rep of self: give python format PSet"""
-        return self.data.dumpConfig()
+        return self.data.dumpPython()
+
+    def setConditionsTag(self, condTag):
+        """
+        _setConditionsTag-
+
+        Set the conditions glbal tag
+
+        """
+        globalPSet = getattr(
+            "GlobalTag", self.data, None)
+        if globalPSet == None:
+            return
+        globalTag = getattr("globaltag", globalPSet, None)
+        if globalTag == None:
+            globalPSet.globalTag = CfgTypes.string(condTag)
+        else:
+            globalPSet.globaltag = condTag
+        return
+
+    def getConditionsTag(self):
+        """
+        _getConditionsTag_
+
+        Retrieve the conditions tag if set, else None
+
+        """
+        globalPSet = getattr(
+            "GlobalTag", self.data, None)
+        if globalPSet == None:
+            return None
+        return getattr("globaltag",
+                       globalPSet, Utilities._CfgNoneType()).value()
 
 
     def mixingModules(self):
@@ -78,7 +110,7 @@ class CfgInterface:
             if value.type_() == "MixingModule":
                 result.append(value)
 
-	return result
+        return result
 
 
     def pileupFileList(self):
@@ -131,6 +163,41 @@ class CfgInterface:
                 print "PileupFile: %s " % str(fileName)
 
         return
+
+    def setPileupFilesForSource(self, sourceName, *fileList):
+        """
+        _setPileupFilesForSource
+
+        Insert the files provided into all mixing modules
+        for the secsource named sourceName
+
+        """
+        for mixMod in self.mixingModules():
+            secSource = getattr(mixMod, sourceName, None)
+            if secSource == None:
+                msg = "==============WARNING================\n"
+                msg += "No Input PoolRASource found for mixing module:\n"
+                msg += mixMod.dumpConfig()
+                msg += "\n With secsource named %s\n" % sourceName
+                msg += " Cannot add Pileup Files...\n"
+                msg += "======================================\n"
+                print msg
+                continue
+            oldfileList = getattr(secSource, "fileNames", None)
+            if oldfileList == None:
+                print "No existing file list in secsource %s" % sourceName
+                continue
+            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+                CfgTypes.vstring()))
+
+            for fileName in fileList:
+                secSource.fileNames.append(str(fileName))
+                print "Adding %s PileupFile: %s " % (sourceName, str(fileName))
+
+        return
+
+
+
 
     def insertSeeds(self, *seeds):
         """
