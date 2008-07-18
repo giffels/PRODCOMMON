@@ -69,10 +69,10 @@ class CfgInterface:
 
         """
         globalPSet = getattr(
-            "GlobalTag", self.data, None)
+            self.data, "GlobalTag", None)
         if globalPSet == None:
             return
-        globalTag = getattr("globaltag", globalPSet, None)
+        globalTag = getattr( globalPSet, "globaltag", None)
         if globalTag == None:
             globalPSet.globalTag = CfgTypes.string(condTag)
         else:
@@ -87,11 +87,11 @@ class CfgInterface:
 
         """
         globalPSet = getattr(
-            "GlobalTag", self.data, None)
+            self.data,"GlobalTag",  None)
         if globalPSet == None:
             return None
-        return getattr("globaltag",
-                       globalPSet, Utilities._CfgNoneType()).value()
+        return getattr(
+            globalPSet, "globaltag", Utilities._CfgNoneType()).value()
 
 
     def mixingModules(self):
