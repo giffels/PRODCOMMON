@@ -104,7 +104,7 @@ def combineReports(reportFile, reportNames, newReportInstance):
     if not isinstance(reportNames, list):
         reportNames = [reportNames]
 
-    updatedReport = False
+    reportFound = False
     output = IMProvDoc("JobReports")
     
     #wipe old values ready for new ones
@@ -113,14 +113,13 @@ def combineReports(reportFile, reportNames, newReportInstance):
     
     for report in existingReports:
         if report.name in reportNames:
+            reportFound = True
+            
             # copy some values across from old report
             newReportInstance.inputFiles.extend(report.inputFiles)
             newReportInstance.skippedEvents.extend(report.skippedEvents)
             newReportInstance.skippedFiles.extend(report.skippedFiles)
-            if report.timing.has_key('AppStartTime') and \
-                report.timing['AppStartTime'] < newReportInstance.timing.get('AppStartTime', time.time()):
-                newReportInstance.timing['AppStartTime'] = report.timing['AppStartTime']
-                
+    
             # loop over output files and change provenance to 1st node's
             for outfile in newReportInstance.files:
                 oldinputfiles = outfile.inputFiles
@@ -131,11 +130,17 @@ def combineReports(reportFile, reportNames, newReportInstance):
                         if ancestor['LFN'] == infile['LFN']:
                             outfile.inputFiles.extend(ancestor.inputFiles)
                        
-            updatedReport = True
-        else:
-            output.addNode(report.save())
+            if report.timing.has_key('AppStartTime') and \
+                report.timing['AppStartTime'] < newReportInstance.timing.get('AppStartTime', time.time()):
+                newReportInstance.timing['AppStartTime'] = report.timing['AppStartTime']
+            continue
+        
+        #  // if here either this report is not one of the inputs
+        # //     or the report contained a staged out file
+        #//            - in either case it must be saved
+        output.addNode(report.save())
     
-    if not updatedReport:
+    if not reportFound:
         raise RuntimeError, "Reports not combined: %s not found in %s" % \
                         (str(reportNames), reportFile)
     
