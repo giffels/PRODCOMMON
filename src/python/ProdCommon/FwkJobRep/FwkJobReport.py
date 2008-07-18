@@ -10,6 +10,7 @@ manipulating the bits and pieces of it.
 
 from ProdCommon.FwkJobRep.FileInfo import FileInfo, AnalysisFile
 from ProdCommon.FwkJobRep.PerformanceReport import PerformanceReport
+import ProdCommon.FwkJobRep.StorageStats as StorageStats
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
@@ -33,9 +34,9 @@ class FwkJobReport:
         self.errors = []
         self.skippedEvents = []
         self.skippedFiles = []
-        #  Set inital exitCode to an error code, it will be updated with 
+        #  Set inital exitCode to an error code, it will be updated with
         #    the correct value if the post job steps run correctly
-        self.exitCode = 50117  
+        self.exitCode = 50117
         self.siteDetails = {}
         self.timing = {}
         self.storageStatistics = None
@@ -44,10 +45,10 @@ class FwkJobReport:
         self.performance = PerformanceReport()
         self.removedFiles = {}
         self.logFiles = {}
-        self.unremovedFiles = {} 
+        self.unremovedFiles = {}
         self.analysisFiles = []
-        
-        
+
+
     def wasSuccess(self):
         """
         _wasSuccess_
@@ -62,8 +63,8 @@ class FwkJobReport:
         Otherwise it will return false
 
         """
-        return (self.exitCode == 0) and (self.status == "Success") 
-    
+        return (self.exitCode == 0) and (self.status == "Success")
+
 
 
     def newFile(self):
@@ -74,7 +75,7 @@ class FwkJobReport:
         returns a FwkJobRep.FileInfo
         object by reference that can be populated with extra details of
         the file.
-        
+
         """
         fileInfo = FileInfo()
         self.isInput = False
@@ -90,7 +91,7 @@ class FwkJobReport:
 
         """
         fileInfo = FileInfo()
-        fileInfo.isInput = True 
+        fileInfo.isInput = True
         self.inputFiles.append(fileInfo)
         return fileInfo
 
@@ -128,7 +129,7 @@ class FwkJobReport:
             { "Pfn" : pfn, "Lfn" : lfn}
             )
         return
-        
+
 
     def addError(self, status, errType):
         """
@@ -142,7 +143,7 @@ class FwkJobReport:
                     "Description": ""}
         self.errors.append(newError)
         return newError
-    
+
 
     def addRemovedFile(self, lfn, seName):
         """
@@ -152,17 +153,17 @@ class FwkJobReport:
         and the SEName where the file was removed
 
         """
-        
+
         self.removedFiles[lfn] = seName
         return
-    
+
     def addUnremovedFile (self, lfn, seName):
        """
        _addUnRemovedFile_
        """
-       
-       self.unremovedFiles[lfn] = seName 
-       
+
+       self.unremovedFiles[lfn] = seName
+
        return
 
     def addLogFile(self, lfn, seName):
@@ -171,7 +172,7 @@ class FwkJobReport:
         """
         self.logFiles[lfn] = seName
         return
-    
+
 
     def save(self):
         """
@@ -204,7 +205,7 @@ class FwkJobReport:
                        Value = str(self.exitCode)
                        )
             )
-        
+
         #  //
         # // Save Site details
         #//
@@ -212,9 +213,9 @@ class FwkJobReport:
             siteDetail = IMProvNode("SiteDetail", None,
                                     Parameter = key,
                                     Value = str(value))
-        
+
             result.addNode(siteDetail)
-        
+
         #  //
         # // Save Files
         #//
@@ -252,21 +253,21 @@ class FwkJobReport:
         #//
         for remLfn, remSE in self.removedFiles.items():
             result.addNode(IMProvNode("RemovedFile", remLfn, SEName=remSE))
-        
+
         #  //
         # // Save Unremoved Files
         #//
         for unremLfn, unremSE in self.unremovedFiles.items():
-            
+
             result.addNode(IMProvNode("UnremovedFile", unremLfn, SEName=unremSE))
 
-        
+
         #  //
         # // Save Log Files
         #//
         for logLfn, logSE in self.logFiles.items():
             result.addNode(IMProvNode("LogFile", logLfn, SEName=logSE))
-        
+
         #  //
         # // Save Errors
         #//
@@ -291,7 +292,7 @@ class FwkJobReport:
         if self.storageStatistics != None:
             result.addNode(
                 IMProvNode("StorageStatistics", self.storageStatistics))
-            
+
         genInfo = IMProvNode("GeneratorInfo")
         result.addNode(genInfo)
         for key, val in self.generatorInfo.items():
@@ -303,7 +304,7 @@ class FwkJobReport:
         # // Save Performance Report
         #//
         result.addNode(self.performance.save())
-        
+
         return result
 
     def write(self, filename):
@@ -317,13 +318,13 @@ class FwkJobReport:
         handle.write(self.save().makeDOMElement().toprettyxml())
         handle.close()
         return
-    
+
 
     def __str__(self):
         """strin representation of instance"""
         return str(self.save())
-        
-        
+
+
     def load(self, improvNode):
         """
         _load_
@@ -337,7 +338,7 @@ class FwkJobReport:
         self.jobType = improvNode.attrs.get("JobType", None)
         self.workflowSpecId =improvNode.attrs.get("WorkflowSpecID", None)
         self.dashboardId =improvNode.attrs.get("DashboardId", None)
-        
+
         exitQ = IMProvQuery(
             "/FrameworkJobReport/ExitCode[attribute(\"Value\")]")
         exitVals = exitQ(improvNode)
@@ -348,9 +349,9 @@ class FwkJobReport:
         # // Site details
         #//
         siteQ = IMProvQuery("/FrameworkJobReport/SiteDetail")
-        [ self.siteDetails.__setitem__(x.attrs['Parameter'], x.attrs['Value']) 
+        [ self.siteDetails.__setitem__(x.attrs['Parameter'], x.attrs['Value'])
           for x in siteQ(improvNode) ]
-        
+
         #  //
         # // output files
         #//
@@ -367,7 +368,7 @@ class FwkJobReport:
         for infileEntry in infileQ(improvNode):
             newInFile = self.newInputFile()
             newInFile.load(infileEntry)
-        
+
         #  //
         # // Skipped Events & Files
         #//
@@ -378,8 +379,8 @@ class FwkJobReport:
         [ self.addSkippedEvent(int(skipEv.attrs['Run']),
                                int(skipEv.attrs['Event']))
           for skipEv in skipEventQ(improvNode)]
-        
-        [ self.addSkippedFile(skipF.attrs['Pfn'], skipF.attrs['Lfn']) 
+
+        [ self.addSkippedFile(skipF.attrs['Pfn'], skipF.attrs['Lfn'])
           for skipF in skipFileQ(improvNode) ]
 
         #  //
@@ -409,7 +410,7 @@ class FwkJobReport:
         logFileQ = IMProvQuery("/FrameworkJobReport/LogFile")
         [ self.addLogFile(str(logF.chardata), logF.attrs['SEName'])
           for logF in logFileQ(improvNode) ]
-        
+
         #  //
         # // Timing, Storage and generator info
         #//
@@ -418,15 +419,16 @@ class FwkJobReport:
         [ self.timing.__setitem__(x.name, x.attrs['Value'])
           for x in timingQ(improvNode) ]
 
-        storageQ = IMProvQuery("/FrameworkJobReport/StorageStatistics[text()]")
+        storageQ = IMProvQuery("/FrameworkJobReport/StorageStatistics")
         storageInfo = storageQ(improvNode)
         if len(storageInfo) > 0:
-            self.storageStatistics = storageInfo[-1]
+            #self.storageStatistics = storageInfo[-1]
+            StorageStats.handleStorageStats(storageInfo[-1], self)
 
         genQ = IMProvQuery("/FrameworkJobReport/GeneratorInfo/Data")
         [ self.generatorInfo.__setitem__(x.attrs['Name'], x.attrs['Value'])
           for x in genQ(improvNode)]
-        
+
         errQ = IMProvQuery("/FrameworkJobReport/FrameworkError")
         errors  = errQ(improvNode)
         for err in errors:
@@ -439,10 +441,10 @@ class FwkJobReport:
         # // Performance reports
         #//
         self.performance.load(improvNode)
-        
+
         return
 
-        
+
 
 
 
