@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.8 2008/07/17 13:15:15 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: Exceptions.py,v 1.9 2008/07/17 14:28:48 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -24,11 +24,16 @@ class BossLiteError(Exception):
         Exception.__init__( self  )
         self.value = self.__class__.__name__
         self.msg = value
-        stack = inspect.trace(1)[-1]
-        self.data = { 'FileName' : stack[1],
-                      'LineNumber' : stack[2],
-                      'MethodName' : stack[3],
-                      'LineContent' : stack[4] }
+
+        # take more information if it applies
+        try:
+            stack = inspect.trace(1)[-1]
+            self.data = { 'FileName' : stack[1],
+                          'LineNumber' : stack[2],
+                          'MethodName' : stack[3],
+                          'LineContent' : stack[4] }
+        except Exception:
+            pass
 
 
     def __str__(self):
