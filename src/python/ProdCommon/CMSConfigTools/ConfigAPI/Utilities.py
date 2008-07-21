@@ -203,7 +203,14 @@ def checkOutputModule(outModInstance):
         raise CMSConfigError( msg, OutputModule = str(outModInstance),
                               TrackedParameter = "dataTier")
 
-    
+
+    checkVal = dataTier.value().strip()
+    if len(checkVal) == 0:
+        msg = "%s.dataset.dataTier is Empty\n" % outModInstance
+        msg += "This parameter needs to be a valid data Tier string\n"
+        raise CMSConfigError( msg, OutputModule = str(outModInstance),
+                              BadParameter = "dataTier")
+        
     return
 
 
