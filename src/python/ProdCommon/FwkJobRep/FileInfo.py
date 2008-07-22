@@ -22,7 +22,7 @@ class FileInfo(dict):
     few need to be list based
 
     """
-    
+
     def __init__(self):
         dict.__init__(self)
         self.setdefault("LFN", None)
@@ -67,9 +67,9 @@ class FileInfo(dict):
         # // Dataset is a dictionary and will have the same key
         #//  structure as the MCPayloads.DatasetInfo object
         self.dataset = []
-        
+
         #  //
-        # // Checksums include a flag indicating which kind of 
+        # // Checksums include a flag indicating which kind of
         #//  checksum alg was used.
         self.checksums = {}
 
@@ -77,8 +77,8 @@ class FileInfo(dict):
         # // Lumi section information
         #//
         self.lumisections = []
-        
-        
+
+
     def addInputFile(self, pfn, lfn):
         """
         _addInputFile_
@@ -106,7 +106,7 @@ class FileInfo(dict):
         newDS = DatasetInfo()
         self.dataset.append(newDS)
         return newDS
-        
+
     def addChecksum(self, algorithm, value):
         """
         _addChecksum_
@@ -136,14 +136,14 @@ class FileInfo(dict):
             "LumiEndTime" : None,
             "RunNumber" : runNumber,
             }
-        
+
         if (runNumber != None) and (runNumber not in self.runs):
             self.runs.append(runNumber)
         self.lumisections.append(lumiSect)
         return lumiSect
 
-    
-    
+
+
     def save(self):
         """
         _save_
@@ -170,7 +170,7 @@ class FileInfo(dict):
         #//
         for key, val in self.checksums.items():
             improvNode.addNode(IMProvNode("Checksum", val, Algorithm = key) )
-            
+
         #  //
         # // State
         #//
@@ -188,7 +188,7 @@ class FileInfo(dict):
                     inpNode.addNode(IMProvNode(key, value))
                 inputs.addNode(inpNode)
 
-    
+
         #  //
         # // Runs
         #//
@@ -205,7 +205,7 @@ class FileInfo(dict):
             improvNode.addNode(datasets)
             for datasetEntry in self.dataset:
                 datasets.addNode(datasetEntry.save())
-                
+
         #  //
         # // Branches
         #//
@@ -226,10 +226,10 @@ class FileInfo(dict):
                 IMProvNode(str(x[0]), None, Value = str(x[1]) ))
               for x in lumiSect.items() if x[1] != None ]
             lumi.addNode(node)
-            
+
         return improvNode
 
-    
+
     def load(self, improvNode):
         """
         _load_
@@ -254,15 +254,15 @@ class FileInfo(dict):
                 continue
             self[paramNode.name] = paramNode.chardata
 
-        
+
         #  //
         # // State
         #//
         stateQ = IMProvQuery("/%s/State[attribute(\"Value\")]" % queryBase)
         self.state = stateQ(improvNode)[-1]
 
-        
-        
+
+
         #  //
         # // Checksums
         #//
@@ -271,7 +271,7 @@ class FileInfo(dict):
             algo = cksum.attrs.get('Algorithm', None)
             if algo == None: continue
             self.addChecksum(str(algo), str(cksum.chardata))
-            
+
 
         #  //
         # // Inputs
@@ -303,16 +303,18 @@ class FileInfo(dict):
         runQ = IMProvQuery("/%s/Runs/Run[text()]" % queryBase)
         for run in runQ(improvNode):
             self.runs.append(int(run))
-            
+
         #  //
         # // Lumi Sections
         #//
         lumiQ = IMProvQuery("/%s/LumiSections/LumiSection" % queryBase)
         for lumiSect in lumiQ(improvNode):
             newLumi = self.addLumiSection(None, None)
-            
-            [ newLumi.__setitem__(x.name, x.attrs['Value'])
+
+            [ newLumi.__setitem__(str(x.name), str(x.attrs['Value']))
               for x in  lumiSect.children ]
+            newLumi['RunNumber'] = int(newLumi['RunNumber'])
+            newLumi['LumiSectionNumber'] = int(newLumi['LumiSectionNumber'])
 
         return
 
@@ -364,6 +366,6 @@ class AnalysisFile(dict):
                 self[str(child.name)] = attr
 
         return
-                
+
 
 
