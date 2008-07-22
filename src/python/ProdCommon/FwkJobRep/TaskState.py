@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.15 $"
-__revision__ = "$Id: TaskState.py,v 1.15 2007/09/18 13:37:14 evansde Exp $"
+__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: TaskState.py,v 1.1 2008/01/03 16:08:11 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -88,6 +88,7 @@ class TaskState:
         self.jobReport = os.path.join(self.dir, "FrameworkJobReport.xml")
         self.runresdb = os.path.join(self.dir, "RunResDB.xml")
         self.jobSpecNode = None
+        self.jobSpec = None
         
         self.taskAttrs = {}
         self.taskAttrs.setdefault("Name", None)
@@ -176,6 +177,7 @@ class TaskState:
             return
         jobSpec = JobSpec()
         jobSpec.load(specFile)
+        self.jobSpec = jobSpec
         self.jobSpecNode = jobSpec.findNode(self.taskAttrs['Name'])
         self.jobSpecLoaded = True
         return
