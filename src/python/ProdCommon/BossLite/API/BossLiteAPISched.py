@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.24 2008/07/11 15:40:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.24 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.25 2008/07/14 13:33:19 gcodispo Exp $"
+__revision__ = "$Revision: 1.25 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -75,7 +75,7 @@ class BossLiteAPISched(object):
 
         # scheduler
         self.scheduler = Scheduler.Scheduler(
-            schedulerConfig['name'], self.schedConfig
+            self.schedConfig['name'], self.schedConfig
             )
 
 
