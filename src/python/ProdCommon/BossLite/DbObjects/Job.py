@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.13 2008/07/02 07:41:36 gcodispo Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: Job.py,v 1.14 2008/07/02 12:59:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.14 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -168,6 +168,14 @@ class Job(DbObject):
 
             # update running job if associated
             if deep and self.runningJob is not None:
+                if self.data['submissionNumber'] != \
+                       self.runningJob['submission']:
+                    raise JobError(
+                        "Running instance of job %s.%s with invalid " \
+                        + " submission number: %s instead of %s " \
+                        % ( self.data['jobId'], self.data['taskId'], \
+                            self.runningJob['submission'], \
+                            self.data['submissionNumber'] ) )
                 status += self.runningJob.update(db)
 
         # database error
