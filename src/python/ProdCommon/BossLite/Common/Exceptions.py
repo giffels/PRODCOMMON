@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.9 2008/07/17 14:28:48 gcodispo Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: Exceptions.py,v 1.10 2008/07/18 14:48:56 gcodispo Exp $"
+__revision__ = "$Revision: 1.10 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -24,7 +24,7 @@ class BossLiteError(Exception):
         Exception.__init__( self  )
         self.value = self.__class__.__name__
         self.msg = value
-
+        self.data = {}
         # take more information if it applies
         try:
             stack = inspect.trace(1)[-1]
