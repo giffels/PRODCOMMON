@@ -4,11 +4,12 @@ _SchedulerInterface_
 
 """
 
+import os
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.27 2008/07/15 10:08:51 gcodispo Exp $"
-__revision__ = "$Revision: 1.27 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.28 2008/07/17 14:29:36 gcodispo Exp $"
+__revision__ = "$Revision: 1.28 $"
 
 
 
@@ -67,6 +68,18 @@ class SchedulerInterface(object):
             timeout = int ( timeout )
             
         self.timeout = timeout
+
+    ##########################################################################
+
+    def getUserProxy(self):
+        """ retrieve PROXY Default Certificate File name"""
+
+        if self.cert is not None and self.cert != '':
+            return self.cert
+        try:
+            return os.environ['X509_USER_PROXY']
+        except:
+            return '/tmp/x509up_u'+ repr(os.getuid())
 
     ##########################################################################
 

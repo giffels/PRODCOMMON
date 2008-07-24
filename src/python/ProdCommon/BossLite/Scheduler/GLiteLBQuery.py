@@ -4,15 +4,14 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.11 2008/04/18 14:01:07 gcodispo Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.12 2008/04/28 14:21:51 gcodispo Exp $"
+__version__ = "$Revision: 1.12 $"
 
 import sys
 import os
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
 import Job as lbJob
-import time
 
 
 def config():
@@ -174,9 +173,8 @@ def checkJobsBulk( job_list, userProxy='' ):
     elif type( job_list ) == list :
         jobs = job_list
 
-    if userProxy == '':
-        userProxy = '/tmp/x509up_u' + str( os.getuid() )
-    os.environ["X509_USER_PROXY"] = userProxy
+    if userProxy != '':
+        os.environ["X509_USER_PROXY"] = userProxy
 
     # instatiating status object
     status = Status()

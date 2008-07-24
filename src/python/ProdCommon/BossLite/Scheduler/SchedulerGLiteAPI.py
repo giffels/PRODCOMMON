@@ -3,12 +3,13 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.75 2008/07/10 13:12:24 gcodispo Exp $"
-__version__ = "$Revision: 1.75 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.76 2008/07/17 14:26:47 gcodispo Exp $"
+__version__ = "$Revision: 1.76 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
 import socket
+import tempfile
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
@@ -19,6 +20,7 @@ from ProdCommon.BossLite.DbObjects.Task import Task
 try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
+    from wmproxymethods import WMPException
 except StandardError, stde:
     warn = \
          """
@@ -317,7 +319,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def wmproxyInit( self, wms, delegate=False ) :
+    def wmproxyInit( self, wms ) :
         """
         initialize Wmproxy and perform everything needed
         """
@@ -333,9 +335,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 pass
 
         wmproxy.soapInit()
-        # delegate proxy
-        if delegate :
-            self.delegateProxy( wms )
 
         return wmproxy
 
@@ -359,14 +358,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                       'already exist' )
 
             # initialize wmproxy
-            self.hackEnv() ### TEMP FIX
-        
             # initialize wms connection
-            wmproxy = self.wmproxyInit( wms, delegate = True )
+            wmproxy = self.wmproxyInit( wms )
 
             # register job: time consumng operation
-            task = wmproxy.jobRegister ( jdl, self.delegationId )
+            self.hackEnv() ### TEMP FIX
 
+            try:
+                task = wmproxy.jobRegister ( jdl, self.delegationId )
+            except WMPException, wmpError :
+                if wmpError.toString().find('Unable to get delegated Proxy'):
+                    self.delegateProxy( wmproxy )
+                    task = wmproxy.jobRegister ( jdl, self.delegationId )
+                else:
+                    raise wmpError
+            
             # retrieve parent id
             taskId = str( task.getJobId() )
 
@@ -434,36 +440,47 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         return taskId, returnMap
 
-
     ##########################################################################
-    def delegateProxy( self, wms ):
+    def delegateProxy( self, wmproxy ):
         """
         delegate proxy to a wms
         """
 
         ### # to use it asap:
-        ### proxycert = wmproxy.getProxyReq(delegationId)
+        ### proxycert = wmproxy.getProxyReq(self.delegationId)
         ### result = wmproxy.signProxyReqStr(proxycert)
         ### wmproxy.putProxy(delegationId,result )
 
         ### # possible right now:
-        ### proxycert = '"' + wmproxy.getProxyReq(delegationId) + '"'
-        ### os.system("glite-proxy-cert -p " + proxycert)
-        ### proxyres = open("proxyresult.log")
-        ### result = ''.join( proxyres.readlines() )
-        ### wmproxy.putProxy(delegationId,result )
-        ### proxyres.close()
+        ofile, tmpfile = tempfile.mkstemp( '', 'proxy_del_' )
+        os.close( ofile )
+        proxycert = wmproxy.getProxyReq(self.delegationId)
+        # cmd =  "glite-proxy-cert -o " + tmpfile + " -p '" + proxycert \
+        #       + "' "  + self.getProxy()
 
-        command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
-                  + " --endpoint " + wms
+        os.environ["PROXY_REQUEST"] = proxycert
+        cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " \
+              + self.getUserProxy()
+        msg = self.ExecuteCommand( cmd )
+        if msg.find("Error") >= 0 :
+            os.unlink( tmpfile )
+            raise SchedulerError("Unable to delegate proxy", msg, cmd)
 
-        if self.cert != '' :
-            command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
+        proxyres = open( tmpfile )
+        wmproxy.putProxy( self.delegationId, ''.join( proxyres.readlines() ) )
+        proxyres.close()
+        os.unlink( tmpfile )
 
-        msg = self.ExecuteCommand( command )
-
-        if msg.find("Error -") >= 0 :
-            self.warnings.append( "Warning : " + str( msg ) )
+        ### command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
+        ###           + " --endpoint " + wms
+        ### 
+        ### if self.cert != '' :
+        ###     command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
+        ### 
+        ### msg = self.ExecuteCommand( command )
+        ### 
+        ### if msg.find("Error -") >= 0 :
+        ###     self.warnings.append( "Warning : " + str( msg ) )
 
 
     ##########################################################################
@@ -526,11 +543,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # actions.append( "Submitted successfully to : " + wms )
                 break
             
-            except BaseException, err:
+            except :#BaseException, err:
                 # actions.append( "Failed submit to : " + wms )
-                errors += 'failed to submit to ' + wms + \
-                          ' : ' + formatWmpError( err )
-                continue
+                # errors += 'failed to submit to ' + wms + \
+                #          ' : ' + formatWmpError( err )
+                #break #continue
+                raise
+            
 
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
@@ -1027,9 +1046,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
              checkJobs, checkJobsBulk
         if objType == 'node':
-            return checkJobs( schedIdList, self.cert )
+            return checkJobs( schedIdList, self.getUserProxy() )
         elif objType == 'parent' :
-            return checkJobsBulk( schedIdList, self.cert )
+            return checkJobsBulk( schedIdList, self.getUserProxy() )
 
 
     ##########################################################################
