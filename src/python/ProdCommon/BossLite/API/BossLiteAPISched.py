@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.25 2008/07/14 13:33:19 gcodispo Exp $"
-__revision__ = "$Revision: 1.25 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.26 2008/07/22 13:55:01 gcodispo Exp $"
+__revision__ = "$Revision: 1.26 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -119,8 +119,7 @@ class BossLiteAPISched(object):
             self.scheduler.submit( task, requirements )
 
             # update & set logger
-            self.bossLiteSession.updateRunningInstances( task, \
-                                                         notSkipClosed=False )
+            self.bossLiteSession.updateDB( task )
             self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
@@ -170,8 +169,7 @@ class BossLiteAPISched(object):
             self.scheduler.submit( task, requirements )
 
             # update & set logger
-            self.bossLiteSession.updateRunningInstances( task, \
-                                                         notSkipClosed=False )
+            self.bossLiteSession.updateDB( task )
             self.bossLiteLogger = BossLiteLogger( task )
 
         except BossLiteError, e:
