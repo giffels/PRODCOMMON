@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.26 2008/07/22 13:55:01 gcodispo Exp $"
-__revision__ = "$Revision: 1.26 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.27 2008/07/24 16:50:14 gcodispo Exp $"
+__revision__ = "$Revision: 1.27 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -16,7 +16,7 @@ from ProdCommon.BossLite.API.BossLiteAPI import BossLiteAPI
 # Scheduler interaction
 from ProdCommon.BossLite.Scheduler import Scheduler
 from ProdCommon.BossLite.Common.BossLiteLogger import BossLiteLogger
-from ProdCommon.BossLite.Common.Exceptions import BossLiteError
+from ProdCommon.BossLite.Common.Exceptions import BossLiteError, SchedulerError
 
 
 ##########################################################################
@@ -62,16 +62,18 @@ class BossLiteAPISched(object):
 
             # retrieve scheduler
             # FIXME : to be replaced with a task specific field
-            for job in task.jobs :
-                if job.runningJob['scheduler'] is not None:
-                    scheduler = job.runningJob['scheduler']
-                    break
-            if scheduler is not None :
-                self.schedConfig['name'] = scheduler
+            if not self.schedConfig.has_key('name') :
+                for job in task.jobs :
+                    if job.runningJob['scheduler'] is not None:
+                        self.schedConfig['name'] = job.runningJob['scheduler']
 
             # retrieve proxy
             if task['user_proxy'] is not None:
                 self.schedConfig['name'] = scheduler
+
+        if not self.schedConfig.has_key('name') :
+            raise SchedulerError( 'Invalid scheduler', \
+                                  'Missing scheduler name in configuration' )
 
         # scheduler
         self.scheduler = Scheduler.Scheduler(
