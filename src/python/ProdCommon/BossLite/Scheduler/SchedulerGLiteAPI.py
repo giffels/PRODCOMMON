@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.76 2008/07/17 14:26:47 gcodispo Exp $"
-__version__ = "$Revision: 1.76 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.77 2008/07/24 16:28:27 gcodispo Exp $"
+__version__ = "$Revision: 1.77 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -459,9 +459,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         #       + "' "  + self.getProxy()
 
         os.environ["PROXY_REQUEST"] = proxycert
-        cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " \
-              + self.getUserProxy()
+        cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " #\
+              # + self.getUserProxy()
         msg = self.ExecuteCommand( cmd )
+
         if msg.find("Error") >= 0 :
             os.unlink( tmpfile )
             raise SchedulerError("Unable to delegate proxy", msg, cmd)
@@ -543,13 +544,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # actions.append( "Submitted successfully to : " + wms )
                 break
             
-            except :#BaseException, err:
+            except BaseException, err:
                 # actions.append( "Failed submit to : " + wms )
-                # errors += 'failed to submit to ' + wms + \
-                #          ' : ' + formatWmpError( err )
-                #break #continue
-                raise
-            
+                errors += 'failed to submit to ' + wms + \
+                          ' : ' + formatWmpError( err )
+                continue
 
         # clean files
         os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
