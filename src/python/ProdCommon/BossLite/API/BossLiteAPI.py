@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.61 2008/07/14 14:48:27 gcodispo Exp $"
-__revision__ = "$Revision: 1.61 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.62 2008/07/24 17:13:26 gcodispo Exp $"
+__revision__ = "$Revision: 1.62 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -127,18 +127,8 @@ class BossLiteAPI(object):
         for job in task.jobs:
 
             # update only loaded instances!
-            if job.runningJob is None:
-                continue
-
-            # check consistency
-            if job['submissionNumber'] != job.runningJob['submission']:
-                raise JobError( "Running instance of job %s.%s with invalid " \
-                                + " submission number: %s instead of %s " \
-                                % ( job['jobId'], job['taskId'], \
-                                    job.runningJob['submission'], \
-                                    job['submissionNumber'] ) )
-            # update
-            job.runningJob.update(self.db, notSkipClosed)
+            if job.runningJob is not None:
+                job.updateRunningInstance(self.db, notSkipClosed)
 
         self.bossLiteDB.session.commit()
 

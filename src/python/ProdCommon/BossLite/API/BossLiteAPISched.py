@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.27 2008/07/24 16:50:14 gcodispo Exp $"
-__revision__ = "$Revision: 1.27 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.28 2008/07/25 08:33:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.28 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -69,7 +69,7 @@ class BossLiteAPISched(object):
 
             # retrieve proxy
             if task['user_proxy'] is not None:
-                self.schedConfig['name'] = scheduler
+                self.schedConfig['user_proxy'] = task['user_proxy']
 
         if not self.schedConfig.has_key('name') :
             raise SchedulerError( 'Invalid scheduler', \
@@ -127,8 +127,7 @@ class BossLiteAPISched(object):
         except BossLiteError, e:
 
             # update & set logger
-            self.bossLiteSession.updateRunningInstances( task, \
-                                                         notSkipClosed=False )
+            self.bossLiteSession.updateDB( task )
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
@@ -177,8 +176,7 @@ class BossLiteAPISched(object):
         except BossLiteError, e:
 
             # update & set logger
-            self.bossLiteSession.updateRunningInstances( task, \
-                                                         notSkipClosed=False )
+            self.bossLiteSession.updateDB( task )
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception

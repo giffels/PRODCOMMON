@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.15 2008/05/16 14:12:08 gcodispo Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: RunningJob.py,v 1.16 2008/05/30 09:46:50 gcodispo Exp $"
+__revision__ = "$Revision: 1.16 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -85,7 +85,8 @@ class RunningJob(DbObject):
     # database properties
     tableName = "bl_runningjob"
     tableIndex = ["taskId", "jobId", "submission"]
-    timeFields = ['lbTimestamp','submissionTime', 'startTime', 'stopTime', 'getOutputTime']
+    timeFields = ['lbTimestamp', 'submissionTime', 'startTime', \
+                  'stopTime', 'getOutputTime']
     # exception class
     exception = JobError
 

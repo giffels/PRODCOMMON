@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.14 2008/07/02 12:59:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.14 $"
+__version__ = "$Id: Job.py,v 1.15 2008/07/24 17:13:26 gcodispo Exp $"
+__revision__ = "$Revision: 1.15 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -304,6 +304,26 @@ class Job(DbObject):
             raise JobError("Multiple running instances of job %s : %s" % \
                            (self['jobId'], len(runningJobs)))
 
+    ##########################################################################
+
+    def updateRunningInstance(self, db, notSkipClosed = True):
+        """
+        update current running job
+        """
+
+        # check consistency
+        if self.runningJob['taskId'] != self.data['taskId'] or \
+               self.runningJob['jobId'] != self.data['jobId'] or \
+               self.runningJob['submission'] != self.data['submissionNumber'] :
+            raise JobError( "Running instance of job %s.%s with invalid " \
+                            + " submission number: %s instead of %s " \
+                            % ( self.data['jobId'], self.data['taskId'], \
+                                self.runningJob['submission'], \
+                                self.data['submissionNumber'] ) )
+
+        # update
+        self.runningJob.update(db, notSkipClosed)
+        
     ##########################################################################
 
     def closeRunningInstance(self, db):
