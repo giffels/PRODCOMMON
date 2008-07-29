@@ -6,8 +6,8 @@ API for dealing with retrieving information from SiteDB
 
 """
 
-__revision__ = "$Id: SiteDB.py,v 1.4 2008/07/08 19:35:07 ewv Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SiteDB.py,v 1.5 2008/07/08 22:19:00 ewv Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import urllib
 import cStringIO
@@ -15,7 +15,7 @@ import tokenize
 
 class SiteDBJSON:
 
-  SITEDB_JSON="https://cmsweb.cern.ch/sitedb/sitedb/json/index/"
+  SITEDB_JSON="https://cmsweb.cern.ch/sitedb/json/index/"
 
 
   def dnUserName(self,dn):
@@ -108,6 +108,7 @@ class SiteDBJSON:
       except ValueError:
         return float(token[1])
     else:
+      print "Bad token",token
       raise SyntaxError("Malformed expression")
 
 
