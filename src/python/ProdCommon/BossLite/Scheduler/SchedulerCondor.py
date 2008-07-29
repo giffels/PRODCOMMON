@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.10 2008/06/24 16:52:12 ewv Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.11 2008/07/07 20:42:53 ewv Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import re
 import os
@@ -96,9 +96,10 @@ class SchedulerCondor(SchedulerCondorCommon) :
       x509 = None
       x509tmp = '/tmp/x509up_u'+str(os.getuid())
       if 'X509_USER_PROXY' in os.environ:
-         x509 = os.environ['X509_USER_PROXY']
+          if os.path.isfile(os.environ['X509_USER_PROXY']):
+              x509 = os.environ['X509_USER_PROXY']
       elif os.path.isfile(x509tmp):
-         x509 = x509tmp
+          x509 = x509tmp
 
       if x509:
         jdl += 'x509userproxy = %s\n' % x509
