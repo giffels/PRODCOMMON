@@ -39,13 +39,13 @@ class GeneratorMaker(dict):
     def __call__(self, payloadNode):
         if payloadNode.type != "CMSSW":
             return
-        
+
         if payloadNode.cfgInterface != None:
             generator = CfgGenerator(payloadNode.cfgInterface, False,
                                      payloadNode.applicationControls)
             self[payloadNode.name] = generator
             return
-            
+
         if payloadNode.configuration in ("", None):
             #  //
             # // Isnt a config file
@@ -60,8 +60,8 @@ class GeneratorMaker(dict):
             # // Cant read config file => not a config file
             #//
             return
-    
-        
+
+
 
 
 class RequestJobFactory:
@@ -76,23 +76,19 @@ class RequestJobFactory:
         self.workflowSpec = workflowSpec
         self.workingDir = workingDir
         self.count = args.get("InitialRun", 1)
+        self.firstEvent = args.get("InitialEvent", 0)
         self.jobnumber = 0
         self.totalEvents = totalEvents
         self.currentJob = None
         self.pileupDatasets = {}
-
-        
-        #  //
-        # // Initially hard coded, should be extracted from Component Config
-        #//
         self.eventsPerJob = args.get("EventsPerJob",  100)
-        
+
         self.sites = args.get("Sites", [] )
         self.generators = GeneratorMaker()
         self.workflowSpec.payload.operate(self.generators)
-        
-        
-        
+
+
+
         #  //
         # // Cache Area for JobSpecs
         #//
@@ -101,7 +97,7 @@ class RequestJobFactory:
             "%s-Cache" %self.workflowSpec.workflowName())
         if not os.path.exists(self.specCache):
             os.makedirs(self.specCache)
-        
+
 
 
     def loadPileupDatasets(self):
@@ -109,7 +105,7 @@ class RequestJobFactory:
         _loadPileupDatasets_
 
         Are we dealing with pileup? If so pull in the file list
-        
+
         """
         puDatasets = self.workflowSpec.pileupDatasets()
         if len(puDatasets) > 0:
@@ -121,7 +117,7 @@ class RequestJobFactory:
 
 
 
-            
+
     def __call__(self):
         """
         _operator()_
@@ -130,12 +126,12 @@ class RequestJobFactory:
         generic workflow and return it.
 
         """
-        
+
         self.loadPileupDatasets()
-        
+
         result = []
         numberOfJobs = (self.totalEvents/self.eventsPerJob) + 1
-        
+
         for i in range(numberOfJobs):
             newJobSpec = self.createJobSpec()
             jobDict = {
@@ -148,7 +144,7 @@ class RequestJobFactory:
             result.append(jobDict)
             self.count += 1
             self.jobnumber += 1
-        
+            self.firstEvent += self.eventsPerJob
 
         return result
 
@@ -160,7 +156,7 @@ class RequestJobFactory:
         Load the WorkflowSpec object and generate a JobSpec from it
 
         """
-        
+
         jobSpec = self.workflowSpec.createJobSpec()
         jobName = "%s-%s" % (
             self.workflowSpec.workflowName(),
@@ -171,7 +167,7 @@ class RequestJobFactory:
         jobSpec.setJobType("Processing")
         jobSpec.parameters['RunNumber'] = self.count
 
-        
+
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
         jobSpec.payload.operate(self.generateJobConfig)
         jobSpec.payload.operate(self.generateCmsGenConfig)
@@ -181,25 +177,25 @@ class RequestJobFactory:
             os.makedirs(specCacheDir)
         jobSpecFile = os.path.join(specCacheDir,
                                    "%s-JobSpec.xml" % jobName)
-        
 
-        
+
+
         #  //
         # // Add site pref if set
         #//
         [ jobSpec.addWhitelistSite(x) for x in self.sites ]
-            
-        jobSpec.save(jobSpecFile)        
+
+        jobSpec.save(jobSpecFile)
         return jobSpecFile
-        
-        
+
+
     def generateJobConfig(self, jobSpecNode):
         """
         _generateJobConfig_
-        
+
         Operator to act on a JobSpecNode tree to convert the template
         config file into a JobSpecific Config File
-        
+
         """
         if jobSpecNode.name not in self.generators.keys():
             return
@@ -211,33 +207,26 @@ class RequestJobFactory:
             if outMaxEv != None:
                 useOutputMaxEv = True
 
-        #  //
-        # // If we need to control event numbers, can do something like this
-        #//
-        #firstEventOffset = self.workflowSpec.parameters.get(
-        #    "EventNumberOffset", 0)
-        #firstEventValue = self.jobnumber * self.eventsPerJob
-        #firstEventValue += firstEventOffset
 
-        
-        
+
+
         if useOutputMaxEv:
             jobCfg = generator(
                 self.currentJob,
                 maxEventsWritten = self.eventsPerJob,
-                #firstEvent = firstEventValue,
+                firstEvent = self.firstEvent,
                 firstRun = self.workflowSpec.workflowRunNumber(),
                 firstLumi = self.count)
         else:
             jobCfg = generator(
                 self.currentJob,
                 maxEvents = self.eventsPerJob,
-                #firstEvent = firstEventValue,
+                firstEvent = self.firstEvent,
                 firstRun = self.workflowSpec.workflowRunNumber(),
                 firstLumi = self.count)
-            
-            
-        
+
+
+
         #  //
         # // Is there pileup for this node?
         #//
@@ -246,20 +235,20 @@ class RequestJobFactory:
             logging.debug("Node: %s has a pileup dataset: %s" % (
                 jobSpecNode.name,  puDataset.dataset,
                 ))
-            
+
             #  //
             # // In event of being no site whitelist, should we
             #//  restrict the site whitelist to the list of sites
             #  //containing the PU sample?
-            # // 
+            # //
             #//
             fileList = puDataset.getPileupFiles(*self.sites)
             jobCfg.pileupFiles = fileList
             logging.debug("Pileup Files Added: %s" % fileList)
-            
-            
-            
-        
+
+
+
+
         jobSpecNode.cfgInterface = jobCfg
         return
 
@@ -283,7 +272,7 @@ class RequestJobFactory:
         jobSpecNode.applicationControls['logicalFileName'] = "%s-%s.root" % (
             self.currentJob, jobSpecNode.name)
         return
-        
+
 
 
 
