@@ -4,6 +4,7 @@ from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
 from ProtocolRfio import ProtocolRfio
+from ProtocolLcgUtils import ProtocolLcgUtils
 
 class SElement(object):
     """
@@ -11,7 +12,7 @@ class SElement(object):
     [just a bit more then a classis struct type]
     """
 
-    _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio"]
+    _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", "srm-lcg", "gsiftp-lcg"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -29,9 +30,9 @@ class SElement(object):
         """
         return default port for given protocol 
         """
-        if protocol in ["srmv1", "srmv2"]:
+        if protocol in ["srmv1", "srmv2", "srm-lcg"]:
             return "8443"
-        elif protocol in ["local", "gridftp", "rfio"]:
+        elif protocol in ["local", "gridftp", "rfio", "gsiftp-lcg"]:
             return ""
         else:
             raise ProtocolUnknown()
@@ -50,6 +51,8 @@ class SElement(object):
             return ProtocolGsiFtp()
         elif protocol == "rfio":
             return ProtocolRfio()
+        elif protocol in ["srm-lcg", "gsiftp-lcg"]:
+            return ProtocolLcgUtils()
         else:
             raise ProtocolUnknown()
 
@@ -58,14 +61,14 @@ class SElement(object):
         return the lynk + the path of the SE
         """
         from os.path import join
-        if self.protocol in ["srmv1", "srmv2"]:
+        if self.protocol in ["srmv1", "srmv2", "srm-lcg"]:
             return ("srm://" + self.hostname + ":" + self.port + \
                     join("/", self.workon))
         elif self.protocol == "local":
             if self.workon[0] != '/':
                 self.workon = join("/", self.workon) 
             return ("file://" + self.workon)
-        elif self.protocol == "gridftp":
+        elif self.protocol in ["gridftp", "gsiftp-lcg"]:
             return ("gsiftp://" + self.hostname + join("/", self.workon) )
         elif self.protocol == "rfio":
             return (self.hostname + ":" + self.workon)

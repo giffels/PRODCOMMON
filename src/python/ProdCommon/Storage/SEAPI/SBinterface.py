@@ -3,6 +3,7 @@ from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
 from ProtocolRfio import ProtocolRfio
+from ProtocolLcgUtils import ProtocolLcgUtils
 from SElement import SElement
 from Exceptions import MissingDestination, ProtocolUnknown, ProtocolMismatch
 
@@ -24,7 +25,9 @@ class SBinterface:
         if self.mono:
             if storel1.protocol != storel2.protocol:
                 if storel1.protocol != 'local' and storel2.protocol != 'local':
-                    raise ProtocolMismatch('Mismatch between protocol %s - %s' \
+                    if not (storel1.protocol in ["srm-lcg", "gsiftp-lcg"] and \
+                       storel2.protocol in ["srm-lcg", "gsiftp-lcg"]):
+                        raise ProtocolMismatch('Mismatch between protocol %s-%s'\
                                           %(storel1.protocol, storel2.protocol))
         
     def copy( self, source, dest, proxy = None ):
