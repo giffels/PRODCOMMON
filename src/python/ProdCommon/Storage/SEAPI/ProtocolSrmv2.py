@@ -8,11 +8,11 @@ class ProtocolSrmv2(Protocol):
 
     def __init__(self):
         super(ProtocolSrmv2, self).__init__()
-        self._options = " -2 -debug=true " 
+        self._options = " -2 -debug=true -protocols=gsiftp,http " 
 
     def simpleOutputCheck(self, outLines):
         """
-        parse line by line the outLines text lookng for Exceptions
+        parse line by line the outLines text looking for Exceptions
         """
         problems = []
         lines = outLines.split("\n")
@@ -49,7 +49,20 @@ class ProtocolSrmv2(Protocol):
 
     def move(self, source, dest, proxy = None):
         """
-        srmmv
+        with srmmv "source and destination have to have same URL type"
+         => copy and delete
+        """
+        if self.checkExists(dest, proxy):
+            problems = ["destination file already existing", dest.workon]
+            raise TransferException("Error moving [" +source.workon+ "] to [" \
+                                    + dest.workon + "]", problems)
+        self.copy(source, dest, proxy)
+        if self.checkExists(dest, proxy):
+            self.delete(source, proxy)
+        else:
+            raise TransferException("Error deleting [" +source.workon+ "]", \
+                                     ["Uknown Problem"] )
+
         """
         fullSource = "file:///" + str(source.workon)
         fullDest = "file:///" + str(dest.workon)
@@ -70,6 +83,7 @@ class ProtocolSrmv2(Protocol):
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
+        """
 
     def deleteRec(self, source, proxy):
         self.delete(source, proxy)
