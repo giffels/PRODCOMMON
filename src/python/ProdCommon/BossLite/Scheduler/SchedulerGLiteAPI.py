@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.77 2008/07/24 16:28:27 gcodispo Exp $"
-__version__ = "$Revision: 1.77 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.78 2008/07/26 09:25:35 gcodispo Exp $"
+__version__ = "$Revision: 1.78 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -358,11 +358,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                       'already exist' )
 
             # initialize wmproxy
+            self.hackEnv() ### TEMP FIX
             # initialize wms connection
             wmproxy = self.wmproxyInit( wms )
 
             # register job: time consumng operation
-            self.hackEnv() ### TEMP FIX
+            #TOO LATE for X509 proxy setting: self.hackEnv() ### TEMP FIX
 
             try:
                 task = wmproxy.jobRegister ( jdl, self.delegationId )
