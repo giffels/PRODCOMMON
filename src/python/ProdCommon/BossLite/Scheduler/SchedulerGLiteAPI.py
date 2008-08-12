@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.78 2008/07/26 09:25:35 gcodispo Exp $"
-__version__ = "$Revision: 1.78 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.79 2008/08/11 15:53:24 afanfani Exp $"
+__version__ = "$Revision: 1.79 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -210,14 +210,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         explicit proxy
         """
 
-        if self.envProxy is None or self.cert == '':
+        #if self.envProxy is None or self.cert == '':
+        if self.cert == '':
             return
 
         if restore :
+            if self.envProxy is None: 
+                self.envProxy = ''
             os.environ["X509_USER_PROXY"] = self.envProxy
         else :
             os.environ["X509_USER_PROXY"] = self.cert
 
+        return
 
     ##########################################################################
     def mergeJDL( self, jdl, wms='', configfile='' ):
