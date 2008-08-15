@@ -105,7 +105,7 @@ class WorkflowMaker:
         self.cmsRunNodes = [self.cmsRunNode]
 
 
-    def chainCmsRunNode(self, stageOutIntermediates = False):
+    def chainCmsRunNode(self, stageOutIntermediates = False, *outputModules):
         """
         append a cmsRun config to the current cmsRun node and chain them
         """
@@ -115,12 +115,13 @@ class WorkflowMaker:
         newnode = self.cmsRunNode.newNode("cmsRun%s" % 
                                           (len(self.cmsRunNodes) + 1))
         newnode.type = "CMSSW"
-        for outmodule in self.configurations[-1].outputModules.keys():
+        if not outputModules:
+            outputModules = self.configurations[-1].outputModules.keys()
+        for outmodule in outputModules:
             newnode.addInputLink(self.cmsRunNode.name, outmodule,
                         'source', AppearStandalone = not stageOutIntermediates)
         self.cmsRunNode = newnode
         self.cmsRunNodes.append(newnode)
-        #return self.cmsRunNode
 
 
     def changeCategory(self, newCategory):
