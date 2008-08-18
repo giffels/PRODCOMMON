@@ -30,7 +30,7 @@ class SBinterface:
                         raise ProtocolMismatch('Mismatch between protocol %s-%s'\
                                           %(storel1.protocol, storel2.protocol))
         
-    def copy( self, source, dest, proxy = None ):
+    def copy( self, source = "", dest = "", proxy = None ):
         if not self.mono:
             raise MissingDestination()
         else:
@@ -45,7 +45,7 @@ class SBinterface:
             self.storage1.workon = ""
             self.storage2.workon = ""
 
-    def move( self, source, dest, proxy = None ):
+    def move( self, source = "", dest = "", proxy = None ):
         if not self.mono:
             raise MissingDestination()
         else:
@@ -60,7 +60,7 @@ class SBinterface:
             self.storage1.workon = ""
             self.storage2.workon = ""
 
-    def checkExists( self, source, proxy = None ):
+    def checkExists( self, source = "", proxy = None ):
         self.storage1.workon = source
         resval = False;
         if self.useProxy:
@@ -70,7 +70,7 @@ class SBinterface:
         self.storage1.workon = ""
         return resval
 
-    def getPermission( self, source, proxy = None ):
+    def getPermission( self, source = "", proxy = None ):
         self.storage1.workon = source
         resval = None
         if self.useProxy:
@@ -80,10 +80,10 @@ class SBinterface:
         self.storage1.workon = ""
         return resval
 
-    def getList( self, source, proxy = None ):
+    def getList( self, source = "", proxy = None ):
         pass
 
-    def delete( self, source, proxy = None ):
+    def delete( self, source = "", proxy = None ):
         self.storage1.workon = source
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy)
@@ -91,7 +91,7 @@ class SBinterface:
             self.storage1.action.delete(self.storage1)
         self.storage1.workon = ""
 
-    def deleteRec( self, source, proxy = None ):
+    def deleteRec( self, source = "", proxy = None ):
         self.storage1.workon = source
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy)
@@ -99,7 +99,7 @@ class SBinterface:
             self.storage1.action.delete(self.storage1)
         self.storage1.workon = ""
 
-    def getSize( self, source, proxy = None ):
+    def getSize( self, source = "", proxy = None ):
         self.storage1.workon = source
         if self.useProxy:
             size = self.storage1.action.getFileSize(self.storage1, proxy)
@@ -108,7 +108,7 @@ class SBinterface:
         self.storage1.workon = ""
         return size
 
-    def getDirSpace( self, source, proxy = None ):
+    def getDirSpace( self, source = "", proxy = None ):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
             val = self.storage1.action.getDirSize(self.storage1)
@@ -117,7 +117,7 @@ class SBinterface:
         else: 
             return 0
 
-    def getGlobalSpace( self, source, proxy = None ):
+    def getGlobalSpace( self, source = "", proxy = None ):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
             val = self.storage1.action.getGlobalQuota(self.storage1)
@@ -126,7 +126,7 @@ class SBinterface:
         else:
             return ['0%', '0', '0'] 
 
-    def createDir (self, source, proxy = None):
+    def createDir (self, source = "", proxy = None):
         if self.storage1.protocol in ['gridftp']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy)
@@ -139,7 +139,7 @@ class SBinterface:
             return val
 
 
-    def getTurl (self, source, proxy = None):
+    def getTurl (self, source = "", proxy = None):
         if self.storage1.protocol == 'srmv1' or self.storage1.protocol == 'srmv2':
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy)
