@@ -12,15 +12,23 @@ class SElement(object):
     [just a bit more then a classis struct type]
     """
 
-    _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", "srm-lcg", "gsiftp-lcg"]
+    _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", \
+                  "srm-lcg", "gsiftp-lcg"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
-            self.hostname = hostname
             self.protocol = prot
-            self.port     = port
-            if self.port is None:
-                self.port = self.__getPortDefault__(self.protocol)
+            if type(hostname) is FullPath:
+                ## using the full path
+                self.__full = True
+                self.hostname = hostname.path
+            else:
+                ## need to compose the path 
+                self.__full = False
+                self.hostname = hostname
+                self.port     = port
+                if self.port is None:
+                    self.port = self.__getPortDefault__(self.protocol)
             self.workon   = None
             self.action   = self.__getProtocolInstance__(prot)
         else:
@@ -61,6 +69,15 @@ class SElement(object):
         return the lynk + the path of the SE
         """
         from os.path import join
+        ## if using the complete path
+        if self.__full:
+            if self.protocol != "local":
+                return self.hostname
+            else:
+                if self.hostname != "/":
+                    return ("file://" + self.hostname)
+
+        ## otherwise need to compose the path
         if self.protocol in ["srmv1", "srmv2", "srm-lcg"]:
             return ("srm://" + self.hostname + ":" + self.port + \
                     join("/", self.workon))
@@ -76,3 +93,6 @@ class SElement(object):
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
 
+class FullPath(object):
+    def __init__(self, path):
+        self.path = path
