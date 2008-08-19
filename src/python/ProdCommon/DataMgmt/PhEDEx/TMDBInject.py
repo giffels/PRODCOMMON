@@ -13,7 +13,7 @@ import os, popen2, fcntl, select, sys, string
 from ProdCommon.DataMgmt.PhEDEx.DropMaker import makePhEDExDrop
 from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 from ProdCommon.DataMgmt.DataMgmtError import DataMgmtError
-
+from ProdCommon.DataMgmt.PhEDEx.DropMaker import makePhEDExDropForTier0
 
 class TMDBInjectError(DataMgmtError):
     """
@@ -175,6 +175,62 @@ def tmdbInjectBlock(dbsUrl, datasetPath, blockName, phedexConfig,
 
     reader = DBSReader(dbsUrl)
     storageElements = reader.listFileBlockLocation(blockName)
+    
+    tmdbInject(phedexConfig, dropXML, nodes, *storageElements )
+
+    return
+
+
+def tmdbInjectBlockForTier0(localDbsUrl, globalDbsUrl, datasetPath, 
+                            blockName, phedexConfig, workingDir="/tmp",
+                            nodes=None):
+    """
+    _tmdbInjectBlockForTier0_
+
+    This is Tier0 specific function for creating XML file from local dbs
+    but fake it wiht global dbs before injecting to PhEDEx
+    
+    This function is used as hack for simplifying dbs deleting from PhEDEx
+
+    """
+
+    fileName = blockName.replace("/","_")
+    fileName = fileName.replace("#","")
+    dropXML = "%s/%s-PhEDExDrop.xml" % (workingDir, fileName)
+    
+    xmlContent = makePhEDExDropForTier0(localDbsUrl, globalDbsUrl, 
+                                        datasetPath, blockName)
+    handle = open(dropXML, 'w')
+    handle.write(xmlContent)
+    handle.close()
+
+    reader = DBSReader(localDbsUrl)
+    storageElements = reader.listFileBlockLocation(blockName)
+    
+    tmdbInject(phedexConfig, dropXML, nodes, *storageElements )
+
+    return
+
+
+def tmdbInjectDatasetForTier0(globalDbsUrl, datasetPath, phedexConfig,
+                              workingDir="/tmp",nodes=None,
+                              storageElemnts = []):
+    """
+    _tmdbInjectDatasetForTier0_
+    
+    This is Tier0 specific function for creating XML file and injecting to PhEDEx
+    Empty a dataset using not migrated global dbs  
+    """
+    
+    fileName = datasetPath.replace("/","_")
+    
+    dropXML = "%s/%s-PhEDExDrop.xml" % (workingDir, fileName)
+    
+    xmlContent = makePhEDExDropForDataset(globalDbsUrl, datasetPath)
+    
+    handle = open(dropXML, 'w')
+    handle.write(xmlContent)
+    handle.close()
     
     tmdbInject(phedexConfig, dropXML, nodes, *storageElements )
 
