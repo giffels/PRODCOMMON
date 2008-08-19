@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.2 2008/07/31 21:40:53 ewv Exp $"
-__version__ = "$Revision: 1.28.2.2 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.3 2008/08/01 18:10:23 ewv Exp $"
+__version__ = "$Revision: 1.28.2.3 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -85,6 +85,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
 
+    print >> self.debugLog,  "SchedulerCondorCommon::submit obj =",obj
     if type(obj) == RunningJob or type(obj) == Job :
       raise NotImplementedError
     elif type(obj) == Task :
@@ -95,16 +96,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
         if scheddList:
           schedd = scheddList[jobCount%nSchedd]
           submitOptions += '-name %s ' % schedd
-
-        requirements = obj['jobType']
+        if not requirements:
+            requirements = obj['jobType']
         execHost = self.findExecHost(requirements)
         filelist = self.inputFiles(obj['globalSandbox'])
+        print >> self.debugLog,  "SchedulerCondorCommon::submit requirements =",requirements   
         if filelist:
           requirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
 
         # Build JDL file
-        jdl, sandboxFileList = self.decode( job, requirements)
+        jdl, sandboxFileList = self.decode(job, requirements)
         jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
@@ -128,7 +130,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           if matchObj:
             ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
             job.runningJob['schedulerId'] = ret_map[job['name']]
-            print "Submitted job ",ret_map[job['name']]
+            print   >> self.debugLog, "Submitted job ",ret_map[job['name']]
         try:
           jobName = ret_map[ job['name']  ]
           # This is a hack for the server until query is passed the task
@@ -137,9 +139,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
           jobList.close()
 
         except KeyError:
-          print "Job not submitted:"
-          print stdout.readlines()
-          print stderr.readlines()
+          print  >> self.debugLog, "Job not submitted:"
+          print  >> self.debugLog,  stdout.readlines()
+          print  >> self.debugLog,  stderr.readlines()
         os.chdir(cacheDir)
         jobCount += 1
 
@@ -152,6 +154,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
   def findExecHost(self, requirements=''):
     print  >> self.debugLog, "Enter SchedulerCondorCommon::findExecHost" 
     if not requirements:
+        print  >> self.debugLog, "Leave SchedulerCondorCommon::findExecHost, no reqs" 
         return 'Unknown'  
     jdlLines = requirements.split(';')
     execHost = 'Unknown'
