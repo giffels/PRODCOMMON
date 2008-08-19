@@ -72,10 +72,10 @@ class SElement(object):
         ## if using the complete path
         if self.__full:
             if self.protocol != "local":
-                return self.hostname
+                return join(self.hostname,self.workon)
             else:
                 if self.hostname != "/":
-                    return ("file://" + self.hostname)
+                    return ("file://" + join(self.hostname,self.workon))
 
         ## otherwise need to compose the path
         if self.protocol in ["srmv1", "srmv2", "srm-lcg"]:
