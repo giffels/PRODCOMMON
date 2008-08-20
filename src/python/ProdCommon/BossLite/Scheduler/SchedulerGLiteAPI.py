@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.80 2008/08/12 09:11:21 farinafa Exp $"
-__version__ = "$Revision: 1.80 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.81 2008/08/13 19:32:29 afanfani Exp $"
+__version__ = "$Revision: 1.81 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -188,6 +188,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
+    newUI = True
 
     warnings = []
     try:
@@ -204,6 +205,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # vo
         self.vo = args.get( "vo", "cms" )
 
+        # check which UI version we are in
+        globusloc = os.environ['GLOBUS_LOCATION']
+        globusv = re.compile('.*3.1.(\d*).*')
+        if globusv.search(globusloc):
+            vers = int(globusv.search(globusloc).groups()[0])
+            if vers < 10:
+                self.newUI = False
+
+
     ##########################################################################
     def hackEnv( self, restore = False ) :
         """
@@ -212,24 +222,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
 
         #if self.envProxy is None or self.cert == '':
-        if self.cert == '':
+        if self.cert == '' or self.newUI == False:
             return
 
-        # check which UI version we are in
-        newUI= True
-        globusloc=os.environ['GLOBUS_LOCATION']
-        globusv=re.compile('.*3.1.(\d*).*')
-        if globusv.search(globusloc):
-            vers=int(globusv.search(globusloc).groups()[0])
-            if vers < 10:
-                newUI=False
         # if UI with new WMProxy API then apply the X509_USER_PROXY hack
-        if newUI :
-         if restore :
-            if self.envProxy is None: 
-                self.envProxy = ''
-            os.environ["X509_USER_PROXY"] = self.envProxy
-         else :
+        if restore :
+            if self.envProxy is not None: 
+                os.environ["X509_USER_PROXY"] = self.envProxy
+        else :
             os.environ["X509_USER_PROXY"] = self.cert
 
         return
@@ -374,14 +374,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # initialize wmproxy
             self.hackEnv() ### TEMP FIX
+
             # initialize wms connection
-            logging.info('DBG for proxy cert=%s X509=%s'%(self.cert, os.environ.get("X509_USER_PROXY",'notdefined') ))
+            logging.info('DBG for proxy cert=%s X509=%s' % \
+                         ( self.cert, \
+                           os.environ.get("X509_USER_PROXY",'notdefined') ) )
 
             wmproxy = self.wmproxyInit( wms )
 
             # register job: time consumng operation
-            #TOO LATE for X509 proxy setting: self.hackEnv() ### TEMP FIX
-
             try:
                 task = wmproxy.jobRegister ( jdl, self.delegationId )
             except WMPException, wmpError :
