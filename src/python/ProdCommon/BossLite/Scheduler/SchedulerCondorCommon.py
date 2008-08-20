@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.3 2008/08/01 18:10:23 ewv Exp $"
-__version__ = "$Revision: 1.28.2.3 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.4 2008/08/19 21:57:58 ewv Exp $"
+__version__ = "$Revision: 1.28.2.4 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -96,17 +96,18 @@ class SchedulerCondorCommon(SchedulerInterface) :
         if scheddList:
           schedd = scheddList[jobCount%nSchedd]
           submitOptions += '-name %s ' % schedd
-        if not requirements:
-            requirements = obj['jobType']
-        execHost = self.findExecHost(requirements)
+        if requirements:
+            jobRequirements = requirements
+        else:    
+            jobRequirements = obj['jobType']
+        execHost = self.findExecHost(jobRequirements)
         filelist = self.inputFiles(obj['globalSandbox'])
-        print >> self.debugLog,  "SchedulerCondorCommon::submit requirements =",requirements   
         if filelist:
-          requirements += "transfer_input_files = " + filelist + '\n'
+          jobRequirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
 
         # Build JDL file
-        jdl, sandboxFileList = self.decode(job, requirements)
+        jdl, sandboxFileList = self.decode(job, jobRequirements)
         jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
@@ -223,7 +224,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
-      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
+      
+      # HACK: Remove if I can figure out where the request for .BrokerInfo is coming from
+      outputFiles = []
+      for fileName in job['outputFiles']:
+          if not fileName.endswith('BrokerInfo'):
+              outputFiles.append(fileName)
+      if outputFiles:        
+          jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
 
       # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
