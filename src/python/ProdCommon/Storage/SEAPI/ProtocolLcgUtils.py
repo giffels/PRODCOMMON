@@ -82,7 +82,7 @@ class ProtocolLcgUtils(Protocol):
 
     def checkExists(self, source, proxy):
         """
-        workaround with lcg-gt
+        lcg-ls (lcg-gt)
         """
         if source.protocol in ["gsiftp-lcg"]:
             try:
@@ -102,6 +102,23 @@ class ProtocolLcgUtils(Protocol):
             if exitcode != 0 or len(problems) > 0:
                 return False
             return True
+
+    def getFileSize(self, source, proxy = None):
+        """
+        lcg-ls
+        """
+        fullSource = source.getLynk()
+        cmd = ""
+        if proxy is not None:
+            cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
+            self.checkUserProxy(proxy)
+        cmd = "lcg-ls -l "+ fullSource +" | awk '{print $5}'"
+        exitcode, outputs = self.executeCommand(cmd)
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
+        return int(outputs)
 
 
     def getTurl(self, source, proxy = None):
