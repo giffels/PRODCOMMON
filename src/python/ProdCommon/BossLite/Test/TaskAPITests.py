@@ -75,6 +75,7 @@ class TaskAPITests(object):
                 self.bossSession.bossLiteDB.installDB(
                     '$PRODCOMMON_ROOT/lib/ProdCommon/BossLite/DbObjects/setupDatabase-sqlite.sql'
                     )
+                self.bossSession.bossLiteDB.reset()
         except:
             pass
     
