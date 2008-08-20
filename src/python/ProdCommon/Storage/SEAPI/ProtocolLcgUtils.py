@@ -18,7 +18,9 @@ class ProtocolLcgUtils(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1 or line.find("error") != -1 or line.find("Failed") != -1 :
+            if line.find("No such file or directory") != -1 or \
+              line.find("error") != -1 or line.find("Failed") != -1 or \
+              line.find("CacheException") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -82,11 +84,25 @@ class ProtocolLcgUtils(Protocol):
         """
         workaround with lcg-gt
         """
-        try:
-            self.getTurl(source, proxy)
-        except:
-            return False
-        return True
+        if source.protocol in ["gsiftp-lcg"]:
+            try:
+                self.getTurl(source, proxy)
+            except:
+                return False
+            return True
+        else:
+            fullSource = source.getLynk()
+            cmd = ""
+            if proxy is not None:
+                cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
+                self.checkUserProxy(proxy)
+            cmd = "lcg-ls "+ fullSource
+            exitcode, outputs = self.executeCommand(cmd)
+            problems = self.simpleOutputCheck(outputs)
+            if exitcode != 0 or len(problems) > 0:
+                return False
+            return True
+
 
     def getTurl(self, source, proxy = None):
         """
