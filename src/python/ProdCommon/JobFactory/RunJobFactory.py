@@ -132,6 +132,13 @@ class RunJobFactory:
         if siteName != None:
             self.allowedSites.append(siteName)
 
+        self.filterRuns = False
+        self.allowedRuns = []
+        if args.get("FilterRuns", None) != None:
+            self.allowedRuns = args['FilterRuns']
+            self.filterRuns = True
+
+
 
         self.currentJob = None
         self.currentJobDef = None
@@ -215,6 +222,10 @@ class RunJobFactory:
         jobDefs = splitDatasetByRun(self.inputDataset(),
                                     self.dbsUrl)
         [ x.__setitem__('SENames', self.allowedSites) for x in jobDefs]
+
+        if self.filterRuns:
+            logging.debug("Filter Runs = %s" % self.allowedRuns)
+            jobDefs = [ x for x in jobDefs if x['RunNumber'] in self.allowedRuns ]
         return jobDefs
 
 
