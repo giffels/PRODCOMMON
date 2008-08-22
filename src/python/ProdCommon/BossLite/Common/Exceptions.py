@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.10 2008/07/18 14:48:56 gcodispo Exp $"
-__revision__ = "$Revision: 1.10 $"
+__version__ = "$Id: Exceptions.py,v 1.11 2008/07/24 14:06:00 gcodispo Exp $"
+__revision__ = "$Revision: 1.11 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -155,12 +155,12 @@ class TimeOut(BossLiteError):
         self.value = \
               "Command Timed Out after %d seconds, issued at %d, ended at %d" \
               % (self.timeout, self.start, self.stop )
-        self.data['Command'] = command
-        self.data['partialOutput'] = partialOut
         # // the stupid python does not follow its rules:
         # // Exception does not inherit from object, no way to call super
         # super(TimeOut, self).__init__(self.__str__())
         BossLiteError.__init__(self, self.value)
+        self.data['Command'] = command
+        self.data['partialOutput'] = partialOut
 
     def commandOutput( self ) :
         """
