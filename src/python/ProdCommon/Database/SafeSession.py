@@ -8,8 +8,8 @@ Implements a DB session which:
     * deals with different database types.
 """
 
-__version__ = "$Id: SafeSession.py,v 1.1 2007/12/05 14:53:14 ckavka Exp $"
-__revision__ = "$Revision: 1.1 $"
+__version__ = "$Id: SafeSession.py,v 1.2 2007/12/07 10:19:26 ckavka Exp $"
+__revision__ = "$Revision: 1.2 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 ##############################################################################
@@ -42,6 +42,12 @@ class SafeSession(object):
         self.conn = None
         self.cursor = None
 
+        # define an exception
+        if self.dbInstance is not None:
+            self.exception = self.exception
+        else :
+            self.exception = self.pool.dbInstance.exception
+
         # get a connection
         self.connect()
 
@@ -72,7 +78,7 @@ class SafeSession(object):
         try:
             self.conn.commit()
 
-        except self.dbInstance.exception:
+        except self.exception:
 
             # lost connection with database, reopen it
             self.redo()
@@ -97,7 +103,7 @@ class SafeSession(object):
             try:
                 self.conn.commit()
 
-            except self.dbInstance.exception:
+            except self.exception:
 
                 # lost connection with database, reopen it
                 self.redo()
@@ -119,7 +125,7 @@ class SafeSession(object):
         try:
             self.conn.rollback()
 
-        except self.dbInstance.exception:
+        except self.exception:
             # lost connection con database, just get a new connection
             # the effect of rollback is then automatic
 
@@ -157,7 +163,7 @@ class SafeSession(object):
 
         # lost connection with database, reopen it, redo current
         # transaction and retry query
-        except self.dbInstance.exception:
+        except self.exception:
             self.redo()
             self.cursor.execute(query)
             rows = self.cursor.rowcount
@@ -181,7 +187,7 @@ class SafeSession(object):
 
         # lost connection with database, reopen it, redo current
         # transaction and retry query
-        except self.dbInstance.exception:
+        except self.exception:
             self.redo()
             results = self.cursor.fetchall()
 
@@ -201,7 +207,7 @@ class SafeSession(object):
 
         # lost connection with database, reopen it, redo current
         # transaction and retry query
-        except self.dbInstance.exception:
+        except self.exception:
             self.redo()
             results = self.cursor.fetchone()
 
