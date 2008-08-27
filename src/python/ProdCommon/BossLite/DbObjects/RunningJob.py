@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.16 2008/05/30 09:46:50 gcodispo Exp $"
-__revision__ = "$Revision: 1.16 $"
+__version__ = "$Id: RunningJob.py,v 1.17 2008/07/28 09:06:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.17 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -30,7 +30,6 @@ class RunningJob(DbObject):
                'statusScheduler' : 'status_scheduler',
                'status' : 'status',
                'statusReason' : 'status_reason',
-               'statusHistory' : 'status_history',
                'destination' : 'destination',
                'lbTimestamp' : 'lb_timestamp',
                'submissionTime' : 'submission_time',
@@ -38,6 +37,7 @@ class RunningJob(DbObject):
                'stopTime' : 'stop_time',
                'outputDirectory' : 'output_dir',
                'getOutputTime' : 'getoutput_time',
+               'stageOutTime' : 'stageout_time',
                'executionHost' : 'execution_host',
                'executionPath' : 'execution_path',
                'executionUser' : 'execution_user',
@@ -64,7 +64,6 @@ class RunningJob(DbObject):
                  'statusScheduler' : None,
                  'status' : None,
                  'statusReason' : None,
-                 'statusHistory' : [],
                  'destination' : None,
                  'lbTimestamp' : None,
                  'submissionTime' : None,
@@ -72,6 +71,7 @@ class RunningJob(DbObject):
                  'stopTime' : None,
                  'outputDirectory' : None,
                  'getOutputTime' : None,
+                 'stageOutTime' : None,
                  'executionHost' : None,
                  'executionPath' : None,
                  'executionUser' : None,
@@ -86,7 +86,7 @@ class RunningJob(DbObject):
     tableName = "bl_runningjob"
     tableIndex = ["taskId", "jobId", "submission"]
     timeFields = ['lbTimestamp', 'submissionTime', 'startTime', \
-                  'stopTime', 'getOutputTime']
+                  'stageOutTime', 'stopTime', 'getOutputTime']
     # exception class
     exception = JobError
 

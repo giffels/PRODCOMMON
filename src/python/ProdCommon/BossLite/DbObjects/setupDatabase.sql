@@ -17,7 +17,7 @@ CREATE TABLE bl_task
     primary key(id),
     unique(name)
   )
-  TYPE = InnoDB DEFAULT CHARSET=latin1;
+  ENGINE = InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE bl_job
   (
@@ -40,7 +40,7 @@ CREATE TABLE bl_job
     UNIQUE(job_id, task_id),
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
   )
-  TYPE = InnoDB DEFAULT CHARSET=latin1;
+  ENGINE = InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE bl_runningjob
   (
@@ -56,15 +56,15 @@ CREATE TABLE bl_runningjob
     status_scheduler VARCHAR(255),
     status VARCHAR(255),
     status_reason TEXT,
-    status_history TEXT,
     destination TEXT, 
     creation_timestamp TIMESTAMP,
     lb_timestamp TIMESTAMP,
     submission_time TIMESTAMP,
     start_time TIMESTAMP,
+    stageout_time TIMESTAMP,
     stop_time TIMESTAMP,
-    output_dir TEXT,
     getoutput_time TIMESTAMP,
+    output_dir TEXT,
     execution_host TEXT,
     execution_path TEXT,
     execution_user VARCHAR(255),
@@ -80,7 +80,7 @@ CREATE TABLE bl_runningjob
     FOREIGN KEY(job_id) references bl_job(job_id) ON DELETE CASCADE,
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
   )
-  TYPE = InnoDB DEFAULT CHARSET=latin1;
+  ENGINE = InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE jt_group 
   (
@@ -93,5 +93,5 @@ CREATE TABLE jt_group
   FOREIGN KEY(job_id) references bl_job(job_id) ON DELETE CASCADE,
   FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
   ) 
-  TYPE = InnoDB DEFAULT CHARSET=latin1;
+  ENGINE = InnoDB DEFAULT CHARSET=latin1;
 
