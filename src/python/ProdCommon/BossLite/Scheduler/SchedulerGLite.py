@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.2 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.3 2008/05/16 14:44:52 gcodispo Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import sys
 import os
@@ -45,7 +45,7 @@ def getChildrens( taskId ) :
     status.getStatus(taskId, 0)
     err, apiMsg = status.get_error()
     if err:
-        raise ( err )
+        raise SchedulerError( err, apiMsg )
     jobidInfo = status.loadStatus(0)
     VECT_OFFSET = jobStatus.ATTR_MAX
     intervals = int ( len(jobidInfo) / VECT_OFFSET )
@@ -53,7 +53,7 @@ def getChildrens( taskId ) :
     id_index = states.index( 'User tags' )
     gid_index = states.index( 'Jobid' )
     if jobidInfo[ VECT_OFFSET + id_index ] == '' :
-        raise "Wait a bit"
+        raise SchedulerError( "Error", "Wait a bit" )
     for off in range ( 1, intervals ):
         offset = off * VECT_OFFSET
         bossid = jobidInfo[ offset + id_index ]
@@ -129,7 +129,7 @@ class SchedulerGLite (SchedulerInterface) :
             c = out.split("Your job identifier is:")[1].strip()
             taskId = c.split("=")[0].strip()
         except IndexError:
-            raise ( out )
+            raise SchedulerError( 'wrong parent id',  out )
         
         print "Your job identifier is: ", taskId
         return getChildrens( taskId )
@@ -165,7 +165,7 @@ class SchedulerGLite (SchedulerInterface) :
                       + outdir + " " + jobId
             out = self.ExecuteCommand( command )
             if out.find("have been successfully retrieved") == -1 :
-                raise ( out )
+                raise SchedulerError( 'retrieved', out )
 
 
     ##########################################################################
@@ -194,7 +194,7 @@ class SchedulerGLite (SchedulerInterface) :
                   + "; glite-wms-job-cancel --noint " + schedIdList
         out = self.ExecuteCommand( command )
         if out.find("glite-wms-job-cancel Success") == -1 :
-            raise ( out )
+            raise SchedulerError( 'error', out )
 
     ##########################################################################
 
@@ -231,7 +231,7 @@ class SchedulerGLite (SchedulerInterface) :
         try:
             out = out.split("CEId")[1].strip()
         except IndexError:
-            raise ( out )
+            raise ( 'IndexError', out )
 
         return out.split()
         

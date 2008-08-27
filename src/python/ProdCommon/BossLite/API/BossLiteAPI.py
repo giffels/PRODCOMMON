@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.62 2008/07/24 17:13:26 gcodispo Exp $"
-__revision__ = "$Revision: 1.62 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.63 2008/07/28 09:06:03 gcodispo Exp $"
+__revision__ = "$Revision: 1.63 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -189,7 +189,7 @@ class BossLiteAPI(object):
                    str(err).find( 'Duplicate entry') == -1 :
                 self.removeTask( task )
                 task = None
-            raise err
+            raise
 
         return task
 
