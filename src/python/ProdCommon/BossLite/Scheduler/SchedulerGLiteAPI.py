@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.81 2008/08/13 19:32:29 afanfani Exp $"
-__version__ = "$Revision: 1.81 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.82 2008/08/20 13:45:51 gcodispo Exp $"
+__version__ = "$Revision: 1.82 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -44,11 +44,9 @@ def processRow ( row ):
     if len( row ) == 0 :
         return None, None
     if row[0] == '#' :
-        try:
-            row = row[ row.find('\n') : ].strip()
-            return processRow ( row )
-        except StandardError, err:
-            raise err
+        row = row[ row.find('\n') : ].strip()
+        return processRow ( row )
+
     index = row.find('=')
     key = row[0:index].strip().lower()
     val = row[index+1:].strip()
@@ -262,7 +260,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 jdl = begin + schedClassad + jdl[1:]
                 
         except SchedulerError, err:
-            raise err
+            raise
 
         return jdl, endpoints
 
@@ -390,7 +388,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     self.delegateProxy( wmproxy )
                     task = wmproxy.jobRegister ( jdl, self.delegationId )
                 else:
-                    raise wmpError
+                    raise
             
             # retrieve parent id
             taskId = str( task.getJobId() )
@@ -452,10 +450,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         except BaseException, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise err
+            raise
         except Exception, err:
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise err
+            raise
 
         return taskId, returnMap
 
@@ -716,12 +714,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             for m in filelist:
 
                 # ugly error: nothing there!
-                try :
-                    size = int( m['size'] )
-                    # ugly trick for empty fields...
-                    if m['name'].strip() == '' :
-                        raise ValueError
-                except ValueError:
+                size = int( m['size'] )
+                # ugly trick for empty fields...
+                if m['name'].strip() == '' :
                     continue
 
                 # avoid globus-url-copy for empty files

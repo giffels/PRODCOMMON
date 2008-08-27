@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.28 2008/07/25 08:33:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.28 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.29 2008/07/28 09:06:03 gcodispo Exp $"
+__revision__ = "$Revision: 1.29 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -131,7 +131,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return updated task
         return task
@@ -180,7 +180,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return updated task
         return task
@@ -226,7 +226,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return task updated
         return task
@@ -268,7 +268,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return task updated
         return task
@@ -309,7 +309,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return task updated
         return task
@@ -355,7 +355,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return list of sites
         return resources
@@ -383,7 +383,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return list of sites
         return resources
@@ -424,7 +424,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return updated task
         return jdString
@@ -466,7 +466,7 @@ class BossLiteAPISched(object):
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception
-            raise e
+            raise
 
         # return updated task
         return task
