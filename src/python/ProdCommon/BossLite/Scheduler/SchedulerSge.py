@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.8 2008/05/04 08:25:49 spiga Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.2 2008/05/28 13:34:31 spiga Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import re, os
 
@@ -109,7 +109,7 @@ class SchedulerSge (SchedulerInterface) :
             #    print m
             #    print "Job NOT submitted"
             #    print out
-            raise (out)
+            raise SchedulerError('error', out)
         taskId = None 
         #print "Your job identifier is: ", taskId, queue
         map={ job[ 'name' ] : jobId }
@@ -274,7 +274,7 @@ class SchedulerSge (SchedulerInterface) :
                             #print command
                             out = self.ExecuteCommand(command)
                             if (out!=""):
-                                raise (out)
+                                raise SchedulerError('unable to move file', out)
                                 #raise SchedulerError("unable to move file "+oldoutdir+"/"+outFile+" ",out)
                             pass
                         pass
