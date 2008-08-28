@@ -8,8 +8,8 @@ Implements a DB session which:
     * deals with different database types.
 """
 
-__version__ = "$Id: SafeSession.py,v 1.2 2007/12/07 10:19:26 ckavka Exp $"
-__revision__ = "$Revision: 1.2 $"
+__version__ = "$Id: SafeSession.py,v 1.3 2008/08/27 16:30:41 gcodispo Exp $"
+__revision__ = "$Revision: 1.3 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 ##############################################################################
@@ -44,7 +44,7 @@ class SafeSession(object):
 
         # define an exception
         if self.dbInstance is not None:
-            self.exception = self.exception
+            self.exception = self.dbInstance.exception
         else :
             self.exception = self.pool.dbInstance.exception
 
