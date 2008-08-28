@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.11 2008/07/24 14:06:00 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: Exceptions.py,v 1.12 2008/08/22 09:41:13 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -23,7 +23,7 @@ class BossLiteError(Exception):
         # super(BossLiteError, self).__init__(value)
         Exception.__init__( self  )
         self.value = self.__class__.__name__
-        self.msg = value
+        self.msg = str(value)
         self.data = {}
         # take more information if it applies
         try:
