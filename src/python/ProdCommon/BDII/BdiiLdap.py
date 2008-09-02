@@ -196,6 +196,7 @@ def getJobManagerList(selist, software, arch, bdii='exp-bdii.cern.ch', onlyOSG=T
 
     jmlist = getJMListFromSEList(selist, bdii)
     jmlist = filterCE(jmlist, software, arch, bdii, onlyOSG)
+    return jmlist
 
 def filterCE(ceList, software, arch, bdii, onlyOSG):
     """
