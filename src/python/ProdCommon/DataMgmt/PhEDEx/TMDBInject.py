@@ -197,6 +197,9 @@ def tmdbInjectBlockForTier0(localDbsUrl, globalDbsUrl, datasetPath,
     fileName = blockName.replace("/","_")
     fileName = fileName.replace("#","")
     dropXML = "%s/%s-PhEDExDrop.xml" % (workingDir, fileName)
+
+    if not os.path.isdir(workingDir):
+        os.makedirs(workingDir)
     
     xmlContent = makePhEDExDropForTier0(localDbsUrl, globalDbsUrl, 
                                         datasetPath, blockName)
