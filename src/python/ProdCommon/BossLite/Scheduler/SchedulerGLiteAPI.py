@@ -3,12 +3,12 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.82 2008/08/20 13:45:51 gcodispo Exp $"
-__version__ = "$Revision: 1.82 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.83 2008/08/27 13:57:04 gcodispo Exp $"
+__version__ = "$Revision: 1.83 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
-import re
+#import re
 import socket
 import tempfile
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -186,13 +186,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    newUI = True
-
+    ### newUI = True
     warnings = []
-    try:
-        envProxy = os.environ["X509_USER_PROXY"]
-    except KeyError:
-        envProxy = None
+    envProxy = os.environ.get("X509_USER_PROXY",'')
 
     def __init__( self, **args ):
 
@@ -203,13 +199,17 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # vo
         self.vo = args.get( "vo", "cms" )
 
-        # check which UI version we are in
-        globusloc = os.environ['GLOBUS_LOCATION']
-        globusv = re.compile('.*3.1.(\d*).*')
-        if globusv.search(globusloc):
-            vers = int(globusv.search(globusloc).groups()[0])
-            if vers < 10:
-                self.newUI = False
+        # x509 string for cli commands
+        if self.cert != '':
+            self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
+
+        ### # check which UI version we are in
+        ### globusloc = os.environ['GLOBUS_LOCATION']
+        ### globusv = re.compile('.*3.1.(\d*).*')
+        ### if globusv.search(globusloc):
+        ###     vers = int(globusv.search(globusloc).groups()[0])
+        ###     if vers < 10:
+        ###         self.newUI = False
 
 
     ##########################################################################
@@ -220,13 +220,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
 
         #if self.envProxy is None or self.cert == '':
-        if self.cert == '' or self.newUI == False:
+        if self.cert == '' or self.cert == self.envProxy :
             return
 
         # if UI with new WMProxy API then apply the X509_USER_PROXY hack
         if restore :
-            if self.envProxy is not None: 
-                os.environ["X509_USER_PROXY"] = self.envProxy
+            os.environ["X509_USER_PROXY"] = self.envProxy
         else :
             os.environ["X509_USER_PROXY"] = self.cert
 
@@ -374,11 +373,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             self.hackEnv() ### TEMP FIX
 
             # initialize wms connection
-            logging.info('DBG for proxy cert=%s X509=%s' % \
-                         ( self.cert, \
-                           os.environ.get("X509_USER_PROXY",'notdefined') ) )
-
             wmproxy = self.wmproxyInit( wms )
+            logging.info('DBG for proxy cert=%s X509=%s' % \
+                          ( self.cert, \
+                            os.environ.get("X509_USER_PROXY",'notdefined') ) )
 
             # register job: time consumng operation
             try:
@@ -434,7 +432,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 command = "globus-url-copy file://%s/%s %s/%s" \
                           % ( os.getcwd(), self.zippedISB, \
                               destURI[0], self.zippedISB )
-                msg = self.ExecuteCommand(command)
+                msg = self.ExecuteCommand(self.proxyString + command)
                 if msg.upper().find("ERROR") >= 0 \
                        or msg.find("wrong format") >= 0 :
                     raise SchedulerError("globus-url-copy error", msg, command)
@@ -730,7 +728,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                      os.path.basename(m['name']) )
                 command = "globus-url-copy -verbose " + m['name'] \
                           + " file://" + dest
-                msg = self.ExecuteCommand(command)
+                msg = self.ExecuteCommand(self.proxyString + command)
                 if msg.upper().find("ERROR") >= 0 or \
                        msg.find("wrong format") >= 0 :
                     joberr = '[ ' + command + ' ] : ' + msg + '; '
@@ -1044,10 +1042,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
 
-        if self.cert != '' :
-            command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
-
-        return self.ExecuteCommand( command )
+        return self.ExecuteCommand( self.proxyString + command )
 
 
     ##########################################################################
@@ -1318,12 +1313,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         else :
             query = 'CEStatus=Production'
 
-        command = "export X509_USER_PROXY=" + self.cert + '; '
-
         if seList == None :
-            command += " lcg-info --vo " + self.vo + " --list-ce --query " + \
+            command = "lcg-info --vo " + self.vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
-            out = self.ExecuteCommand( command )
+            out = self.ExecuteCommand( self.proxyString + command )
             out = out.split()
             for ce in out :
                 # blacklist
@@ -1344,11 +1337,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             return celist
 
         for se in seList :
-            singleComm = command + " lcg-info --vo " + self.vo + \
+            singleComm = "lcg-info --vo " + self.vo + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
-            out = self.ExecuteCommand( singleComm )
+            out = self.ExecuteCommand( self.proxyString + singleComm )
             out = out.split()
             for ce in out :
                 # blacklist
