@@ -133,7 +133,9 @@ class TaskAPITests(object):
             if self.taskId is not None :
                 self.load( self.taskId, self.jobRange)
             else :
-                self.task = self.bossSession.loadTaskByName( self.taskName )
+                self.task = self.bossSession.loadTaskByName( self.taskName,
+                                                             deep=False)
+                self.load( self.task, self.jobRange)
             print "Task loaded..."
         except BossLiteError, e:
             print "Task not found... declaring"
@@ -429,7 +431,8 @@ def main():
     bossSession.testTask()
 
     for a in actions :
-        print 'action : ', a
+        print 'action : ', a, '  for jobs', bossSession.jobRange, 
+        print '   of task', bossSession.task['id']
         try:
             TaskAPITests.__dict__[a](bossSession)
             print BossLiteLogger( bossSession.task )
