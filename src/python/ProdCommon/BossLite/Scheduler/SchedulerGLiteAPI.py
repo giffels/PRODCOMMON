@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.83 2008/08/27 13:57:04 gcodispo Exp $"
-__version__ = "$Revision: 1.83 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.84 2008/09/03 11:23:45 gcodispo Exp $"
+__version__ = "$Revision: 1.84 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -200,6 +200,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.vo = args.get( "vo", "cms" )
 
         # x509 string for cli commands
+        self.proxyString = ''
         if self.cert != '':
             self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
 
