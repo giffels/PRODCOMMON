@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.27 2008/06/11 20:36:05 ewv Exp $"
-__version__ = "$Revision: 1.27 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28 2008/07/08 19:46:56 ewv Exp $"
+__version__ = "$Revision: 1.28 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -91,7 +91,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           schedd = scheddList[jobCount%nSchedd]
           submitOptions += '-name %s ' % schedd
 
-        requirements = obj['jobType']
+        requirements = getattr(obj,'jobType','')
         execHost = self.findExecHost(requirements)
         filelist = self.inputFiles(obj['globalSandbox'])
         if filelist:
