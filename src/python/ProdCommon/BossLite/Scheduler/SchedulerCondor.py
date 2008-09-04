@@ -4,17 +4,12 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.12 2008/07/29 18:08:16 ewv Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.13 2008/09/04 21:48:12 ewv Exp $"
+__version__ = "$Revision: 1.13 $"
 
-#import re
 import os
-#import popen2
-
-#from socket import getfqdn
 
 from SchedulerCondorCommon import SchedulerCondorCommon
-#from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
