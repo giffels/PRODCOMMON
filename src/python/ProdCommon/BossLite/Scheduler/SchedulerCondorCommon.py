@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.4 2008/08/19 21:57:58 ewv Exp $"
-__version__ = "$Revision: 1.28.2.4 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.5 2008/08/20 18:37:40 ewv Exp $"
+__version__ = "$Revision: 1.28.2.5 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -36,8 +36,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
     super(SchedulerCondorCommon, self).__init__(**args)
     self.hostname   = getfqdn()
     self.condorTemp = args.get('tmpDir',None)
+    self.outputDir  = args.get('outputDirectory',None)
+    self.useGlexec  = args.get('useGlexec',False)
     self.batchSize  = 20 # Number of jobs to submit per site before changing CEs
+    self.glexecWrapper = 'glexecWrapper.sh'
+        
     print >> self.debugLog,  "tmpDir =",self.condorTemp
+    print >> self.debugLog,  "useGlexec =",self.useGlexec
     print >> self.debugLog, "Leaving __init__"
 
   def submit( self, obj, requirements='', config ='', service='' ):
@@ -68,7 +73,28 @@ class SchedulerCondorCommon(SchedulerInterface) :
     if os.path.isdir(self.condorTemp):
       pass
     else:
+      print >> self.debugLog,  "Making directory %s" % self.condorTemp
       os.mkdir(self.condorTemp)
+
+    if self.useGlexec:
+        # Write the submitter script
+        cacheDir = os.getcwd()
+        os.chdir(self.condorTemp)
+        wrapper = open(self.glexecWrapper, 'w')
+        wrapper.writelines([
+            '#!/bin/bash\n',
+            'cd %s\n' % obj['outputDirectory'],
+            'export X509_USER_PROXY=$PWD/userProxy\n',
+            '/condor/condor-7.0.4/bin/condor_submit $1\n'
+            ])
+        wrapper.close()
+        os.chmod(self.glexecWrapper,0755)
+        os.chdir(cacheDir)
+        
+        # Set up the environment
+        os.environ['GLEXEC_CLIENT_CERT']  = self.condorTemp+'/../userProxy'
+        os.environ['GLEXEC_SOURCE_PROXY'] = self.condorTemp+'/../userProxy'
+        os.environ['GLEXEC_TARGET_PROXY'] = obj['outputDirectory']+'/userProxy'
 
     # Get list of schedd's
 
@@ -105,10 +131,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
         if filelist:
           jobRequirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
+        #job.runningJob['outputDirectory'] = self.condorTemp
 
         # Build JDL file
         jdl, sandboxFileList = self.decode(job, jobRequirements)
-        jdl += 'Executable = %s\n' % (obj['scriptName'])
+        jdl += 'Executable = %s/%s\n' % (obj['outputDirectory'],obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
         # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
@@ -119,11 +146,18 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jdlFileName = job['name']+'.jdl'
         cacheDir = os.getcwd()
         os.chdir(self.condorTemp)
+        print >> self.debugLog,  "Writing JDL %s in %s" % (jdlFileName, self.condorTemp)
         jdlFile = open(jdlFileName, 'w')
         jdlFile.write(jdl)
         jdlFile.close()
 
-        stdout, stdin, stderr = popen2.popen3('condor_submit '+submitOptions+jdlFileName)
+        if self.useGlexec:
+            command = '/opt/glexec/glexec-osg/sbin/glexec ' + self.condorTemp + '/' \
+                      + self.glexecWrapper + ' ' + self.condorTemp + '/' + jdlFileName
+            print >> self.debugLog,  "Submitting w/ glexec: %s" % command
+            stdout, stdin, stderr = popen2.popen3(command)
+        else:
+            stdout, stdin, stderr = popen2.popen3('condor_submit '+submitOptions+jdlFileName)
 
         # Parse output, build numbers
         for line in stdout:
@@ -420,6 +454,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     for file in fileList:
       try:
+        print  >> self.debugLog, "SchedulerCondorCommon::getCondorOutput move %s to %s" %\
+          (self.condorTemp+'/'+file,outdir)
         shutil.move(self.condorTemp+'/'+file,outdir)
       except IOError:
         print "Could not move file ",file
