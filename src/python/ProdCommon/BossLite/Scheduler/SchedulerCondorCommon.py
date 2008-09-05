@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28 2008/07/08 19:46:56 ewv Exp $"
-__version__ = "$Revision: 1.28 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.29 2008/09/04 21:48:12 ewv Exp $"
+__version__ = "$Revision: 1.29 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -91,15 +91,16 @@ class SchedulerCondorCommon(SchedulerInterface) :
           schedd = scheddList[jobCount%nSchedd]
           submitOptions += '-name %s ' % schedd
 
-        requirements = getattr(obj,'jobType','')
-        execHost = self.findExecHost(requirements)
+        #requirements = getattr(obj,'jobType','')
+        jobRequirements = requirements
+        execHost = self.findExecHost(jobRequirements)
         filelist = self.inputFiles(obj['globalSandbox'])
         if filelist:
-          requirements += "transfer_input_files = " + filelist + '\n'
+          jobRequirements += "transfer_input_files = " + filelist + '\n'
         job.runningJob['destination'] = execHost
 
         # Build JDL file
-        jdl, sandboxFileList = self.decode( job, requirements)
+        jdl, sandboxFileList = self.decode( job, jobRequirements)
         jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
