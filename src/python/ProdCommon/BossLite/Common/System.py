@@ -10,8 +10,8 @@ import time
 import os
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.3 2008/06/30 15:41:04 gcodispo Exp $"
-__revision__ = "$Revision: 1.3 $"
+__version__ = "$Id: System.py,v 1.4 2008/07/17 14:28:48 gcodispo Exp $"
+__revision__ = "$Revision: 1.4 $"
 
 
 def setPgid():
@@ -65,8 +65,15 @@ def executeCommand( command, timeout=None ):
         p.stdout.close()
         del( p )
         raise TimeOut( command, ''.join(outc), timeout, start, stop )
-    
-    return ''.join(outc)
+
+    p.wait()
+    p.stdout.close()
+    returncode = p.returncode
+    if returncode is None :
+        returncode = -666666
+    del( p )
+
+    return ''.join(outc), returncode
 
 
 
