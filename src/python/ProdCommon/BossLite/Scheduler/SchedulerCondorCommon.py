@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.29 2008/09/04 21:48:12 ewv Exp $"
-__version__ = "$Revision: 1.29 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.30 2008/09/05 18:49:21 ewv Exp $"
+__version__ = "$Revision: 1.30 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -218,13 +218,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
       return jdl, filelist
 
 
-  def query(self, schedIdList, service='', objType='node'):
+  def query(self, obj, service='', objType='node'):
     """
     query status of jobs
     """
     from xml.sax import make_parser
     from CondorHandler import CondorHandler
     from xml.sax.handler import feature_external_ges
+
 
     jobIds = {}
     bossIds = {}
@@ -240,25 +241,33 @@ class SchedulerCondorCommon(SchedulerInterface) :
             '5':'Aborted'
     }
 
-    # Get a list of the schedd's that were used to submit this task
-    for id in schedIdList:
+    if type(obj) == Task and objType == 'node':
+        taskId = obj['name']
+        for job in obj.jobs:
+            if not self.valid(job.runningJob):
+                raise SchedulerError('Invalid object', str( obj.runningJob ))
+            schedulerId = job.runningJob['schedulerId']
 
-      bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default
-      schedd = id.split('//')[0]
-      job    = id.split('//')[1]
+            bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'} # Done by default
+            schedd = schedulerId.split('//')[0]
+            jobNum = schedulerId.split('//')[1]
 
-      # Fill dictionary of schedd and job #'s to check
-      if schedd in jobIds.keys():
-        jobIds[schedd].append(job)
-      else :
-        jobIds[schedd] = [job]
+            # Fill dictionary of schedd and job #'s to check
+            if schedd in jobIds.keys():
+                jobIds[schedd].append(jobNum)
+            else :
+                jobIds[schedd] = [jobNum]
+    else:
+        raise SchedulerError('Wrong argument type or object type',
+                              str(type(obj)) + ' ' + str(objType))
 
     for schedd in jobIds.keys() :
       condor_status = {}
       cmd = 'condor_q -xml '
       if schedd != self.hostname:
         cmd += '-name ' + schedd + ' '
-      cmd += os.environ['USER']
+      cmd += """-constraint 'BLTaskID=="%s"'""" % taskId
+
       (input_file, output_fp) = os.popen4(cmd)
 
       # Throw away first three lines. Junk
@@ -305,7 +314,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
           bossIds[schedd+'//'+jobId] = statusRecord
 
-    return bossIds
+    for job in obj.jobs:
+        schedulerId = job.runningJob['schedulerId']
+        if bossIds.has_key(schedulerId):
+            for key, value in bossIds[schedulerId].items():
+                job.runningJob[key] = value
+    return
 
 
   def kill( self, obj ):
