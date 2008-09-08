@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.8 2008/09/08 18:46:43 ewv Exp $"
-__version__ = "$Revision: 1.28.2.8 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.9 2008/09/08 19:11:26 ewv Exp $"
+__version__ = "$Revision: 1.28.2.9 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -82,7 +82,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         os.chdir(self.condorTemp)
         wrapper = open(self.glexecWrapper, 'w')
         wrapper.writelines([
-            '#!/bin/bash\n',
+            '#! /bin/sh\n',
             'cd %s\n' % seDir,
             'export X509_USER_PROXY=$PWD/userProxy\n',
             '%s $1\n' % condorSubmit,
