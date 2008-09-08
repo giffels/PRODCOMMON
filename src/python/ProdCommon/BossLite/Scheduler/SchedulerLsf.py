@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.14 2008/07/17 14:37:21 gcodispo Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.15 2008/09/08 10:21:45 gcodispo Exp $"
+__version__ = "$Revision: 1.15 $"
 
 import re, os
 
@@ -89,9 +89,17 @@ class SchedulerLsf (SchedulerInterface) :
 
         arg = self.decode(job, task, requirements )
 
-        command = "bsub " + arg 
+        # command = "bsub " + arg 
+        # execute bsub in the directory where files have be returned
+        chDir = "pushd . > /dev/null; cd " + task['outputDirectory'] + "; "
+        resetDir = " ; popd > /dev/null"
+        command = chDir + "bsub " + arg + resetDir 
+
 
         out, ret = self.ExecuteCommand(command)
+        if ret != 0 :
+            raise SchedulerError('Error in submit', out, command )
+
         r = re.compile("Job <(\d+)> is submitted.*<(\w+)>")
 
         m= r.search(out)
@@ -159,70 +167,27 @@ class SchedulerLsf (SchedulerInterface) :
     def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
+        It may use single 'node' scheduler id or bulk id for association
         """
-
-        # the object passed is a Task:
-        #   check whether parent id are provided, make a list of ids
-        #     and check the status
-        if type(obj) == Task :
-            schedIds = []
-
-            # query performed through single job ids
-            if objType == 'node' :
-                for job in obj.jobs :
-                    if self.valid( job.runningJob ) and \
-                           job.runningJob['status'] != 'SD':
-                        schedIds.append( job.runningJob['schedulerId'] )
-                jobAttributes = self.queryLocal( schedIds, objType )
-
-            # query performed through a bulk id
-            elif objType == 'parent' :
-                for job in obj.jobs :
-                    if self.valid( job.runningJob ) \
-                      and job.runningJob['status'] != 'SD' \
-                      and job.runningJob['schedulerParentId'] not in schedIds:
-                        schedIds.append( job.runningJob['schedulerParentId'] )
-                jobAttributes = self.queryLocal( schedIds, objType )
-
-            # status association
-            for job in obj.jobs :
-                try:
-                    valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
-                except:
-                    continue
-                for key, value in valuesMap.iteritems() :
-                    job.runningJob[key] = value
-
-        # unknown object type
-        else:
+        if type(obj) != Task :
             raise SchedulerError('wrong argument type', str( type(obj) ))
 
 
-
-    def queryLocal(self, schedIdList, objType='node' ) :
-        """
-        query status and eventually other scheduler related information
-        It may use single 'node' scheduler id or bulk id for association
-        
-        return jobAttributes
-
-        where jobAttributes is a map of the format:
-           jobAttributes[ schedId :
-                                    [ key : val ]
-                        ]
-           where key can be any parameter of the Job object and at least status
-                        
-        """
-        ret_map={}
         #print schedIdList, service, objType
         r = re.compile("(\d+)\s+\w+\s+(\w+).*")
         rfull = re.compile("(\d+)\s+\w+\s+(\w+)\s+(\w+)\s+\w+\s+(\w+).*")
         rnotfound = re.compile("Job <(\d+)> is not found")
-        for jobid in schedIdList:
-            jobid = jobid.strip()
+        for job in obj.jobs :
+
+            if not self.valid( job.runningJob ) :
+                continue
+
+            jobid = job.runningJob['jobId'].strip()
             cmd='bjobs '+str(jobid)
             #print cmd
             out, ret = self.ExecuteCommand(cmd)
+            if ret != 0 :
+                raise SchedulerError('Error in status query', out,cmd )
             #print "<"+out+">"
             mnotfound= rnotfound.search(out)
             queue=None
@@ -246,13 +211,11 @@ class SchedulerLsf (SchedulerInterface) :
 
             #print id,st,queue,host
 
-            map={}
             if (st) :
-                map['statusScheduler']=st
-                map['status'] = self.statusMap[st]
-            if (host): map['destination']=host
-            ret_map[jobid]=map
-        return ret_map
+                job.runningJob['statusScheduler']=st
+                job.runningJob['status'] = self.statusMap[st]
+            if (host): job.runningJob['destination']=host
+
 
 
     def getOutput( self, schedIdList, outdir ):
