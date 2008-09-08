@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.3 2008/05/16 14:44:52 gcodispo Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.4 2008/08/27 14:19:10 gcodispo Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import sys
 import os
@@ -82,13 +82,13 @@ class SchedulerGLite (SchedulerInterface) :
         delegate proxy to a wms
         """
         
-        msg = self.ExecuteCommand(
+        msg, ret = self.ExecuteCommand(
             "export X509_USER_PROXY=" + self.cert \
             + "; glite-wms-job-delegate-proxy -d " +  self.delegationId \
             + " --endpoint " + wms
             )
 
-        if msg.find("Error -") >= 0 :
+        if ret != 0 or msg.find("Error -") >= 0 :
             print "Warning : \n", msg
 
 
@@ -122,7 +122,7 @@ class SchedulerGLite (SchedulerInterface) :
         if service != '' :
             command += ' -e ' + service
 
-        out = self.ExecuteCommand(
+        out, ret = self.ExecuteCommand(
             command + ' ' + fname, userProxy = self.cert
             )
         try:
@@ -163,7 +163,7 @@ class SchedulerGLite (SchedulerInterface) :
             command = "export X509_USER_PROXY=" + self.cert \
                       + "; glite-wms-job-output --noint --dir " \
                       + outdir + " " + jobId
-            out = self.ExecuteCommand( command )
+            out, ret = self.ExecuteCommand( command )
             if out.find("have been successfully retrieved") == -1 :
                 raise SchedulerError( 'retrieved', out )
 
@@ -192,7 +192,7 @@ class SchedulerGLite (SchedulerInterface) :
 
         command = "export X509_USER_PROXY=" + self.cert \
                   + "; glite-wms-job-cancel --noint " + schedIdList
-        out = self.ExecuteCommand( command )
+        out, ret = self.ExecuteCommand( command )
         if out.find("glite-wms-job-cancel Success") == -1 :
             raise SchedulerError( 'error', out )
 
@@ -225,7 +225,7 @@ class SchedulerGLite (SchedulerInterface) :
             command += ' -e ' + service
 
 
-        out = self.ExecuteCommand(
+        out, ret = self.ExecuteCommand(
             command + ' ' + fname, userProxy = self.cert
             )
         try:
@@ -247,20 +247,70 @@ class SchedulerGLite (SchedulerInterface) :
         command = "glite-wms-job-logging-info -v 2 " + schedulerId + \
                   " > " + outfile + "/gliteLoggingInfo.log"
 
-        return self.ExecuteCommand( command, userProxy = self.cert )
-
+        return self.ExecuteCommand( command, userProxy = self.cert )[0]
 
     ##########################################################################
 
-    def query(self, schedIdList, service='', objType='node') :
-
+    def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
         """
-        if type == 'node':
-            return checkJobs( schedIdList )
-        elif type == 'parent' :
-            return checkJobsBulk( schedIdList )
+
+        # the object passed is a Task:
+        #   check whether parent id are provided, make a list of ids
+        #     and check the status
+        if type(obj) == Task :
+
+            from ProdCommon.BossLite.Scheduler.GLiteLBQuery import GLiteLBQuery
+            lbInstance = GLiteLBQuery()
+
+            # query performed through single job ids
+            if objType == 'node' :
+
+                self.hackEnv() ### TEMP FIX
+                lbInstance.checkJobs( obj )
+                self.hackEnv( restore = True ) ### TEMP FIX
+
+            # query performed through a bulk id
+            elif objType == 'parent' :
+
+                # jobId for remapping
+                jobIds = {}
+
+                # parent Ids for status query
+                parentIds = []
+
+                # counter for job position in list
+                count = 0
+
+                # loop!
+                for job in obj.jobs :
+
+                    # consider just valid jobs
+                    if self.valid( job.runningJob ) :
+
+                        # append in joblist
+                        jobIds[ str(job.runningJob['schedulerId']) ] = count
+
+                        # update unique parent ids list
+                        if job.runningJob['schedulerParentId'] \
+                               not in parentIds:
+
+                            parentIds.append(
+                                str(job.runningJob['schedulerParentId'] )
+                                )
+
+                    count += 1
+
+                self.hackEnv() ### TEMP FIX
+                lbInstance.checkJobsBulk( obj, jobIds, parentIds )
+                self.hackEnv( restore = True ) ### TEMP FIX
+
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
+
 
     ##########################################################################
 

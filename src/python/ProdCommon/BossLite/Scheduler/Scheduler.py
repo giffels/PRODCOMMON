@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.39 2008/07/15 10:08:51 gcodispo Exp $"
-__revision__ = "$Revision: 1.39 $"
+__version__ = "$Id: Scheduler.py,v 1.40 2008/07/17 13:14:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.40 $"
 
 
 ##########################################################################
@@ -137,78 +137,23 @@ class Scheduler(object):
         # check the proxy
         self.schedObj.checkUserProxy()
 
-        # the object passed is a runningJob: query and update
-        if type(obj) == RunningJob :
+        # error messages collector
+        errors = ''
 
-            # check for the RunningJob integrity
-            if not self.schedObj.valid( obj ):
-                raise SchedulerError('invalid object', str( obj ))
+        # delegate query to scheduler plugin
+        self.schedObj.query( obj, self.parameters['service'], objType )
 
-            # query!
-            jobAttributes = self.schedObj.query(
-                obj['schedulerId'], self.parameters['service'], 'node'
-                )
+        # handle errors
+        for job in obj.jobs :
 
-            # status association
-            for key, value in jobAttributes[obj['schedulerId']].iteritems() :
-                obj[key] = value
+            # evaluate errors:
+            if job.runningJob.isError() :
+                errors += str( job.runningJob.errors )
+                continue
 
-        # the object passed is a Job: query and update
-        elif type(obj) == Job :
-
-            # check for the RunningJob integrity
-            if not self.schedObj.valid( obj.runningJob ):
-                raise SchedulerError('invalid object', str( obj.runningJob ))
-
-            # query!
-            jobAttributes = self.schedObj.query (
-                obj.runningJob['schedulerId'], self.parameters['service'], \
-                'node' )
-
-            # status association
-            for key, value in jobAttributes[obj['schedulerId']].iteritems() :
-                obj.runningJob[key] = value
-
-        # the object passed is a Task:
-        #   check whether parent id are provided, make a list of ids
-        #     and check the status
-        elif type(obj) == Task :
-            schedIds = []
-
-            # query performed through single job ids
-            if objType == 'node' :
-                for job in obj.jobs :
-                    if self.schedObj.valid( job.runningJob ) and \
-                           job.runningJob['status'] != 'SD':
-                        schedIds.append( job.runningJob['schedulerId'] )
-                jobAttributes = self.schedObj.query( schedIds, \
-                                               self.parameters['service'], \
-                                               'node' )
-
-            # query performed through a bulk id
-            elif objType == 'parent' :
-                for job in obj.jobs :
-                    if self.schedObj.valid( job.runningJob ) \
-                      and job.runningJob['status'] != 'SD' \
-                      and job.runningJob['schedulerParentId'] not in schedIds:
-                        schedIds.append( job.runningJob['schedulerParentId'] )
-                jobAttributes = self.schedObj.query( schedIds, \
-                                               self.parameters['service'],
-                                               'parent' )
-
-            # status association
-            for job in obj.jobs :
-                try:
-                    valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
-                except:
-                    continue
-                for key, value in valuesMap.iteritems() :
-                    job.runningJob[key] = value
-
-        # unknown object type
-        else:
-            raise SchedulerError('wrong argument type', str( type(obj) ))
-
+        # handle errors
+        if errors != '' :
+            raise SchedulerError('interaction failed for some jobs', errors )
 
     ##########################################################################
     def getOutput( self, obj, outdir ):

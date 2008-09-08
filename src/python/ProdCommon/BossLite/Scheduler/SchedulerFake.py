@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.6 2008/05/14 09:52:19 gcodispo Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.7 2008/05/16 14:44:52 gcodispo Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import os
 import traceback
@@ -65,7 +65,7 @@ class SchedulerFake(SchedulerInterface) :
 
             # submit:
             # 1)
-            #   out = self.ExecuteCommand( "qsub " + options + ' ' + jdl  )
+            #   out, ret = self.ExecuteCommand( "qsub " + options + ' ' + jdl )
             # 2)
             #   task = wmproxy.jobRegister ( jdl, self.delegationId )
 
@@ -256,12 +256,12 @@ class SchedulerFake(SchedulerInterface) :
         command = "glite-wms-job-logging-info -v 2 " + schedulerId + \
                   " > " + outfile + "/gliteLoggingInfo.log"
             
-        return self.ExecuteCommand( command, userProxy = self.cert )
+        return self.ExecuteCommand( command, userProxy = self.cert )[0]
 
 
     ##########################################################################
 
-    def query(self, schedIdList, service='', objType='node') :
+    def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
         """
@@ -272,7 +272,7 @@ class SchedulerFake(SchedulerInterface) :
         ret_map = {}
 
         if objType == 'node':
-            for schedId in schedIdList :
+            for job in obj.jobs :
                 # do query
                 # ...
                 values = { 'destination' : 'home',
@@ -281,7 +281,7 @@ class SchedulerFake(SchedulerInterface) :
                            'statusReason' : 'on site'}
                 ret_map[ schedId ] = values
         elif objType == 'parent' :
-            for schedId in schedIdList :
+            for job in obj.jobs :
                 #  a bulk command  may give many jobs in one shot!
                 newIdList = bulkQueryCommand( schedId )
                 for newId in newIdList :
@@ -291,7 +291,6 @@ class SchedulerFake(SchedulerInterface) :
                                'statusReason' : 'on site'}
                     ret_map[ newId ] = values
 
-        return ret_map
 
 
     ##########################################################################

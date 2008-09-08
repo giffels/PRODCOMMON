@@ -8,8 +8,8 @@ import os
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.28 2008/07/17 14:29:36 gcodispo Exp $"
-__revision__ = "$Revision: 1.28 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.29 2008/07/24 16:28:27 gcodispo Exp $"
+__revision__ = "$Revision: 1.29 $"
 
 
 
@@ -24,8 +24,9 @@ class SchedulerInterface(object):
         initialization
         """
 
-        self.cert = args['user_proxy']
-        self.timeout = args.get("timeout", None)
+        self.cert = args.get( "user_proxy", '')
+        self.timeout = args.get( "timeout", None )
+        self.invalidList = args.get( "skipList", ['A', 'K', 'E'] )
         self.validProxy = None
 
     ##########################################################################
@@ -39,7 +40,7 @@ class SchedulerInterface(object):
                and runningJob.active == True \
                and runningJob['schedulerId'] is not None \
                and runningJob['closed'] == "N" \
-               and runningJob['status'] not in ['A', 'K', 'E'] :
+               and runningJob['status'] not in self.invalidList :
             return True
         else :
             return False
@@ -97,7 +98,7 @@ class SchedulerInterface(object):
         if self.cert != '' :
             command += ' --file ' + self.cert
 
-        output = self.ExecuteCommand( command )
+        output, ret = self.ExecuteCommand( command )
 
         try:
             output = output.split("timeleft  :")[1].strip()
@@ -151,18 +152,11 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def query(self, schedIdList, service='', objType='node') :
+    def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
         It may use single 'node' scheduler id or bulk id for association
-
-        return jobAttributes
-
-        where jobAttributes is a map of the format:
-           jobAttributes[ schedId :
-                                    [ key : val ]
-                        ]
-           where key can be any parameter of the Job object and at least status
+        The strategy must be defined in the specific implementation.
 
         """
         raise NotImplementedError

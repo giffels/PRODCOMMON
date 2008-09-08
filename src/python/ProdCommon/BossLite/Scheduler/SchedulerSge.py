@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.2 2008/05/28 13:34:31 spiga Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.3 2008/08/27 15:38:15 gcodispo Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import re, os
 
@@ -90,7 +90,7 @@ class SchedulerSge (SchedulerInterface) :
 
         command = "qsub " + arg 
         #print command + "\n"
-        out = self.ExecuteCommand(command)
+        out, ret = self.ExecuteCommand(command)
         #print "out:" + out + "\n"
         r = re.compile("Your job (\d+) .* has been submitted")
 
@@ -98,7 +98,7 @@ class SchedulerSge (SchedulerInterface) :
         if m is not None:
             jobId =m.group(1)
             command = "qstat -j " +  jobId
-            #out = self.ExecuteCommand(command)
+            #out, ret = self.ExecuteCommand(command)
             #print "out:" + out + "\n"
             #queue = m.group(2)
             queue = "all"
@@ -183,7 +183,52 @@ class SchedulerSge (SchedulerInterface) :
         return arg 
 
 
-    def query(self, schedIdList, service='', objType='node') :
+    ##########################################################################
+    def query(self, obj, service='', objType='node') :
+        """
+        query status and eventually other scheduler related information
+        """
+
+        # the object passed is a Task:
+        #   check whether parent id are provided, make a list of ids
+        #     and check the status
+        if type(obj) == Task :
+            schedIds = []
+
+            # query performed through single job ids
+            if objType == 'node' :
+                for job in obj.jobs :
+                    if self.valid( job.runningJob ) and \
+                           job.runningJob['status'] != 'SD':
+                        schedIds.append( job.runningJob['schedulerId'] )
+                jobAttributes = self.queryLocal( schedIds, objType )
+
+            # query performed through a bulk id
+            elif objType == 'parent' :
+                for job in obj.jobs :
+                    if self.valid( job.runningJob ) \
+                      and job.runningJob['status'] != 'SD' \
+                      and job.runningJob['schedulerParentId'] not in schedIds:
+                        schedIds.append( job.runningJob['schedulerParentId'] )
+                jobAttributes = self.queryLocal( schedIds, objType )
+
+            # status association
+            for job in obj.jobs :
+                try:
+                    valuesMap = jobAttributes[ job.runningJob['schedulerId'] ]
+                except:
+                    continue
+                for key, value in valuesMap.iteritems() :
+                    job.runningJob[key] = value
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
+
+
+
+    def queryLocal(self, schedIdList, objType='node' ) :
+
         """
         query status and eventually other scheduler related information
         It may use single 'node' scheduler id or bulk id for association
@@ -203,7 +248,7 @@ class SchedulerSge (SchedulerInterface) :
         rnohost = re.compile("(\d+) .* "+os.getlogin()+" \W+(\w+) ")
         cmd='qstat -u '+os.getlogin()
         #print cmd
-        out = self.ExecuteCommand(cmd)
+        out, ret = self.ExecuteCommand(cmd)
         #print "<"+out+">"
         for line in out.split('\n'):
             #print line
@@ -272,7 +317,7 @@ class SchedulerSge (SchedulerInterface) :
                             #print "outputFile:"+outFile
                             command = "mv "+oldoutdir+"/"+outFile+" "+outdir+"/. \n"
                             #print command
-                            out = self.ExecuteCommand(command)
+                            out, ret = self.ExecuteCommand(command)
                             if (out!=""):
                                 raise SchedulerError('unable to move file', out)
                                 #raise SchedulerError("unable to move file "+oldoutdir+"/"+outFile+" ",out)
@@ -297,7 +342,7 @@ class SchedulerSge (SchedulerInterface) :
                 continue
             jobid = str( job.runningJob[ 'schedulerId' ] ).strip()
             cmd='qdel '+str(jobid)
-            out = self.ExecuteCommand(cmd)
+            out, ret = self.ExecuteCommand(cmd)
             #print "kill:"+out
             mKilled= r.search(out)
             if not mKilled:

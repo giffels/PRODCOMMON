@@ -3,12 +3,11 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.85 2008/09/04 08:43:48 spiga Exp $"
-__version__ = "$Revision: 1.85 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.86 2008/09/08 07:49:52 gcodispo Exp $"
+__version__ = "$Revision: 1.86 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
-#import re
 import socket
 import tempfile
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -127,8 +126,7 @@ def processClassAdBlock( classAd ):
             classAd = classAd[1:-1].strip()
 
         # create attributes map and loop for wms detection
-        cladMap = classAd.split(';')
-        for p in cladMap:
+        for p in classAd.split(';'):
 
             p = p.strip()
             try:
@@ -142,10 +140,9 @@ def processClassAdBlock( classAd ):
 
             # extract wms
             elif ( key == "wmproxyendpoints" ) :
-                wmsListStr = val[ val.find('{') +1 : val.find('}') ].replace(
+                wmsList = val[ val.find('{') +1 : val.find('}') ].replace(
                     ',', '\n')
-                wmsList = wmsListStr.split('\n')
-                for wms in wmsList:
+                for wms in wmsList.split('\n'):
                     wms = wms[ : wms.find('#') ].replace("\"", "").strip()
                     if wms != '' :
                         endpoints.append( wms )             
@@ -186,16 +183,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    ### newUI = True
-    warnings = []
+    proxyString = ''
     envProxy = os.environ.get("X509_USER_PROXY",'')
+    warnings = []
 
     def __init__( self, **args ):
 
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
+
         # skipWMSAuth
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
+
         # vo
         self.vo = args.get( "vo", "cms" )
 
@@ -220,11 +219,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         explicit proxy
         """
 
-        #if self.envProxy is None or self.cert == '':
+        # skip if the env proxy is correct
         if self.cert == '' or self.cert == self.envProxy :
             return
 
-        # if UI with new WMProxy API then apply the X509_USER_PROXY hack
+        # apply the X509_USER_PROXY hack
         if restore :
             os.environ["X509_USER_PROXY"] = self.envProxy
         else :
@@ -238,29 +237,26 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         parse config files, merge jdl and retrieve wms list
         """
 
-        try:
-            schedClassad = ""
-            endpoints = []
-            if len( wms ) == 0:
-                pass
-            elif type( wms ) == str :
-                endpoints = [ wms ]
-            elif type( wms ) == list :
-                endpoints = wms
 
-            if len( endpoints ) == 0 :
-                endpoints, schedClassad = self.parseConfig ( configfile )
-            else :
-                tmp, schedClassad = self.parseConfig ( configfile )
+        schedClassad = ""
+        endpoints = []
+        if len( wms ) == 0:
+            pass
+        elif type( wms ) == str :
+            endpoints = [ wms ]
+        elif type( wms ) == list :
+            endpoints = wms
 
-            begin = ''
-            jdl.strip()
-            if jdl[0] == '[' :
-                begin = '[\n'
-                jdl = begin + schedClassad + jdl[1:]
-                
-        except SchedulerError, err:
-            raise
+        if len( endpoints ) == 0 :
+            endpoints, schedClassad = self.parseConfig ( configfile )
+        else :
+            tmp, schedClassad = self.parseConfig ( configfile )
+
+        begin = ''
+        jdl.strip()
+        if jdl[0] == '[' :
+            begin = '[\n'
+            jdl = begin + schedClassad + jdl[1:]
 
         return jdl, endpoints
 
@@ -361,68 +357,67 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         needs some cleaning
         """
 
-        returnMap = {}
-        taskId = ''
-
-        try :
-            # first check if the sandbox dir can be created
-            if os.path.exists( self.SandboxDir ) != 0:
-                raise SchedulerError( 'unable to create ' + self.SandboxDir, \
+        # first check if the sandbox dir can be created
+        if os.path.exists( self.SandboxDir ) != 0:
+            raise SchedulerError( 'unable to create ' + self.SandboxDir, \
                                       'already exist' )
 
-            # initialize wmproxy
-            self.hackEnv() ### TEMP FIX
+        # initialize wmproxy
+        self.hackEnv() ### TEMP FIX
 
-            # initialize wms connection
-            wmproxy = self.wmproxyInit( wms )
-            logging.info('DBG for proxy cert=%s X509=%s' % \
-                          ( self.cert, \
-                            os.environ.get("X509_USER_PROXY",'notdefined') ) )
+        # initialize wms connection
+        wmproxy = self.wmproxyInit( wms )
+        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+               ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
-            # register job: time consumng operation
-            try:
+        # register job: time consumng operation
+        try:
+            task = wmproxy.jobRegister ( jdl, self.delegationId )
+        except WMPException, wmpError :
+            if wmpError.toString().find('Unable to get delegated Proxy'):
+                self.delegateProxy( wmproxy )
                 task = wmproxy.jobRegister ( jdl, self.delegationId )
-            except WMPException, wmpError :
-                if wmpError.toString().find('Unable to get delegated Proxy'):
-                    self.delegateProxy( wmproxy )
-                    task = wmproxy.jobRegister ( jdl, self.delegationId )
-                else:
-                    raise
+            else:
+                raise
             
-            # retrieve parent id
-            taskId = str( task.getJobId() )
+        # retrieve parent id
+        taskId = str( task.getJobId() )
 
-            # retrieve nodes id
-            dag = task.getChildren()
-            for job in dag:
-                returnMap[ str( job.getNodeName() ) ] = str( job.getJobId() )
+        # retrieve nodes id
+        returnMap = {}
+        for job in task.getChildren():
+            returnMap[ str( job.getNodeName() ) ] = str( job.getJobId() )
 
-            # handle input sandbox :
-            if sandboxFileList != '' :
-                #   get destination
-                destURI = wmproxy.getSandboxDestURI(taskId)
+        # handle input sandbox :
+        if sandboxFileList != '' :
 
-                #   make directory struct locally
-                basedir = self.SandboxDir + \
-                          destURI[0].split('/' + self.SandboxDir)[1]
-                os.makedirs( basedir )
+            # get destination
+            destURI = wmproxy.getSandboxDestURI(taskId)
 
-                # copy files in the directory
-                command = "cp %s %s" % (sandboxFileList, basedir)
-                msg = self.ExecuteCommand( command )
-                if msg != '' :
-                    raise SchedulerError( "cp error", msg, command )
+            # make directory struct locally
+            basedir = self.SandboxDir + \
+                      destURI[0].split('/' + self.SandboxDir)[1]
+            os.makedirs( basedir )
 
-                # zip sandbox + chmod workaround for the wms
-                msg = self.ExecuteCommand(
-                    "chmod 773 " + self.SandboxDir + "; chmod 773 " \
-                    + self.SandboxDir + "/*"
-                    )
-                command = "tar pczf %s %s/*" % (self.zippedISB, basedir)
-                msg = self.ExecuteCommand( command )
-                if msg != '' :
-                    raise SchedulerError( "tar error", msg, command )
+            # copy files in the directory
+            command = "cp %s %s" % (sandboxFileList, basedir)
+            msg, ret = self.ExecuteCommand( command )
+            if ret != 0 or msg != '' :
+                os.system( "rm -rf " + self.SandboxDir )
+                raise SchedulerError( "cp error", msg, command )
 
+            # zip sandbox + chmod workaround for the wms
+            msg, ret = self.ExecuteCommand(
+                "chmod 773 " + self.SandboxDir + "; chmod 773 " \
+                + self.SandboxDir + "/*"
+                )
+            command = "tar pczf %s %s/*" % (self.zippedISB, basedir)
+            msg, ret = self.ExecuteCommand( command )
+            if ret != 0 or msg != '' :
+                os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+                raise SchedulerError( "tar error", msg, command )
+
+            try:
                 # copy file to the wms (also usable curl)
                 #
                 # command = "/usr/bin/curl --cert  " + self.cert + \
@@ -433,26 +428,28 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 command = "globus-url-copy file://%s/%s %s/%s" \
                           % ( os.getcwd(), self.zippedISB, \
                               destURI[0], self.zippedISB )
-                msg = self.ExecuteCommand(self.proxyString + command)
-                if msg.upper().find("ERROR") >= 0 \
+                msg, ret = self.ExecuteCommand(self.proxyString + command)
+                logging.debug("DBG : globus-url-copy " + msg)
+                if ret != 0 or msg.upper().find("ERROR") >= 0 \
                        or msg.find("wrong format") >= 0 :
                     raise SchedulerError("globus-url-copy error", msg, command)
 
-            # start job!
-            wmproxy.jobStart(taskId)
-
-            self.hackEnv(restore=True) ### TEMP FIX
-
-            # cleaning up everything: delete temporary files and exit
-            if sandboxFileList != '' :
+            except (BaseException, Exception), err:
                 os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+                raise
 
-        except BaseException, err:
+        # start job!
+        try:
+            wmproxy.jobStart(taskId)
+        except (BaseException, Exception), err:
+            wmproxy.jobPurge(taskId)
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             raise
-        except Exception, err:
+
+        # cleaning up everything: delete temporary files and exit
+        self.hackEnv(restore=True) ### TEMP FIX
+        if sandboxFileList != '' :
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            raise
 
         return taskId, returnMap
 
@@ -477,9 +474,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         os.environ["PROXY_REQUEST"] = proxycert
         cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " #\
               # + self.getUserProxy()
-        msg = self.ExecuteCommand( cmd )
+        msg, ret = self.ExecuteCommand( cmd )
 
-        if msg.find("Error") >= 0 :
+        if ret != 0 or msg.find("Error") >= 0 :
             os.unlink( tmpfile )
             raise SchedulerError("Unable to delegate proxy", msg, cmd)
 
@@ -491,10 +488,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         ### command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
         ###           + " --endpoint " + wms
         ### 
-        ### if self.cert != '' :
-        ###     command = "export X509_USER_PROXY=" + self.cert + ' ; ' + command
-        ### 
-        ### msg = self.ExecuteCommand( command )
+        ### msg, ret = self.ExecuteCommand( self.proxyString + command )
         ### 
         ### if msg.find("Error -") >= 0 :
         ###     self.warnings.append( "Warning : " + str( msg ) )
@@ -544,9 +538,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         errors = ''
         success = None
         seen = []
-        endpoints = self.wmsResolve( endpoints )
 
-        for wms in endpoints :
+        for wms in self.wmsResolve( endpoints ) :
             try :
                 wms = wms.replace("\"", "").strip()
                 if  len( wms ) == 0 or wms[0]=='#' or wms in seen:
@@ -662,6 +655,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
+        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+               ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # loop over jobs
         for job in jobList:
@@ -720,6 +715,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
                 # ugly trick for empty fields...
                 if m['name'].strip() == '' :
+                    joberr +=  'empty filename; '
                     continue
 
                 # avoid globus-url-copy for empty files
@@ -733,9 +729,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                                      os.path.basename(m['name']) )
                 command = "globus-url-copy -verbose " + m['name'] \
                           + " file://" + dest
-                msg = self.ExecuteCommand(self.proxyString + command)
-                if msg.upper().find("ERROR") >= 0 or \
-                       msg.find("wrong format") >= 0 :
+                msg, ret = self.ExecuteCommand(self.proxyString + command)
+                if ret != 0 or msg.upper().find("ERROR") >= 0 \
+                       or msg.find("wrong format") >= 0 :
                     joberr = '[ ' + command + ' ] : ' + msg + '; '
                     continue
 
@@ -836,6 +832,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
+        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+               ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # loop over jobs
         for job in jobList:
@@ -960,6 +958,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
+        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+               ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # loop over jobs
         for job in jobList:
@@ -1004,9 +1004,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # jdl ready!
         seen = []
-        endpoints = self.wmsResolve( endpoints )
 
-        for wms in endpoints :
+        for wms in self.wmsResolve( endpoints ) :
             try :
                 wms = wms.replace("\"", "").strip()
                 if  len( wms ) == 0 or wms[0]=='#' or wms in seen:
@@ -1048,21 +1047,69 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
 
-        return self.ExecuteCommand( self.proxyString + command )
+        return self.ExecuteCommand( self.proxyString + command )[0]
 
 
     ##########################################################################
-    def query(self, schedIdList, service='', objType='node') :
+    def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
         """
 
-        from ProdCommon.BossLite.Scheduler.GLiteLBQuery import \
-             checkJobs, checkJobsBulk
-        if objType == 'node':
-            return checkJobs( schedIdList, self.getUserProxy() )
-        elif objType == 'parent' :
-            return checkJobsBulk( schedIdList, self.getUserProxy() )
+        # the object passed is a Task:
+        #   check whether parent id are provided, make a list of ids
+        #     and check the status
+        if type(obj) == Task :
+
+            from ProdCommon.BossLite.Scheduler.GLiteLBQuery import GLiteLBQuery
+            lbInstance = GLiteLBQuery()
+
+            # query performed through single job ids
+            if objType == 'node' :
+
+                self.hackEnv() ### TEMP FIX
+                lbInstance.checkJobs( obj, self.invalidList )
+                self.hackEnv( restore = True ) ### TEMP FIX
+
+            # query performed through a bulk id
+            elif objType == 'parent' :
+
+                # jobId for remapping
+                jobIds = {}
+
+                # parent Ids for status query
+                parentIds = []
+
+                # counter for job position in list
+                count = 0
+
+                # loop!
+                for job in obj.jobs :
+
+                    # consider just valid jobs
+                    if self.valid( job.runningJob ) :
+
+                        # append in joblist
+                        jobIds[ str(job.runningJob['schedulerId']) ] = count
+
+                        # update unique parent ids list
+                        if job.runningJob['schedulerParentId'] \
+                               not in parentIds:
+
+                            parentIds.append(
+                                str(job.runningJob['schedulerParentId'] )
+                                )
+
+                    count += 1
+
+                self.hackEnv() ### TEMP FIX
+                lbInstance.checkJobsBulk( obj, jobIds, parentIds )
+                self.hackEnv( restore = True ) ### TEMP FIX
+
+
+        # unknown object type
+        else:
+            raise SchedulerError('wrong argument type', str( type(obj) ))
 
 
     ##########################################################################
@@ -1322,9 +1369,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if seList == None :
             command = "lcg-info --vo " + self.vo + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
-            out = self.ExecuteCommand( self.proxyString + command )
-            out = out.split()
-            for ce in out :
+            out, ret = self.ExecuteCommand( self.proxyString + command )
+            for ce in out.split() :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
@@ -1347,9 +1393,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
-            out = self.ExecuteCommand( self.proxyString + singleComm )
-            out = out.split()
-            for ce in out :
+            out, ret = self.ExecuteCommand( self.proxyString + singleComm )
+            for ce in out.split() :
                 # blacklist
                 if ce.find( "blah" ) == -1:
                     passblack = 1
