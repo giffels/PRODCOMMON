@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.84 2008/09/03 11:23:45 gcodispo Exp $"
-__version__ = "$Revision: 1.84 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.85 2008/09/04 08:43:48 spiga Exp $"
+__version__ = "$Revision: 1.85 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -713,7 +713,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             for m in filelist:
 
                 # ugly error: nothing there!
-                size = int( m['size'] )
+                try:
+                    size = int( m['size'] )
+                except ValueError :
+                    continue
+
                 # ugly trick for empty fields...
                 if m['name'].strip() == '' :
                     continue
@@ -749,7 +753,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if retrieved == 0:
                 # job.runningJob['statusHistory'].append(
                 #     'Warning: non files retrieved' )
-                job.runningJob.errors.append( 'Warning: non files retrieved' )
+                job.runningJob.errors.append(
+                    'Warning: no files to be retrieved' )
 
             # got errors?
             if joberr != '' :
