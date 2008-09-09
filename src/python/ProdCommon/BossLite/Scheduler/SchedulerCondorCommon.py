@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.30 2008/09/05 18:49:21 ewv Exp $"
-__version__ = "$Revision: 1.30 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.31 2008/09/08 21:21:29 ewv Exp $"
+__version__ = "$Revision: 1.31 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -97,10 +97,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
         filelist = self.inputFiles(obj['globalSandbox'])
         if filelist:
           jobRequirements += "transfer_input_files = " + filelist + '\n'
-        job.runningJob['destination'] = execHost
 
         # Build JDL file
-        jdl, sandboxFileList = self.decode( job, jobRequirements)
+        jdl, sandboxFileList, ce = self.decode(job, jobRequirements)
         jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
@@ -132,6 +131,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
           print stderr.readlines()
         os.chdir(cacheDir)
         jobCount += 1
+
+        if ce:
+            job.runningJob['destination'] = ce.split(':')[0]
+        else:
+            job.runningJob['destination'] = execHost
+
 
     success = self.hostname
 
@@ -203,6 +208,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
       # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
+      ce = None
       for line in jdlLines:
         [key,value] = line.split('=',1)
         if key.strip() == "schedulerList":
@@ -215,7 +221,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           jdl += line.strip() + '\n';
 
       filelist = ''
-      return jdl, filelist
+      return jdl, filelist, ce
 
 
   def query(self, obj, service='', objType='node'):
