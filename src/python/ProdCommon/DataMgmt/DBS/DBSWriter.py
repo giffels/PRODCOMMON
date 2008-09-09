@@ -22,7 +22,7 @@ from ProdCommon.MCPayloads.DatasetTools import getOutputDatasetsWithPSet
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasets
 from ProdCommon.MCPayloads.MergeTools import createMergeDatasetWorkflow
 
-
+from xml.dom import minidom
 import logging
 
 
@@ -91,6 +91,57 @@ class _CreateMergeDatasetOperator:
             logging.debug("inputDataset: %s"%inputDataset)
             logging.debug("mergeAlgo: %s"%mergeAlgo)
         return
+
+    
+def _remapBlockParentage(dsPath, data):
+    """
+    _RemapBlockParentage
+    
+    Remap the parentage of a block and its constiuent files
+    
+    o Remove child relations - to be set by child ds when exported
+    o Remove unmerged file and processed dataset parents
+    
+    """
+        
+    # TODO: Throw on unmerged migrations?
+    
+    def dropNode(node):
+            logging.debug("_remapBlockParentage: Dropping %s node" % node.nodeName)
+            logging.debug("_remapBlockParentage: Node contents: %s" % node.toxml())
+            node.parentNode.removeChild(node)       
+    
+    def unmergedDropper(node, name):
+        # strip un-merged tags - how to do this better?
+        if node.getAttribute(name).count('unmerged') != 0:
+            dropNode(node)
+
+    dsContents = minidom.parseString(data)
+    
+    # remove other paths from proc ds - screws up ds parentage
+    for proc in dsContents.getElementsByTagName('processed_dataset'):
+        for path in proc.getElementsByTagName('path'):
+            if path.getAttribute('dataset_path') != dsPath:
+                dropNode(path)
+    
+    # remove file children - let this be set by a file setting its parents
+    for child in dsContents.getElementsByTagName('file_child'):
+        dropNode(child)
+    
+    # remap processing ds parentage
+    for proc_parent in \
+        dsContents.getElementsByTagName('processed_dataset_parent'):
+        unmergedDropper(proc_parent, 'path')
+        
+    # remap file parentage
+    for afile in dsContents.getElementsByTagName('file'):
+        for aparent in afile.getElementsByTagName('file_parent'):
+            unmergedDropper(aparent, 'lfn')
+    
+    result = dsContents.toxml()
+    dsContents.unlink()
+    return result
+        
     
             
         
@@ -462,6 +513,9 @@ class DBSWriter:
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
+            
+            xferData = _remapBlockParentage(datasetPath, xferData)
+            
             try:
                 self.dbs.insertDatasetContents(xferData)
             except DbsException, ex:
