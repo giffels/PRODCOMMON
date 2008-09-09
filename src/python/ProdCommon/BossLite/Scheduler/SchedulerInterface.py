@@ -8,8 +8,8 @@ import os
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.29 2008/07/24 16:28:27 gcodispo Exp $"
-__revision__ = "$Revision: 1.29 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.30 2008/09/08 10:21:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.30 $"
 
 
 
@@ -27,7 +27,7 @@ class SchedulerInterface(object):
         self.cert = args.get( "user_proxy", '')
         self.timeout = args.get( "timeout", None )
         self.invalidList = args.get( "skipList", ['A', 'K', 'E'] )
-        self.validProxy = None
+        self.validProxy = args.get( "skipProxyCheck", None )
 
     ##########################################################################
     def valid( self, runningJob ) :
