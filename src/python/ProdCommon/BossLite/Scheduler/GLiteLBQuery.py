@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.13 2008/07/24 16:28:27 gcodispo Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.14 2008/09/08 10:21:45 gcodispo Exp $"
+__version__ = "$Revision: 1.14 $"
 
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
@@ -119,25 +119,22 @@ class GLiteLBQuery(object):
         timestamp = str(jobInfo[self.stateEnterTimes])
         try:
 
-            try:
-                lst = self.ft.match( timestamp ).group( 6, 7, 8, \
-                        self.statusList.index(runningJob['statusScheduler'])+2)
+            lst = self.ft.match( timestamp ).group( 6, 7, 8, \
+                    self.statusList.index(runningJob['statusScheduler'])+2)
             
-                if lst[0] == '0':
-                    try:
-                        runningJob["scheduledAtSite"] = lst[0]
-                    except JobError, err:
-                        pass
-                if lst[1] != '0':
-                    runningJob["startTime"] = lst[1]
-                if lst[2] != '0':
-                    runningJob["stopTime"] = lst[2]
+            ### if lst[0] == '0':
+            ###     try:
+            ###         runningJob["scheduledAtSite"] = lst[0]
+            ###     except JobError, err:
+            ###         pass
+            if lst[1] != '0':
+                runningJob["startTime"] = lst[1]
+            if lst[2] != '0':
+                runningJob["stopTime"] = lst[2]
 
-                runningJob["lbTimestamp"] = lst[3]
-            except Exception, err:
-                print err
+            runningJob["lbTimestamp"] = lst[3]
 
-            ### try:
+
             ###     pos = timestamp.find(runningJob['statusScheduler'])
             ###     runningJob["lbTimestamp"] = timestamp[
             ###         timestamp.find('=', pos)+1:timestamp.find(' ', pos)
@@ -154,8 +151,6 @@ class GLiteLBQuery(object):
             ###         ]
             ###     if Running  != '0':
             ###         print Running
-            ### except Exception, err:
-            ###     print err
 
         except StandardError :
             pass
