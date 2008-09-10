@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.86 2008/09/08 07:49:52 gcodispo Exp $"
-__version__ = "$Revision: 1.86 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.87 2008/09/08 10:21:45 gcodispo Exp $"
+__version__ = "$Revision: 1.87 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -359,8 +359,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # first check if the sandbox dir can be created
         if os.path.exists( self.SandboxDir ) != 0:
-            raise SchedulerError( 'unable to create ' + self.SandboxDir, \
-                                      'already exist' )
+            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+            # raise SchedulerError( 'unable to create ' + self.SandboxDir, \
+            #                       'already exist' )
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
@@ -445,6 +446,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             wmproxy.jobPurge(taskId)
             os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
             raise
+        except :
+            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+            raise
 
         # cleaning up everything: delete temporary files and exit
         self.hackEnv(restore=True) ### TEMP FIX
@@ -465,7 +469,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         ### wmproxy.putProxy(delegationId,result )
 
         ### # possible right now:
-        ofile, tmpfile = tempfile.mkstemp( '', 'proxy_del_' )
+        ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=os.getcwd())
         os.close( ofile )
         proxycert = wmproxy.getProxyReq(self.delegationId)
         # cmd =  "glite-proxy-cert -o " + tmpfile + " -p '" + proxycert \
@@ -539,6 +543,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         success = None
         seen = []
 
+        workdir = os.getcwd()
+        newdir = tempfile.mkdtemp( prefix = obj['name'], dir = workdir )
+        os.chdir(newdir)
+
         for wms in self.wmsResolve( endpoints ) :
             try :
                 wms = wms.replace("\"", "").strip()
@@ -558,9 +566,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 errors += 'failed to submit to ' + wms + \
                           ' : ' + formatWmpError( err )
                 continue
+            
+            except :
+                # clean files
+                os.chdir(workdir)
+                os.system("rm -rf " + newdir)
+                raise
 
         # clean files
-        os.system("rm -rf " +  self.SandboxDir + ' ' + self.zippedISB)
+        os.chdir(workdir)
+        os.system("rm -rf " + newdir)
 
         # handle jobs
         for job in obj.jobs :
