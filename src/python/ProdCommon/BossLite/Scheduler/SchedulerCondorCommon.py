@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.31 2008/09/08 21:21:29 ewv Exp $"
-__version__ = "$Revision: 1.31 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.32 2008/09/09 14:55:49 ewv Exp $"
+__version__ = "$Revision: 1.32 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -251,7 +251,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         taskId = obj['name']
         for job in obj.jobs:
             if not self.valid(job.runningJob):
-                raise SchedulerError('Invalid object', str( obj.runningJob ))
+                continue
             schedulerId = job.runningJob['schedulerId']
 
             bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'} # Done by default
