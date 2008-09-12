@@ -256,13 +256,15 @@ class WorkflowMaker:
 
         Set the value for the PSetHash
         
-        If any InputLinks are present thier pset hashes are prepended
+        If any InputLinks are present their pset hashes are prepended
 
         """
         hash = ''
         for link in self.cmsRunNode._InputLinks:
             if link['AppearStandalone']:
-                hash = '%s%s_' % (hash, self.psetHashes[link['InputNode']])
+                prev_node_hash = self.psetHashes.get(link['InputNode'], None)
+                if prev_node_hash:  # cmsGen nodes will be missing
+                    hash = '%s%s_' % (hash, prev_node_hash)
         hash = '%s%s' % (hash, hashValue)
         self.psetHashes[self.cmsRunNode.name] = hash                           
         return
