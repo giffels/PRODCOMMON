@@ -96,7 +96,7 @@ class ProtocolLcgUtils(Protocol):
             if proxy is not None:
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
-            cmd = "lcg-ls "+ fullSource
+            cmd += "lcg-ls "+ fullSource
             exitcode, outputs = self.executeCommand(cmd)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
