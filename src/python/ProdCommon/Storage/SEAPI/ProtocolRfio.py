@@ -30,7 +30,7 @@ class ProtocolRfio(Protocol):
 
         fullDest = dest.getLynk()
 
-        cmd = "rfmkdir -p" + fullDest 
+        cmd = "rfmkdir -p " + fullDest 
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
