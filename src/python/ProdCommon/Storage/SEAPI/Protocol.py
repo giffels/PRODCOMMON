@@ -38,6 +38,12 @@ class Protocol(object):
         """
         raise NotImplementedError
 
+    def setGrant(self, source, value):
+        """
+        set permissions on the specified path
+        """
+        raise NotImplementedError
+
     def createDir(self, source):
         """
         create a directory

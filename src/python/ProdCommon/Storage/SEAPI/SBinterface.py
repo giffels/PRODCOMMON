@@ -80,6 +80,15 @@ class SBinterface:
         self.storage1.workon = ""
         return resval
 
+    def setGrant( self, source = "", values = "640", proxy = None ):
+        self.storage1.workon = source
+        resval = None
+        if self.useProxy:
+            resval = self.storage1.action.setGrant(self.storage1, values, proxy)
+        else:
+            resval = self.storage1.action.setGrant(self.storage1, values)
+        self.storage1.workon = ""
+
     def getList( self, source = "", proxy = None ):
         pass
 

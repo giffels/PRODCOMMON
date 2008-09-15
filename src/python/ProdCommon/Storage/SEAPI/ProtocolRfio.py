@@ -23,11 +23,32 @@ class ProtocolRfio(Protocol):
         return problems
 
 
+    def setGrant(self, dest, values):
+        """
+        rfchomd
+        """
+        
+        fullDest = dest.getLynk()
+        cmd = "rfchmod " + str(values) + " " + fullDest
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error changing permission... " + \
+                                    "[" +fullDest+ "].", problems, outputs)
+
+
     def createDir(self, dest):
         """
         rfmkdir
         """
 
+        if self.checkExists(dest):
+            problems = ["destination file already existing", dest.workon]
+            raise OperationException("Error creating directory [" +\
+                                      dest.workon+ "]", problems, outputs )
+        
         fullDest = dest.getLynk()
 
         cmd = "rfmkdir -p " + fullDest 
@@ -37,15 +58,6 @@ class ProtocolRfio(Protocol):
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error creating remote dir " + \
-                                    "[" +fullDest+ "].", problems, outputs)
-
-        cmd = "rfchmod 777 " + fullDest
-        exitcode, outputs = self.executeCommand(cmd)
-
-        ### simple output parsing ###
-        problems = self.simpleOutputCheck(outputs)
-        if exitcode != 0 or len(problems) > 0:
-            raise TransferException("Error changing permission... " + \
                                     "[" +fullDest+ "].", problems, outputs)
 
     def copy(self, source, dest, proxy = None):
