@@ -17,7 +17,8 @@ class ProtocolSrmv2(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("Exception") != -1:
+            if line.find("Exception") != -1 or \
+               line.find("does not exist") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -166,20 +167,17 @@ class ProtocolSrmv2(Protocol):
                                       problems, outputs )
 
         ### need to parse the output of the commands ###
-        size, owner, group, permMode = "", "", "", ""
+        size = 0
+        # for each listed file
         for line in outputs.split("\n"):
-            if line.find("    size ") != -1:
-                size = line.split(":")[1].strip()
-            elif line.find("    owner ") != -1:
-                owner = line.split(":")[1].strip()
-            elif line.find("    group ") != -1:
-                group = line.split(":")[1].strip()
-            elif line.find("    permMode ") != -1:
-                permMode = line.split(":")[1].strip()
-        if size == "" or owner == "" or group == "" or permMode == "":
-            raise NotExistsException("Path [" + source.workon + \
-                                     "] does not exists.")
-        return int(size), owner, group, permMode
+            # get correct lines
+            if line.find(source.workon) != -1 and line.find("surl[0]=") == -1:
+                values = line.split(" ")
+                # sum file sizes
+                if len(values) > 1:
+                    size += int(values[-2])
+
+        return size, None, None, None
         
 
     def checkExists(self, source, proxy = None):
@@ -188,8 +186,7 @@ class ProtocolSrmv2(Protocol):
         """
         try:
             size, owner, group, permMode = self.listPath(source, proxy)
-            if size is not "" and owner is not "" and\
-               group is not "" and permMode is not "":
+            if size >= 0:
                 return True
         except NotExistsException:
             return False
