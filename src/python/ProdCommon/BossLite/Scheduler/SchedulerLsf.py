@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.15 2008/09/08 10:21:45 gcodispo Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.16 2008/09/08 12:45:34 gcodispo Exp $"
+__version__ = "$Revision: 1.16 $"
 
 import re, os
 
@@ -182,7 +182,7 @@ class SchedulerLsf (SchedulerInterface) :
             if not self.valid( job.runningJob ) :
                 continue
 
-            jobid = job.runningJob['jobId'].strip()
+            jobid = str(job.runningJob['jobId']).strip()
             cmd='bjobs '+str(jobid)
             #print cmd
             out, ret = self.ExecuteCommand(cmd)
