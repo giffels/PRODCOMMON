@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.16 2008/09/08 12:45:34 gcodispo Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.17 2008/09/16 14:07:44 mcinquil Exp $"
+__version__ = "$Revision: 1.17 $"
 
 import re, os
 
@@ -128,9 +128,9 @@ class SchedulerLsf (SchedulerInterface) :
         txt = "'"
         # Need to copy InputSandBox to WN
         if task:
-            subDir=task[ 'startDirectory' ]
+            #subDir=task[ 'startDirectory' ]
             for inpFile in task[ 'globalSandbox' ].split(','):
-                txt += self.cpCmd+" "+self.rfioSer+"/"+subDir+inpFile+" . ; "
+                txt += self.cpCmd+" "+self.rfioSer+"/"+inpFile+" . ; "
         ## Job specific ISB
         for inpFile in job[ 'inputFiles' ]:
             if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+"/"+inpFile+" .;"
