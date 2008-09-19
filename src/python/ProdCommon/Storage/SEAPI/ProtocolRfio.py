@@ -16,20 +16,23 @@ class ProtocolRfio(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1:
+            if line.find("No such file or directory") != -1 or \
+               line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
+            elif line.find("invalid option") != -1:
+                raise WrongOption("Wrong option passed to the command", [], outLines)
         return problems
 
 
-    def setGrant(self, dest, values):
+    def setGrant(self, dest, values, opt = ""):
         """
         rfchomd
         """
         
         fullDest = dest.getLynk()
-        cmd = "rfchmod " + str(values) + " " + fullDest
+        cmd = "rfchmod " + opt + " " + str(values) + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -39,19 +42,19 @@ class ProtocolRfio(Protocol):
                                     "[" +fullDest+ "].", problems, outputs)
 
 
-    def createDir(self, dest):
+    def createDir(self, dest, opt = ""):
         """
         rfmkdir
         """
 
-        if self.checkExists(dest):
+        if self.checkExists(dest, opt = ""):
             problems = ["destination file already existing", dest.workon]
             raise OperationException("Error creating directory [" +\
-                                      dest.workon+ "]", problems, outputs )
+                                      dest.workon+ "]", problems)
         
         fullDest = dest.getLynk()
 
-        cmd = "rfmkdir -p " + fullDest 
+        cmd = "rfmkdir -p " + opt + " " + fullDest 
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -60,7 +63,7 @@ class ProtocolRfio(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +fullDest+ "].", problems, outputs)
 
-    def copy(self, source, dest, proxy = None):
+    def copy(self, source, dest, proxy = None, opt = ""):
         """
         rfcp
         """
@@ -71,7 +74,7 @@ class ProtocolRfio(Protocol):
         if dest.protocol != 'local':
             fullDest = dest.getLynk()
 
-        cmd = "rfcp "+ fullSource +" "+ fullDest
+        cmd = "rfcp " + opt + " "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -79,31 +82,31 @@ class ProtocolRfio(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None):
+    def move(self, source, dest, proxy = None, opt = ""):
         """
         copy() + delete()
         """
-        if self.checkExists(dest):
+        if self.checkExists(dest, opt):
             problems = ["destination file already existing", dest.workon]
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems)
-        self.copy(source, dest)
-        if self.checkExists(dest):
-            self.delete(source)
+        self.copy(source, dest, opt)
+        if self.checkExists(dest, opt):
+            self.delete(source, opt)
         else:
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
-    def deleteRec(self, source):
-        self.delete(source)
+    def deleteRec(self, source, opt = ""):
+        self.delete(source, opt)
 
-    def delete(self, source):
+    def delete(self, source, opt = ""):
         """
         rfrm
         """
         fullSource = source.getLynk()
 
-        cmd = "rfrm "+ fullSource
+        cmd = "rfrm " + opt + " "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -113,7 +116,7 @@ class ProtocolRfio(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def getFileInfo(self, source):
+    def getFileInfo(self, source, opt = ""):
         """
         rfdir
 
@@ -121,7 +124,7 @@ class ProtocolRfio(Protocol):
         """
         fullSource = source.getLynk()
 
-        cmd = "rfdir "+ fullSource +" | awk '{print $5,$3,$4,$1}'"
+        cmd = "rfdir " + opt + " " + fullSource + " | awk '{print $5,$3,$4,$1}'"
         exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
@@ -135,20 +138,20 @@ class ProtocolRfio(Protocol):
         return outt
 
 
-    def checkPermission(self, source):
+    def checkPermission(self, source, opt = ""):
         """
         return file/dir permission
         """
-        return self.getFileInfo(source)[3]
+        return self.getFileInfo(source, opt)[3]
 
-    def getFileSize(self, source):
+    def getFileSize(self, source, opt = ""):
         """
         file size
         """
-        size = self.getFileInfo(source)[0]
+        size = self.getFileInfo(source, opt)[0]
         return int(size)
 
-    def listPath(self, source):
+    def listPath(self, source, opt = ""):
         """
         rfdir
 
@@ -156,7 +159,7 @@ class ProtocolRfio(Protocol):
         """
         fullSource = source.getLynk()
 
-        cmd = "rfdir "+ fullSource +" | awk '{print $9}'"
+        cmd = "rfdir " + opt + " "+ fullSource +" | awk '{print $9}'"
         exitcode, outputs = self.executeCommand(cmd)
         
         problems = self.simpleOutputCheck(outputs)
@@ -168,13 +171,12 @@ class ProtocolRfio(Protocol):
         return outt
         
 
-    def checkExists(self, source):
+    def checkExists(self, source, opt = ""):
         """
         file exists?
         """
         try:
-            print "\n\n\n " +str(self.getFileInfo(source))+ "\n\n\n\n"
-            size, owner, group, permMode = self.getFileInfo(source)
+            size, owner, group, permMode = self.getFileInfo(source, opt)
             if size is not "" and owner is not "" and\
                group is not "" and permMode is not "":
                 return True

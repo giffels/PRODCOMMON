@@ -104,6 +104,7 @@ class Protocol(object):
         if cert != '' :
             command += ' --file ' + cert
         else:
+            import os
             command += ' --file ' + str(os.environ['X509_USER_PROXY'])
 
         status, output = self.executeCommand( command )
@@ -127,12 +128,12 @@ class Protocol(object):
         """
         import commands
         status, output = commands.getstatusoutput( command )
-        self.__logout__("Executed:\t" + str(command) + "\n" + \
-                        "Done with exit code:\t" + str(status) + "\n" + \
-                        " and output:\n" + str(output) + "\n" )
+        self.__logout("Executed:\t" + str(command) + "\n" + \
+                      "Done with exit code:\t" + str(status) + "\n" + \
+                      " and output:\n" + str(output) + "\n" )
         return status, output
 
-    def __logout__(self, mess):
+    def __logout(self, mess):
         """
         write to log file
         """

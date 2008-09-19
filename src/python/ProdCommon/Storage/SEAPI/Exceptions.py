@@ -49,3 +49,9 @@ class MissingDestination(ProtocolException):
     """
     pass
 
+class WrongOption(ProtocolException):
+    """
+    when a command fails for a wrong option
+    """
+    pass
+

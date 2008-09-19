@@ -16,23 +16,27 @@ class ProtocolGsiFtp(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1 or line.find("error") != -1:
+            if line.find("No such file or directory") != -1 or \
+               line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
+            elif line.find("Unknown option") != -1 or \
+                 line.find("unrecognized option") != -1:
+                raise WrongOption("Wrong option passed to the command", [], outLines)
+
         return problems
 
-    def createDir(self, source, proxy):
+    def createDir(self, source, proxy = None, opt = ""):
         """
         edg-gridftp-mkdir
         """
         fullSource = source.getLynk()
-        options = ""
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-mkdir " + options + " "+ fullSource
+        cmd = "edg-gridftp-mkdir " + opt + " "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -41,7 +45,7 @@ class ProtocolGsiFtp(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +source.workon+ "].", problems, outputs)
 
-    def copy(self, source, dest, proxy):
+    def copy(self, source, dest, proxy = None, opt = ""):
         """
         lcg-cp
         """
@@ -53,7 +57,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
  
-        cmd = setProxy + " lcg-cp --vo cms "+ fullSource +" "+ fullDest
+        cmd = setProxy + " lcg-cp " + opt + " --vo cms "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -61,14 +65,14 @@ class ProtocolGsiFtp(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy):
+    def move(self, source, dest, proxy = None, opt = ""):
         """
         copy() + delete()
         """
-        self.copy(source, dest, proxy)
-        self.delete(source, proxy)
+        self.copy(source, dest, proxy, opt)
+        self.delete(source, proxy, opt)
 
-    def getWalkList(self, source, proxy):
+    def getWalkList(self, source, proxy = None):
         filelist = []
         dirlist = []
         for k, v in self.listPath(source, proxy).items():
@@ -82,29 +86,29 @@ class ProtocolGsiFtp(Protocol):
                 filelist.append(k)
         return filelist, dirlist
 
-    def deleteRec(self, source, proxy):
+    def deleteRec(self, source, proxy = None, opt = ""):
         filelist, dirlist = self.getWalkList(source, proxy)
         for file in filelist:
             source.workon = file 
-            self.delete(source, proxy)
+            self.delete(source, proxy, opt)
             source.workon = ""
         dirlist.reverse()
         for dir in dirlist:
             source.workon = dir
-            self.delete(source, proxy)
+            self.delete(source, proxy, opt)
             source.workon = ""
 
-    def listPath(self, source, proxy):
+    def listPath(self, source, proxy = None, opt = ""):
         """
         list of dir [edg-gridftp-ls]
         """
         fullSource = source.getLynk()
-        options = " --verbose "
+        opt += " --verbose "
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + options + " " + fullSource
+        cmd = "edg-gridftp-ls " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         if exitcode != 0: 
@@ -123,7 +127,7 @@ class ProtocolGsiFtp(Protocol):
                         dirname.setdefault(os.path.join(source.workon, basename), "d")
         return dirname
 
-    def checkNotDir(self, source, proxy):
+    def checkNotDir(self, source, proxy = None):
         dirall = self.listPath(source, proxy)
         flag = False
         for k, v in dirall.items(): 
@@ -134,19 +138,18 @@ class ProtocolGsiFtp(Protocol):
                 break;
         return flag
 
-    def delete(self, source, proxy):
+    def delete(self, source, proxy = None, opt = ""):
         """
         edg-gridftp-rm/dir
         """
         fullSource = source.getLynk()
 
-        options = ""
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rm " + options + " " + fullSource
-        #if self.checkNotDir(source, proxy):
+        cmd = "edg-gridftp-rm " + opt + " " + fullSource
+        #if self.checkNotDir(source, proxy, opt = ""):
         #    cmd = "edg-gridftp-rm " + options + " " + fullSource
         #else:
         #    cmd = "edg-gridftp-rmdir " + options + " " + fullSource
@@ -160,17 +163,16 @@ class ProtocolGsiFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkExists(self, source, proxy):
+    def checkExists(self, source, proxy = None, opt = ""):
         """
         edg-gridftp-ls
         """
         fullSource = source.getLynk()
-        options = ""
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + options + " " + fullSource
+        cmd = "edg-gridftp-ls " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
  
         ### simple output parsing ###
@@ -204,17 +206,17 @@ class ProtocolGsiFtp(Protocol):
         return [ownSum, groSum, othSum]
 
 
-    def checkPermission(self, source, proxy = None):
+    def checkPermission(self, source, proxy = None, opt = ""):
         """
         edg-gridftp-ls
         """
         fullSource = source.getLynk()
-        options = " --verbose "
+        opt += " --verbose "
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + options + " " + fullSource + " | awk '{print $1}'"
+        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $1}'"
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -224,17 +226,17 @@ class ProtocolGsiFtp(Protocol):
             return self.__convertPermission__(outputs)
         return outputs
 
-    def getFileSize(self, source, proxy = None):
+    def getFileSize(self, source, proxy = None, opt = ""):
         """
         edg-gridftp-ls
         """
         fullSource = source.getLynk()
-        options = " --verbose "
+        opt += " --verbose "
         if proxy is not None:
-            options = "--proxy=" + str(proxy)
+            opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + options + " " + fullSource + " | awk '{print $5}'"
+        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $5}'"
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###

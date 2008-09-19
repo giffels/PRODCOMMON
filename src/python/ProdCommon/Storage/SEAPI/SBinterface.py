@@ -29,95 +29,101 @@ class SBinterface:
                        storel2.protocol in ["srm-lcg", "gsiftp-lcg"]):
                         raise ProtocolMismatch('Mismatch between protocol %s-%s'\
                                           %(storel1.protocol, storel2.protocol))
-        
-    def copy( self, source = "", dest = "", proxy = None ):
+
+    def copy( self, source = "", dest = "", proxy = None, opt = "" ):
+        if not self.mono:
+            raise MissingDestination()
+        else:
+            self.storage1.workon = source
+            self.storage2.workon = dest
+            ## if proxy needed => executes standard command to copy
+            if self.useProxy:
+                self.storage1.action.copy(self.storage1, self.storage2, \
+                                          proxy, opt)
+            ## if proxy not needed => if proto2 is not local => use proxy cmd
+            elif self.storage2.protocol != 'local':
+                self.storage2.action.copy(self.storage1, self.storage2, \
+                                          proxy, opt)
+            ## if copy using local(rfio)-local(rfio)
+            else:
+                self.storage1.action.copy(self.storage1, self.storage2, opt)
+            self.storage1.workon = ""
+            self.storage2.workon = ""
+
+    def move( self, source = "", dest = "", proxy = None, opt = "" ):
         if not self.mono:
             raise MissingDestination()
         else:
             self.storage1.workon = source
             self.storage2.workon = dest
             if self.useProxy:
-                self.storage1.action.copy(self.storage1, self.storage2, proxy)
+                self.storage1.action.move(self.storage1, self.storage2, \
+                                          proxy, opt)
             elif self.storage2.protocol != 'local':
-                self.storage2.action.copy(self.storage1, self.storage2, proxy)
+                self.storage2.action.move(self.storage1, self.storage2, \
+                                          proxy, opt)
             else:
-                self.storage1.action.copy(self.storage1, self.storage2)
+                self.storage1.action.move(self.storage1, self.storage2, opt)
             self.storage1.workon = ""
             self.storage2.workon = ""
 
-    def move( self, source = "", dest = "", proxy = None ):
-        if not self.mono:
-            raise MissingDestination()
-        else:
-            self.storage1.workon = source
-            self.storage2.workon = dest
-            if self.useProxy:
-                self.storage1.action.move(self.storage1, self.storage2, proxy)
-            elif self.storage2.protocol != 'local':
-                self.storage2.action.move(self.storage1, self.storage2, proxy)
-            else:
-                self.storage1.action.move(self.storage1, self.storage2)
-            self.storage1.workon = ""
-            self.storage2.workon = ""
-
-    def checkExists( self, source = "", proxy = None ):
+    def checkExists( self, source = "", proxy = None, opt = "" ):
         self.storage1.workon = source
-        resval = False;
+        resval = False
         if self.useProxy:
-            resval = self.storage1.action.checkExists(self.storage1, proxy)
+            resval = self.storage1.action.checkExists(self.storage1, proxy, opt)
         else:
-            resval = self.storage1.action.checkExists(self.storage1)
+            resval = self.storage1.action.checkExists(self.storage1, opt = opt)
         self.storage1.workon = ""
         return resval
 
-    def getPermission( self, source = "", proxy = None ):
+    def getPermission( self, source = "", proxy = None, opt = "" ):
         self.storage1.workon = source
         resval = None
         if self.useProxy:
-            resval = self.storage1.action.checkPermission(self.storage1, proxy)
+            resval = self.storage1.action.checkPermission(self.storage1, proxy, opt)
         else:
-            resval = self.storage1.action.checkPermission(self.storage1)
+            resval = self.storage1.action.checkPermission(self.storage1, opt = opt)
         self.storage1.workon = ""
         return resval
 
-    def setGrant( self, source = "", values = "640", proxy = None ):
+    def setGrant( self, source = "", values = "640", proxy = None, opt = "" ):
         self.storage1.workon = source
-        resval = None
         if self.useProxy:
-            resval = self.storage1.action.setGrant(self.storage1, values, proxy)
+            self.storage1.action.setGrant(self.storage1, values, proxy, opt)
         else:
-            resval = self.storage1.action.setGrant(self.storage1, values)
+            self.storage1.action.setGrant(self.storage1, values, opt = opt)
         self.storage1.workon = ""
 
-    def getList( self, source = "", proxy = None ):
+    def getList( self, source = "", proxy = None, opt = "" ):
         pass
 
-    def delete( self, source = "", proxy = None ):
+    def delete( self, source = "", proxy = None, opt = "" ):
         self.storage1.workon = source
         if self.useProxy:
-            self.storage1.action.delete(self.storage1, proxy)
+            self.storage1.action.delete(self.storage1, proxy, opt)
         else:
-            self.storage1.action.delete(self.storage1)
+            self.storage1.action.delete(self.storage1, opt = opt)
         self.storage1.workon = ""
 
-    def deleteRec( self, source = "", proxy = None ):
+    def deleteRec( self, source = "", proxy = None, opt = "" ):
         self.storage1.workon = source
         if self.useProxy:
-            self.storage1.action.delete(self.storage1, proxy)
+            self.storage1.action.delete(self.storage1, proxy, opt)
         else:
-            self.storage1.action.delete(self.storage1)
+            self.storage1.action.delete(self.storage1, opt = opt)
         self.storage1.workon = ""
 
-    def getSize( self, source = "", proxy = None ):
+    def getSize( self, source = "", proxy = None, opt = "" ):
         self.storage1.workon = source
         if self.useProxy:
-            size = self.storage1.action.getFileSize(self.storage1, proxy)
+            size = self.storage1.action.getFileSize(self.storage1, proxy, opt)
         else:
-            size = self.storage1.action.getFileSize(self.storage1)
+            size = self.storage1.action.getFileSize(self.storage1, opt = opt)
         self.storage1.workon = ""
         return size
 
-    def getDirSpace( self, source = "", proxy = None ):
+    def getDirSpace( self, source = "", proxy = None):
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
             val = self.storage1.action.getDirSize(self.storage1)
@@ -135,28 +141,28 @@ class SBinterface:
         else:
             return ['0%', '0', '0'] 
 
-    def createDir (self, source = "", proxy = None):
+    def createDir (self, source = "", proxy = None, opt = "" ):
         if self.storage1.protocol in ['gridftp']:
             self.storage1.workon = source
-            val = self.storage1.action.createDir(self.storage1, proxy)
+            val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
         if self.storage1.protocol in ['rfio', 'local']:
             self.storage1.workon = source
-            val = self.storage1.action.createDir(self.storage1)
+            val = self.storage1.action.createDir(self.storage1, opt = opt)
             self.storage1.workon = ""
             return val
 
 
-    def getTurl (self, source = "", proxy = None):
+    def getTurl (self, source = "", proxy = None, opt = "" ):
         if self.storage1.protocol in ['srmv1', 'srmv2', 'srm-lcg']:
             self.storage1.workon = source
-            val = self.storage1.action.getTurl(self.storage1, proxy)
+            val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
         elif self.storage1.protocol == 'gridftp':
             self.storage1.workon = source
-            val = self.storage1.action.getTurl(self.storage1, proxy)
+            val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
         elif self.storage1.protocol in ['local', "rfio"]:

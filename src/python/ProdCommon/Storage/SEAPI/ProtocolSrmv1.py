@@ -8,7 +8,7 @@ class ProtocolSrmv1(Protocol):
 
     def __init__(self):
         super(ProtocolSrmv1, self).__init__()
-        self._options = "-debug=true" 
+        self._options = " -debug=true " 
 
     def simpleOutputCheck(self, outLines):
         """
@@ -21,9 +21,12 @@ class ProtocolSrmv1(Protocol):
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
+            elif line.find("unrecognized option") != -1:
+                raise WrongOption("Wrong option passed to the command", [], outLines)
+
         return problems
 
-    def copy(self, source, dest, proxy = None):
+    def copy(self, source, dest, proxy = None, opt = ""):
         """
         srmcp
         """
@@ -34,12 +37,12 @@ class ProtocolSrmv1(Protocol):
         if dest.protocol != 'local':
             fullDest = dest.getLynk()
 
-        option = self._options + " -retry_num=1 "
+        opt += self._options
         if proxy is not None:
-            option += " -x509_user_proxy=%s " % proxy
+            opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
         
-        cmd = "srmcp " +option +" "+ fullSource +" "+ fullDest
+        cmd = "srmcp " +opt +" "+ fullSource +" "+ fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -47,36 +50,36 @@ class ProtocolSrmv1(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None):
+    def move(self, source, dest, proxy = None, opt = ""):
         """
         srmcp + delete()
         """
-        if self.checkExists(dest, proxy):
+        if self.checkExists(dest, proxy, opt):
             problems = ["destination file already existing", dest.workon]
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems)
-        self.copy(source, dest, proxy)
-        if self.checkExists(dest, proxy):
-            self.delete(source, proxy)
+        self.copy(source, dest, proxy, opt)
+        if self.checkExists(dest, proxy, opt):
+            self.delete(source, proxy, opt)
         else:
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
-    def deleteRec(self, source, proxy = None):
-        self.delete(source, proxy)
+    def deleteRec(self, source, proxy = None, opt = ""):
+        self.delete(source, proxy, opt)
 
-    def delete(self, source, proxy = None):
+    def delete(self, source, proxy = None, opt = ""):
         """
         srm-advisory-delete
         """
         fullSource = source.getLynk()
 
-        option = self._options + " -retry_num=1 "
+        opt += self._options
         if proxy is not None:
-            option += " -x509_user_proxy=%s " % proxy
+            opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
 
-        cmd = "srm-advisory-delete " +option +" "+ fullSource
+        cmd = "srm-advisory-delete " +opt +" "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -86,21 +89,21 @@ class ProtocolSrmv1(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkPermission(self, source, proxy = None):
+    def checkPermission(self, source, proxy = None, opt = ""):
         """
         return file/dir permission
         """
-        return int(self.listPath(source, proxy)[3])
+        return int(self.listPath(source, proxy, opt)[3])
 
-    def getFileSize(self, source, proxy = None):
+    def getFileSize(self, source, proxy = None, opt = ""):
         """
         file size
         """
         ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        size = self.listPath(source, proxy)[0]
+        size = self.listPath(source, proxy, opt)[0]
         return int(size)
 
-    def listPath(self, source, proxy = None):
+    def listPath(self, source, proxy = None, opt = ""):
         """
         srm-get-metadata
 
@@ -108,12 +111,12 @@ class ProtocolSrmv1(Protocol):
         """
         fullSource = source.getLynk()
 
-        option = self._options + " -retry_num=0 "
+        opt += self._options
         if proxy is not None:
-            option += " -x509_user_proxy=%s " % proxy
+            opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
 
-        cmd = "srm-get-metadata " +option +" "+ fullSource
+        cmd = "srm-get-metadata " +opt +" "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
@@ -138,12 +141,12 @@ class ProtocolSrmv1(Protocol):
         return int(size), owner, group, permMode
         
 
-    def checkExists(self, source, proxy = None):
+    def checkExists(self, source, proxy = None, opt = ""):
         """
         file exists?
         """
         try:
-            size, owner, group, permMode = self.listPath(source, proxy)
+            size, owner, group, permMode = self.listPath(source, proxy, opt)
             if size is not "" and owner is not "" and\
                group is not "" and permMode is not "":
                 return True
@@ -152,7 +155,7 @@ class ProtocolSrmv1(Protocol):
         except OperationException:
             return False
 
-    def getTurl(self, source, proxy = None):
+    def getTurl(self, source, proxy = None, opt = ""):
         """
         return the gsiftp turl
         """
@@ -161,9 +164,9 @@ class ProtocolSrmv1(Protocol):
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
-        options = " -T srmv1 -D srmv1 "
+        opt += " -T srmv1 -D srmv1 "
 
-        cmd += "lcg-gt " + str(fullSource) + " gsiftp"
+        cmd += "lcg-gt " + opt + " " + str(fullSource) + " gsiftp"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
 
