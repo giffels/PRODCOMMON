@@ -20,7 +20,8 @@ class ProtocolLcgUtils(Protocol):
         for line in lines:
             if line.find("No such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
-               line.find("CacheException") != -1:
+               line.find("CacheException") != -1 or \
+               line.find("No entries for host") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -105,7 +106,10 @@ class ProtocolLcgUtils(Protocol):
             exitcode, outputs = self.executeCommand(cmd)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
-                return False
+                if str(problems).find("No such file or directory") != -1:
+                    return False
+                raise OperationException("Error checking [" +source.workon+ "]", \
+                                         problems, outputs )
             return True
 
     def getFileSize(self, source, proxy = None, opt = ""):
