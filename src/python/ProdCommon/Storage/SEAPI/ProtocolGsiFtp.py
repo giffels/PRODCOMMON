@@ -247,7 +247,7 @@ class ProtocolGsiFtp(Protocol):
         raise OperationException("Error getting size for [" +source.workon+ "]",
                                   problems, outputs )
  
-    def getTurl(self, source, proxy = None):
+    def getTurl(self, source, proxy = None, opt = ""):
         """
         return the gsiftp turl
         """
