@@ -3,8 +3,8 @@
 _SchedulerCondorG_
 """
 
-__revision__ = "$Id: SchedulerCondorG.py,v 1.2.2.1 2008/07/31 20:07:31 ewv Exp $"
-__version__ = "$Revision: 1.2.2.1 $"
+__revision__ = "$Id: SchedulerCondorG.py,v 1.3 2008/09/09 14:55:49 ewv Exp $"
+__version__ = "$Revision: 1.3 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
@@ -26,6 +26,6 @@ class SchedulerCondorG(SchedulerCondorCommon) :
       """
 
       jdl = 'Universe   = grid\n'
-      superJdl, filelist = super(SchedulerCondorG, self).singleApiJdl(job, requirements)
+      superJdl, filelist, ce = super(SchedulerCondorG, self).singleApiJdl(job, requirements)
       jdl += superJdl
-      return jdl, filelist
+      return jdl, filelist, ce
