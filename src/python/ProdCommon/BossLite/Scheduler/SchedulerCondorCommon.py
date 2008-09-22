@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.10 2008/09/08 19:32:11 ewv Exp $"
-__version__ = "$Revision: 1.28.2.10 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.11 2008/09/10 19:44:21 ewv Exp $"
+__version__ = "$Revision: 1.28.2.11 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -92,10 +92,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
         os.chdir(cacheDir)
 
         # Set up the environment
-        os.environ['GLEXEC_CLIENT_CERT']  = self.condorTemp + '/userProxy'
-        os.environ['GLEXEC_SOURCE_PROXY'] = self.condorTemp + '/userProxy'
+        os.environ['GLEXEC_CLIENT_CERT']  = obj['user_proxy']
+        os.environ['GLEXEC_SOURCE_PROXY'] = obj['user_proxy']
         os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxy'
-
     # Get list of schedd's
 
     scheddList = None
