@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.32 2008/09/09 14:55:49 ewv Exp $"
-__version__ = "$Revision: 1.32 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.33 2008/09/11 20:31:45 ewv Exp $"
+__version__ = "$Revision: 1.33 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -32,8 +32,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
     # call super class init method
     super(SchedulerCondorCommon, self).__init__(**args)
     self.hostname   = getfqdn()
-    self.condorTemp = args['tmpDir']
+    self.condorTemp = args.get('tmpDir', None)
+    self.outputDir  = args.get('outputDirectory', None)
+    self.useGlexec  = args.get('useGlexec', False)
     self.batchSize  = 20 # Number of jobs to submit per site before changing CEs
+    self.glexecWrapper = 'glexecWrapper.sh'
 
 
   def submit( self, obj, requirements='', config ='', service='' ):
@@ -60,13 +63,37 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
     # Make directory for Condor returned files
 
+    seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
+    exeName = obj['scriptName'].split('/')[-1]
+    exeName = 'CMSSW.sh' # HACK since no trailing slash on hostname
     if os.path.isdir(self.condorTemp):
       pass
     else:
       os.mkdir(self.condorTemp)
 
-    # Get list of schedd's
+    if self.useGlexec:
+        # Write the submitter script
+        stdout, stdin  = popen2.popen2('which condor_submit')
+        condorSubmit = stdout.read().strip()
 
+        cacheDir = os.getcwd()
+        os.chdir(self.condorTemp)
+        wrapper = open(self.glexecWrapper, 'w')
+        wrapper.writelines([
+            '#! /bin/sh\n',
+            'cd %s\n' % seDir,
+            'export X509_USER_PROXY=$PWD/userProxy\n',
+            '%s $1\n' % condorSubmit,
+            ])
+        wrapper.close()
+        os.chmod(self.glexecWrapper, 0755)
+        os.chdir(cacheDir)
+
+        # Set up the environment
+        os.environ['GLEXEC_CLIENT_CERT']  = obj['user_proxy']
+        os.environ['GLEXEC_SOURCE_PROXY'] = obj['user_proxy']
+        os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxy'
+    # Get list of schedd's
     scheddList = None
     nSchedd    = 0
     if 'CMS_SCHEDD_LIST' in os.environ:
@@ -91,7 +118,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
           schedd = scheddList[jobCount%nSchedd]
           submitOptions += '-name %s ' % schedd
 
-        #requirements = getattr(obj,'jobType','')
         jobRequirements = requirements
         execHost = self.findExecHost(jobRequirements)
         filelist = self.inputFiles(obj['globalSandbox'])
@@ -100,14 +126,16 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         # Build JDL file
         jdl, sandboxFileList, ce = self.decode(job, jobRequirements)
-        jdl += 'Executable = %s\n' % (obj['scriptName'])
+        if seDir:
+            jdl += 'Executable = %s/%s\n' % (seDir, exeName)
+        else:
+            jdl += 'Executable = %s\n' % (obj['scriptName'])
         jdl += '+BLTaskID = "' + taskId + '"\n'
         # If query were to take a task could then do something like
         # condor_q -constraint 'BLTaskID == "[taskId]"' to retrieve just those jobs
         jdl += "Queue 1\n"
 
         # Write and submit JDL
-
         jdlFileName = job['name']+'.jdl'
         cacheDir = os.getcwd()
         os.chdir(self.condorTemp)
@@ -115,7 +143,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jdlFile.write(jdl)
         jdlFile.close()
 
-        stdout, stdin, stderr = popen2.popen3('condor_submit '+submitOptions+jdlFileName)
+        if self.useGlexec:
+            command = '/opt/glexec/glexec-osg/sbin/glexec ' + self.condorTemp + '/' \
+                      + self.glexecWrapper + ' ' + self.condorTemp + '/' + jdlFileName
+            stdout, stdin, stderr = popen2.popen3(command)
+        else:
+            stdout, stdin, stderr = popen2.popen3('condor_submit '+submitOptions+jdlFileName)
 
         # Parse output, build numbers
         for line in stdout:
@@ -124,13 +157,22 @@ class SchedulerCondorCommon(SchedulerInterface) :
             ret_map[job['name']] = self.hostname + "//" + matchObj.group(2) + ".0"
             job.runningJob['schedulerId'] = ret_map[job['name']]
         try:
-          junk = ret_map[ job['name']  ]
+          jobName = ret_map[ job['name']  ]
+          # This is a HACK for the server until query is passed the task
+          #jobList = open('/tmp/'+taskId+'.lst', 'a')
+          #jobList.write(jobName+'\n')
+          #jobList.close()
         except KeyError:
           print "Job not submitted:"
           print stdout.readlines()
           print stderr.readlines()
         os.chdir(cacheDir)
         jobCount += 1
+
+        if ce:
+            job.runningJob['destination'] = ce.split(':')[0]
+        else:
+            job.runningJob['destination'] = execHost
 
         if ce:
             job.runningJob['destination'] = ce.split(':')[0]
@@ -144,6 +186,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
 
   def findExecHost(self, requirements=''):
+    if not requirements:
+        return 'Unknown'
     jdlLines = requirements.split(';')
     execHost = 'Unknown'
     for line in jdlLines:
@@ -158,14 +202,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
   def inputFiles(self,globalSandbox):
     filelist = ''
-    if globalSandbox is not None :
+    if globalSandbox is not None:
       for file in globalSandbox.split(','):
         if file == '' :
             continue
         filename = os.path.abspath(file)
         filename.strip()
         filelist += filename + ','
-    return filelist[:-1]
+    return filelist[:-1] # Strip off last ","
 
 
   def decode  ( self, obj, requirements='' ):
@@ -192,6 +236,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jobArgs = jobArgs.replace('\\ ',',')
       jobArgs = jobArgs.replace('\\','')
       jobArgs = jobArgs.replace('"','')
+
       jdl += 'Arguments  = %s\n' % jobArgs
       if job['standardInput'] != '':
           jdl += 'input = %s\n' % job['standardInput']
@@ -204,7 +249,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
-      jdl += 'transfer_output_files   = ' + ','.join(job['outputFiles']) + '\n'
+
+      # HACK: Remove if I can figure out where the request for .BrokerInfo is coming from
+      outputFiles = []
+      for fileName in job['outputFiles']:
+          if not fileName.endswith('BrokerInfo'):
+              outputFiles.append(fileName)
+      if outputFiles:
+          jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
 
       # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
@@ -221,6 +273,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
           jdl += line.strip() + '\n';
 
       filelist = ''
+
       return jdl, filelist, ce
 
 
@@ -228,10 +281,10 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
     query status of jobs
     """
+
     from xml.sax import make_parser
     from CondorHandler import CondorHandler
     from xml.sax.handler import feature_external_ges
-
 
     jobIds = {}
     bossIds = {}
@@ -247,7 +300,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             '5':'Aborted'
     }
 
-    if type(obj) == Task and objType == 'node':
+    if type(obj) == Task:
         taskId = obj['name']
         for job in obj.jobs:
             if not self.valid(job.runningJob):
@@ -293,7 +346,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
       parser.setContentHandler(handler)
       parser.setFeature(feature_external_ges, False)
       parser.parse(output_file)
+
       jobDicts = handler.getJobInfo()
+
       for globalJobId in jobDicts.keys():
         host,task,jobId = globalJobId.split("#")
         jobStatus = jobDicts[globalJobId].get('JobStatus',None)
@@ -385,6 +440,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         shutil.move(self.condorTemp+'/'+file,outdir)
       except IOError:
         print "Could not move file ",file
+
 
 
   def postMortem( self, schedulerId, outfile, service):
