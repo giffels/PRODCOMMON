@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.15 2008/07/24 17:13:26 gcodispo Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: Job.py,v 1.16 2008/07/28 09:06:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.16 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -27,10 +27,8 @@ class Job(DbObject):
                'standardInput' : 'stdin',
                'standardOutput' : 'stdout',
                'standardError' : 'stderr',
-               'logFile' : 'log_file',
                'inputFiles' : 'input_files',
                'outputFiles' : 'output_files',
-               'fileBlock' : 'file_block',
                'dlsDestination' : 'dls_destination',
                'submissionNumber' : 'submission_number'
               }
@@ -52,10 +50,8 @@ class Job(DbObject):
                  'standardInput' : "",
                  'standardOutput' : "",
                  'standardError' : "",
-                 'logFile' : None,
                  'inputFiles' : [],
                  'outputFiles' : [],
-                 'fileBlock' : None,
                  'dlsDestination' : [],
                  'submissionNumber' : 0
               }

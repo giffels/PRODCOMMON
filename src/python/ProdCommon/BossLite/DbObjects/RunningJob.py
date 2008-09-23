@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.17 2008/07/28 09:06:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.17 $"
+__version__ = "$Id: RunningJob.py,v 1.18 2008/08/27 15:32:36 gcodispo Exp $"
+__revision__ = "$Revision: 1.18 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -22,9 +22,9 @@ class RunningJob(DbObject):
                'jobId' : 'job_id',
                'taskId' : 'task_id',
                'submission' : 'submission',
-               'submissionPath' : 'submission_path',
                'scheduler' : 'scheduler',
                'service' : 'service',
+               'schedulerAttributes' : 'sched_attr',
                'schedulerId' : 'scheduler_id',
                'schedulerParentId' : 'scheduler_parent_id',
                'statusScheduler' : 'status_scheduler',
@@ -33,17 +33,17 @@ class RunningJob(DbObject):
                'destination' : 'destination',
                'lbTimestamp' : 'lb_timestamp',
                'submissionTime' : 'submission_time',
+               #'scheduledAtSite' : 'scheduled_at_site',
                'startTime' : 'start_time',
                'stopTime' : 'stop_time',
-               'outputDirectory' : 'output_dir',
-               'getOutputTime' : 'getoutput_time',
                'stageOutTime' : 'stageout_time',
+               'getOutputTime' : 'getoutput_time',
+               'outputDirectory' : 'output_dir',
                'executionHost' : 'execution_host',
                'executionPath' : 'execution_path',
                'executionUser' : 'execution_user',
                'applicationReturnCode' : 'application_return_code',
                'wrapperReturnCode' : 'wrapper_return_code',
-               'schedulerAttributes' : 'sched_attr',
                'processStatus' : 'process_status',
                'closed' : 'closed'
              }
@@ -56,9 +56,9 @@ class RunningJob(DbObject):
                  'jobId' : None,
                  'taskId' : None,
                  'submission' : None,
-                 'submissionPath' : None,
                  'scheduler' : None,
                  'service' : None,
+                 'schedulerAttributes' : None,
                  'schedulerId' : None,
                  'schedulerParentId' : None,
                  'statusScheduler' : None,
@@ -67,17 +67,17 @@ class RunningJob(DbObject):
                  'destination' : None,
                  'lbTimestamp' : None,
                  'submissionTime' : None,
+                 #'scheduledAtSite' : None,
                  'startTime' : None,
                  'stopTime' : None,
-                 'outputDirectory' : None,
-                 'getOutputTime' : None,
                  'stageOutTime' : None,
+                 'getOutputTime' : None,
+                 'outputDirectory' : None,
                  'executionHost' : None,
                  'executionPath' : None,
                  'executionUser' : None,
                  'applicationReturnCode' : None,
                  'wrapperReturnCode' : None,
-                 'schedulerAttributes' : None,
                  'processStatus' : None,
                  'closed' : None
                }
@@ -86,7 +86,9 @@ class RunningJob(DbObject):
     tableName = "bl_runningjob"
     tableIndex = ["taskId", "jobId", "submission"]
     timeFields = ['lbTimestamp', 'submissionTime', 'startTime', \
-                  'stageOutTime', 'stopTime', 'getOutputTime']
+                  # 'scheduledAtSite' , \
+                  'stopTime', 'stageOutTime', \
+                  'getOutputTime']
     # exception class
     exception = JobError
 

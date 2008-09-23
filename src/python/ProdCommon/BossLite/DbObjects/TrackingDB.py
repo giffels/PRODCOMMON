@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.19 2008/06/27 16:20:38 gcodispo Exp $"
-__revision__ = "$Revision: 1.19 $"
+__version__ = "$Id: TrackingDB.py,v 1.20 2008/07/01 16:53:55 gcodispo Exp $"
+__revision__ = "$Revision: 1.20 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -53,7 +53,7 @@ class TrackingDB:
         try:
             rows = self.session.execute(query)
         except Exception, msg:
-            raise DbError(str(msg))
+            raise DbError(msg)
 
         # done, return number of updated rows
         return rows
@@ -181,6 +181,9 @@ class TrackingDB:
         select from template and jTemplate, using join condition from jMap
         """
 
+        import time
+        timer = time.time()
+
         # get template information
         mapping = template.__class__.fields.items()
         tableName = template.__class__.tableName
@@ -272,11 +275,14 @@ class TrackingDB:
             else  :
                 query += ' limit %s,%s' % (offset, limit)
 
+        timer2 = time.time()
         # execute query
         try:
             self.session.execute(query)
         except Exception, msg:
             raise DbError(msg)
+
+        timer3 = time.time()
 
         # build objects
         theList = []
@@ -289,6 +295,12 @@ class TrackingDB:
         
             # add to list
             theList.append((obj, jObj))
+
+        timer4 = time.time()
+        ## print "############ total ", timer - time.time()
+        ## print "############ before query ", timer2 - timer
+        ## print "############ query ", timer3 - timer2
+        ## print "############ after query ", timer4 - timer3
 
         # return the list
         return theList
