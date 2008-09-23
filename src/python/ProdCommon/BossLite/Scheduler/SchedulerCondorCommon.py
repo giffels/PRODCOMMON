@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.34 2008/09/23 11:56:11 ewv Exp $"
-__version__ = "$Revision: 1.34 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.35 2008/09/23 13:00:03 ewv Exp $"
+__version__ = "$Revision: 1.35 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -64,7 +64,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
         exeName = obj['scriptName'].split('/')[-1]
-        exeName = 'CMSSW.sh' # HACK since no trailing slash on hostname
+
         if os.path.isdir(self.condorTemp):
             pass
         else:
@@ -123,7 +123,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 # Build JDL file
                 jdl, sandboxFileList, ce = self.decode(job, jobRequirements)
-                if seDir:
+                if self.useGlexec:
                     jdl += 'Executable = %s/%s\n' % (seDir, exeName)
                 else:
                     jdl += 'Executable = %s\n' % (obj['scriptName'])
