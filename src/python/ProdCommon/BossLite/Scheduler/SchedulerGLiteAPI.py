@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.87 2008/09/08 10:21:45 gcodispo Exp $"
-__version__ = "$Revision: 1.87 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.88 2008/09/10 08:49:32 gcodispo Exp $"
+__version__ = "$Revision: 1.88 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -318,11 +318,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 pre = 'https://'
                 post = ':7443/glite_wms_wmproxy_server'
 
-            # retrieve all associed ip addresses
-            (hostname, aliaslist, ipaddrlist) = \
-                       socket.gethostbyname_ex ( wmsHostName )
-            for wms in ipaddrlist :                
-                wmsList.append( pre + socket.gethostbyaddr( wms )[0] + post )
+            try :
+                # retrieve all associed ip addresses
+                (hostname, aliaslist, ipaddrlist) = \
+                           socket.gethostbyname_ex ( wmsHostName )
+                for wms in ipaddrlist :                
+                    wmsList.append(pre + socket.gethostbyaddr( wms )[0] + post)
+            except socket.gaierror, msg:
+                self.warnings.append( wmsHostName + ' : ' + str( msg ) )
 
         return wmsList
 
