@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.29 2008/07/28 09:06:03 gcodispo Exp $"
-__revision__ = "$Revision: 1.29 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.30 2008/08/27 13:59:26 gcodispo Exp $"
+__revision__ = "$Revision: 1.30 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -110,13 +110,13 @@ class BossLiteAPISched(object):
 
         try:
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # create or load running instances
             for job in task.jobs:
                 if job.runningJob is not None :
                     job.runningJob['schedulerAttributes'] = schedulerAttributes
-                
+
             # scheduler submit
             self.scheduler.submit( task, requirements )
 
@@ -158,7 +158,7 @@ class BossLiteAPISched(object):
         try:
 
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # get new running instance
             for job in task.jobs:
@@ -208,7 +208,7 @@ class BossLiteAPISched(object):
             # load task
             task = self.bossLiteSession.load( taskId, jobRange, \
                                               runningAttrs=runningAttrs, \
-                                              strict=strict )[0]
+                                              strict=strict )
 
             # scheduler query
             self.scheduler.query( task, queryType )
@@ -250,7 +250,7 @@ class BossLiteAPISched(object):
         try:
 
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # scheduler query
             self.scheduler.getOutput( task, outdir )
@@ -291,7 +291,7 @@ class BossLiteAPISched(object):
         try:
 
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # scheduler query
             self.scheduler.kill( task )
@@ -332,7 +332,7 @@ class BossLiteAPISched(object):
         try:
 
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # retrieve running instances
             for job in task.jobs:
@@ -409,7 +409,7 @@ class BossLiteAPISched(object):
 
         try:
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # retrieve running instances
             for job in task.jobs:
@@ -448,7 +448,7 @@ class BossLiteAPISched(object):
 
         try:
             # load task
-            task = self.bossLiteSession.load( taskId, jobRange )[0]
+            task = self.bossLiteSession.load( taskId, jobRange )
 
             # purge task
             self.scheduler.purgeService( task )
@@ -486,7 +486,7 @@ class BossLiteAPISched(object):
         """
 
         # load task
-        task = self.bossLiteSession.load( taskId, jobRange )[0]
+        task = self.bossLiteSession.load( taskId, jobRange )
 
         # scheduler query
         self.scheduler.postMortem( task, outfile )

@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.63 2008/07/28 09:06:03 gcodispo Exp $"
-__revision__ = "$Revision: 1.63 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.64 2008/08/27 14:19:10 gcodispo Exp $"
+__revision__ = "$Revision: 1.64 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -229,10 +229,14 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
-    def loadTask( self, taskId, deep=True ) :
+    def loadTask( self, taskId, jobRange='all', deep=True ) :
         """
         retrieve task information from db using task id
-        and defined jobAttributes
+
+        the jobs loading can be tuned using jobRange:
+        - None       : no jobs are loaded
+        - 'all'      : all jobs are loaded
+        - list/range : only selected jobs are loaded
         """
 
         # db connect
@@ -241,16 +245,21 @@ class BossLiteAPI(object):
 
         # create template for task
         task = Task()
-        task['id'] = taskId
+        task['id'] = int(taskId)
+        task.load(self.db, False)
+
+        # backward compatible 'deep' parameter handling
+        if deep == False :
+            jobRange = None
 
         # load task
-        task.load(self.db, deep)
+        self.load( task, jobRange )
 
         return task
 
 
     ##########################################################################
-    def loadTaskByName( self, name, deep=True ) :
+    def loadTaskByName( self, name, jobRange='all', deep=True ) :
         """
         retrieve task information from db for task 'name'
         """
@@ -262,9 +271,16 @@ class BossLiteAPI(object):
         # create template for task
         task = Task()
         task['name'] = name
+        task.load(self.db, False)
+
+        # backward compatible 'deep' parameter handling
+        if deep == False :
+            jobRange = None
 
         # load task
-        task.load(self.db, deep)
+        task.load(self.db, False)
+        if jobRange is not None :
+            self.load( task, jobRange )
 
         return task
 
@@ -310,15 +326,99 @@ class BossLiteAPI(object):
         return taskList
 
 
+###     ##########################################################################
+###     def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
+###         """
+###         retrieve information from db for:
+###         - range of tasks or even a task object
+###         - range of jobs inside a task or a python list of id's
+###         - various job attributes (logic and)
+###
+###         In some way these should be the option to build the query.
+###         Maybe, same options should be used also in
+###         loadSubmitted, loadCreated, loadEnded, loadFailed
+###
+###         Takes the highest submission number for each job
+###         """
+###
+###         # db connect
+###         if self.db is None :
+###             self.connect()
+###
+###         # defining default
+###         taskList = []
+###         if jobAttributes is None :
+###             jobAttributes = {}
+###
+###         # identify jobRange
+###         if type( jobRange ) == list :
+###             jobList = jobRange
+###         elif jobRange is None :
+###             jobList = []
+###         elif jobRange == 'all' :
+###             jobList = None
+###         else:
+###             jobList = parseRange( jobRange )
+###
+###         # already loaded task?
+###         if type( taskRange ) == Task :
+###
+###             # provided a job list: load just missings
+###             if jobList is not None:
+###                 s = [ str(job['jobId']) for job in taskRange.jobs ]
+###                 jobList = [str(x) for x in jobList if str(x) not in s]
+###                 jobList.sort()
+###             if jobList == [] :
+###                 jobList = None
+###
+###             # no need to load if the task already has jobs
+###             #    and no other jobs are requested
+###             if taskRange.jobs == [] or jobList is not None :
+###                 # new
+###                 jobAttributes['taskId'] = int( taskRange['id'] )
+###                 jobs = self.loadJobsByRunningAttr( runningAttrs, \
+###                                                    jobAttributes, \
+###                                                    strict=strict, \
+###                                                    limit=limit, offset=offset,\
+###                                                    jobList=jobList )
+###                 taskRange.appendJobs( jobs )
+###             taskList.append( taskRange )
+###             return taskList
+###
+###         # loop over tasks
+###         for taskId in parseRange( taskRange ) :
+###
+###             # create template and load
+###             task = Task()
+###             task['id'] = int( taskId )
+###             task.load( self.db, deep = False )
+###             # new
+###             jobAttributes['taskId'] = int( task['id'] )
+###             jobs = self.loadJobsByRunningAttr( runningAttrs, \
+###                                                jobAttributes, \
+###                                                strict=strict, \
+###                                                limit=limit, offset=offset, \
+###                                                jobList=jobList )
+###             task.appendJobs( jobs )
+###
+###             # update task list
+###             task.updateInternalData()
+###             taskList.append( task )
+###
+###         return taskList
+
+
     ##########################################################################
-    def load( self, taskRange, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
+    def load( self, task, jobRange="all", jobAttributes=None, runningAttrs=None, strict=True, limit=None, offset=None ) :
         """
         retrieve information from db for:
-        - range of tasks or even a task object
-        - range of jobs inside a task or a python list of id's
-        - various job attributes (logic and)
+        - jobRange can be of the form:
+             'a,b:c,d,e'
+             ['a',b','c']
+             'all'
+             None (no jobs to be loaded
 
-        In some way these shuold be the option to build the query.
+        In some way these should be the option to build the query.
         Maybe, same options should be used also in
         loadSubmitted, loadCreated, loadEnded, loadFailed
 
@@ -329,65 +429,50 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
+        # already loaded task?
+        if not isinstance( task, Task ) :
+            task = Task({'id' : task})
+            task.load(self.db, False)
+
+        # simple case: no jobs loading request
+        if jobRange is None:
+            return task
+
         # defining default
-        taskList = []
+        jobList = None
         if jobAttributes is None :
             jobAttributes = {}
 
         # identify jobRange
-        if type( jobRange ) == list :
-            jobList = jobRange
-        elif jobRange == 'all' :
-            jobList = None
-        else:
-            jobList = parseRange( jobRange )
+        if jobRange != 'all' :
 
-        # already loaded task?
-        if type( taskRange ) == Task :
+            # evaluate list
+            if type( jobRange ) == list :
+                jobList = jobRange
+            else :
+                jobList = parseRange( jobRange )
 
-            # provided a job list: load just missings
-            if jobList is not None:
-                s = [ str(job['jobId']) for job in taskRange.jobs ]
+            # if there are loaded jobs, load just missing
+            if task.jobs != []:
+                s = [ str(job['jobId']) for job in task.jobs ]
                 jobList = [str(x) for x in jobList if str(x) not in s]
-                jobList.sort()
+
+            # no jobs to be loaded?
             if jobList == [] :
-                jobList = None
+                return task
+            else:
+                jobList.sort()
 
-            # no need to load if the task already has jobs
-            #    and no other jobs are requested
-            if taskRange.jobs == [] or jobList is not None :
-                # new
-                jobAttributes['taskId'] = int( taskRange['id'] )
-                jobs = self.loadJobsByRunningAttr( runningAttrs, \
-                                                   jobAttributes, \
-                                                   strict=strict, \
-                                                   limit=limit, offset=offset,\
-                                                   jobList=jobList )
-                taskRange.appendJobs( jobs )
-            taskList.append( taskRange )
-            return taskList
+        # load
+        jobAttributes['taskId'] = int( task['id'] )
+        jobs = self.loadJobsByRunningAttr( runningAttrs, \
+                                           jobAttributes, \
+                                           strict=strict, \
+                                           limit=limit, offset=offset,\
+                                           jobList=jobList )
+        task.appendJobs( jobs )
 
-        # loop over tasks
-        for taskId in parseRange( taskRange ) :
-
-            # create template and load
-            task = Task()
-            task['id'] = int( taskId )
-            task.load( self.db, deep = False )
-            # new
-            jobAttributes['taskId'] = int( task['id'] )
-            jobs = self.loadJobsByRunningAttr( runningAttrs, \
-                                               jobAttributes, \
-                                               strict=strict, \
-                                               limit=limit, offset=offset, \
-                                               jobList=jobList )
-            task.appendJobs( jobs )
-
-            # update task list
-            task.updateInternalData()
-            taskList.append( task )
-
-        return taskList
+        return task
 
 
     ##########################################################################
