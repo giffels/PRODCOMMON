@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.64 2008/08/27 14:19:10 gcodispo Exp $"
-__revision__ = "$Revision: 1.64 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.65 2008/09/23 10:16:10 gcodispo Exp $"
+__revision__ = "$Revision: 1.65 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -248,13 +248,11 @@ class BossLiteAPI(object):
         task['id'] = int(taskId)
         task.load(self.db, False)
 
-        # backward compatible 'deep' parameter handling
-        if deep == False :
-            jobRange = None
-
-        # load task
-        self.load( task, jobRange )
-
+        # load jobs
+        # # backward compatible 'deep' parameter handling
+        if jobRange is not None and deep != False :
+            self.load( task, jobRange )
+            
         return task
 
 
@@ -268,18 +266,14 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
-        # create template for task
+        # create template for task and load
         task = Task()
         task['name'] = name
         task.load(self.db, False)
 
-        # backward compatible 'deep' parameter handling
-        if deep == False :
-            jobRange = None
-
-        # load task
-        task.load(self.db, False)
-        if jobRange is not None :
+        # load jobs
+        # # backward compatible 'deep' parameter handling
+        if jobRange is not None and deep != False :
             self.load( task, jobRange )
 
         return task
