@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.12 2008/09/22 14:43:49 ewv Exp $"
-__version__ = "$Revision: 1.28.2.12 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.28.2.13 2008/09/22 16:47:22 ewv Exp $"
+__version__ = "$Revision: 1.28.2.13 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -161,9 +161,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
         try:
           jobName = ret_map[ job['name']  ]
           # This is a HACK for the server until query is passed the task
-          jobList = open('/tmp/'+taskId+'.lst', 'a')
-          jobList.write(jobName+'\n')
-          jobList.close()
+          #jobList = open('/tmp/'+taskId+'.lst', 'a')
+          #jobList.write(jobName+'\n')
+          #jobList.close()
         except KeyError:
           print "Job not submitted:"
           print stdout.readlines()
@@ -223,7 +223,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
       """
       build a job jdl
       """
-      print  >> self.debugLog, "sap1"
+
       jdl  = ''
       jobId = int(job['jobId'])
       # Massage arguments into condor friendly (space delimited) form w/o backslashes
@@ -232,7 +232,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jobArgs = jobArgs.replace('\\ ',',')
       jobArgs = jobArgs.replace('\\','')
       jobArgs = jobArgs.replace('"','')
-      print  >> self.debugLog, "sap4"
       
       jdl += 'Arguments  = %s\n' % jobArgs
       if job['standardInput'] != '':
@@ -246,7 +245,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
       jdl += 'should_transfer_files   = YES\n'
       jdl += 'when_to_transfer_output = ON_EXIT\n'
       jdl += 'copy_to_spool           = false\n'
-      print  >> self.debugLog, "sap6"
       
       # HACK: Remove if I can figure out where the request for .BrokerInfo is coming from
       outputFiles = []
@@ -255,7 +253,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
               outputFiles.append(fileName)
       if outputFiles:
           jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
-      print  >> self.debugLog, "sap8"
       
       # Things in the requirements/jobType field
       jdlLines = requirements.split(';')
@@ -272,7 +269,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
           jdl += line.strip() + '\n';
             
       filelist = ''
-      print  >> self.debugLog, "sap12", jdl, filelist, ce
 
       return jdl, filelist, ce
 
@@ -299,42 +295,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             '4':'Done',
             '5':'Aborted'
     }
-    print >> self.debugLog, "q1", objType, str(type(obj))
-#<<<<<<< SchedulerCondorCommon.py
-    # If this is a task name, we use a HACK to get the job numbers
-#    if objType == 'parent':
- #       self.useGlexec = True
-  #      jobIdList = []
-   #     for taskName in schedIdList:
-    #        jobFileName = '/tmp/' + taskName + '.lst'
-     #       try:
-      #          jobFile = open(jobFileName)
-       #         while True:
-        #            jobId = jobFile.readline().strip()
-         #           if not jobId:
-          #              break
-           #         jobIdList.append(jobId)
-            #    jobFile.close()
-#            except:
- #               pass
-  #      schedIdList = jobIdList
 
-    # Get a list of the schedd's that were used to submit this task
-   # for id in schedIdList:
-
-    #  bossIds[id] = {'status':'SD','statusScheduler':'Done'} # Done by default
-     # schedd = id.split('//')[0]
-      #job    = id.split('//')[1]
-
-      # Fill dictionary of schedd and job #'s to check
-#      if schedd in jobIds.keys():
- #       jobIds[schedd].append(job)
-  #    else :
-   #     jobIds[schedd] = [job]
-#=======
-    
     if type(obj) == Task: # and objType == 'node':
-        print >> self.debugLog, "q2"
         taskId = obj['name']
         for job in obj.jobs:
             if not self.valid(job.runningJob):
@@ -350,11 +312,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 jobIds[schedd].append(jobNum)
             else :
                 jobIds[schedd] = [jobNum]
-        print >> self.debugLog, "q4"
     else:
         raise SchedulerError('Wrong argument type or object type',
                               str(type(obj)) + ' ' + str(objType))
-    print >> self.debugLog, "q6"
         
     for schedd in jobIds.keys() :
       condor_status = {}
@@ -364,7 +324,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
 #      if not self.useGlexec:
 #          cmd += os.environ['USER']
       cmd += """-constraint 'BLTaskID=="%s"'""" % taskId
-      print >> self.debugLog, "q8", cmd
     
       (input_file, output_fp) = os.popen4(cmd)
 
@@ -379,16 +338,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
       # Otherwise, close returns the exit code
       if output_fp.close():
         raise SchedulerError("condor_q command failed.")
-      print >> self.debugLog, "q10"
       
       handler = CondorHandler('GlobalJobId', ['JobStatus', 'GridJobId', 'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
       parser = make_parser()
       parser.setContentHandler(handler)
       parser.setFeature(feature_external_ges, False)
       parser.parse(output_file)
-      print >> self.debugLog, "q11"
+
       jobDicts = handler.getJobInfo()
-      print >> self.debugLog, "q12"
             
       for globalJobId in jobDicts.keys():
         host,task,jobId = globalJobId.split("#")
@@ -403,7 +360,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         glideinHost = jobDicts[globalJobId].get('MATCH_GLIDEIN_Gatekeeper',None)
         if glideinHost:
           execHost = glideinHost
-        print >> self.debugLog, "q16"
       
         # Don't mess with jobs we're not interested in, put what we found into BossLite statusRecord
         if bossIds.has_key(schedd+'//'+jobId):
@@ -416,14 +372,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
             statusRecord['destination']   = execHost
 
           bossIds[schedd+'//'+jobId] = statusRecord
-    print >> self.debugLog, "q20"
       
     for job in obj.jobs:
         schedulerId = job.runningJob['schedulerId']
         if bossIds.has_key(schedulerId):
             for key, value in bossIds[schedulerId].items():
                 job.runningJob[key] = value
-    print >> self.debugLog, "q22"
                       
     return
 
