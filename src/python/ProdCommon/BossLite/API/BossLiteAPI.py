@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.65 2008/09/23 10:16:10 gcodispo Exp $"
-__revision__ = "$Revision: 1.65 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.66 2008/09/23 12:45:47 gcodispo Exp $"
+__revision__ = "$Revision: 1.66 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -252,7 +252,7 @@ class BossLiteAPI(object):
         # # backward compatible 'deep' parameter handling
         if jobRange is not None and deep != False :
             self.load( task, jobRange )
-            
+
         return task
 
 
@@ -427,20 +427,21 @@ class BossLiteAPI(object):
         if not isinstance( task, Task ) :
             task = Task({'id' : task})
             task.load(self.db, False)
+        elif jobRange == 'all' and task.jobs != []:
+            jobRange = None
 
         # simple case: no jobs loading request
         if jobRange is None:
             return task
 
         # defining default
-        jobList = None
         if jobAttributes is None :
             jobAttributes = {}
 
-        # identify jobRange
+        # evaluate job list
         if jobRange != 'all' :
 
-            # evaluate list
+            # identify jobRange
             if type( jobRange ) == list :
                 jobList = jobRange
             else :
@@ -454,7 +455,7 @@ class BossLiteAPI(object):
             # no jobs to be loaded?
             if jobList == [] :
                 return task
-            else:
+            elif jobList is not None:
                 jobList.sort()
 
         # load
