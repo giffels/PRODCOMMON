@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.10 2008/07/11 14:32:07 gcodispo Exp $"
-__revision__ = "$Revision: 1.10 $"
+__version__ = "$Id: Task.py,v 1.11 2008/09/23 12:29:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.11 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -27,7 +27,7 @@ class Task(DbObject):
                'globalSandbox' : 'global_sanbox',
                'cfgName' : 'cfg_name',
                'serverName' : 'server_name',
-#               'type' : 'type',
+               'jobType' : 'job_type',
                'user_proxy' : 'user_proxy'
              }
 
@@ -42,7 +42,7 @@ class Task(DbObject):
                  'globalSandbox' : None,
                  'cfgName' : None,
                  'serverName' : None,
-                 'type' : None,
+                 'jobType' : None,
                  'user_proxy' : None
               }
 

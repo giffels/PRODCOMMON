@@ -11,7 +11,7 @@ CREATE TABLE bl_task
     global_sanbox TEXT,
     cfg_name TEXT,
     server_name TEXT,
-    type TEXT,
+    job_type TEXT,
     user_proxy TEXT,
     primary key(id),
     unique(name)
