@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.40 2008/07/17 13:14:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.40 $"
+__version__ = "$Id: Scheduler.py,v 1.41 2008/09/08 10:21:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.41 $"
 
 
 ##########################################################################
@@ -223,8 +223,23 @@ class Scheduler(object):
         # check the proxy
         self.schedObj.checkUserProxy()
 
+        # avoid kill of finished jobs
+        restore = False
+        if 'SD' not in self.schedObj.invalidList:
+            self.schedObj.invalidList.append( 'SD')
+            restore = True
+
         # perform action
-        self.schedObj.kill( obj )
+        try:
+            self.schedObj.kill( obj )
+        except:
+            if restore:
+                self.schedObj.invalidList.remove( 'SD')
+            raise
+
+        # restoring invalidList
+        if restore:
+            self.schedObj.invalidList.remove( 'SD')
         # timestamp = int( time.time() )
 
         # the object passed is a runningJob
