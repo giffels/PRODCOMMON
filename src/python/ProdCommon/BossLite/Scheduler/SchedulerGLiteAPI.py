@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.88 2008/09/10 08:49:32 gcodispo Exp $"
-__version__ = "$Revision: 1.88 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.89 2008/09/23 10:17:11 gcodispo Exp $"
+__version__ = "$Revision: 1.89 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -352,7 +352,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def wmproxySubmit( self, jdl, wms, sandboxFileList ) :
+    def wmproxySubmit( self, jdl, wms, sandboxFileList, workdir ) :
         """
         actual submission function
 
@@ -361,10 +361,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         """
 
         # first check if the sandbox dir can be created
-        if os.path.exists( self.SandboxDir ) != 0:
-            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
-            # raise SchedulerError( 'unable to create ' + self.SandboxDir, \
-            #                       'already exist' )
+        sandboxDir = os.path.join( workdir, self.SandboxDir )
+        localZippedISB = os.path.join( workdir, self.zippedISB )
+        if os.path.exists( sandboxDir ) != 0:
+            os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
 
         # initialize wmproxy
         self.hackEnv() ### TEMP FIX
@@ -379,7 +379,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             task = wmproxy.jobRegister ( jdl, self.delegationId )
         except WMPException, wmpError :
             if wmpError.toString().find('Unable to get delegated Proxy'):
-                self.delegateProxy( wmproxy )
+                self.delegateProxy( wmproxy, workdir )
                 task = wmproxy.jobRegister ( jdl, self.delegationId )
             else:
                 raise
@@ -399,26 +399,28 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             destURI = wmproxy.getSandboxDestURI(taskId)
 
             # make directory struct locally
-            basedir = self.SandboxDir + \
-                      destURI[0].split('/' + self.SandboxDir)[1]
-            os.makedirs( basedir )
+            basedir = os.path.join( self.SandboxDir,
+                                    destURI[0].split(self.SandboxDir + '/')[1]
+                                    )
+            builddir = os.path.join( workdir, basedir )
+            os.makedirs( builddir )
 
             # copy files in the directory
-            command = "cp %s %s" % (sandboxFileList, basedir)
+            command = "cp %s %s" % (sandboxFileList, builddir)
             msg, ret = self.ExecuteCommand( command )
             if ret != 0 or msg != '' :
-                os.system( "rm -rf " + self.SandboxDir )
+                os.system( "rm -rf " + sandboxDir )
                 raise SchedulerError( "cp error", msg, command )
 
             # zip sandbox + chmod workaround for the wms
             msg, ret = self.ExecuteCommand(
-                "chmod 773 " + self.SandboxDir + "; chmod 773 " \
-                + self.SandboxDir + "/*"
+                "chmod 773 " + sandboxDir + "; chmod 773 " + sandboxDir + "/*"
                 )
-            command = "tar pczf %s %s/*" % (self.zippedISB, basedir)
+            command = "cd %s; tar pczf %s %s/*; cd - > /dev/null" % \
+                      (workdir, self.zippedISB, basedir)
             msg, ret = self.ExecuteCommand( command )
             if ret != 0 or msg != '' :
-                os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+                os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
                 raise SchedulerError( "tar error", msg, command )
 
             try:
@@ -429,17 +431,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 #          " --capath /etc/grid-security/certificates " + \
                 #          " --upload-file://%s/%s %s/%s "
 
-                command = "globus-url-copy file://%s/%s %s/%s" \
-                          % ( os.getcwd(), self.zippedISB, \
-                              destURI[0], self.zippedISB )
+                command = "globus-url-copy file://%s %s/%s" \
+                          % ( localZippedISB, destURI[0], self.zippedISB )
                 msg, ret = self.ExecuteCommand(self.proxyString + command)
-                logging.debug("DBG : globus-url-copy " + msg)
                 if ret != 0 or msg.upper().find("ERROR") >= 0 \
                        or msg.find("wrong format") >= 0 :
                     raise SchedulerError("globus-url-copy error", msg, command)
 
             except (BaseException, Exception), err:
-                os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+                os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
                 raise
 
         # start job!
@@ -447,21 +447,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             wmproxy.jobStart(taskId)
         except (BaseException, Exception), err:
             wmproxy.jobPurge(taskId)
-            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+            os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
             raise
         except :
-            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+            os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
             raise
 
         # cleaning up everything: delete temporary files and exit
         self.hackEnv(restore=True) ### TEMP FIX
         if sandboxFileList != '' :
-            os.system( "rm -rf " + self.SandboxDir + ' ' + self.zippedISB )
+            os.system( "rm -rf " + sandboxDir + ' ' + localZippedISB )
 
         return taskId, returnMap
 
     ##########################################################################
-    def delegateProxy( self, wmproxy ):
+    def delegateProxy( self, wmproxy, workdir ):
         """
         delegate proxy to a wms
         """
@@ -472,7 +472,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         ### wmproxy.putProxy(delegationId,result )
 
         ### # possible right now:
-        ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=os.getcwd())
+        ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=workdir)
         os.close( ofile )
         proxycert = wmproxy.getProxyReq(self.delegationId)
         # cmd =  "glite-proxy-cert -o " + tmpfile + " -p '" + proxycert \
@@ -546,9 +546,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         success = None
         seen = []
 
-        workdir = os.getcwd()
-        newdir = tempfile.mkdtemp( prefix = obj['name'], dir = workdir )
-        os.chdir(newdir)
+        workdir = tempfile.mkdtemp( prefix = obj['name'], dir = os.getcwd() )
 
         for wms in self.wmsResolve( endpoints ) :
             try :
@@ -559,7 +557,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     seen.append( wms)
                 # actions.append( "Submitting to : " + wms )
                 taskId, returnMap = \
-                        self.wmproxySubmit( jdl, wms, sandboxFileList )
+                        self.wmproxySubmit( jdl, wms, sandboxFileList, workdir)
                 success = wms
                 # actions.append( "Submitted successfully to : " + wms )
                 break
@@ -572,13 +570,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             
             except :
                 # clean files
-                os.chdir(workdir)
-                os.system("rm -rf " + newdir)
+                os.system("rm -rf " + workdir)
                 raise
 
         # clean files
-        os.chdir(workdir)
-        os.system("rm -rf " + newdir)
+        os.system("rm -rf " + workdir)
 
         # handle jobs
         for job in obj.jobs :
@@ -725,22 +721,24 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             retrieved = 0
             for m in filelist:
 
-                # ugly error: nothing there!
-                try:
-                    size = int( m['size'] )
-                except ValueError :
-                    continue
-
                 # ugly trick for empty fields...
                 if m['name'].strip() == '' :
                     joberr +=  'empty filename; '
                     continue
 
+                # ugly error: nothing there!
+                try:
+                    size = int( m['size'] )
+                except ValueError :
+                    size = 0
+
                 # avoid globus-url-copy for empty files
                 if size == 0 :
                     joberr +=  'file ' + os.path.basename( m['name'] ) \
-                             + ' has zero size;'
-                    continue
+                             + ' reported has zero size;'
+                    checkSize = False
+                else:
+                    checkSize = True
 
                 # retrieve file
                 dest = os.path.join( outdir + '/' + \
@@ -748,17 +746,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 command = "globus-url-copy -verbose " + m['name'] \
                           + " file://" + dest
                 msg, ret = self.ExecuteCommand(self.proxyString + command)
-                if ret != 0 or msg.upper().find("ERROR") >= 0 \
-                       or msg.find("wrong format") >= 0 :
-                    joberr = '[ ' + command + ' ] : ' + msg + '; '
-                    continue
 
-                # check file size
-                if os.path.getsize(dest) !=  size  :
-                    joberr =  'size mismatch : expected ' \
-                             + str( os.path.getsize(dest) ) \
-                             + ' got ' + m['size'] + '; '
-                    continue
+                if checkSize :
+                    if ret != 0 or msg.upper().find("ERROR") >= 0 \
+                           or msg.find("wrong format") >= 0 :
+                        joberr = '[ ' + command + ' ] : ' + msg + '; '
+                        continue
+
+                    # check file size
+                    if os.path.getsize(dest) !=  size  :
+                        joberr =  'size mismatch : expected ' \
+                                 + str( os.path.getsize(dest) ) \
+                                 + ' got ' + m['size'] + '; '
 
                 # update files counter
                 retrieved += 1
