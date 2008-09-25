@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.35 2008/09/23 13:00:03 ewv Exp $"
-__version__ = "$Revision: 1.35 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.36 2008/09/23 14:45:12 ewv Exp $"
+__version__ = "$Revision: 1.36 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -63,7 +63,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         # Make directory for Condor returned files
 
         seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
-        exeName = obj['scriptName'].split('/')[-1]
 
         if os.path.isdir(self.condorTemp):
             pass
@@ -124,9 +123,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 # Build JDL file
                 jdl, sandboxFileList, ce = self.decode(job, jobRequirements)
                 if self.useGlexec:
-                    jdl += 'Executable = %s/%s\n' % (seDir, exeName)
+                    jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
                 else:
-                    jdl += 'Executable = %s\n' % (obj['scriptName'])
+                    jdl += 'Executable = %s\n' % (job['executable'])
                 jdl += '+BLTaskID = "' + taskId + '"\n'
                 jdl += "Queue 1\n"
 
