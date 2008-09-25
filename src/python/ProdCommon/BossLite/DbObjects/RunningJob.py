@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.18 2008/08/27 15:32:36 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: RunningJob.py,v 1.19 2008/09/23 12:29:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.19 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -33,15 +33,17 @@ class RunningJob(DbObject):
                'destination' : 'destination',
                'lbTimestamp' : 'lb_timestamp',
                'submissionTime' : 'submission_time',
-               #'scheduledAtSite' : 'scheduled_at_site',
+               'scheduledAtSite' : 'scheduled_at_site',
                'startTime' : 'start_time',
                'stopTime' : 'stop_time',
                'stageOutTime' : 'stageout_time',
                'getOutputTime' : 'getoutput_time',
                'outputDirectory' : 'output_dir',
+               'executionUser' : 'execution_user',
                'executionHost' : 'execution_host',
                'executionPath' : 'execution_path',
-               'executionUser' : 'execution_user',
+               'storage' : 'storage',
+               'lfn' : 'lfn',
                'applicationReturnCode' : 'application_return_code',
                'wrapperReturnCode' : 'wrapper_return_code',
                'processStatus' : 'process_status',
@@ -67,15 +69,17 @@ class RunningJob(DbObject):
                  'destination' : None,
                  'lbTimestamp' : None,
                  'submissionTime' : None,
-                 #'scheduledAtSite' : None,
+                 'scheduledAtSite' : None,
                  'startTime' : None,
                  'stopTime' : None,
                  'stageOutTime' : None,
                  'getOutputTime' : None,
                  'outputDirectory' : None,
+                 'executionUser' : None,
                  'executionHost' : None,
                  'executionPath' : None,
-                 'executionUser' : None,
+                 'storage' : None,
+                 'lfn' : []
                  'applicationReturnCode' : None,
                  'wrapperReturnCode' : None,
                  'processStatus' : None,
