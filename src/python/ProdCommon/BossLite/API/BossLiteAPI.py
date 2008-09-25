@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.66 2008/09/23 12:45:47 gcodispo Exp $"
-__revision__ = "$Revision: 1.66 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.67 2008/09/24 17:48:05 gcodispo Exp $"
+__revision__ = "$Revision: 1.67 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -439,6 +439,7 @@ class BossLiteAPI(object):
             jobAttributes = {}
 
         # evaluate job list
+        jobList = None
         if jobRange != 'all' :
 
             # identify jobRange
