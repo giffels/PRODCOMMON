@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.68 2008/09/25 10:37:32 gcodispo Exp $"
-__revision__ = "$Revision: 1.68 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.69 2008/09/25 10:47:37 gcodispo Exp $"
+__revision__ = "$Revision: 1.69 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -16,8 +16,7 @@ from ProdCommon.BossLite.DbObjects.TrackingDB import TrackingDB
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
-from ProdCommon.BossLite.Common.Exceptions import TaskError
-from ProdCommon.BossLite.Common.Exceptions import JobError
+from ProdCommon.BossLite.Common.Exceptions import TaskError, JobError, DbError
 from ProdCommon.BossLite.API.BossLiteDB import BossLiteDB
 
 
@@ -770,10 +769,17 @@ class BossLiteAPI(object):
             self.connect()
 
         # creating task
-        task = self.loadTask(job['taskId'])
+        task = self.loadTask(job['taskId'], None)
 
         # perform association
         task.appendJob( job )
+
+        # operation validity checks
+        if len( task.jobs ) != 1 :
+            raise DbError( "ERROR: too many jobs loaded %s" % \
+                                 len( task.jobs ))
+        if id( task.jobs[0] ) != id( job ) :
+            raise DbError( "Fatal ERROR: mismatching job" )
 
         # return task
         return task
@@ -908,44 +914,26 @@ class BossLiteAPI(object):
         root = cfile.createElement("Task")
 
         node = cfile.createElement("TaskAttributes")
-        node.setAttribute('name', str(task['name']) )
-        node.setAttribute('startDirectory', str(task['startDirectory']) )
-        node.setAttribute('outputDirectory', str(task['outputDirectory']) )
-        node.setAttribute('globalSandbox', str(task['globalSandbox']) )
-        node.setAttribute('cfgName', str(task['cfgName']) )
-        node.setAttribute('serverName', str(task['serverName']) )
-        node.setAttribute('jobType', str(task['jobType']) )
-        node.setAttribute('scriptName', str(task['scriptName']) )
+        for key, value in task.fields.iteritems():
+            node.setAttribute( key, str(value) )
         root.appendChild(node)
 
         node = cfile.createElement("TaskJobs")
         for job in task.jobs:
             subNode = cfile.createElement("Job")
-            subNode.setAttribute('jobId',  str(job['jobId']) )
-            subNode.setAttribute('name', str(job['name']) )
-            subNode.setAttribute('executable', str(job['executable']) )
-            subNode.setAttribute('arguments', str(job['arguments']) )
-            subNode.setAttribute('standardInput', str(job['standardInput']) )
-            subNode.setAttribute('standardOutput', str(job['standardOutput']) )
-            subNode.setAttribute('standardError', str(job['standardError']) )
-            subNode.setAttribute('logFile', str(job['logFile']) )
-            subNode.setAttribute('inputFiles', \
-                                 str( ','.join(job['inputFiles'])) )
-            subNode.setAttribute('outputFiles', \
-                                 str( ','.join(job['outputFiles'])) )
-            subNode.setAttribute('fileBlock', str( job['fileBlock']) )
-            subNode.setAttribute('submissionNumber', \
-                                 str(job['submissionNumber']) )
-            subNode.setAttribute('dlsDestination', \
-                                 ','.join(job['dlsDestination']) )
+            for key, value in job.fields.iteritems():
+                subNode.setAttribute( key, str(value) )
+                if job.defaults[key] == []:
+                    value = str( ','.join(value))
             node.appendChild(subNode)
 
             if job.runningJob is not None:
                 subSubNode = cfile.createElement("RunningJob")
-                for key in job.runningJob.fields:
-                    if not job.runningJob[key] \
-                           or key in ['id', 'taskId', 'submission'] :
+                for key, value in job.runningJob.fields.iteritems():
+                    if key in ['id', 'taskId', 'submission'] :
                         continue
+                    if job.runningJob.defaults[key] == []:
+                        value = str( ','.join(value))
                     subSubNode.setAttribute(key, str(job.runningJob[key]) )
                 subNode.appendChild(subSubNode)
 
