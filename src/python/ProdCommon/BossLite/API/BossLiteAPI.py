@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.67 2008/09/24 17:48:05 gcodispo Exp $"
-__revision__ = "$Revision: 1.67 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.68 2008/09/25 10:37:32 gcodispo Exp $"
+__revision__ = "$Revision: 1.68 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -440,7 +440,7 @@ class BossLiteAPI(object):
 
         # evaluate job list
         jobList = None
-        if jobRange != 'all' :
+        if jobRange is not None and jobRange != 'all':
 
             # identify jobRange
             if type( jobRange ) == list :
@@ -770,7 +770,7 @@ class BossLiteAPI(object):
             self.connect()
 
         # creating task
-        task = self.loadTask(job['taskId'], False)
+        task = self.loadTask(job['taskId'])
 
         # perform association
         task.appendJob( job )
