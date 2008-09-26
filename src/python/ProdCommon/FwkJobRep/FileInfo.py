@@ -11,6 +11,7 @@ from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
+from ProdCommon.FwkJobRep.RunInfo import RunInfo
 
 class FileInfo(dict):
     """
@@ -34,9 +35,8 @@ class FileInfo(dict):
         self.setdefault("SEName", None)
         self.setdefault("ModuleLabel", None)
         self.setdefault("Catalog", None)
-        self.setdefault("Checksum", None)
         self.setdefault("OutputModuleClass", None)
-        self.setdefault("MergedBySize", "False")
+
 
         #  //
         # // Is this an input or output file?
@@ -61,7 +61,7 @@ class FileInfo(dict):
         #  //
         # // List of Runs
         #//
-        self.runs = []
+        self.runs = {}
 
         #  //
         # // Dataset is a dictionary and will have the same key
@@ -73,10 +73,6 @@ class FileInfo(dict):
         #//  checksum alg was used.
         self.checksums = {}
 
-        #  //
-        # // Lumi section information
-        #//
-        self.lumisections = []
 
 
     def addInputFile(self, pfn, lfn):
@@ -118,8 +114,7 @@ class FileInfo(dict):
         self.checksums[algorithm] = value
         return
 
-    def addLumiSection(self, lumiSectionNumber,
-                       runNumber):
+    def addRunAndLumi(self, runNumber, *lumis):
         """
         _addLumiSection_
 
@@ -128,19 +123,16 @@ class FileInfo(dict):
         If the run number is not in the list of runs, then add it
 
         """
-        lumiSect = {
-            "LumiSectionNumber" : lumiSectionNumber,
-            "StartEventNumber" : None,
-            "EndEventNumber" : None,
-            "LumiStartTime" : None,
-            "LumiEndTime" : None,
-            "RunNumber" : runNumber,
-            }
+        if not self.runs.has_key(runNumber):
+            self.runs[runNumber] = RunInfo()
+            self.runs[runNumber].run = runNumber
 
-        if (runNumber != None) and (runNumber not in self.runs):
-            self.runs.append(runNumber)
-        self.lumisections.append(lumiSect)
-        return lumiSect
+        run = self.runs[runNumber]
+        run.extend(lumis)
+        return
+
+
+
 
 
 
@@ -194,8 +186,8 @@ class FileInfo(dict):
         #//
         runs = IMProvNode("Runs")
         improvNode.addNode(runs)
-        for run in self.runs:
-            runs.addNode(IMProvNode("Run", run))
+        for run in self.runs.values():
+            runs.addNode(run.save())
 
         #  //
         # // Dataset info
@@ -214,18 +206,6 @@ class FileInfo(dict):
         for branch in self.branches:
             branches.addNode(IMProvNode("Branch", branch))
 
-
-        #  //
-        # // Lumi Sections
-        #//
-        lumi = IMProvNode("LumiSections")
-        improvNode.addNode(lumi)
-        for lumiSect in self.lumisections:
-            node = IMProvNode("LumiSection")
-            [ node.addNode(
-                IMProvNode(str(x[0]), None, Value = str(x[1]) ))
-              for x in lumiSect.items() if x[1] != None ]
-            lumi.addNode(node)
 
         return improvNode
 
@@ -297,26 +277,54 @@ class FileInfo(dict):
         for branch in branchQ(improvNode):
             self.branches.append(str(branch))
 
-        #  //
-        # // Runs
-        #//
-        runQ = IMProvQuery("/%s/Runs/Run[text()]" % queryBase)
-        for run in runQ(improvNode):
-            self.runs.append(int(run))
 
+        runQ = IMProvQuery("/%s/Runs/Run" % queryBase)
+        for run in runQ(improvNode):
+            newRun = RunInfo()
+            newRun.load(run)
+            if newRun.run == None:
+                continue
+
+            self.runs[newRun.run] = newRun
+
+
+        self.legacyLumiInfo(improvNode, queryBase)
+
+        return
+
+
+    def legacyLumiInfo(self, improvNode, queryBase):
+        """
+        _legacyLumiInfo_
+
+        handle legacy lumi section information
+
+        """
         #  //
         # // Lumi Sections
         #//
         lumiQ = IMProvQuery("/%s/LumiSections/LumiSection" % queryBase)
         for lumiSect in lumiQ(improvNode):
-            newLumi = self.addLumiSection(None, None)
 
-            [ newLumi.__setitem__(str(x.name), str(x.attrs['Value']))
+            newLumi = {}
+            [ newLumi.__setitem__(x.name, x.attrs['Value'])
               for x in  lumiSect.children ]
-            newLumi['RunNumber'] = int(newLumi['RunNumber'])
-            newLumi['LumiSectionNumber'] = int(newLumi['LumiSectionNumber'])
+            run = newLumi.get("RunNumber", None)
+            lumi = newLumi.get("LumiSectionNumber", None)
+            if run == None or lumi == None:
+                continue
 
+            run = int(run)
+            lumi = int(lumi)
+            if not self.runs.has_key(run):
+                newRun = RunInfo()
+                newRun.run = run
+                self.runs[run] = newRun
+            runInfo = self.runs.get(run)
+            runInfo.append(lumi)
         return
+
+
 
 
 class AnalysisFile(dict):
@@ -369,3 +377,20 @@ class AnalysisFile(dict):
 
 
 
+if __name__ == '__main__':
+
+    f = FileInfo()
+    f.addRunAndLumi(2, 1,2,3,4,5)
+    print f.save()
+
+    f2 = FileInfo()
+    f2.load(f.save())
+    print f2.save()
+
+    f3 = FileInfo()
+    f3.addRunAndLumi(1)
+
+    print f3.save()
+    f4 = FileInfo()
+    f4.load(f3.save())
+    print f4.save()
