@@ -132,8 +132,22 @@ class FileInfo(dict):
         return
 
 
+    def getLumiSections(self):
+        """
+        _getLumiSections_
+
+        Return a list of dictionaries containing
+        RunNumber and LumiSectionNumber dictionaries
+
+        """
+        result = []
+        for run in self.runs.values():
 
 
+            [ result.append({"RunNumber" : run.run,
+                             "LumiSectionNumber": x}) for x in run ]
+
+        return result
 
 
     def save(self):
@@ -381,16 +395,16 @@ if __name__ == '__main__':
 
     f = FileInfo()
     f.addRunAndLumi(2, 1,2,3,4,5)
-    print f.save()
+    print f.getLumiSections()
 
     f2 = FileInfo()
     f2.load(f.save())
-    print f2.save()
+    print f2.getLumiSections()
 
     f3 = FileInfo()
     f3.addRunAndLumi(1)
 
-    print f3.save()
+
     f4 = FileInfo()
     f4.load(f3.save())
-    print f4.save()
+    print f4.getLumiSections()
