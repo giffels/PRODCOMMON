@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.69 2008/09/25 10:47:37 gcodispo Exp $"
-__revision__ = "$Revision: 1.69 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.70 2008/09/25 13:01:31 gcodispo Exp $"
+__revision__ = "$Revision: 1.70 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -185,7 +185,8 @@ class BossLiteAPI(object):
             self.bossLiteDB.session.commit()
         except TaskError, err:
             if str(err).find( 'column name is not unique') == -1 and \
-                   str(err).find( 'Duplicate entry') == -1 :
+                   str(err).find( 'Duplicate entry') == -1 and \
+                   task['id'] is not None :
                 self.removeTask( task )
                 task = None
             raise
@@ -864,10 +865,11 @@ class BossLiteAPI(object):
         taskNode = doc.getElementsByTagName("TaskAttributes")[0]
         taskInfo =  {}
         for i in range(taskNode.attributes.length):
+
             key = str(taskNode.attributes.item(i).name)
             val = str(taskNode.attributes.item(i).value)
-            if val is None or val == 'None':
-                continue
+            if Task.defaults[key] == []:
+                val = val.split(',')
             taskInfo[key] = val
 
         # run over the task jobs and parse the structure
@@ -875,17 +877,14 @@ class BossLiteAPI(object):
         jobs = []
         runningJobsAttribs = {}
         for jobNode in jnodes:
+
             jobInfo = {}
             for i in range(jobNode.attributes.length):
                 key = str(jobNode.attributes.item(i).name)
                 val = str(jobNode.attributes.item(i).value)
-                if val is None or val == 'None':
-                    continue
+                if Job.defaults[key] == []:
+                    val = val.split(',')
                 jobInfo[key] = val
-
-            jobInfo['inputFiles'] = jobInfo['inputFiles'].split(',')
-            jobInfo['outputFiles'] = jobInfo['outputFiles'].split(',')
-            jobInfo['dlsDestination'] = jobInfo['dlsDestination'].split(',')
             jobs.append(jobInfo)
 
             rjAttrs = {}
@@ -895,6 +894,8 @@ class BossLiteAPI(object):
                 for i in range(rjNode.attributes.length):
                     key = str(rjNode.attributes.item(i).name)
                     val = str(rjNode.attributes.item(i).value)
+                    if RunningJob.defaults[key] == []:
+                        val = val.split(',')
                     rjAttrs[key] = val
             runningJobsAttribs[ jobInfo['name'] ] = copy.deepcopy(rjAttrs)
 
@@ -914,23 +915,29 @@ class BossLiteAPI(object):
         root = cfile.createElement("Task")
 
         node = cfile.createElement("TaskAttributes")
-        for key, value in task.fields.iteritems():
+        for key, value in task.data.iteritems():
+            if key == 'id' or value == task.defaults[key] :
+                continue
+            if task.defaults[key] == []:
+                value = str( ','.join(value))
             node.setAttribute( key, str(value) )
         root.appendChild(node)
 
         node = cfile.createElement("TaskJobs")
         for job in task.jobs:
             subNode = cfile.createElement("Job")
-            for key, value in job.fields.iteritems():
-                subNode.setAttribute( key, str(value) )
+            for key, value in job.data.iteritems():
+                if key == 'id' or value == job.defaults[key] :
+                    continue
                 if job.defaults[key] == []:
                     value = str( ','.join(value))
+                subNode.setAttribute( key, str(value) )
             node.appendChild(subNode)
 
             if job.runningJob is not None:
                 subSubNode = cfile.createElement("RunningJob")
-                for key, value in job.runningJob.fields.iteritems():
-                    if key in ['id', 'taskId', 'submission'] :
+                for key, value in job.runningJob.data.iteritems():
+                    if key == 'id' or value == job.runningJob.defaults[key] :
                         continue
                     if job.runningJob.defaults[key] == []:
                         value = str( ','.join(value))
