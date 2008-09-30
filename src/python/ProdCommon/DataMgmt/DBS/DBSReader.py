@@ -11,6 +11,9 @@ from DBSAPI.dbsApiException import *
 
 from ProdCommon.DataMgmt.DBS.DBSErrors import DBSReaderError, formatEx
 
+import dlsClient
+from dlsApi import DlsApiError
+
 
 
 class DBSReader:
@@ -26,6 +29,25 @@ class DBSReader:
         args.update(contact)
         try:
          self.dbs = DbsApi(args)
+        except DbsException, ex:
+            msg = "Error in DBSReader with DbsApi\n"
+            msg += "%s\n" % formatEx(ex)
+            raise DBSReaderError(msg)
+        
+        # setup DLS api - with either dbs or phedex depending on dbs instance
+        if url.count('cmsdbsprod.cern.ch/cms_dbs_prod_global') or \
+                        self.dbs.getServerInfo()['InstanceName'] == 'GLOBAL':
+            dlsType = 'DLS_TYPE_PHEDEX'
+            dlsUrl = 'http://cmsweb.cern.ch/phedex/datasvc/xml/prod'
+        else:
+            dlsType = 'DLS_TYPE_DBS'
+            dlsUrl = url
+        try:
+            self.dls = dlsClient.getDlsApi(dls_type=dlsType,dls_endpoint=dlsUrl)
+        except DlsApiError, ex:
+            msg = "Error in DBSReader with DlsApi\n"
+            msg += "%s\n" % str(ex)
+            raise DBSReaderError(msg)
         except DbsException, ex:
             msg = "Error in DBSReader with DbsApi\n"
             msg += "%s\n" % formatEx(ex)
@@ -302,8 +324,6 @@ class DBSReader:
         [ result.append(x['LogicalFileName'] ) for x in files ]
         return result
 
-    
-    
         
     def listFileBlockLocation(self, fileBlockName):
         """
@@ -314,25 +334,16 @@ class DBSReader:
         """
         self.checkBlockName(fileBlockName)
         try:
-
-            blocks = self.dbs.listBlocks(block_name = fileBlockName)
-        except DbsException, ex:
-            msg = "Error in "
-            msg += "DBSReader.getFileBlockLocation(%s)\n" % fileBlockName
-            msg += "%s\n" % formatEx(ex)
+            entryList = self.dls.getLocations([fileBlockName], showProd = True)
+        except DlsApiError, ex:
+            msg = "DLS Error in listFileBlockLocation() for %s" % fileBlockName
+            msg += "\n%s\n" % str(ex)
             raise DBSReaderError(msg)
-
-        if blocks == []:
-            return None
-
-        ses = []
-        [ ses.extend(x['StorageElementList']) for x in blocks]
-
-        seList = set()
-
-        [ seList.add(x['Name']) for x in ses ]
-
-        return list(seList)
+        ses = set()
+        for block in entryList:
+            ses.update([str(location.host) for location in block.locations])
+        return list(ses)
+        
         
     def getFileBlock(self, fileBlockName):
         """

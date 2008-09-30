@@ -563,7 +563,7 @@ class DBSWriter:
                     logging.info("Update block locations to:")
                     BlockList=reader.dbs.listBlocks(block_name=block)
                     for fileblock in BlockList:
-                        for sename in fileblock["StorageElementList"]:
+                        for sename in reader.listFileBlockLocation(fileblock):
                             self.dbs.addReplicaToBlock(block,sename)
                             #logging.info("Block %s updated to location %s"%(block,sename['Name'])) 
                             logging.info(" -> %s"%sename['Name'])
@@ -591,7 +591,9 @@ class DBSWriter:
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
             del xferData
-            
+
+            for sename in reader.listFileBlockLocation(block):
+                self.dbs.addReplicaToBlock(block,sename)            
         
         return
 
@@ -632,7 +634,7 @@ class DBSWriter:
                     logging.info("Update block locations to:")
                     BlockList=reader.dbs.listBlocks(block_name=block)
                     for fileblock in BlockList:
-                        for sename in fileblock["StorageElementList"]:
+                        for sename in reader.listFileBlockLocation(fileblock):
                             self.dbs.addReplicaToBlock(block,sename)
                             #logging.info("Block %s updated to location %s"%(block,sename['Name']))
                             logging.info(" -> %s"%sename['Name'])
@@ -648,7 +650,10 @@ class DBSWriter:
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-                                                                                                              
+            
+            for sename in reader.listFileBlockLocation(block):
+                self.dbs.addReplicaToBlock(block,sename)
+                                                                                
         return
     
 
@@ -685,7 +690,7 @@ class DBSWriter:
                     logging.info("Update block locations to:")
                     BlockList=reader.dbs.listBlocks(block_name=block)
                     for fileblock in BlockList:
-                        for sename in fileblock["StorageElementList"]:
+                        for sename in reader.listFileBlockLocation(fileblock):
                             self.dbs.addReplicaToBlock(block,sename)
                             #logging.info("Block %s updated to location %s"%(block,sename['Name']))
                             logging.info(" -> %s"%sename['Name'])
@@ -700,5 +705,8 @@ class DBSWriter:
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-
+            
+            for sename in reader.listFileBlockLocation(block):
+                self.dbs.addReplicaToBlock(block,sename)
+                
         return    
