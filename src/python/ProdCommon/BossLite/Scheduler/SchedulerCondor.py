@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.13 2008/09/04 21:48:12 ewv Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.14 2008/09/04 21:49:27 ewv Exp $"
+__version__ = "$Revision: 1.14 $"
 
 import os
 
@@ -111,7 +111,7 @@ class SchedulerCondor(SchedulerCondorCommon) :
         #jdl += 'transfer_output_files= ' + ','.join(job['outputFiles']) + '\n'
 
         filelist = ''
-        return jdl, filelist
+        return jdl, filelist, None
 
 
     def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
