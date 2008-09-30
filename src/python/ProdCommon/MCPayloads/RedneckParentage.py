@@ -65,7 +65,7 @@ def redneckParentage(payloadNode):
             #  //
             # // No parent remap needed
             #//
-            break
+            continue
         #  //
         # // Remap needed, find parent, throw if not present
         #//

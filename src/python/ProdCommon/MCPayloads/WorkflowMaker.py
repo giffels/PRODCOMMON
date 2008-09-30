@@ -19,7 +19,7 @@ import ProdCommon.MCPayloads.WorkflowTools as WorkflowTools
 from ProdCommon.MCPayloads.LFNAlgorithm import unmergedLFNBase, mergedLFNBase
 from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
 from ProdCommon.MCPayloads.UUID import makeUUID
-
+from ProdCommon.MCPayloads.RedneckParentage import remapParentageForWorkflow
 
 
 
@@ -459,9 +459,10 @@ class WorkflowMaker:
                                                   outDS['ProcessedDataset'],
                                                   outDS['DataTier'])
 
+        # optionally remap sibling relationships to parent-child (i.e HLTDEBUG)
+        remapParentageForWorkflow(self.workflow)
         WorkflowTools.generateFilenames(self.workflow)
-        
-        
+
         return self.workflow
 
 

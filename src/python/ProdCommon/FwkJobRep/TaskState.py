@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.1 $"
-__revision__ = "$Id: TaskState.py,v 1.1 2008/01/03 16:08:11 evansde Exp $"
+__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: TaskState.py,v 1.2 2008/07/22 17:38:06 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -37,6 +37,7 @@ from ProdCommon.MCPayloads.MergeTools import getSizeBasedMergeDatasetsFromNode
 
 
 lfnSearch = lambda fileInfo, lfn:  fileInfo.get("LFN", None) == lfn
+dsSearch = lambda fileInfo, dataset: len([x for x in fileInfo.dataset if x.name() == dataset]) != 0
 
 
 def getTaskState(taskName):
@@ -406,6 +407,7 @@ class TaskState:
         
         for fileInfo in self._JobReport.files:
             self.matchDataset(fileInfo, datasetMap)
+            self.matchFileParents(fileInfo)
         return
         
 
@@ -442,6 +444,7 @@ class TaskState:
                     print msg
             else:
                 print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
+
         if datasetMap.has_key(outModLabel):
             datasetForFile = fileInfo.newDataset()
             datasetForFile.update(datasetMap[outModLabel])
@@ -457,14 +460,30 @@ class TaskState:
             print msg
         return
     
-                
-                
+
+    def matchFileParents(self, fileInfo):
+        """
         
+        add in input files that should be in file parentage but aren't. Used
+        for HLTDEBUG where we need to set RAW as parent for the 2 file read.
+        
+        """
 
+        for ds in fileInfo.dataset:
+            parentDataset = ds.get('ParentDataset', None)
+            if not parentDataset:
+                continue
+            parentFiles = [x for x in self._JobReport.files if \
+                                                    dsSearch(x, parentDataset)]
+            for parFile in parentFiles:
+                if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
+                    continue
+                parentLFN = '%s/%s.root' % \
+                  (parFile['LFN'][:parFile['LFN'].rfind("/")], parFile['GUID'])
+                print "Add InputFile %s for %s" % (parentLFN, fileInfo['LFN'])
+                fileInfo.addInputFile(parFile['PFN'], parentLFN)
+        return
 
-            
-            
-    
 
     def generateFileStats(self):
         """
