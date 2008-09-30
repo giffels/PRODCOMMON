@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.18 2008/09/18 16:10:05 slacapra Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.19 2008/09/18 23:26:01 spiga Exp $"
+__version__ = "$Revision: 1.19 $"
 
 import re, os
 
@@ -41,7 +41,15 @@ class SchedulerLsf (SchedulerInterface) :
             self.rfioSer=args['rfioSer'] 
         except:
             pass
+        self.tokenString = '' 
+        if self.cert != '':
+            self.tokenString = "/afs/usr/local/etc/SetToken <" + self.cert + ' ; '
+
+
     def checkUserProxy( self, cert='' ):
+        """ 
+        to be implemented based on token....
+        """ 
         return
 
     def jobDescription ( self, obj, requirements='', config='', service = '' ):
@@ -96,7 +104,7 @@ class SchedulerLsf (SchedulerInterface) :
         command = chDir + "bsub " + arg + resetDir 
 
 
-        out, ret = self.ExecuteCommand(command)
+        out, ret = self.ExecuteCommand(self.tokenString + command)
         if ret != 0 :
             raise SchedulerError('Error in submit', out, command )
 
@@ -185,7 +193,7 @@ class SchedulerLsf (SchedulerInterface) :
             jobid = str(job.runningJob['schedulerId']).strip()
             cmd='bjobs '+str(jobid)
             #print cmd
-            out, ret = self.ExecuteCommand(cmd)
+            out, ret = self.ExecuteCommand(self.tokenString + cmd)
             if ret != 0 :
                 raise SchedulerError('Error in status query', out,cmd )
             #print "<"+out+">"
@@ -241,7 +249,7 @@ class SchedulerLsf (SchedulerInterface) :
                 continue
             jobid = str( job.runningJob['schedulerId'] ).strip()
             cmd='bkill '+str(jobid)
-            out, ret = self.ExecuteCommand(cmd)
+            out, ret = self.ExecuteCommand(self.tokenString + cmd)
             mFailed= rFinished.search(out)
             if mFailed:
                 raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out, cmd )
