@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.36 2008/09/23 14:45:12 ewv Exp $"
-__version__ = "$Revision: 1.36 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.37 2008/09/25 13:39:12 gcodispo Exp $"
+__version__ = "$Revision: 1.37 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -33,6 +33,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.hostname   = getfqdn()
         self.condorTemp = args.get('tmpDir', None)
         self.outputDir  = args.get('outputDirectory', None)
+        self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
         self.glexecWrapper = 'glexecWrapper.sh'
@@ -125,7 +126,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 if self.useGlexec:
                     jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
                 else:
-                    jdl += 'Executable = %s\n' % (job['executable'])
+                    jdl += 'Executable = %s/%s\n' % (self.jobDir, job['executable'])
                 jdl += '+BLTaskID = "' + taskId + '"\n'
                 jdl += "Queue 1\n"
 
