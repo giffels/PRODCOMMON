@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.15 2008/09/09 08:40:14 gcodispo Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.16 2008/09/25 08:58:56 gcodispo Exp $"
+__version__ = "$Revision: 1.16 $"
 
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
@@ -121,7 +121,7 @@ class GLiteLBQuery(object):
             lst = self.ft.match( timestamp ).group( 6, 7, 8, \
                     self.statusList.index(runningJob['statusScheduler'])+2)
             
-            if lst[0] == '0':
+            if lst[0] != '0':
                 try:
                     runningJob["scheduledAtSite"] = lst[0]
                 except JobError, err:
