@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.16 2008/09/25 08:58:56 gcodispo Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.17 2008/10/01 11:46:09 gcodispo Exp $"
+__version__ = "$Revision: 1.17 $"
 
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
@@ -88,7 +88,7 @@ class GLiteLBQuery(object):
         fill job dictionary with LB informations
         """
 
-        if runningJob['statusScheduler'] == jobInfo[self.status]:
+        if runningJob['status'] == self.statusMap[jobInfo[self.status]]:
             return
         runningJob['statusScheduler'] = str(jobInfo[self.status])
 
