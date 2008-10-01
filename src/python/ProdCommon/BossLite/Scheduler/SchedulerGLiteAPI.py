@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.89 2008/09/23 10:17:11 gcodispo Exp $"
-__version__ = "$Revision: 1.89 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.90 2008/09/25 08:43:30 gcodispo Exp $"
+__version__ = "$Revision: 1.90 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -868,9 +868,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 wmproxy.jobCancel( jobId )
             except BaseException, err:
                 output = formatWmpError( err )
-                job.runningJob.errors.append( output )
-                # job.runningJob['statusHistory'].append(
-                #         'Failed Job Cancel' )
+
+                # purged: probably already retrieved. Archive
+                if output.find( "Cancel has already been requested" ) != -1 :
+                    job.runningJob.warnings.append( 
+                        'Cancel has already been requested, recovering status')
+                    continue
+                else :
+                    job.runningJob.errors.append( output )
 
             try :
                 wmproxy.jobPurge( jobId )
