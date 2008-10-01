@@ -103,6 +103,7 @@ class WorkflowMaker:
         self.cmsRunNode.type = "CMSSW"
         
         self.cmsRunNodes = [self.cmsRunNode]
+        self.saveOutputFor = []
 
 
     def chainCmsRunNode(self, stageOutIntermediates = False, *outputModules):
@@ -110,8 +111,7 @@ class WorkflowMaker:
         append a cmsRun config to the current cmsRun node and chain them
         """
         if stageOutIntermediates: #Do we want to keep cmsRunNode's products?
-            WorkflowTools.addStageOutNode(self.cmsRunNode,
-                        "stageOut%s" % self.cmsRunNode.name.strip("cmsRun"))
+            self.saveOutputFor.append(self.cmsRunNode.name)    
         newnode = self.cmsRunNode.newNode("cmsRun%s" % 
                                           (len(self.cmsRunNodes) + 1))
         newnode.type = "CMSSW"
@@ -349,8 +349,9 @@ class WorkflowMaker:
         #  //
         # // Add Stage Out node
         #//
+        self.saveOutputFor.append(self.cmsRunNode.name)
         WorkflowTools.addStageOutNode(self.cmsRunNode,
-                        "stageOut%s" % self.cmsRunNode.name.strip("cmsRun"))
+                        "stageOut1", *self.saveOutputFor)
         WorkflowTools.addLogArchNode(self.cmsRunNode, "logArchive")
 
         #  //
@@ -391,8 +392,7 @@ class WorkflowMaker:
         for cmsRunNode, config in zip(self.cmsRunNodes, self.configurations):
             
             # Ignore nodes that don't save any output
-            if not [child for child in cmsRunNode.children if \
-                                                    child.type == 'StageOut']:
+            if cmsRunNode.name not in self.saveOutputFor:
                 continue
             
             for outModName in config.outputModules.keys():

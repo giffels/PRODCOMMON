@@ -93,7 +93,7 @@ def createPythonConfig(cfgFile):
 
 
 
-def addStageOutNode(cmsRunNode, nodeName):
+def addStageOutNode(cmsRunNode, nodeName, *nodes):
     """
     _addStageOutNode_
 
@@ -107,7 +107,7 @@ def addStageOutNode(cmsRunNode, nodeName):
     stageOut.application["Version"] = ""
     stageOut.application["Architecture"] = ""
     stageOut.application["Executable"] = "RuntimeStageOut.py" # binary name
-    stageOut.configuration = ""
+    stageOut.configuration = " ".join(nodes)
 
     return
 
