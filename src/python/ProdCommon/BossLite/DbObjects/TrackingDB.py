@@ -4,12 +4,13 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.21 2008/09/23 12:29:15 gcodispo Exp $"
-__revision__ = "$Revision: 1.21 $"
+__version__ = "$Id: TrackingDB.py,v 1.22 2008/09/25 13:42:23 gcodispo Exp $"
+__revision__ = "$Revision: 1.22 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
 from ProdCommon.BossLite.Common.Exceptions import DbError
+from ProdCommon.BossLite.Common.System import evalStdList
 
 class TrackingDB:
     """
@@ -424,7 +425,7 @@ class TrackingDB:
             # check for lists
             elif type(template.defaults[key]) == list:
                 try :
-                    obj[key] = eval(value)
+                    obj[key] = evalStdList(value)
                 except SyntaxError:
                     obj[key] = [ value ]
  
@@ -507,7 +508,7 @@ class TrackingDB:
                 # check for lists
                 elif type(template.defaults[key]) == list:
                     try :
-                        obj[key] = eval(value)
+                        obj[key] = evalStdList(value)
                     except SyntaxError:
                         obj[key] = [ value ]
 
@@ -593,7 +594,7 @@ class TrackingDB:
                 # check for lists
                 elif type(template.defaults[key]) == list:
                     try :
-                        obj[key] = eval(value)
+                        obj[key] = evalStdList(value)
                     except SyntaxError:
                         obj[key] = [ value ]
 

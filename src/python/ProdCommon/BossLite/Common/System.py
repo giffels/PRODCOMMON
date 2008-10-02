@@ -10,8 +10,8 @@ import time
 import os
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.4 2008/07/17 14:28:48 gcodispo Exp $"
-__revision__ = "$Revision: 1.4 $"
+__version__ = "$Id: System.py,v 1.5 2008/09/08 10:20:47 gcodispo Exp $"
+__revision__ = "$Revision: 1.5 $"
 
 
 def setPgid():
@@ -77,3 +77,43 @@ def executeCommand( command, timeout=None ):
 
 
 
+def evalStdList( str ) :
+    """
+    _evalStd_
+
+    eval of a string which is espected to be a list
+    it works for strings created with str([...])
+    """
+
+    str = str[ 1 : -1 ]
+
+    if str == '':
+        return []
+    if str[0] == '"':
+        return [ val[ 1 : -1 ] for val in str.split(', ') ]
+    elif str[0] == "'":    
+        return [ val[ 1 : -1 ] for val in str.split(', ') ]
+    else :
+        return [ val for val in str.split(',') ]
+
+
+def evalCustomList( str ) :
+    """
+    _evalCustom_
+
+    eval of a string which is espected to be a list
+    it works for any well formed string representing a list
+    """
+    
+    str = str[ str.find('[')+1 : str.rfind(']') ].strip()
+
+    if str == '':
+        return []
+    if str[0] == '"':
+        return [ val[ val.find('"')+1 : val.rfind('"') ]
+                 for val in str.split(',') ]
+    elif str[0] == "'":        
+        return [ val[ val.find("'")+1 : val.rfind("'") ]
+                 for val in str.split(',') ]
+    else :
+        return [ val for val in str.split(',') ]
