@@ -10,8 +10,8 @@ import time
 import os
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.5 2008/09/08 10:20:47 gcodispo Exp $"
-__revision__ = "$Revision: 1.5 $"
+__version__ = "$Id: System.py,v 1.6 2008/10/02 14:30:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.6 $"
 
 
 def setPgid():
@@ -77,43 +77,41 @@ def executeCommand( command, timeout=None ):
 
 
 
-def evalStdList( str ) :
+def evalStdList( strList ) :
     """
-    _evalStd_
+    _evalStdList_
 
     eval of a string which is espected to be a list
     it works for strings created with str([...])
     """
 
-    str = str[ 1 : -1 ]
+    strList = strList[ 1 : -1 ]
 
-    if str == '':
+    if strList == '':
         return []
-    if str[0] == '"':
-        return [ val[ 1 : -1 ] for val in str.split(', ') ]
-    elif str[0] == "'":    
-        return [ val[ 1 : -1 ] for val in str.split(', ') ]
+    if strList[0] == "'" or strList[0] == '"':
+        return [ str(val[ 1 : -1 ]) for val in strList.split(', ') ]
     else :
-        return [ val for val in str.split(',') ]
+        return [ str(val) for val in strList.split(',') ]
 
 
-def evalCustomList( str ) :
+def evalCustomList( strList ) :
     """
-    _evalCustom_
+    _evalCustomList_
 
     eval of a string which is espected to be a list
     it works for any well formed string representing a list
     """
     
-    str = str[ str.find('[')+1 : str.rfind(']') ].strip()
+    strList = strList[ strList.find('[')+1 : strList.rfind(']') ].strip()
 
-    if str == '':
+    if strList == '':
         return []
-    if str[0] == '"':
-        return [ val[ val.find('"')+1 : val.rfind('"') ]
-                 for val in str.split(',') ]
-    elif str[0] == "'":        
-        return [ val[ val.find("'")+1 : val.rfind("'") ]
-                 for val in str.split(',') ]
+    if strList[0] == "'": 
+        return [ str(val[ val.find("'")+1 : val.rfind("'") ])
+                 for val in strList.split(',') ]
+    elif strList[0] == '"':
+        return [ str(val[ val.find('"')+1 : val.rfind('"') ])
+                 for val in strList.split(',') ]
     else :
-        return [ val for val in str.split(',') ]
+        return [ str(val) for val in strList.split(',') ]
