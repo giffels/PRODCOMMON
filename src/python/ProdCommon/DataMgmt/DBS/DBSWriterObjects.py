@@ -20,15 +20,15 @@ from DBSAPI.dbsFile import DbsFile
 from DBSAPI.dbsFileBlock import DbsFileBlock
 from DBSAPI.dbsStorageElement import DbsStorageElement
 from DBSAPI.dbsRun import DbsRun
-from DBSAPI.dbsLumiSection import DbsLumiSection 
+from DBSAPI.dbsLumiSection import DbsLumiSection
 
 def makeTierList(dataTier):
     """
     _makeTierList_
- 
+
     Standard tool to split data tiers if they contain - chars
     *** Do not use outside of this module ***
- 
+
     """
     tierList = dataTier.split("-")
     return tierList
@@ -37,7 +37,7 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     """
     _createPrimaryDataset_
 
-    Create and return a Primary Dataset object. 
+    Create and return a Primary Dataset object.
     If apiRef is not None, it is used to insert the dataset into the
     DBS
 
@@ -45,7 +45,7 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
     if datasetInfo.has_key('PrimaryDatasetType'):
       PrimaryDatasetType = datasetInfo['PrimaryDatasetType']
     else:
-      PrimaryDatasetType = 'mc' 
+      PrimaryDatasetType = 'mc'
 
     logging.debug("Inserting PrimaryDataset %s with Type %s"%(datasetInfo["PrimaryDataset"],PrimaryDatasetType))
     primary = DbsPrimaryDataset(Name = datasetInfo["PrimaryDataset"], Type=PrimaryDatasetType)
@@ -57,7 +57,7 @@ def createPrimaryDataset(datasetInfo, apiRef = None):
 def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     """
     _createAlgorithm_
-    
+
     Create an algorithm assuming that datasetInfo is a
     ProdCommon.MCPayloads.DatasetInfo like dictionary
 
@@ -65,7 +65,7 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
     exeName = datasetInfo['ApplicationName']
     appVersion = datasetInfo['ApplicationVersion']
     appFamily = datasetInfo["ApplicationFamily"]
-        
+
     #
     # HACK:  Problem with large PSets (is this still relevant ?)
     #
@@ -85,12 +85,12 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
 
     ## No more hacks
     #msg = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
-    #msg += "TEST HACK USED FOR PSetContent\n" 
+    #msg += "TEST HACK USED FOR PSetContent\n"
     #msg += ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     #logging.warning(msg)
     #print msg
     #psetContent = "This is not a PSet"
-    
+
     #
     # HACK: 100 char limit on cfg file name
     if configMetadata != None:
@@ -102,17 +102,17 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
             logging.warning(msg)
             print msg
             configMetadata['name'] = cfgName[-99]
-    
+
         psetInstance = DbsQueryableParameterSet(
             Hash = psetHash,
             Name = configMetadata['name'],
             Version = configMetadata['version'],
             Type = configMetadata['Type'],
             Annotation = configMetadata['annotation'],
-            Content = psetContent, 
+            Content = psetContent,
             )
 
-        
+
         algorithmInstance = DbsAlgorithm(
             ExecutableName = exeName,
             ApplicationVersion = appVersion,
@@ -128,7 +128,7 @@ def createAlgorithm(datasetInfo, configMetadata = None, apiRef = None):
             ApplicationFamily = appFamily,
             ParameterSetID = psetInstance
             )
-        
+
     if apiRef != None:
         apiRef.insertAlgorithm(algorithmInstance)
     return algorithmInstance
@@ -183,7 +183,7 @@ def createMergeAlgorithm(datasetInfo, apiRef = None):
     if (family == None) or not (family) :
         family = datasetInfo['OutputModuleName']
 
-    
+
     mergeAlgo = DbsAlgorithm (
         ExecutableName = exeName,
         ApplicationVersion = version,
@@ -195,16 +195,16 @@ def createMergeAlgorithm(datasetInfo, apiRef = None):
     return mergeAlgo
 
 
-    
-    
+
+
 def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
                            apiRef = None):
     """
     _createProcessedDataset_
-    
+
 
     """
-    
+
     physicsGroup = datasetInfo.get("PhysicsGroup", "NoGroup")
     status = datasetInfo.get("Status", "VALID")
     dataTier = datasetInfo['DataTier']
@@ -213,11 +213,11 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     inputDataset = datasetInfo.get('ParentDataset', None)
     if inputDataset != None:
         parents.append(inputDataset)
-            
+
     tierList = makeTierList(datasetInfo['DataTier'])
 
     name = datasetInfo['ProcessedDataset']
-    
+
     processedDataset = DbsProcessedDataset (
         PrimaryDataset = primaryDataset,
         AlgoList=[algorithm],
@@ -230,8 +230,8 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
 
     if apiRef != None:
         apiRef.insertProcessedDataset(processedDataset)
-    # 
-    logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))   
+    #
+    logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))
     return processedDataset
 
 
@@ -245,7 +245,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
     in a FwkJobRep.FileInfo instance describing an output file
     Does not insert files, returns as list of DbsFile objects
     Does insert runs and lumisections if DBS API reference is passed
-    
+
     """
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
@@ -258,7 +258,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
        return results
 
     #  //
-    # // Set FileType 
+    # // Set FileType
     #//
     if fjrFileInfo.has_key('FileType'):
         fileType = fjrFileInfo['FileType']
@@ -272,7 +272,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
     #        lumisections list (stripped in DBSInterface)
     #
     lumiList = []
-    if ( len(fjrFileInfo.lumisections) > 0 ):
+    if ( len(fjrFileInfo.getLumiSections()) > 0 ):
 
         #
         # insert runs (for data files from detector)
@@ -297,7 +297,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
         # insert lumisections (for data files from detector)
         # associate files with lumisections (for all data files)
         #
-        for lumiinfo in fjrFileInfo.lumisections:
+        for lumiinfo in fjrFileInfo.getLumiSections():
 
             lumi = DbsLumiSection(
                 LumiSectionNumber = long(lumiinfo['LumiSectionNumber']),
@@ -317,7 +317,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
 
     #  //
     # // Dataset info related to files and creation of DbsFile object
-    #// 
+    #//
     for dataset in fjrFileInfo.dataset:
 
         primary = createPrimaryDataset(dataset)
@@ -330,7 +330,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
 
         dbsFileInstance = DbsFile(
             Checksum = checksum,
-            NumberOfEvents = nEvents, 
+            NumberOfEvents = nEvents,
             LogicalFileName = fjrFileInfo['LFN'],
             FileSize = int(fjrFileInfo['Size']),
             Status = "VALID",
@@ -343,7 +343,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
             ParentList = inputLFNs,
             BranchList = fjrFileInfo.branches,
             )
-        
+
         results.append(dbsFileInstance)
     return results
 
@@ -366,7 +366,7 @@ def createDBSFileBlock(blockName):
 
     """
     return DbsFileBlock( Name = blockName)
-    
+
 def getDBSFileBlock(dbsApiRef, procDataset, seName):
     """
     _getDBSFileBlock_
@@ -379,8 +379,8 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
     """
     allBlocks = dbsApiRef.listBlocks(procDataset, block_name = "*",
                                      storage_element_name = seName)
-    
-        
+
+
     openBlocks = [b for b in allBlocks if str(b['OpenForWriting']) == "1"]
 
 
@@ -399,12 +399,12 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
         #  //
         # // Need to create new block
         #//
-        
-        
+
+
         newBlockName = dbsApiRef.insertBlock (procDataset, None ,
                                               storage_element_list = [seName])
 
-        # get from DBS listBlocks API the DbsFileBlock newly inserted   
+        # get from DBS listBlocks API the DbsFileBlock newly inserted
         blocks = dbsApiRef.listBlocks(procDataset, block_name = newBlockName )
         if len(blocks) > 1:
             msg = "Too many blocks with the same name: %s:\n" % newBlockName
@@ -413,20 +413,20 @@ def getDBSFileBlock(dbsApiRef, procDataset, seName):
             blockRef = blocks[-1]
         elif len(blocks) == 1:
             blockRef = blocks[0]
-        else: 
+        else:
             msg = "No FileBlock found to add files to"
             logging.error(msg)
             # FIXME: throw an error ?
 
-## StorageElementList below is wrong: it should be a list of dictionary [ { 'Name': seName } ] 
-## In order to define the DbsFileBlock it should be enough to specify its blockname and 
+## StorageElementList below is wrong: it should be a list of dictionary [ { 'Name': seName } ]
+## In order to define the DbsFileBlock it should be enough to specify its blockname and
 ## it shouldn't be needed to specify the SE and Dataset again,
 ## however since this is not the case, it's safer to get the DbsFileBlock from listBlocks DBS API
 ## rather then defining a DbsFileBlock.
 #        blockRef = DbsFileBlock(
 #            Name = newBlockName,
 #            Dataset = procDataset,
-#            StorageElementList = [ seName ] 
+#            StorageElementList = [ seName ]
 #            )
 
     logging.debug("Open FileBlock located at SE: %s to use is FileBlock: %s "%(seName,blockRef['Name']))
