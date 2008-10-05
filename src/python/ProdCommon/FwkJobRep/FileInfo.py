@@ -36,7 +36,8 @@ class FileInfo(dict):
         self.setdefault("ModuleLabel", None)
         self.setdefault("Catalog", None)
         self.setdefault("OutputModuleClass", None)
-
+        self.setdefault("Checksum", None)
+        self.setdefault("MergedBySize", "False")
 
         #  //
         # // Is this an input or output file?
@@ -247,6 +248,7 @@ class FileInfo(dict):
             if paramNode.name not in self.keys():
                 continue
             self[paramNode.name] = paramNode.chardata
+
 
 
         #  //
