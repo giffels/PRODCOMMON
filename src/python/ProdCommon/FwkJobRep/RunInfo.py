@@ -46,8 +46,12 @@ class RunInfo(list):
 
         lumiQuery = IMProvQuery("/Run/LumiSection[attribute(\"ID\")]")
         lumiInfo =  lumiQuery(node)
-        self.extend(lumiInfo)
+        self.extend([int(x) for x in lumiInfo])
         return
+
+
+
+
 
 
 
