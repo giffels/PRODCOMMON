@@ -8,10 +8,11 @@ from ProdCommon.BossLite.Common.Exceptions import TimeOut
 from subprocess import Popen, PIPE, STDOUT
 import time
 import os
+import logging
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.6 2008/10/02 14:30:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: System.py,v 1.7 2008/10/02 18:07:41 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 
 
 def setPgid():
@@ -59,15 +60,25 @@ def executeCommand( command, timeout=None ):
 
     if timedOut :
         stop = time.time()
-        os.killpg( os.getpgid(p.pid), signal.SIGTERM)
-        os.kill( p.pid, signal.SIGKILL)
-        p.wait()
-        p.stdout.close()
-        del( p )
+        try:
+            os.killpg( os.getpgid(p.pid), signal.SIGTERM)
+            os.kill( p.pid, signal.SIGKILL)
+            p.wait()
+            p.stdout.close()
+            del( p )
+        except OSError, err :
+            logging.warning('an error occurred killing subprocess [%s]' \
+                            % str(err) )
+
         raise TimeOut( command, ''.join(outc), timeout, start, stop )
 
-    p.wait()
-    p.stdout.close()
+    try:
+        p.wait()
+        p.stdout.close()
+    except OSError, err:
+        logging.warning('an error occurred closing subprocess [%s]' \
+                        % str(err) )
+
     returncode = p.returncode
     if returncode is None :
         returncode = -666666
