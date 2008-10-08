@@ -3,6 +3,7 @@ CREATE TABLE bl_task
   (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255),
+    dataset VARCHAR(255),
     start_dir TEXT,
     output_dir TEXT,
     global_sanbox TEXT,

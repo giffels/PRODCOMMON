@@ -6,6 +6,7 @@ CREATE TABLE bl_task
   (
     id INT auto_increment,
     name VARCHAR(255),
+    dataset VARCHAR(255),
     start_dir TEXT,
     output_dir TEXT,
     global_sanbox TEXT,

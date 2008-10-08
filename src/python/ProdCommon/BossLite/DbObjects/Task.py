@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.11 2008/09/23 12:29:15 gcodispo Exp $"
-__revision__ = "$Revision: 1.11 $"
+__version__ = "$Id: Task.py,v 1.12 2008/09/24 08:25:27 gcodispo Exp $"
+__revision__ = "$Revision: 1.12 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -22,6 +22,7 @@ class Task(DbObject):
     # fields on the object and their names on database
     fields = { 'id' : 'id',
                'name' : 'name',
+               'dataset' : 'dataset',
                'startDirectory' : 'start_dir',
                'outputDirectory' : 'output_dir',
                'globalSandbox' : 'global_sanbox',
@@ -37,6 +38,7 @@ class Task(DbObject):
     # default values for fields
     defaults = { 'id' : None,
                  'name' : None,
+                 'dataset' : None,
                  'startDirectory' : None,
                  'outputDirectory' : None,
                  'globalSandbox' : None,
