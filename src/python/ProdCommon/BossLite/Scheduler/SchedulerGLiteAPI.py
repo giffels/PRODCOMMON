@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.90 2008/09/25 08:43:30 gcodispo Exp $"
-__version__ = "$Revision: 1.90 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.91 2008/10/01 15:13:24 gcodispo Exp $"
+__version__ = "$Revision: 1.91 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -568,6 +568,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                           ' : ' + formatWmpError( err )
                 continue
             
+            except IndexError, err:
+                errors += 'failed SSL auth to wms ' + wms + \
+                          ' : ' +  err
+                continue
+
             except :
                 # clean files
                 os.system("rm -rf " + workdir)
@@ -686,6 +691,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
+            except IndexError, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
             except BaseException, err:
                 output = formatWmpError( err )
 
@@ -866,6 +873,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 wmproxy.jobCancel( jobId )
+            except IndexError, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
             except BaseException, err:
                 output = formatWmpError( err )
 
@@ -963,7 +972,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     ##########################################################################
     def purgeWMS( self, jobList, service ):
         """
-        Kill jobs submitted to a given WMS. Does not perform status check
+        Purge jobs submitted to a given WMS. Does not perform status check
         """
 
         # skip empty endpoint
@@ -998,6 +1007,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # job.runningJob.warnings.append("unable to purge WMS")
                 # job.runningJob['statusHistory'].append("unable to purge WMS")
                 continue
+            except IndexError, err:
+                continue
+
         self.hackEnv(restore=True) ### TEMP FIX
 
 
