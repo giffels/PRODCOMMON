@@ -101,7 +101,7 @@ def addStageOutNode(cmsRunNode, nodeName, *nodes):
 
     """
     if not nodes:
-        nodes.append(cmsRunNode.name)
+        nodes = [cmsRunNode.name]
     stageOut = cmsRunNode.newNode(nodeName)
     stageOut.type = "StageOut"
     stageOut.application["Project"] = ""
