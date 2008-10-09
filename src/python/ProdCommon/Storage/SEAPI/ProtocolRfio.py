@@ -48,7 +48,7 @@ class ProtocolRfio(Protocol):
         """
 
         if self.checkExists(dest, opt = ""):
-            problems = ["destination file already existing", dest.workon]
+            problems = ["destination directory already existing", dest.workon]
             raise OperationException("Error creating directory [" +\
                                       dest.workon+ "]", problems)
         
