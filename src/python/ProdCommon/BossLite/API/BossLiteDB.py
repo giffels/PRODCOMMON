@@ -4,8 +4,8 @@ _BossLiteDB_
 
 """
 
-__version__ = "$Id: BossLiteDB.py,v 1.6 2008/07/11 15:41:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.6 $"
+__version__ = "$Id: BossLiteDB.py,v 1.7 2008/07/14 13:20:09 gcodispo Exp $"
+__revision__ = "$Revision: 1.7 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -250,7 +250,8 @@ updating the database server:
             session.commit()
             results = session.fetchall()
             if results[0][0] == self.dbConfig['dbName'] :
-                print "DB ", self.dbConfig['dbName'], "already exists.\n"
+                print "DB ", self.dbConfig['dbName'], "already exists."
+                print "Installing just BossLite tables.\n"
                 create = False
         except IndexError :
             pass
