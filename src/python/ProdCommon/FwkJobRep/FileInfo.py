@@ -30,6 +30,7 @@ class FileInfo(dict):
         self.setdefault("PFN", None)
         self.setdefault("GUID", None)
         self.setdefault("Size", None)
+        self.setdefault("DataType", None)
         self.setdefault("TotalEvents", None)
         self.setdefault("EventsRead", None)
         self.setdefault("SEName", None)
