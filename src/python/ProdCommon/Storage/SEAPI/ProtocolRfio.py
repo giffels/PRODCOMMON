@@ -51,7 +51,6 @@ class ProtocolRfio(Protocol):
             problems = ["destination directory already existing", dest.workon]
             raise OperationException("Error creating directory [" +\
                                       dest.workon+ "]", problems)
-        
         fullDest = dest.getLynk()
 
         cmd = "rfmkdir -p " + opt + " " + fullDest 
@@ -131,8 +130,12 @@ class ProtocolRfio(Protocol):
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
-        outt = outputs.split()
-        outt[3] = self.__convertPermission__(outt[3])
+        
+        outt = []
+        for out in outputs.split("\n"):
+            fileout = out.split()
+            fileout[3] = self.__convertPermission__(out[3])
+            outt.append( fileout ) 
         ### need to parse the output of the commands ###
         
         return outt
@@ -142,13 +145,28 @@ class ProtocolRfio(Protocol):
         """
         return file/dir permission
         """
-        return self.getFileInfo(source, opt)[3]
+        result = self.getFileInfo(source, opt)
+        if result.__type__ is list:
+            if result[0].__type__ is list:
+                raise OperationException("Error: not a file but a not empty directory!")
+            else:
+                return result[3]
+        else:
+            raise OperationException("Error: not a file but a not empty directory!")
 
     def getFileSize(self, source, opt = ""):
         """
         file size
         """
-        size = self.getFileInfo(source, opt)[0]
+        result = self.getFileInfo(source, opt)
+        if result.__type__ is list:
+            if result[0].__type__ is list:
+                raise OperationException("Error: not a file but a not empty directory!")
+            else:  
+                return result[0]
+        else:
+            raise OperationException("Error: not a file but a not empty directory!")
+
         return int(size)
 
     def listPath(self, source, opt = ""):
@@ -176,14 +194,19 @@ class ProtocolRfio(Protocol):
         file exists?
         """
         try:
-            size, owner, group, permMode = self.getFileInfo(source, opt)
-            if size is not "" and owner is not "" and\
-               group is not "" and permMode is not "":
-                return True
+            for file in self.getFileInfo(source, opt):
+                size = file[0]
+                owner = file[1]
+                group = file[2]
+                permMode = file[3]
+                if size is not "" and owner is not "" and\
+                   group is not "" and permMode is not "":
+                    return True
         except NotExistsException:
             return False
         except OperationException:
             return False
+        return False
 
     def __convertPermission__(self, drwx):
         owner  = drwx[1:3]
