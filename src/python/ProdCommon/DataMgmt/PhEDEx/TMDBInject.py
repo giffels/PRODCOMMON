@@ -154,7 +154,7 @@ def tmdbInject(phedexConfig, xmlFile, nodes, *storageElements):
 
 
 def tmdbInjectBlock(dbsUrl, datasetPath, blockName, phedexConfig,
-                    workingDir="/tmp", nodes=None):
+                    workingDir="/tmp", nodes=None, storageElements=None):
     """
     _tmdbInjectBlock_
 
@@ -174,7 +174,9 @@ def tmdbInjectBlock(dbsUrl, datasetPath, blockName, phedexConfig,
     handle.close()
 
     reader = DBSReader(dbsUrl)
-    storageElements = reader.listFileBlockLocation(blockName)
+    
+    if not storageElements:
+        storageElements = reader.listFileBlockLocation(blockName)
     
     tmdbInject(phedexConfig, dropXML, nodes, *storageElements )
 
