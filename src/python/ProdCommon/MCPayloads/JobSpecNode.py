@@ -11,6 +11,7 @@ job such as seeds, run number, event totals, lfns etc.
 
 """
 
+import copy
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
@@ -68,7 +69,7 @@ class JobSpecNode(PayloadNode):
         self._InputDatasets = genericPayload._InputDatasets
         self._OutputDatasets = genericPayload._OutputDatasets
         self.configuration = genericPayload.configuration
-        self.cfgInterface = genericPayload.cfgInterface
+        self.cfgInterface = copy.deepcopy(genericPayload.cfgInterface)
         self._InputLinks = genericPayload._InputLinks
         self.userSandbox = genericPayload.userSandbox
         self.loadConfiguration()
