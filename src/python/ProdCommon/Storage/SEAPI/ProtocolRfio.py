@@ -47,12 +47,12 @@ class ProtocolRfio(Protocol):
         rfmkdir
         """
 
-        if self.checkExists(dest, opt = ""):
+        if self.checkDirExists(dest, opt = ""):
             problems = ["destination directory already existing", dest.workon]
+            print problems
             raise OperationException("Error creating directory [" +\
                                       dest.workon+ "]", problems)
         fullDest = dest.getLynk()
-
         cmd = "rfmkdir -p " + opt + " " + fullDest 
         exitcode, outputs = self.executeCommand(cmd)
 
@@ -207,6 +207,28 @@ class ProtocolRfio(Protocol):
         except OperationException:
             return False
         return False
+
+
+    def checkDirExists(self, source, opt = ""):
+        """
+        rfstat
+        note: rfdir prints nothing if dir is empty
+        returns boolean 
+        """
+        fullSource = source.getLynk()
+
+        cmd = "rfstat " + opt + " " + fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+
+        problems = self.simpleOutputCheck(outputs)
+        if "No such file or directory" in problems:
+            return False
+        if exitcode == 0:
+            return True
+        else:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
+
 
     def __convertPermission__(self, drwx):
         owner  = drwx[1:3]
