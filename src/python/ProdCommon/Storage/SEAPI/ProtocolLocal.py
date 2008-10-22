@@ -1,3 +1,8 @@
+"""
+Class interfacing with local unix file system
+(posix like)
+"""
+
 from Protocol import Protocol
 from Exceptions import * 
 import os
@@ -44,10 +49,13 @@ class ProtocolLocal(Protocol):
                                     +dest.workon+ "]\n " +outputs)
  
     def delete(self, source, opt = ""):
+        """
+        _delete_
+        """
         exitcode = -1
         outputs = ""
         if self.checkExists(source, opt):
-            cmd = "rm -rf " + opt + " " + source.workon
+            cmd = "rm " + opt + " " + source.workon
             exitcode, outputs = self.executeCommand(cmd)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
@@ -57,6 +65,9 @@ class ProtocolLocal(Protocol):
                                              + "]\n "+outputs)
 
     def createDir(self, source, opt = ""):
+        """
+        _createDir_
+        """
         exitcode = -1
         outputs = ""
         cmd = "mkdir " + opt + " " + source.workon
@@ -89,6 +100,9 @@ class ProtocolLocal(Protocol):
         return [ownSum, groSum, othSum]
  
     def checkPermission(self, source, opt = ""):
+        """
+        _checkPermission_
+        """
         exitcode = -1
         outputs = ""
         if self.checkExists(source, opt):
@@ -106,6 +120,9 @@ class ProtocolLocal(Protocol):
         return outputs
  
     def getFileSize(self, source, opt = ""):
+        """
+        _getFileSize_
+        """
         sizeFile = ""
         if self.checkExists(source, opt):
             try:
@@ -120,6 +137,9 @@ class ProtocolLocal(Protocol):
         return int(sizeFile)
  
     def getDirSize(self, source, opt = ""):
+        """
+        _getDirSize_
+        """
         if self.checkExists(source, opt):
             from os.path import join, getsize
             summ = 0
@@ -135,6 +155,9 @@ class ProtocolLocal(Protocol):
                                              "] does not exists.")
         
     def listPath(self, source, opt = ""):
+        """
+        _listPath_
+        """
         exitcode = -1
         outputs = ""
         if self.checkExists(source, opt):
@@ -151,9 +174,15 @@ class ProtocolLocal(Protocol):
         return outputs
  
     def checkExists(self, source, opt = ""):
+        """
+        _checkExists_
+        """
         return os.path.exists(source.workon)
  
     def getGlobalQuota(self, source, opt = ""):
+        """
+        _getGlobalQuota_
+        """
         cmd = "df " + opt + " " + source.workon + " | awk '{ print $5,$4,$3 }'"
         exitcode, outputs = self.executeCommand(cmd)
         if exitcode != 0:

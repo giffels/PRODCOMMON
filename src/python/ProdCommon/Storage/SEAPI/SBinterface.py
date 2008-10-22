@@ -1,3 +1,8 @@
+"""
+Interface-like callable to execute operations over different protocols/storage
+"""
+
+
 from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
@@ -27,10 +32,15 @@ class SBinterface:
                 if storel1.protocol != 'local' and storel2.protocol != 'local':
                     if not (storel1.protocol in ["srm-lcg", "gsiftp-lcg"] and \
                        storel2.protocol in ["srm-lcg", "gsiftp-lcg"]):
-                        raise ProtocolMismatch('Mismatch between protocol %s-%s'\
-                                          %(storel1.protocol, storel2.protocol))
+                        raise ProtocolMismatch \
+                                  ('Mismatch between protocols %s-%s'\
+                                   %(storel1.protocol, storel2.protocol))
 
     def copy( self, source = "", dest = "", proxy = None, opt = "" ):
+        """
+        _copy_
+
+        """
         if not self.mono:
             raise MissingDestination()
         else:
@@ -51,6 +61,9 @@ class SBinterface:
             self.storage2.workon = ""
 
     def move( self, source = "", dest = "", proxy = None, opt = "" ):
+        """
+        _move_
+        """
         if not self.mono:
             raise MissingDestination()
         else:
@@ -68,6 +81,9 @@ class SBinterface:
             self.storage2.workon = ""
 
     def checkExists( self, source = "", proxy = None, opt = "" ):
+        """
+        _checkExists_
+        """
         self.storage1.workon = source
         resval = False
         if self.useProxy:
@@ -78,16 +94,24 @@ class SBinterface:
         return resval
 
     def getPermission( self, source = "", proxy = None, opt = "" ):
+        """
+        _getPermission_
+        """
         self.storage1.workon = source
         resval = None
         if self.useProxy:
-            resval = self.storage1.action.checkPermission(self.storage1, proxy, opt)
+            resval = self.storage1.action.checkPermission \
+                                              (self.storage1, proxy, opt)
         else:
-            resval = self.storage1.action.checkPermission(self.storage1, opt = opt)
+            resval = self.storage1.action.checkPermission \
+                                              (self.storage1, opt = opt)
         self.storage1.workon = ""
         return resval
 
     def setGrant( self, source = "", values = "640", proxy = None, opt = "" ):
+        """
+        _setGrant_
+        """
         self.storage1.workon = source
         if self.useProxy:
             self.storage1.action.setGrant(self.storage1, values, proxy, opt)
@@ -96,9 +120,15 @@ class SBinterface:
         self.storage1.workon = ""
 
     def getList( self, source = "", proxy = None, opt = "" ):
+        """
+        _getList_
+        """
         pass
 
     def delete( self, source = "", proxy = None, opt = "" ):
+        """
+        _delete_
+        """
         self.storage1.workon = source
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy, opt)
@@ -107,6 +137,9 @@ class SBinterface:
         self.storage1.workon = ""
 
     def deleteRec( self, source = "", proxy = None, opt = "" ):
+        """
+        _deleteRec_
+        """
         self.storage1.workon = source
         if self.useProxy:
             self.storage1.action.delete(self.storage1, proxy, opt)
@@ -115,6 +148,9 @@ class SBinterface:
         self.storage1.workon = ""
 
     def getSize( self, source = "", proxy = None, opt = "" ):
+        """
+        _getSize_
+        """
         self.storage1.workon = source
         if self.useProxy:
             size = self.storage1.action.getFileSize(self.storage1, proxy, opt)
@@ -123,7 +159,10 @@ class SBinterface:
         self.storage1.workon = ""
         return size
 
-    def getDirSpace( self, source = "", proxy = None):
+    def getDirSpace( self, source = "" ):
+        """
+        _getDirSpace_
+        """
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
             val = self.storage1.action.getDirSize(self.storage1)
@@ -132,7 +171,10 @@ class SBinterface:
         else: 
             return 0
 
-    def getGlobalSpace( self, source = "", proxy = None ):
+    def getGlobalSpace( self, source = "" ):
+        """
+        _getGlobalSpace_
+        """
         if self.storage1.protocol == 'local':
             self.storage1.workon = source
             val = self.storage1.action.getGlobalQuota(self.storage1)
@@ -142,6 +184,9 @@ class SBinterface:
             return ['0%', '0', '0'] 
 
     def createDir (self, source = "", proxy = None, opt = "" ):
+        """
+        _createDir_
+        """
         if self.storage1.protocol in ['gridftp']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
@@ -155,6 +200,9 @@ class SBinterface:
 
 
     def getTurl (self, source = "", proxy = None, opt = "" ):
+        """
+        _getTurl_
+        """
         if self.storage1.protocol in ['srmv1', 'srmv2', 'srm-lcg']:
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)

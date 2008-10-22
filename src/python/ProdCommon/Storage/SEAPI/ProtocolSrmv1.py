@@ -1,3 +1,7 @@
+"""
+Class interfacing with srm version 1 end point
+"""
+
 from Protocol import Protocol
 from Exceptions import *
 
@@ -22,7 +26,8 @@ class ProtocolSrmv1(Protocol):
                 if cacheP not in problems:
                     problems.append(cacheP)
             elif line.find("unrecognized option") != -1:
-                raise WrongOption("Wrong option passed to the command", [], outLines)
+                raise WrongOption("Wrong option passed to the command", \
+                                   [], outLines)
 
         return problems
 
@@ -66,6 +71,9 @@ class ProtocolSrmv1(Protocol):
                                      ["Uknown Problem"] )
 
     def deleteRec(self, source, proxy = None, opt = ""):
+        """
+        _deleteRec_
+        """
         self.delete(source, proxy, opt)
 
     def delete(self, source, proxy = None, opt = ""):

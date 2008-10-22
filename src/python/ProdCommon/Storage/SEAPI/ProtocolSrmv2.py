@@ -1,3 +1,7 @@
+"""
+Class interfacing with srm version 2 end point
+"""
+
 from Protocol import Protocol
 from Exceptions import *
 
@@ -23,7 +27,8 @@ class ProtocolSrmv2(Protocol):
                 if cacheP not in problems:
                     problems.append(cacheP)
             elif line.find("unrecognized option") != -1:
-                raise WrongOption("Wrong option passed to the command", [], outLines)
+                raise WrongOption("Wrong option passed to the command", \
+                                   [], outLines)
         return problems
 
     def copy(self, source, dest, proxy = None, opt = ""):

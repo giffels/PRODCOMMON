@@ -1,3 +1,7 @@
+"""
+Class that represent a Storage Element to interface with
+"""
+
 from Exceptions import ProtocolUnknown
 from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
@@ -72,10 +76,10 @@ class SElement(object):
         ## if using the complete path
         if self.__full:
             if self.protocol != "local":
-                return join(self.hostname,self.workon)
+                return join(self.hostname, self.workon)
             else:
                 if self.hostname != "/":
-                    return ("file://" + join(self.hostname,self.workon))
+                    return ("file://" + join(self.hostname, self.workon))
 
         ## otherwise need to compose the path
         if self.protocol in ["srmv1", "srmv2", "srm-lcg"]:
@@ -94,5 +98,8 @@ class SElement(object):
                                    % self.protocol)
 
 class FullPath(object):
+    """
+    Shortern path usage for API caller (see also SElement getLynk)
+    """
     def __init__(self, path):
         self.path = path

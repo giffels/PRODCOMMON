@@ -128,12 +128,12 @@ class Protocol(object):
         """
         import commands
         status, output = commands.getstatusoutput( command )
-        self.__logout("Executed:\t" + str(command) + "\n" + \
+        self.__logout__("Executed:\t" + str(command) + "\n" + \
                       "Done with exit code:\t" + str(status) + "\n" + \
                       " and output:\n" + str(output) + "\n" )
         return status, output
 
-    def __logout(self, mess):
+    def __logout__(self, mess):
         """
         write to log file
         """

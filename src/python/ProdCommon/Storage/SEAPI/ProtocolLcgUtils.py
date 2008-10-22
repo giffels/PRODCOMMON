@@ -1,3 +1,8 @@
+"""
+Protocol that makes usage of lcg-utils to make operation with
+ srm and gridftp endpoint
+"""
+
 from Protocol import Protocol
 from Exceptions import *
 
@@ -28,7 +33,8 @@ class ProtocolLcgUtils(Protocol):
             elif line.find("Unknown option") != -1 or \
                  line.find("unrecognized option") != -1 or \
                  line.find("invalid option") != -1:
-                raise WrongOption("Wrong option passed to the command", [], outLines)
+                raise WrongOption("Wrong option passed to the command", \
+                                  [], outLines)
  
         return problems
 
@@ -50,7 +56,8 @@ class ProtocolLcgUtils(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
  
-        cmd = setProxy + " lcg-cp "+ self.options +" " + opt + " "+ fullSource +" "+ fullDest
+        cmd = setProxy + " lcg-cp " + self.options + " " + opt + " " + \
+                           fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -93,7 +100,7 @@ class ProtocolLcgUtils(Protocol):
         if source.protocol in ["gsiftp-lcg"]:
             try:
                 self.getTurl(source, proxy, opt)
-            except:
+            except OperationException:
                 return False
             return True
         else:
@@ -110,7 +117,7 @@ class ProtocolLcgUtils(Protocol):
                    (str(problems).find("not found") != -1 and \
                     str(problems).find("CacheException") != -1):
                     return False
-                raise OperationException("Error checking [" +source.workon+ "]", \
+                raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )
             return True
 

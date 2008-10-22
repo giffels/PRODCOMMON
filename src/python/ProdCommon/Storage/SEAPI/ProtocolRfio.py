@@ -1,3 +1,7 @@
+"""
+Class interfacing with rfio end point
+"""
+
 from Protocol import Protocol
 from Exceptions import *
 
@@ -22,7 +26,8 @@ class ProtocolRfio(Protocol):
                 if cacheP not in problems:
                     problems.append(cacheP)
             elif line.find("invalid option") != -1:
-                raise WrongOption("Wrong option passed to the command", [], outLines)
+                raise WrongOption("Wrong option passed to the command", \
+                                   [], outLines)
         return problems
 
 
@@ -46,13 +51,14 @@ class ProtocolRfio(Protocol):
         """
         rfmkdir
         """
-
         if self.checkDirExists(dest, opt = ""):
             problems = ["destination directory already existing", dest.workon]
             print problems
             raise OperationException("Error creating directory [" +\
                                       dest.workon+ "]", problems)
+
         fullDest = dest.getLynk()
+
         cmd = "rfmkdir -p " + opt + " " + fullDest 
         exitcode, outputs = self.executeCommand(cmd)
 
@@ -97,6 +103,9 @@ class ProtocolRfio(Protocol):
                                      ["Uknown Problem"] )
 
     def deleteRec(self, source, opt = ""):
+        """
+        _deleteRec_
+        """
         self.delete(source, opt)
 
     def delete(self, source, opt = ""):
@@ -148,11 +157,11 @@ class ProtocolRfio(Protocol):
         result = self.getFileInfo(source, opt)
         if result.__type__ is list:
             if result[0].__type__ is list:
-                raise OperationException("Error: not a file but a not empty directory!")
+                raise OperationException("Error: Not empty directory given!")
             else:
                 return result[3]
         else:
-            raise OperationException("Error: not a file but a not empty directory!")
+            raise OperationException("Error: Not empty directory given!")
 
     def getFileSize(self, source, opt = ""):
         """
@@ -161,13 +170,13 @@ class ProtocolRfio(Protocol):
         result = self.getFileInfo(source, opt)
         if result.__type__ is list:
             if result[0].__type__ is list:
-                raise OperationException("Error: not a file but a not empty directory!")
+                raise OperationException("Error: Not empty directory given!")
             else:  
                 return result[0]
         else:
-            raise OperationException("Error: not a file but a not empty directory!")
+            raise OperationException("Error: Not empty directory given!")
 
-        return int(size)
+        return int(result)
 
     def listPath(self, source, opt = ""):
         """
@@ -194,11 +203,11 @@ class ProtocolRfio(Protocol):
         file exists?
         """
         try:
-            for file in self.getFileInfo(source, opt):
-                size = file[0]
-                owner = file[1]
-                group = file[2]
-                permMode = file[3]
+            for filet in self.getFileInfo(source, opt):
+                size = filet[0]
+                owner = filet[1]
+                group = filet[2]
+                permMode = filet[3]
                 if size is not "" and owner is not "" and\
                    group is not "" and permMode is not "":
                     return True

@@ -1,3 +1,8 @@
+"""
+Class interfacing with gsiftp end point
+(not using only lcg-utils)
+"""
+
 from Protocol import Protocol
 from Exceptions import *
 
@@ -23,7 +28,8 @@ class ProtocolGsiFtp(Protocol):
                     problems.append(cacheP)
             elif line.find("Unknown option") != -1 or \
                  line.find("unrecognized option") != -1:
-                raise WrongOption("Wrong option passed to the command", [], outLines)
+                raise WrongOption("Wrong option passed to the command", \
+                                   [], outLines)
 
         return problems
 
@@ -57,7 +63,8 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
  
-        cmd = setProxy + " lcg-cp " + opt + " --vo cms "+ fullSource +" "+ fullDest
+        cmd = setProxy + " lcg-cp " + opt + " --vo cms " + \
+                           fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -73,6 +80,11 @@ class ProtocolGsiFtp(Protocol):
         self.delete(source, proxy, opt)
 
     def getWalkList(self, source, proxy = None):
+        """
+        _getWalkList_
+
+        return the list of file inside a given path
+        """ 
         filelist = []
         dirlist = []
         for k, v in self.listPath(source, proxy).items():
@@ -87,14 +99,17 @@ class ProtocolGsiFtp(Protocol):
         return filelist, dirlist
 
     def deleteRec(self, source, proxy = None, opt = ""):
+        """
+        _deleteRec_
+        """
         filelist, dirlist = self.getWalkList(source, proxy)
-        for file in filelist:
-            source.workon = file 
+        for filet in filelist:
+            source.workon = filet
             self.delete(source, proxy, opt)
             source.workon = ""
         dirlist.reverse()
-        for dir in dirlist:
-            source.workon = dir
+        for dirt in dirlist:
+            source.workon = dirt
             self.delete(source, proxy, opt)
             source.workon = ""
 
@@ -116,18 +131,22 @@ class ProtocolGsiFtp(Protocol):
                                       outputs, outputs )
 
         dirname = {}
-        for file in outputs.split('\n'):
-            if len(file) > 0 and file != None:
-                basename = file.split(" ")[-1].replace("\r", "")
+        for filet in outputs.split('\n'):
+            if len(filet) > 0 and filet != None:
+                basename = filet.split(" ")[-1].replace("\r", "")
                 if basename != "." and basename != "..":
                     import os
-                    if file[0] == "-":
-                        dirname.setdefault(os.path.join(source.workon, basename), "f")
-                    elif file[0] == "d":
-                        dirname.setdefault(os.path.join(source.workon, basename), "d")
+                    dirpath = os.path.join(source.workon, basename)
+                    if filet[0] == "-":
+                        dirname.setdefault(dirpath, "f")
+                    elif filet[0] == "d":
+                        dirname.setdefault(dirpath, "d")
         return dirname
 
     def checkNotDir(self, source, proxy = None):
+        """
+        _checkNotDir_
+        """
         dirall = self.listPath(source, proxy)
         flag = False
         for k, v in dirall.items(): 
@@ -135,7 +154,7 @@ class ProtocolGsiFtp(Protocol):
                 flag = True
             else:
                 flag = False
-                break;
+                break
         return flag
 
     def delete(self, source, proxy = None, opt = ""):
