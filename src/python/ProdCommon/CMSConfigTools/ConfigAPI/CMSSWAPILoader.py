@@ -148,7 +148,7 @@ class CMSSWAPILoader:
             if self.isPatch:
                 msg = "Patch release in use but doesnt have environment definition file:\n"
                 msg += "%s\n" % self.envFile
-      x          msg += "Cannot proceed with patch release..."
+                msg += "Cannot proceed with patch release..."
                 raise RuntimeError, msg
             
         searchPaths = ["/", # allow absolute cfg file paths
