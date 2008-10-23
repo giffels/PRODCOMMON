@@ -51,7 +51,7 @@ class ProtocolSrmv1(Protocol):
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
-        if exitcode != 0 or len(problems) > 0:
+        if exitcode != 0: #or len(problems) > 0: #if exit code = 0 => skip
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
