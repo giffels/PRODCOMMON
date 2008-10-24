@@ -162,6 +162,7 @@ class ProtocolSrmv1(Protocol):
             return False
         except OperationException:
             return False
+        return False
 
     def getTurl(self, source, proxy = None, opt = ""):
         """
