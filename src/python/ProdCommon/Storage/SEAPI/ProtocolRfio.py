@@ -51,7 +51,7 @@ class ProtocolRfio(Protocol):
         """
         rfmkdir
         """
-        if self.checkDirExists(dest, opt = ""):
+        if self.checkDirExists(dest, opt = "") is True:
             problems = ["destination directory already existing", dest.workon]
             print problems
             raise OperationException("Error creating directory [" +\
@@ -230,8 +230,9 @@ class ProtocolRfio(Protocol):
         exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
-        if "No such file or directory" in problems:
-            return False
+        for problema in problems:
+            if "No such file or directory" in problema:
+                return False
         if exitcode == 0:
             return True
         else:
