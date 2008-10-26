@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.91 2008/10/01 15:13:24 gcodispo Exp $"
-__version__ = "$Revision: 1.91 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.92 2008/10/08 08:02:49 gcodispo Exp $"
+__version__ = "$Revision: 1.92 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -183,14 +183,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    proxyString = ''
-    envProxy = os.environ.get("X509_USER_PROXY",'')
-    warnings = []
 
     def __init__( self, **args ):
 
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
+
+        # some initializations
+        self.proxyString = ''
+        self.envProxy = os.environ.get("X509_USER_PROXY",'')
+        self.warnings = []
 
         # skipWMSAuth
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
