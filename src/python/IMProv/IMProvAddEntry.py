@@ -56,6 +56,16 @@ class Event:
         """
         return self.report.toxml()
 
+    #--------------------------------------------------------------------
+    def dump(self, filepath):
+        """
+        _dump_
+        """
+        import pickle
+        output = open( filepath, 'w')
+        pickle.dump( self, output, -1 )
+        output.close()
+
 ##-----------------------------------------------------------------------------
 
 class IMProvAddEntry:
