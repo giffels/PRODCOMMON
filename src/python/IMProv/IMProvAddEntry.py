@@ -21,7 +21,7 @@ class Event:
     """
     
     #--------------------------------------------------------------------
-    def __init__(self, maintag):
+    def __init__(self, maintag = "Event"):
         self.fields      = {}
         self.eventreport = maintag
         self.report      = None
