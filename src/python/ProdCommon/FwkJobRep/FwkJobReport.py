@@ -34,6 +34,8 @@ class FwkJobReport:
         self.errors = []
         self.skippedEvents = []
         self.skippedFiles = []
+        self.psetHash = None
+
         #  Set inital exitCode to an error code, it will be updated with
         #    the correct value if the post job steps run correctly
         self.exitCode = 50117
@@ -215,6 +217,11 @@ class FwkJobReport:
                                     Value = str(value))
 
             result.addNode(siteDetail)
+        #  //
+        # // Save PSetHash
+        #//
+        if self.psetHash != None:
+            result.addNode(IMProvNode("PSetHash", str(self.psetHash)))
 
         #  //
         # // Save Files
@@ -351,6 +358,16 @@ class FwkJobReport:
         siteQ = IMProvQuery("/FrameworkJobReport/SiteDetail")
         [ self.siteDetails.__setitem__(x.attrs['Parameter'], x.attrs['Value'])
           for x in siteQ(improvNode) ]
+
+        #  //
+        # // PSetHash
+        #//
+        hashQ = IMProvQuery("/FrameworkJobReport/PSetHash[text()]")
+        hashVals = hashQ(improvNode)
+        if len(hashVals) > 0:
+            hashData = hashVals[-1]
+            self.psetHash = str(hashData)
+
 
         #  //
         # // output files
