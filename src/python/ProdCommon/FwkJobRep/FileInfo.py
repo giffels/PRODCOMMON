@@ -31,6 +31,7 @@ class FileInfo(dict):
         self.setdefault("GUID", None)
         self.setdefault("Size", None)
         self.setdefault("DataType", None)
+        self.setdefault("BranchHash", None)
         self.setdefault("TotalEvents", None)
         self.setdefault("EventsRead", None)
         self.setdefault("SEName", None)

@@ -77,9 +77,6 @@ class RequestJobFactory:
         self.workingDir = workingDir
         self.count = args.get("InitialRun", 1)
         self.firstEvent = args.get("InitialEvent", 1)
-        self.overrideFirstEvent = args.get("OverrideFirstEvent", None)
-        if self.overrideFirstEvent != None:
-            self.overrideFirstEvent = int(self.overrideFirstEvent)
         self.jobnumber = 0
         self.totalEvents = totalEvents
         self.currentJob = None
@@ -147,10 +144,7 @@ class RequestJobFactory:
             result.append(jobDict)
             self.count += 1
             self.jobnumber += 1
-            if self.overrideFirstEvent == None:
-                self.firstEvent += self.eventsPerJob
-            else:
-                self.firstEvent = self.overrideFirstEvent                
+            self.firstEvent += self.eventsPerJob
 
         return result
 
