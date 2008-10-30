@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.93 2008/10/26 09:55:23 gcodispo Exp $"
-__version__ = "$Revision: 1.93 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.94 2008/10/29 14:53:17 gcodispo Exp $"
+__version__ = "$Revision: 1.94 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -793,6 +793,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     job.runningJob.warnings.append("unable to purge WMS")
                     # job.runningJob['statusHistory'].append(
                     #     "unable to purge WMS")
+                except :
+                    job.runningJob.warnings.append("unable to purge WMS")
 
         self.hackEnv(restore=True) ### TEMP FIX
 
@@ -894,6 +896,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # job.runningJob.warnings.append("unable to purge WMS")
                 # job.runningJob['statusHistory'].append("unable to purge WMS")
                 continue
+            except :
+                continue
+
         self.hackEnv(restore=True) ### TEMP FIX
 
     ##########################################################################
@@ -1009,7 +1014,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # job.runningJob.warnings.append("unable to purge WMS")
                 # job.runningJob['statusHistory'].append("unable to purge WMS")
                 continue
-            except IndexError, err:
+            except :
                 continue
 
         self.hackEnv(restore=True) ### TEMP FIX
