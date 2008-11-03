@@ -97,6 +97,30 @@ class IMProvAddEntry:
         self.root.appendChild( node.getDoc() )
 
     #--------------------------------------------------------------------
+    def getFirstElementOf(self, tag):
+        """
+        _getFirstElementOf_
+        """
+        tagdiction = {}
+        Events = self.doc.getElementsByTagName( tag )
+        for eve in Events:
+            return eve
+        return None
+
+    #--------------------------------------------------------------------
+    def replaceEntry(self, nodeold, newtag, newdict):
+        """
+        _replaceEntry_
+        """
+        if nodeold is None:
+            raise Exception("Cannot replace an None tag!")
+        doctemp = xml.dom.minidom.Document()
+        temp = doctemp.createElement( newtag )
+        for key, value in newdict.iteritems():
+            temp.setAttribute(key, value)
+        self.root.replaceChild(temp, nodeold)
+
+    #--------------------------------------------------------------------
     def toXml(self):
         """
         _toXml_
