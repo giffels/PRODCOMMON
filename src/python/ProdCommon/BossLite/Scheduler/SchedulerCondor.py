@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.14 2008/09/04 21:49:27 ewv Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.15 2008/09/30 19:35:05 ewv Exp $"
+__version__ = "$Revision: 1.15 $"
 
 import os
 
@@ -108,7 +108,9 @@ class SchedulerCondor(SchedulerCondorCommon) :
         if x509:
             jdl += 'x509userproxy = %s\n' % x509
 
-        #jdl += 'transfer_output_files= ' + ','.join(job['outputFiles']) + '\n'
+        outputFiles = job['outputFiles']
+        if outputFiles:
+            jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
 
         filelist = ''
         return jdl, filelist, None
