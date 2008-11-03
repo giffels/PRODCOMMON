@@ -8,7 +8,7 @@ job specs for it.
 
 
 """
-__version__ = "$Revision$"
+__version__ = "$Revision: 1.3 $"
 __revision__ = \
    "$id$"
 
@@ -281,6 +281,8 @@ class ReRecoJobFactory:
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
         jobSpec.payload.operate(self.generateJobConfig)
 
+        jobSpec.payload.cfgInterface.rawCfg = None
+        jobSpec.payload.cfgInterface.originalCfg = None
 
         specCacheDir =  os.path.join(
             self.specCache, str(self.count // 1000).zfill(4))

@@ -177,6 +177,10 @@ class RequestJobFactory:
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
         jobSpec.payload.operate(self.generateJobConfig)
         jobSpec.payload.operate(self.generateCmsGenConfig)
+
+        jobSpec.payload.cfgInterface.rawCfg = None
+        jobSpec.payload.cfgInterface.originalCfg = None
+        
         specCacheDir =  os.path.join(
             self.specCache, str(self.count // 1000).zfill(4))
         if not os.path.exists(specCacheDir):
