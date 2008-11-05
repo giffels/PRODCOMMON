@@ -632,12 +632,9 @@ class DBSWriter:
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
                     logging.info("Update block locations to:")
-                    BlockList=reader.dbs.listBlocks(block_name=block)
-                    for fileblock in BlockList:
-                        for sename in reader.listFileBlockLocation(fileblock):
-                            self.dbs.addReplicaToBlock(block,sename)
-                            #logging.info("Block %s updated to location %s"%(block,sename['Name']))
-                            logging.info(" -> %s"%sename['Name'])
+                    for sename in reader.listFileBlockLocation(block):
+                        self.dbs.addReplicaToBlock(block,sename)
+                        logging.info(sename)
                     continue
 
             try:
