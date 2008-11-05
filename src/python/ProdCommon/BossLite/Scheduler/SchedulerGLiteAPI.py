@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.91 2008/10/01 15:13:24 gcodispo Exp $"
-__version__ = "$Revision: 1.91 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.93 2008/10/26 09:55:23 gcodispo Exp $"
+__version__ = "$Revision: 1.93 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -183,14 +183,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    proxyString = ''
-    envProxy = os.environ.get("X509_USER_PROXY",'')
-    warnings = []
 
     def __init__( self, **args ):
 
         # call super class init method
         super(SchedulerGLiteAPI, self).__init__(**args)
+
+        # some initializations
+        self.proxyString = ''
+        self.envProxy = os.environ.get("X509_USER_PROXY",'')
+        self.warnings = []
 
         # skipWMSAuth
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
@@ -379,7 +381,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             task = wmproxy.jobRegister ( jdl, self.delegationId )
         except WMPException, wmpError :
             if wmpError.toString().find('Unable to get delegated Proxy'):
-                self.delegateProxy( wmproxy, workdir )
+                self.delegateWmsProxy( wmproxy, workdir )
                 task = wmproxy.jobRegister ( jdl, self.delegationId )
             else:
                 raise
@@ -461,7 +463,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         return taskId, returnMap
 
     ##########################################################################
-    def delegateProxy( self, wmproxy, workdir ):
+    def delegateWmsProxy( self, wmproxy, workdir ):
         """
         delegate proxy to a wms
         """
@@ -1039,6 +1041,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # jdl ready!
         seen = []
 
+        workdir = tempfile.mkdtemp( prefix = obj['name'], dir = os.getcwd() )
+
         for wms in self.wmsResolve( endpoints ) :
             try :
                 wms = wms.replace("\"", "").strip()
@@ -1049,10 +1053,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 errorList.append( "ListMatch to : " + wms )
 
                 # delegate proxy
-                self.delegateProxy( wms )
+                self.delegateWmsProxy( wms )
 
                 # initialize wms connection
-                wmproxy = self.wmproxyInit( wms )
+                wmproxy = self.wmproxyInit( wms, workdir )
 
                 # list match
                 matchingCEs = wmproxy.jobListMatch(jdl, "bossproxy")
@@ -1064,6 +1068,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 continue
             except SchedulerError, err:
                 continue
+
+        os.system("rm -rf " + workdir)
 
         # log warnings
         for job in obj.jobs :
@@ -1451,3 +1457,34 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         return celist
 
 
+
+
+    def delegateProxy( self, wms, config ) :
+        """
+        _delegateProxy_
+        """
+
+        workdir = tempfile.mkdtemp( prefix = 'delegation', dir = os.getcwd() )
+        config, endpoints = self.mergeJDL('[]', wms, config)
+
+        for wms in self.wmsResolve( endpoints ) :
+            try :
+                wmproxy = self.wmproxyInit( wms )
+                self.delegateWmsProxy( wmproxy, workdir )
+                logging.info('Delegated proxy to %s' % wms)
+            except BaseException, err:
+                # actions.append( "Failed submit to : " + wms )
+                logging.error( 'failed to delegate proxy to ' + wms + \
+                               ' : ' + formatWmpError( err ) )
+                continue
+
+            except Exception, err:
+                logging.error( 'failed to delegate proxy to ' + wms + \
+                               ' : ' + str( err ) )
+                continue
+
+            except :
+                continue
+
+
+        os.system("rm -rf " + workdir)

@@ -315,7 +315,7 @@ def madgraph():
     # // unpack the tarball and set up the software
     #//
     setupCommand = "/bin/cp %s . \n" % tarballLocation
-    setupCommand += "tar -zxvf %s\n" % os.path.basename(tarballLocation)
+    setupCommand += "tar -zxf %s\n" % os.path.basename(tarballLocation)
     setupCommand += "cd madevent;"
     setupCommand += "./bin/compile dynamic;"
     setupCommand += "./bin/clean4grid;"

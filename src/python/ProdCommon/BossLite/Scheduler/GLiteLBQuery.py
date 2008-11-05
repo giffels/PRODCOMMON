@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.17 2008/10/01 11:46:09 gcodispo Exp $"
-__version__ = "$Revision: 1.17 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.18 2008/10/01 13:49:39 gcodispo Exp $"
+__version__ = "$Revision: 1.18 $"
 
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
@@ -83,14 +83,17 @@ class GLiteLBQuery(object):
 
 
     ##########################################################################
-    def getJobInfo( self, jobInfo, runningJob ):
+    def getJobInfo( self, jobInfo, runningJob, forceAborted=False ):
         """
         fill job dictionary with LB informations
         """
 
-        if runningJob['status'] == self.statusMap[jobInfo[self.status]]:
+        if forceAborted :
+            runningJob['statusScheduler'] = 'Aborted'
+        elif runningJob['status'] == self.statusMap[jobInfo[self.status]]:
             return
-        runningJob['statusScheduler'] = str(jobInfo[self.status])
+        else:
+            runningJob['statusScheduler'] = str(jobInfo[self.status])
 
         try:
             runningJob['statusReason'] = str(jobInfo[self.reason])
@@ -209,7 +212,6 @@ class GLiteLBQuery(object):
                     "skipping " + jobid + " : " +  str(err) )
 
 
-
     ##########################################################################
     def checkJobsBulk( self, task, jobIds, parentIds ):
         """
@@ -239,6 +241,13 @@ class GLiteLBQuery(object):
                 # how many jobs in the bulk? 
                 intervals = int ( len(bulkInfo) / self.attrNumber )
 
+                # look if the parent is aborted
+                if str(bulkInfo[self.status]) == 'A' :
+                    forceAborted = True
+                    task.warnings.append('Parent Job Failed')
+                else :
+                    forceAborted = False
+
                 # loop over retrieved jobs
                 for off in range ( 1, intervals ):
 
@@ -259,13 +268,11 @@ class GLiteLBQuery(object):
                         continue
 
                     # update runningJob
-                    self.getJobInfo( jobInfo, job.runningJob )
+                    self.getJobInfo( jobInfo, job.runningJob, forceAborted)
 
                 self.st = self.st + 1
 
             except Exception, err :
                 task.warnings.append("skipping " + bulkId + " : " +  str(err))
-
-
 
 
