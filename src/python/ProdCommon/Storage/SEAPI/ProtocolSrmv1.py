@@ -97,6 +97,28 @@ class ProtocolSrmv1(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
+    def createDir(self, source, proxy = None, opt = ""):
+        """
+        srmmkdir
+        """
+        fullSource = source.getLynk()
+
+        opt += self._options
+        if proxy is not None:
+            opt += " -x509_user_proxy=%s " % proxy
+            self.checkUserProxy(proxy)
+
+        cmd = "srmmkdir " +opt +" "+ fullSource
+        print cmd
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error creating [" +source.workon+ "]", \
+                                      problems, outputs )
+
     def checkPermission(self, source, proxy = None, opt = ""):
         """
         return file/dir permission
