@@ -187,7 +187,7 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp']:
+        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
