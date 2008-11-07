@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.37 2008/09/25 13:39:12 gcodispo Exp $"
-__version__ = "$Revision: 1.37 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.38 2008/09/30 19:23:14 ewv Exp $"
+__version__ = "$Revision: 1.38 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -92,6 +92,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             os.environ['GLEXEC_CLIENT_CERT']  = obj['user_proxy']
             os.environ['GLEXEC_SOURCE_PROXY'] = obj['user_proxy']
             os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxy'
+            os.environ['X509_USER_PROXY']     = seDir + '/userProxy'
         # Get list of schedd's
         scheddList = None
         nSchedd    = 0
@@ -137,7 +138,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 jdlFile = open(jdlFileName, 'w')
                 jdlFile.write(jdl)
                 jdlFile.close()
-
+                
                 if self.useGlexec:
                     command = '/opt/glexec/glexec-osg/sbin/glexec ' \
                               + self.condorTemp + '/' + self.glexecWrapper \
@@ -168,7 +169,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     job.runningJob['destination'] = execHost
 
         success = self.hostname
-
+        
         return ret_map, taskId, success
 
 
@@ -297,7 +298,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 '4':'Done',
                 '5':'Aborted'
         }
-
         if type(obj) == Task:
             taskId = obj['name']
             for job in obj.jobs:

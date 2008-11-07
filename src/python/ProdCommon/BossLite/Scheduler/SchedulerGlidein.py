@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.8 2008/04/29 08:15:42 gcodispo Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.9 2008/06/11 20:36:05 ewv Exp $"
+__version__ = "$Revision: 1.9 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -15,8 +15,8 @@ class SchedulerGlidein(SchedulerCondorCommon) :
   """
   def __init__( self, **args ):
 
-    # call super class init method
-    super(SchedulerGlidein, self).__init__(**args)
+      # call super class init method
+      super(SchedulerGlidein, self).__init__(**args)
 
   def singleApiJdl( self, job, requirements='' ):
       """
@@ -25,18 +25,19 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       """
 
       jdl = 'Universe = vanilla\n'
-      superJdl, filelist = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
+      superJdl, filelist, ce \
+          = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
       jdl += superJdl
 
       x509 = None
       x509tmp = '/tmp/x509up_u'+str(os.getuid())
       if 'X509_USER_PROXY' in os.environ:
-         x509 = os.environ['X509_USER_PROXY']
+          x509 = os.environ['X509_USER_PROXY']
       elif os.path.isfile(x509tmp):
-         x509 = x509tmp
+          x509 = x509tmp
 
       if x509:
-        jdl += 'x509userproxy = %s\n' % x509
+          jdl += 'x509userproxy = %s\n' % x509
 
       # Optional parameters that may be put in after the conversion from Perl to Python and escapes are fixed
       jdl += '+JOB_Site = "$$(GLIDEIN_Site:Unknown)" \n'
@@ -55,4 +56,4 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       jdl += 'Periodic_Remove = (((JobStatus == 2) && ((CurrentTime - JobCurrentStartDate) > (MaxWallTimeMins*60))) =?= True) \n'
 
 
-      return jdl, filelist
+      return jdl, filelist, 'Unknown'

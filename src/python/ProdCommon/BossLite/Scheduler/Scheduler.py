@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.41 2008/09/08 10:21:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.41 $"
+__version__ = "$Id: Scheduler.py,v 1.42 2008/09/25 14:36:55 gcodispo Exp $"
+__revision__ = "$Revision: 1.42 $"
 
 
 ##########################################################################
@@ -52,7 +52,13 @@ class Scheduler(object):
         """
         set up submission parameters and submit
         """
-
+        try:
+            debugLog = open('/tmp/Scheduler.log','a')
+            import inspect
+            print >> debugLog, "Finding caller", inspect.stack()[2][2], inspect.stack()[2][3]
+            print >> debugLog, inspect.stack()[2][3]
+        except Exception, e:
+            pass
         # check the proxy
         self.schedObj.checkUserProxy()
 
