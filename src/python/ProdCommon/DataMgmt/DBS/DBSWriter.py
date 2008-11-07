@@ -22,9 +22,15 @@ from ProdCommon.MCPayloads.DatasetTools import getOutputDatasetsWithPSet
 from ProdCommon.MCPayloads.DatasetTools import getOutputDatasets
 from ProdCommon.MCPayloads.MergeTools import createMergeDatasetWorkflow
 
+from DBSAPI.dbsFile import DbsFile
+from DBSAPI.dbsFileBlock import DbsFileBlock
+from DBSAPI.dbsStorageElement import DbsStorageElement
+from DBSAPI.dbsRun import DbsRun
+from DBSAPI.dbsLumiSection import DbsLumiSection
+
 from xml.dom import minidom
 import logging
-
+import base64
 
 class _CreateDatasetOperator:
     """
@@ -227,8 +233,165 @@ class DBSWriter:
         
         return
         
+    def insertFilesForDBSBuffer(self, files, procDataset, algos, jobType = "NotMerge", insertDetectorData = False):
+        """
+        _insertFiles_
 
+        list of files inserted in DBS
+        """
+        #TODO: Whats the purpose of insertDetectorData
+        affectedBlocks = set()
+        insertFiles =  []
+        addedRuns=[]
+        seName = None
         
+        #Get the algos in insertable form
+        
+        ialgos = [DBSWriterObjects.createAlgorithmForInsert(dict(algo)) for algo in algos ]
+#[u'ID', u'LFN', u'Dataset', u'Checksum', u'NumberOfEvents', u'FileSize', u'FileStatus', u'FileType', u'RunLumiInfo', u'LastModificationDate']
+#[{'RunNumber': 1, 'LumiSectionNumber': 666666}] 
+    
+        
+        for outFile in files:
+            #  //
+            # // Convert each file into a DBS File object
+            #//
+            #FIXME: Add SENames to the file in Buffer
+            print "FAKING SENames for files, just for TESTING"
+
+            #outFile['SEName']='cmssrm.fnal.gov'
+            lumiList = []
+            #[{'RunNumber': 1, 'LumiSectionNumber': 666666}]
+            try:
+                runLumiInfos = eval(base64.decodestring(outFile['RunLumiInfo']))
+            except:
+                msg="Cannot understand  RunLumiInfo stored in DBSBuffer for file %s" %outFile
+                raise DBSWriterError(msg)
+           
+            for runlumiinfo in runLumiInfos:
+                lrun=long(runlumiinfo['RunNumber'])
+                run = DbsRun(
+                    RunNumber = lrun,
+                    NumberOfEvents = 0,
+                    NumberOfLumiSections = 0,
+                    TotalLuminosity = 0,
+                    StoreNumber = 0,
+                    StartOfRun = 0,
+                    EndOfRun = 0,
+                    )
+                #Only added if not added by another file in this loop, why waste a call to DBS
+                if lrun not in addedRuns:
+                    self.dbs.insertRun(run)
+                    addedRuns.append(lrun) #save it so we do not try to add it again to DBS
+                    
+                lumi = DbsLumiSection(
+                    LumiSectionNumber = long(runlumiinfo['LumiSectionNumber']),
+                    StartEventNumber = 0,
+                    EndEventNumber = 0,
+                    LumiStartTime = 0,
+                    LumiEndTime = 0,
+                    RunNumber = lrun,
+                )
+                lumiList.append(lumi)
+            logging.debug("lumi list created for the file")
+            #
+            
+            dbsfile = DbsFile(
+                              Checksum = outFile['Checksum'],
+                              NumberOfEvents = outFile['NumberOfEvents'],
+                              LogicalFileName = outFile['LFN'],
+                              FileSize = int(outFile['FileSize']),
+                              Status = "VALID",
+                              ValidationStatus = 'VALID',
+                              FileType = 'EDM',
+                              Dataset = procDataset,
+                              TierList = DBSWriterObjects.makeTierList(procDataset['Path'].split('/')[3]),
+                              AlgoList = ialgos,
+                              LumiList = lumiList,
+                              #ParentList = outFile['ParentLFNs'],
+                              #BranchHash = outFile['BranchHash'],
+                            )
+            
+            #This check comes from ProdAgent, not sure if its required
+            if outFile.has_key("SEName"):
+               if outFile['SEName'] :
+                  seName = outFile['SEName']
+                  logging.debug("SEname associated to file is: %s"%seName)
+            if not seName:
+                msg = "Error in DBSWriter.insertFiles\n"
+                msg += "No SEname associated to file"
+                
+                raise DBSWriterError(msg)
+            insertFiles.append(dbsfile)
+        #  //Processing Jobs: 
+        # // Insert the lists of sorted files into the appropriate
+        #//  fileblocks
+        
+        
+        print "How many files", len(insertFiles)
+        
+        try:
+            fileBlock = DBSWriterObjects.getDBSFileBlock(
+                    self.dbs,
+                    procDataset,
+                    seName)
+        except DbsException, ex:
+                msg = "Error in DBSWriter.insertFiles\n"
+                msg += "Cannot retrieve FileBlock for dataset:\n"
+                msg += " %s\n" % procDatasetPath
+                msg += "In Storage Element:\n %s\n" % fileList.seName
+                msg += "%s\n" % formatEx(ex)
+                raise DBSWriterError(msg)
+        
+        #TODO: Handle Merge Files Differently ??
+        if jobType == "Merge":
+        #if fwkJobRep.jobType == "Merge":
+                #  //
+                # // Merge files
+                #//
+            for mergedFile in insertFiles:
+                mergedFile['Block'] = fileBlock
+                affectedBlocks.add(fileBlock['Name'])
+                msg="calling: self.dbs.insertMergedFile(%s, %s)" % (str(mergedFile['ParentList']),str(mergedFile))
+                logging.debug(msg)
+                try:
+                    
+                    #
+                    #
+                    # NOTE To Anzar From Anzar (File cloning as in DBS API can be done here and then I can use Bulk insert on Merged files as well)
+                    self.dbs.insertMergedFile(mergedFile['ParentList'],
+                                                  mergedFile)
+                        
+                except DbsException, ex:
+                    msg = "Error in DBSWriter.insertFiles\n"
+                    msg += "Cannot insert merged file:\n"
+                    msg += "  %s\n" % mergedFile['LogicalFileName']
+                    msg += "%s\n" % formatEx(ex)
+                    raise DBSWriterError(msg)
+                logging.debug("Inserted merged file: %s to FileBlock: %s"%(mergedFile['LogicalFileName'],fileBlock['Name']))
+        else:
+                #  //
+                # // Processing files
+                #//
+                affectedBlocks.add(fileBlock['Name'])
+                msg="calling: self.dbs.insertFiles(%s, %s, %s)" % (str(procDataset['Path']),str(insertFiles),str(fileBlock))
+                logging.debug(msg)
+
+                try:
+                    self.dbs.insertFiles(procDataset, insertFiles,
+                                         fileBlock)
+                except DbsException, ex:
+                    msg = "Error in DBSWriter.insertFiles\n"
+                    msg += "Cannot insert processed files:\n"
+                    msg += " %s\n" % (
+                        [ x['LogicalFileName'] for x in insertLists ],
+                        )
+                    
+                    msg += "%s\n" % formatEx(ex)
+                    raise DBSWriterError(msg)
+                logging.debug("Inserted files: %s to FileBlock: %s"%( ([ x['LogicalFileName'] for x in insertFiles ]),fileBlock['Name']))
+
+        return list(affectedBlocks)
 
 
     def insertFiles(self, fwkJobRep, insertDetectorData = False):
