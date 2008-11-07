@@ -52,13 +52,7 @@ class Scheduler(object):
         """
         set up submission parameters and submit
         """
-        try:
-            debugLog = open('/tmp/Scheduler.log','a')
-            import inspect
-            print >> debugLog, "Finding caller", inspect.stack()[2][2], inspect.stack()[2][3]
-            print >> debugLog, inspect.stack()[2][3]
-        except Exception, e:
-            pass
+
         # check the proxy
         self.schedObj.checkUserProxy()
 
