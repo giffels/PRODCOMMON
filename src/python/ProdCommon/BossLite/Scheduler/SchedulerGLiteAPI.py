@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.94 2008/10/29 14:53:17 gcodispo Exp $"
-__version__ = "$Revision: 1.94 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.95 2008/10/30 11:06:06 gcodispo Exp $"
+__version__ = "$Revision: 1.95 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -572,7 +572,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             
             except IndexError, err:
                 errors += 'failed SSL auth to wms ' + wms + \
-                          ' : ' +  err
+                          ' : ' +  str(err)
                 continue
 
             except :
