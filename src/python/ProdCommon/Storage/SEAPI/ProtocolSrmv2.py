@@ -128,15 +128,27 @@ class ProtocolSrmv2(Protocol):
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
 
-        cmd = "srmmkdir " +opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
-
-        ### simple output parsing ###
-        problems = self.simpleOutputCheck(outputs)
-
-        if exitcode != 0 or len(problems) > 0:
-            raise OperationException("Error creating [" +source.workon+ "]", \
-                                      problems, outputs )
+        if self.checkDirExists(fullSource , opt = "") is False:
+            elements =  fullSource.split('/')
+            elements.reverse()
+            toCreate = []
+            for ele in elements:
+                if ele != '':
+                    toCreate.append(ele)
+                    if self.checkDirExists(fullSource.split(ele)[0], opt = "" ) is True: break
+            toCreate.reverse()   
+            basefullSource = fullSource.split(toCreate[0])[0]
+            for i in toCreate:
+                basefullSource = basefullSource+'/'+i
+                cmd = "srmmkdir " +opt +" "+ basefullSource
+                exitcode, outputs = self.executeCommand(cmd)
+           
+                ### simple output parsing ###
+                problems = self.simpleOutputCheck(outputs)
+           
+                if exitcode != 0 or len(problems) > 0:
+                    raise OperationException("Error creating [" +source.workon+ "]", \
+                                              problems, outputs )
 
     def checkPermission(self, source, proxy = None, opt = ""):
         """
@@ -200,6 +212,19 @@ class ProtocolSrmv2(Protocol):
         except OperationException:
             return False
         return False
+
+    def checkDirExists(self, fullSource, opt = ""):
+        """
+        Dir exists?
+        """
+
+        cmd = "srmls " + opt +" "+ fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            return False
+        return True
 
     def getTurl(self, source, proxy = None, opt = ""):
         """
