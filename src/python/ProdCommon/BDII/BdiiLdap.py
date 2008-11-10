@@ -149,11 +149,14 @@ def isOSGSite(host_list, bdii='exp-bdii.cern.ch'):
     osg_host_list = []
 
     for host in host_list:
-        cluster = ce_to_cluster_map[host]
-        site = cluster_to_site_map[cluster]
+        try:
+            cluster = ce_to_cluster_map[host]
+            site = cluster_to_site_map[cluster]
 
-        if (osg_site_list.count(site)):
-            osg_host_list.append(host)
+            if (osg_site_list.count(site)):
+                osg_host_list.append(host)
+        except KeyError:
+            pass
 
     return osg_host_list
 
@@ -165,8 +168,16 @@ def getSoftwareAndArch(host_list, software, arch, bdii='exp-bdii.cern.ch'):
     generateMaps(host_list, bdii)
 
     results_list = []
-    software = 'VO-cms-' + software
-    arch = 'VO-cms-' + arch
+    if (software):
+        software = 'VO-cms-' + software
+    else:
+        software = '*'
+
+    if (arch):
+        arch = 'VO-cms-' + arch
+    else:
+        arch = '*'
+
     query = "'(&(GlueHostApplicationSoftwareRunTimeEnvironment="+software+ ")"
     query +=   "(GlueHostApplicationSoftwareRunTimeEnvironment="+arch+")"
 
