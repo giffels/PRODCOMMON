@@ -316,9 +316,9 @@ def madgraph():
     #//
     setupCommand = "/bin/cp %s . \n" % tarballLocation
     setupCommand += "tar -zxf %s\n" % os.path.basename(tarballLocation)
-    setupCommand += "cd madevent;"
-    setupCommand += "./bin/compile dynamic;"
-    setupCommand += "./bin/clean4grid;"
+    #setupCommand += "cd madevent;"
+    #setupCommand += "./bin/compile dynamic;"
+    #setupCommand += "./bin/clean4grid;"
     os.system(setupCommand)
 
 
