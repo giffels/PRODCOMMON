@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.2 $"
-__revision__ = "$Id: TaskState.py,v 1.2 2008/07/22 17:38:06 swakef Exp $"
+__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: TaskState.py,v 1.3 2008/09/30 12:51:37 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -407,7 +407,11 @@ class TaskState:
         
         for fileInfo in self._JobReport.files:
             self.matchDataset(fileInfo, datasetMap)
+        
+        # have to do this after the dataset/file matching is complete
+        for fileInfo in self._JobReport.files:
             self.matchFileParents(fileInfo)
+
         return
         
 
@@ -464,15 +468,31 @@ class TaskState:
     def matchFileParents(self, fileInfo):
         """
         
-        add in input files that should be in file parentage but aren't. Used
-        for HLTDEBUG where we need to set RAW as parent for the 2 file read.
+        Set input files based on their membership of parent datasets, these
+        will either be the original input files or in the case's where the
+        parentage (actually parentDataset) is overriden (i.e. for HLTDEBUG) 
+        only those files belonging to that dataset will be used (irrespective
+        of what actual input files were run over).
+        
+        This is used to fake the file/dataset parentage info as required by the
+        2 file read.
+
+        I.e. If RAW and HLTDEBUG are created in the same process this can be
+        used to force HLTDEBUG to be a child of RAW.
         
         """
-
+        parentageWiped = False
+        
         for ds in fileInfo.dataset:
             parentDataset = ds.get('ParentDataset', None)
+            
             if not parentDataset:
                 continue
+            
+            if not parentageWiped: 
+                fileInfo.inputFiles = []
+                parentageWiped = True
+            
             parentFiles = [x for x in self._JobReport.files if \
                                                     dsSearch(x, parentDataset)]
             for parFile in parentFiles:
