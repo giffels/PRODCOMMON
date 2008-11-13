@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.3 $"
-__revision__ = "$Id: TaskState.py,v 1.3 2008/09/30 12:51:37 swakef Exp $"
+__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: TaskState.py,v 1.4 2008/11/13 18:23:19 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -489,12 +489,17 @@ class TaskState:
             if not parentDataset:
                 continue
             
+            parentFiles = [x for x in self._JobReport.files if \
+                                                    dsSearch(x, parentDataset)]
+            if not parentFiles:
+                # Input files weren't produced in this job
+                # Standard processing job - leave InputFiles alone
+                continue
+            
             if not parentageWiped: 
                 fileInfo.inputFiles = []
                 parentageWiped = True
-            
-            parentFiles = [x for x in self._JobReport.files if \
-                                                    dsSearch(x, parentDataset)]
+                
             for parFile in parentFiles:
                 if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
                     continue
