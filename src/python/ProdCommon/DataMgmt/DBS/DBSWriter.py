@@ -160,7 +160,7 @@ makeDSName = lambda x: "/%s/%s/%s" % (x['PrimaryDataset'],
                                       x['ProcessedDataset'])
 makeDBSDSName = lambda x: "/%s/%s/%s" % (
     x['Dataset']['PrimaryDataset']['Name'],
-    x['Dataset']['TierList'][0],
+    '-'.join(sorted(x['Dataset']['TierList'])),
     x['Dataset']['Name'])
 
 
@@ -411,6 +411,7 @@ class DBSWriter:
         """
 
         insertLists = {}
+        orderedHashes = []
         affectedBlocks = set()
 
         if len(fwkJobRep.files)<=0:
@@ -421,7 +422,7 @@ class DBSWriter:
            raise DBSWriterError(msg)
 
 
-        for outFile in fwkJobRep.files:
+        for outFile in fwkJobRep.sortFiles():
             #  //
             # // Convert each file into a DBS File object
             #//
@@ -475,14 +476,17 @@ class DBSWriter:
                                                             datasetName)
                 insertLists[hashName].append(f)
                 
-                
+                if not orderedHashes.count(hashName):
+                    orderedHashes.append(hashName)
             
 
         #  //Processing Jobs: 
         # // Insert the lists of sorted files into the appropriate
         #//  fileblocks
 
-        for fileList in insertLists.values():
+        for hash in orderedHashes:
+            
+            fileList = insertLists[hash]
             procDataset = fileList[0]['Dataset']
 
             try:
