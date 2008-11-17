@@ -77,6 +77,7 @@ class ProtocolLcgUtils(Protocol):
         lcg-del
         """
         fullSource = source.getLynk()
+        opt += " --nolfc"
 
         setProxy = ''
         if proxy is not None:
