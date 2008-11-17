@@ -3,8 +3,8 @@
 BossLite exceptions
 """
 
-__version__ = "$Id: Exceptions.py,v 1.12 2008/08/22 09:41:13 gcodispo Exp $"
-__revision__ = "$Revision: 1.12 $"
+__version__ = "$Id: Exceptions.py,v 1.13 2008/08/28 07:51:44 gcodispo Exp $"
+__revision__ = "$Revision: 1.13 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 import inspect
 
@@ -113,9 +113,9 @@ class SchedulerError(BossLiteError):
         # // Exception does not inherit from object, no way to call super
         # super(SchedulerError, self).__init__(value)
         BossLiteError.__init__(self, value)
-        self.value = value
-        self.msg = msg
-        self.data['Command'] = command
+        self.value = str(value)
+        self.msg = str(msg)
+        self.data['Command'] = str(command)
 
     def __str__(self):
         """
