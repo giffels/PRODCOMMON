@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.95 2008/10/30 11:06:06 gcodispo Exp $"
-__version__ = "$Revision: 1.95 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.96 2008/11/08 11:55:14 spiga Exp $"
+__version__ = "$Revision: 1.96 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -570,6 +570,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                           ' : ' + formatWmpError( err )
                 continue
             
+            ### very very bad! wms exceptions...
+            except str, err:
+                errors += 'failed SSL auth to wms ' + wms + \
+                          ' : ' +  str(err)
+            # typical exception
             except IndexError, err:
                 errors += 'failed SSL auth to wms ' + wms + \
                           ' : ' +  str(err)
@@ -693,8 +698,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
+            ### very very bad! wms exceptions...
             except IndexError, err:
                 raise SchedulerError('Failed SSL auth to wms', err)
+            except str, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
+            # typical exception
             except BaseException, err:
                 output = formatWmpError( err )
 
@@ -877,8 +886,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 wmproxy.jobCancel( jobId )
+            ### very very bad! wms exceptions...
             except IndexError, err:
                 raise SchedulerError('Failed SSL auth to wms', err)
+            except str, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
+            # typical exception
             except BaseException, err:
                 output = formatWmpError( err )
 
