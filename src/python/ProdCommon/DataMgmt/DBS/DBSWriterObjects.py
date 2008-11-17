@@ -308,8 +308,9 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
                 RunNumber = long(lumiinfo['RunNumber']),
                 )
 
-            if ( apiRef != None ):
-                apiRef.insertLumiSection(lumi)
+            # Isnt needed, causes monster slowdown
+            #if ( apiRef != None ):
+            #    apiRef.insertLumiSection(lumi)
 
             lumiList.append(lumi)
 
