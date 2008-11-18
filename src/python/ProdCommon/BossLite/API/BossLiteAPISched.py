@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.30 2008/08/27 13:59:26 gcodispo Exp $"
-__revision__ = "$Revision: 1.30 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.31 2008/09/23 10:16:10 gcodispo Exp $"
+__revision__ = "$Revision: 1.31 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -80,6 +80,14 @@ class BossLiteAPISched(object):
             self.schedConfig['name'], self.schedConfig
             )
 
+
+    ##########################################################################
+    def getSchedulerInterface(self):
+        """
+        returns the SchedulerInterface object
+        """
+
+        return self.scheduler.schedObj
 
     ##########################################################################
     def getLogger(self):
