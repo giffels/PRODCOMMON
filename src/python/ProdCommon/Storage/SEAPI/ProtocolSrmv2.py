@@ -4,6 +4,7 @@ Class interfacing with srm version 2 end point
 
 from Protocol import Protocol
 from Exceptions import *
+import string
 
 class ProtocolSrmv2(Protocol):
     """
@@ -131,11 +132,14 @@ class ProtocolSrmv2(Protocol):
         if self.checkDirExists(fullSource , opt = "") is False:
             elements =  fullSource.split('/')
             elements.reverse()
+            if '' in elements: elements.remove('') 
             toCreate = []
             for ele in elements:
-                if ele != '':
-                    toCreate.append(ele)
-                    if self.checkDirExists(fullSource.split(ele)[0], opt = "" ) is True: break
+                toCreate.append(ele)
+                fullSource_tmp = fullSource.split('/')
+                if '' in fullSource_tmp[-1:] : fullSource_tmp = fullSource_tmp[:-1] 
+                fullSource = string.join(fullSource_tmp[:-1],'/') 
+                if self.checkDirExists(fullSource, opt = "" ) is True: break
             toCreate.reverse()   
             basefullSource = fullSource.split(toCreate[0])[0]
             for i in toCreate:
