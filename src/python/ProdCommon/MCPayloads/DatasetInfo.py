@@ -6,8 +6,8 @@ Serialisable container for information about a dataset
 
 """
 
-__version__ = "$Revision: 1.3 $"
-__revision__ = "$Id: DatasetInfo.py,v 1.3 2006/12/04 13:29:31 evansde Exp $"
+__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: DatasetInfo.py,v 1.4 2007/03/23 16:15:33 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -24,28 +24,29 @@ class DatasetInfo(dict):
     to match the dataset to CMSSW objects
 
     Inherit from dict, assume all values are strings.
-    
+
     """
-    
+
     def __init__(self):
         dict.__init__(self)
         self.setdefault("PrimaryDataset", None)
         self.setdefault("ProcessedDataset", None)
+        self.setdefault("AnalysisDataset", None)
         self.setdefault("ParentDataset", None)
-        
+
         self.setdefault("ApplicationName",  None)
         self.setdefault("ApplicationProject" , None)
         self.setdefault("ApplicationVersion" , None)
         self.setdefault("ApplicationFamily", None)
-        
+
         self.setdefault("DataTier" , None)
-        
+
         self.setdefault("Conditions" , None)
         self.setdefault("PSetHash", None)
 
         self.setdefault("InputModuleName" , None)
         self.setdefault("OutputModuleName" , None)
-        
+
 
     def __str__(self):
         """string rep as XML for printouts"""
@@ -59,17 +60,18 @@ class DatasetInfo(dict):
         using /<PrimaryDataset>/<DataTier>/<ProcessedDataset>
 
         ParentDataset will be a string of this format
-        
+
         """
         result = "/%s" % self['PrimaryDataset']
         result += "/%s" % self['ProcessedDataset']
         if self['DataTier'] != None:
             result += "/%s" % self['DataTier']
-            
-        # NOTE: Include AnalysisDataset in this object in future???
+
+        if self['AnalysisDataset'] != None:
+            result += "/%s" % self['AnalysisDataset']
 
         return result
-        
+
 
     def save(self):
         """
@@ -110,13 +112,13 @@ class DatasetInfo(dict):
             value = str(entry.chardata)
             self[key] = value
         return
-    
-        
-        
-        
 
 
 
-    
 
-        
+
+
+
+
+
+
