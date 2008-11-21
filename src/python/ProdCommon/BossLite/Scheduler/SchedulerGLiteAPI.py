@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.96 2008/11/08 11:55:14 spiga Exp $"
-__version__ = "$Revision: 1.96 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.97 2008/11/17 17:44:19 gcodispo Exp $"
+__version__ = "$Revision: 1.97 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -552,6 +552,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         for wms in self.wmsResolve( endpoints ) :
             try :
+
                 wms = wms.replace("\"", "").strip()
                 if  len( wms ) == 0 or wms[0]=='#' or wms in seen:
                     continue
@@ -564,25 +565,25 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # actions.append( "Submitted successfully to : " + wms )
                 break
             
+            # typical exception
             except BaseException, err:
                 # actions.append( "Failed submit to : " + wms )
                 errors += 'failed to submit to ' + wms + \
-                          ' : ' + formatWmpError( err )
+                          ' : ' + formatWmpError( err ) + ';   '
                 continue
             
             ### very very bad! wms exceptions...
-            except str, err:
-                errors += 'failed SSL auth to wms ' + wms + \
-                          ' : ' +  str(err)
-            # typical exception
             except IndexError, err:
                 errors += 'failed SSL auth to wms ' + wms + \
-                          ' : ' +  str(err)
+                          ' : ' +  str(err) + ';   '
                 continue
-
+            
             except :
-                # clean files
-                os.system("rm -rf " + workdir)
+                import sys
+                if isinstance( sys.exc_type, str):
+                    errors += 'failed SSL auth to wms ' + wms + \
+                              ' : ' +  str(sys.exc_info()[0]) + ';   '
+                    continue
                 raise
 
         # clean files
@@ -698,11 +699,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 filelist = wmproxy.getOutputFileList( jobId )
-            ### very very bad! wms exceptions...
-            except IndexError, err:
-                raise SchedulerError('Failed SSL auth to wms', err)
-            except str, err:
-                raise SchedulerError('Failed SSL auth to wms', err)
+
             # typical exception
             except BaseException, err:
                 output = formatWmpError( err )
@@ -733,6 +730,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     # job.runningJob['statusHistory'].append(
                     #     'error retrieving output' )
                     continue
+
+            ### very very bad! wms exceptions...
+            except IndexError, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
+            except :
+                import sys
+                if isinstance( sys.exc_type, str):
+                    raise SchedulerError('Failed SSL auth to wms', \
+                                         str(sys.exc_info()[0]) )
+                raise
 
 
             # retrieve files
@@ -886,11 +893,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # get file list
             try :
                 wmproxy.jobCancel( jobId )
-            ### very very bad! wms exceptions...
-            except IndexError, err:
-                raise SchedulerError('Failed SSL auth to wms', err)
-            except str, err:
-                raise SchedulerError('Failed SSL auth to wms', err)
+
             # typical exception
             except BaseException, err:
                 output = formatWmpError( err )
@@ -902,6 +905,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     job.runningJob.errors.append( output )
+
+            ### very very bad! wms exceptions...
+            except IndexError, err:
+                raise SchedulerError('Failed SSL auth to wms', err)
+            except :
+                import sys
+                if isinstance( sys.exc_type, str):
+                    raise SchedulerError('Failed SSL auth to wms', \
+                                         str(sys.exc_info()[0]) )
+                raise
 
             try :
                 wmproxy.jobPurge( jobId )
