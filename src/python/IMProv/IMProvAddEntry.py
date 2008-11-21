@@ -37,7 +37,8 @@ class Event:
 
         eventrep = self.doc.createElement(self.eventreport)
         for key, value in self.fields.iteritems():
-            eventrep.setAttribute(str(key), str(value))
+            if value is not None:
+                eventrep.setAttribute(str(key), str(value))
 
         self.report = eventrep
         return self
