@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.97 2008/11/17 17:44:19 gcodispo Exp $"
-__version__ = "$Revision: 1.97 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.98 2008/11/21 17:07:07 gcodispo Exp $"
+__version__ = "$Revision: 1.98 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -875,9 +875,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.hackEnv() ### TEMP FIX
 
         # initialize wms connection
-        wmproxy = self.wmproxyInit( wms )
         logging.debug( 'DBG for proxy cert=%s X509=%s' % \
                ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
+        wmproxy = self.wmproxyInit( wms )
 
         # loop over jobs
         for job in jobList:
