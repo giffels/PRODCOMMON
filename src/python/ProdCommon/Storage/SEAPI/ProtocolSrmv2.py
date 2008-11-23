@@ -141,10 +141,9 @@ class ProtocolSrmv2(Protocol):
                 fullSource = string.join(fullSource_tmp[:-1],'/') 
                 if self.checkDirExists(fullSource, opt = "" ) is True: break
             toCreate.reverse()   
-            basefullSource = fullSource.split(toCreate[0])[0]
             for i in toCreate:
-                basefullSource = basefullSource+'/'+i
-                cmd = "srmmkdir " +opt +" "+ basefullSource
+                fullSource = fullSource+'/'+i
+                cmd = "srmmkdir " +opt +" "+ fullSource
                 exitcode, outputs = self.executeCommand(cmd)
            
                 ### simple output parsing ###
