@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.70 2008/09/25 13:01:31 gcodispo Exp $"
-__revision__ = "$Revision: 1.70 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.71 2008/09/26 09:31:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.71 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -195,9 +195,37 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
+    def removeJob( self, job ):
+        """
+        remove job and its running instances from db
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # remove runnningjobs in db with non relational checks
+        if self.bossLiteDB.database == "SQLite":
+
+            # load running jobs
+            rjob = RunningJob( { 'jobId' : job['jobId'],
+                                 'taskId' : job['taskId'] } )
+            rjobList = self.db.select( rjob)
+            for rjob in rjobList :
+                rjob.remove( self.db )
+
+        # remove job
+        job.remove( self.db )
+        self.bossLiteDB.session.commit()
+
+        job = None
+
+        return job
+
+    ##########################################################################
     def removeTask( self, task ):
         """
-        register task related informations in the db
+        remove task, jobs and their running instances from db
         """
 
         # db connect
@@ -226,7 +254,6 @@ class BossLiteAPI(object):
         task = None
 
         return task
-
 
     ##########################################################################
     def loadTask( self, taskId, jobRange='all', deep=True ) :
