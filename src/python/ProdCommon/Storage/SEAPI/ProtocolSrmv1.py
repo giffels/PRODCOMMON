@@ -21,7 +21,11 @@ class ProtocolSrmv1(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("Exception") != -1:
+            if line.find("UnknownHostException") != -1 or \
+               line.find("No entries for host") != -1 or \
+               line.find("srm client error") != -1:
+                raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("Exception") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)

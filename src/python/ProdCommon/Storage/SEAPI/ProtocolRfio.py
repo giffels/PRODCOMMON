@@ -20,7 +20,9 @@ class ProtocolRfio(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1 or \
+            if line.find("Network is unreachable") != -1:
+                raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:

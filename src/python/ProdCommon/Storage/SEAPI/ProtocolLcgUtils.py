@@ -23,10 +23,12 @@ class ProtocolLcgUtils(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No such file or directory") != -1 or \
+            if line.find("No entries for host") != -1 or\
+               line.find("srm client error") != -1:
+                raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
-               line.find("CacheException") != -1 or \
-               line.find("No entries for host") != -1:
+               line.find("CacheException") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -34,7 +36,7 @@ class ProtocolLcgUtils(Protocol):
                  line.find("unrecognized option") != -1 or \
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
-                                  [], outLines)
+                                  [line], outLines)
  
         return problems
 
