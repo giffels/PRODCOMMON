@@ -26,6 +26,10 @@ class ProtocolSrmv2(Protocol):
                line.find("No entries for host") != -1 or \
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("already exists") != -1 or \
+               line.find("SRM_DUPLICATION_ERROR") != -1:
+                raise AlreadyExistsException("File already exists!", \
+                                              [line], outLines)
             elif line.find("Exception") != -1 or \
                line.find("does not exist") != -1:
                 cacheP = line.split(":")[-1]

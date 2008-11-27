@@ -55,3 +55,9 @@ class WrongOption(ProtocolException):
     """
     pass
 
+class AlreadyExistsException(ProtocolException):
+    """
+    when trying to create or copy over an already existsing file
+    (depends on the protocol used)
+    """
+

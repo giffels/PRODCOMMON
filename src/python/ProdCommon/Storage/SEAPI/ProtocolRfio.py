@@ -22,6 +22,9 @@ class ProtocolRfio(Protocol):
         for line in lines:
             if line.find("Network is unreachable") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("File exists") != -1:
+                raise AlreadyExistsException("File already exists!", \
+                                              [line], outLines)
             elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1:
                 cacheP = line.split(":")[-1]
