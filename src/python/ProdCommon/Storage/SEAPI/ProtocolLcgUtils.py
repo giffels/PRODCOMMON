@@ -26,6 +26,9 @@ class ProtocolLcgUtils(Protocol):
             if line.find("No entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("File exists") != -1:
+                raise AlreadyExistsException("File already exists!", \
+                                              [line], outLines)
             elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
                line.find("CacheException") != -1:
