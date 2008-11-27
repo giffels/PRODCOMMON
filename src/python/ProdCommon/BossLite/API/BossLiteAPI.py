@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.71 2008/09/26 09:31:15 gcodispo Exp $"
-__revision__ = "$Revision: 1.71 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.72 2008/11/24 15:18:10 gcodispo Exp $"
+__revision__ = "$Revision: 1.72 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -644,8 +644,37 @@ class BossLiteAPI(object):
             raise JobError("Multiple job instances corresponds to the" + \
                      " name specified: %s" % jobName)
 
-        return self.loadJobsByAttr( { 'name' : jobName } )[0]
+        return jobList[0]
 
+
+    ##########################################################################
+    def loadLastJobByName( self, jobName ) :
+        """
+        retrieve job information from db for jobs with name 'name'
+        """
+
+        jobList = self.loadJobsByRunningAttr(
+            jobAttributes={ 'name' : jobName } )
+
+        if jobList is None or jobList == [] :
+            return None
+
+        id = 0
+        retJob = None
+        for job in jobList :
+            if job['id'] > id :
+                retJob = job
+            
+        for job in jobList :
+            if job.runningJob['closed'] == 'N' and job['id'] != retJob['id']:
+                logging.warning(
+                    "WARNING: previous job %s.%s.%s. Forcing closed='Y'" \
+                    % (job['taskId'], job['jobId'], job['submissionNumber'])
+                    )
+                job.runningJob['closed'] = 'Y'
+                self.updateDB(job.runningJob)
+
+        return retJob
 
     ##########################################################################
     def loadCreated( self, attributes = None, limit=None, offset=None ) :
