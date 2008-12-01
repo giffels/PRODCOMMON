@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.72 2008/11/24 15:18:10 gcodispo Exp $"
-__revision__ = "$Revision: 1.72 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.73 2008/11/27 16:05:13 gcodispo Exp $"
+__revision__ = "$Revision: 1.73 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -659,14 +659,21 @@ class BossLiteAPI(object):
         if jobList is None or jobList == [] :
             return None
 
-        id = 0
+        jid = 0
         retJob = None
         for job in jobList :
-            if job['id'] > id :
+            if job['id'] > jid :
                 retJob = job
             
         for job in jobList :
-            if job.runningJob['closed'] == 'N' and job['id'] != retJob['id']:
+            logging.warning( 
+                    "WARNING: job %s.%s.%s  closed='%s'" \
+                    % (job['taskId'], job['jobId'], \
+                       job['submissionNumber'], job.runningJob['closed'])
+                    )
+            if job['id'] != retJob['id'] \
+                   and job.runningJob['closed'] == 'N' \
+                   and job.runningJob['processStatus'] == 'processed' :
                 logging.warning(
                     "WARNING: previous job %s.%s.%s. Forcing closed='Y'" \
                     % (job['taskId'], job['jobId'], job['submissionNumber'])
@@ -892,19 +899,19 @@ class BossLiteAPI(object):
         if self.db is None :
             self.connect()
 
-        # update object
-        obj.update(self.db)
-        self.bossLiteDB.session.commit()
-
         # the object passed is a Job
         if type(obj) == Job :
-            obj.closeRunningInstance( self.db )
+            job.runningJob['closed'] = 'Y'
+            # obj.closeRunningInstance( self.db )
 
         # the object passed is a Task
         elif type(obj) == Task :
             for job in obj.jobs:
-                job.closeRunningInstance( self.db )
+                job.runningJob['closed'] = 'Y'
+                # job.closeRunningInstance( self.db )
 
+        # update object
+        obj.update(self.db)
         self.bossLiteDB.session.commit()
 
 
