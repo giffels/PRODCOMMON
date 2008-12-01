@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.73 2008/11/27 16:05:13 gcodispo Exp $"
-__revision__ = "$Revision: 1.73 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.74 2008/12/01 10:35:20 gcodispo Exp $"
+__revision__ = "$Revision: 1.74 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -161,8 +161,9 @@ class BossLiteAPI(object):
         for job in task.jobs:
             attrs = rjAttrs[ str(job['name']) ]
             self.getRunningInstance( job, attrs )
+            self.updateDB( job )
 
-        self.updateDB( task )
+        # self.updateDB( task )
 
         # all done
         return task
