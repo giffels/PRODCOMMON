@@ -3,10 +3,11 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.19 2008/09/18 23:26:01 spiga Exp $"
-__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.20 2008/09/30 17:27:42 spiga Exp $"
+__version__ = "$Revision: 1.20 $"
 
-import re, os
+import re, os, time
+import tempfile
 
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -41,10 +42,10 @@ class SchedulerLsf (SchedulerInterface) :
             self.rfioSer=args['rfioSer'] 
         except:
             pass
-        self.tokenString = '' 
+        self.ksuCmd = '' 
         if self.cert != '':
-            self.tokenString = "/afs/usr/local/etc/SetToken <" + self.cert + ' ; '
-
+            self.ksuCmd = 'cd /tmp; unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; '
+            self.userToken = args.get('userToken','')
 
     def checkUserProxy( self, cert='' ):
         """ 
@@ -85,6 +86,9 @@ class SchedulerLsf (SchedulerInterface) :
             return self.submitTask (obj, requirements ) 
 
     def submitTask ( self, task, requirements=''):
+
+        if self.ksuCmd : self.storeToken()  
+ 
         ret_map={}
         for job in task.getJobs() :
             map, taskId, queue = self.submitJob(job, task, requirements)
@@ -102,9 +106,16 @@ class SchedulerLsf (SchedulerInterface) :
         chDir = "pushd . > /dev/null; cd " + task['outputDirectory'] + "; "
         resetDir = " ; popd > /dev/null"
         command = chDir + "bsub " + arg + resetDir 
+        
+        if self.ksuCmd :   
+            # token stuff are a temporary patch
+            cmd = "/afs/usr/local/etc/SetToken < %s\n"%self.userToken 
+            cmd += '%s\n'%command
+            cmd += "/afs/usr/local/etc/SetToken < %s\n"%self.serverToken 
+            command,fname = self.createCommand(cmd, task)
 
-
-        out, ret = self.ExecuteCommand(self.tokenString + command)
+        out, ret = self.ExecuteCommand( command )
+        if self.ksuCmd: os.unlink( fname )
         if ret != 0 :
             raise SchedulerError('Error in submit', out, command )
 
@@ -191,11 +202,17 @@ class SchedulerLsf (SchedulerInterface) :
                 continue
 
             jobid = str(job.runningJob['schedulerId']).strip()
-            cmd='bjobs '+str(jobid)
-            #print cmd
-            out, ret = self.ExecuteCommand(self.tokenString + cmd)
+            command='bjobs '+str(jobid)
+            
+            if self.ksuCmd :   
+                # write a ksu tmpFile
+                cmd = '%s\n'%command
+                command,fname = self.createCommand(cmd, obj)
+
+            out, ret = self.ExecuteCommand( command )
+            if self.ksuCmd: os.unlink( fname )
             if ret != 0 :
-                raise SchedulerError('Error in status query', out,cmd )
+                raise SchedulerError('Error in status query', out,command )
             #print "<"+out+">"
             mnotfound= rnotfound.search(out)
             queue=None
@@ -248,11 +265,17 @@ class SchedulerLsf (SchedulerInterface) :
             if not self.valid( job.runningJob ):
                 continue
             jobid = str( job.runningJob['schedulerId'] ).strip()
-            cmd='bkill '+str(jobid)
-            out, ret = self.ExecuteCommand(self.tokenString + cmd)
+            command='bkill '+str(jobid)
+            if self.ksuCmd :   
+                # write a ksu tmpFile
+                cmd = '%s\n'%command
+                command,fname = self.createCommand(cmd, obj)
+
+            out, ret = self.ExecuteCommand( command )
+            if self.ksuCmd: os.unlink( fname )
             mFailed= rFinished.search(out)
             if mFailed:
-                raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out, cmd )
+                raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out, command )
             pass
         pass
 
@@ -271,3 +294,44 @@ class SchedulerLsf (SchedulerInterface) :
         """
 
         return seList
+
+#### Ksu Related Stuff
+    def createCommand(self, cmd, obj):
+        """ 
+        write a ksu tmpFile
+        """ 
+        userName = obj['name'].split('_')[0] ## will be in the DB
+        BaseCmd = self.ksuCmd +'/usr/kerberos/bin/ksu %s -k -c FILE:%s < '%( userName ,self.cert)
+
+        tmp, fname = tempfile.mkstemp( "", "ksu_", os.getcwd() )
+        os.close( tmp )
+        tmpFile = open( fname, 'w')
+        tmpFile.write( cmd )
+        tmpFile.close()
+
+        #redefine command
+        command = BaseCmd + fname
+
+        return command, fname
+   
+    def storeToken( self ):
+        """
+        This is a temporary method to 
+        allow server at caf working.... TO DEPRECATE..
+        (check if a valid token has already stored. If not 
+         or if older than 12h, recreate it.)   
+        """
+        # token stuff are a temporary patch
+        store = True
+        self.serverToken = '/tmp/Token_Server'
+        if os.path.exists(self.serverToken):
+            statinfo = os.stat(self.serverToken)
+            ## if the token is older then 12 hours it is re-downloaded to update the configuration
+            oldness = 12*3600
+            if (time.time() - statinfo.st_ctime) < oldness: store = False
+            else: os.remove(self.serverToken)
+        if store:
+            command  = "/afs/usr/local/etc/GetToken > %s \n"%self.serverToken
+            out, ret = self.ExecuteCommand( command )
+            if ret != 0 :
+                raise SchedulerError('Error cashing Token ', out, command )
