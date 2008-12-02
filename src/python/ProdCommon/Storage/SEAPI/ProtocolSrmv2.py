@@ -165,17 +165,17 @@ class ProtocolSrmv2(Protocol):
         """
         return file/dir permission
         """
-        return int(self.listPath(source, proxy, opt)[3])
+        return int(self.listFile(source, proxy, opt)[3])
 
     def getFileSize(self, source, proxy = None, opt = ""):
         """
         file size
         """
-        ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        size = self.listPath(source, proxy, opt)[0]
+        ##size, owner, group, permMode = self.listFile(filePath, SEhost, port)
+        size = self.listFile(source, proxy, opt)[0]
         return int(size)
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = ""):
         """
         srmls
 
@@ -215,7 +215,7 @@ class ProtocolSrmv2(Protocol):
         file exists?
         """
         try:
-            size, owner, group, permMode = self.listPath(source, proxy, opt)
+            size, owner, group, permMode = self.listFile(source, proxy, opt)
             if size >= 0:
                 return True
         except NotExistsException:
@@ -255,5 +255,40 @@ class ProtocolSrmv2(Protocol):
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
         return outputs.split('\n')[0]
+
+    def listPath(self, source, proxy = None, opt = ""):
+        """
+        srmls
+
+        returns size, owner, group, permMode of the file-dir
+        """
+        fullSource = source.getLynk()
+
+        opt += self._options
+        if proxy is not None:
+            opt += " -x509_user_proxy=%s " % proxy
+            self.checkUserProxy(proxy)
+
+        cmd = "srmls " + opt +" "+ fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+
+        problems = self.simpleOutputCheck(outputs)
+        if exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error reading [" +source.workon+ "]", \
+                                      problems, outputs )
+
+        ### need to parse the output of the commands ###
+        filesres = []
+        # for each listed file
+        for line in outputs.split("\n"):
+            # get correct lines
+            if line.find(source.getFullPath()) != -1 and line.find("surl[0]=") == -1:
+                values = line.split(" ")
+                # sum file sizes
+                if len(values) > 1:
+                    filesres.append(values[-1])
+
+        return filesres
+
 
 # srm-reserve-space srm-release-space srmrmdir srmmkdir srmping srm-bring-online

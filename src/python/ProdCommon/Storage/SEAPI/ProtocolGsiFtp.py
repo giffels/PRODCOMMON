@@ -89,7 +89,7 @@ class ProtocolGsiFtp(Protocol):
         """ 
         filelist = []
         dirlist = []
-        for k, v in self.listPath(source, proxy).items():
+        for k, v in self.listFile(source, proxy).items():
             if v == "d":
                 source.workon = k
                 dirlist.append(k)
@@ -115,7 +115,7 @@ class ProtocolGsiFtp(Protocol):
             self.delete(source, proxy, opt)
             source.workon = ""
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = ""):
         """
         list of dir [edg-gridftp-ls]
         """
@@ -149,7 +149,7 @@ class ProtocolGsiFtp(Protocol):
         """
         _checkNotDir_
         """
-        dirall = self.listPath(source, proxy)
+        dirall = self.listFile(source, proxy)
         flag = False
         for k, v in dirall.items(): 
             if v == "f":
@@ -273,3 +273,28 @@ class ProtocolGsiFtp(Protocol):
         return the gsiftp turl
         """
         return source.getLynk()
+
+    def listPath(self, source, proxy = None, opt = ""):
+        """
+        list of dir [edg-gridftp-ls]
+        """
+        fullSource = source.getLynk()
+        if proxy is not None:
+            opt += " --proxy=%s " % str(proxy)
+            self.checkUserProxy(proxy)
+
+        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        exitcode, outputs = self.executeCommand(cmd)
+        
+        if exitcode != 0:
+            raise OperationException("Error listing [" +source.workon+ "]", \
+                                      outputs, outputs )
+
+        filesres = []
+        for filet in outputs.split('\n'):
+            import os
+            filesres.append( os.path.join(source.getFullPath(), filet) )
+
+        return filesres
+
+

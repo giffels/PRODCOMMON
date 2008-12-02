@@ -130,17 +130,17 @@ class ProtocolSrmv1(Protocol):
         """
         return file/dir permission
         """
-        return int(self.listPath(source, proxy, opt)[3])
+        return int(self.listFile(source, proxy, opt)[3])
 
     def getFileSize(self, source, proxy = None, opt = ""):
         """
         file size
         """
-        ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
-        size = self.listPath(source, proxy, opt)[0]
+        ##size, owner, group, permMode = self.listFile(filePath, SEhost, port)
+        size = self.listFile(source, proxy, opt)[0]
         return int(size)
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = ""):
         """
         srm-get-metadata
 
@@ -183,7 +183,7 @@ class ProtocolSrmv1(Protocol):
         file exists?
         """
         try:
-            size, owner, group, permMode = self.listPath(source, proxy, opt)
+            size, owner, group, permMode = self.listFile(source, proxy, opt)
             if size is not "" and owner is not "" and\
                group is not "" and permMode is not "":
                 return True

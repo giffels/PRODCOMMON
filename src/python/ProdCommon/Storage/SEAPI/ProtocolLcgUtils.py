@@ -163,3 +163,37 @@ class ProtocolLcgUtils(Protocol):
                                       problems, outputs )
         return outputs.split('\n')[0] 
 
+
+    def checkExists(self, source, proxy = None, opt = ""):
+        """
+        lcg-ls (lcg-gt)
+        """
+        if source.protocol in ["gsiftp-lcg"]:
+            raise NotImplementedException
+        else:
+            fullSource = source.getLynk()
+            cmd = ""
+            if proxy is not None:
+                cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
+                self.checkUserProxy(proxy)
+            cmd += "lcg-ls " + opt + " " + fullSource
+            exitcode, outputs = self.executeCommand(cmd)
+            problems = self.simpleOutputCheck(outputs)
+            if exitcode != 0 or len(problems) > 0:
+                if str(problems).find("No such file or directory") != -1 or \
+                   (str(problems).find("not found") != -1 and \
+                    str(problems).find("CacheException") != -1):
+                    return False
+                raise OperationException("Error checking ["+source.workon+"]", \
+                                         problems, outputs )
+            return self.getFileList(outputs, source.getFullPath())
+
+    def getFileList(self, parsingout, startpath):
+        """
+        _getFileList_
+        """
+        filesres = []
+        for line in parsingout.split("\n"):
+            if line.find(startpath) != -1:
+                filesres.append(line)
+        return filesres

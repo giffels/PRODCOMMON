@@ -97,6 +97,20 @@ class SElement(object):
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
 
+    def getFullPath(self):
+        """
+        _getFullPath_
+        """ 
+        if self.__full:
+            if self.protocol != "local":
+                if self.hostname.find(":") != -1:
+                    if self.hostname.split(":")[-1].find("/") != -1:
+                        return join("/" + self.hostname.split(":")[-1].split("/",1)[1], self.workon)
+            else:
+                if self.hostname != "/":
+                    return ("file://" + join(self.hostname, self.workon))
+        return self.workon
+
 class FullPath(object):
     """
     Shortern path usage for API caller (see also SElement getLynk)
