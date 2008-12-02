@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.75 2008/12/01 19:06:22 gcodispo Exp $"
-__revision__ = "$Revision: 1.75 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.76 2008/12/02 07:54:57 gcodispo Exp $"
+__revision__ = "$Revision: 1.76 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -667,16 +667,10 @@ class BossLiteAPI(object):
                 retJob = job
             
         for job in jobList :
-            logging.warning( 
-                    "WARNING: job %s.%s.%s  closed='%s'" \
-                    % (job['taskId'], job['jobId'], \
-                       job['submissionNumber'], job.runningJob['closed'])
-                    )
-            if job['id'] != retJob['id'] \
-                   and job.runningJob['closed'] == 'N' \
+            if job['id'] != retJob['id'] and job.runningJob['closed'] == 'N' \
                    and job.runningJob['processStatus'] == 'processed' :
                 logging.warning(
-                    "WARNING: previous job %s.%s.%s. Forcing closed='Y'" \
+                    "WARNING: previous job %s.%s.%s not closed. Forcing closed='Y'" \
                     % (job['taskId'], job['jobId'], job['submissionNumber'])
                     )
                 job.runningJob['closed'] = 'Y'
