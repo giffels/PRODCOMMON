@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.74 2008/12/01 10:35:20 gcodispo Exp $"
-__revision__ = "$Revision: 1.74 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.75 2008/12/01 19:06:22 gcodispo Exp $"
+__revision__ = "$Revision: 1.75 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -902,7 +902,7 @@ class BossLiteAPI(object):
 
         # the object passed is a Job
         if type(obj) == Job :
-            job.runningJob['closed'] = 'Y'
+            obj.runningJob['closed'] = 'Y'
             # obj.closeRunningInstance( self.db )
 
         # the object passed is a Task
