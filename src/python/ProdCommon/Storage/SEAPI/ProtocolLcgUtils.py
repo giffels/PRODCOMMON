@@ -164,7 +164,7 @@ class ProtocolLcgUtils(Protocol):
         return outputs.split('\n')[0] 
 
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = ""):
         """
         lcg-ls (lcg-gt)
         """
