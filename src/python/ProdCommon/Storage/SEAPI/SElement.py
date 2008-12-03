@@ -104,8 +104,14 @@ class SElement(object):
         if self.__full:
             if self.protocol != "local":
                 if self.hostname.find(":") != -1:
-                    if self.hostname.split(":")[-1].find("/") != -1:
-                        return join("/" + self.hostname.split(":")[-1].split("/",1)[1], self.workon)
+                    tmpath = self.hostname.split(":")[-1]
+                    if tmpath.find("/") != -1:
+                        tmpath = tmpath.split("/",1)[1]
+                        from os.path import join
+                        if tmpath.find("?SFN=") != -1:
+                            return join(tmpath.split("?SFN=",1)[-1],self.workon)
+                        else:
+                            return join(tmpath, self.workon)
             else:
                 if self.hostname != "/":
                     return ("file://" + join(self.hostname, self.workon))
