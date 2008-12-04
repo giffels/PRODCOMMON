@@ -25,7 +25,7 @@ class SBinterface:
         self.useProxy = True
         if self.storage2 != None:
             self.mono = True
-        if self.storage1.protocol in ['local', 'rfio']:
+        if self.storage1.protocol in ['local']: #, 'rfio']:
             self.useProxy = False
         if self.mono:
             if storel1.protocol != storel2.protocol:
@@ -194,12 +194,12 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2']:
+        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2', 'rfio']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        if self.storage1.protocol in ['rfio', 'local']:
+        if self.storage1.protocol in ['local']: #'rfio', 'local']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, opt = opt)
             self.storage1.workon = ""
@@ -220,6 +220,6 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol in ['local', "rfio"]:
+        elif self.storage1.protocol in ['local']: #, "rfio"]:
             return ""
 
