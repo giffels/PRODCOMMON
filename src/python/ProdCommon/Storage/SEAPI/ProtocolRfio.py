@@ -71,8 +71,8 @@ class ProtocolRfio(Protocol):
         """
         if self.checkDirExists(dest, token, opt = "") is True:
             problems = ["destination directory already existing", dest.workon]
-            raise OperationException("Error creating directory [" +\
-                                      dest.workon+ "]", problems)
+            raise AlreadyExistsException("Error creating directory [" +\
+                                          dest.workon+ "]", problems)
 
         fullDest = dest.getLynk()
 
