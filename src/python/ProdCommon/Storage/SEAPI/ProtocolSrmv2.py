@@ -22,19 +22,20 @@ class ProtocolSrmv2(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("UnknownHostException") != -1 or \
-               line.find("No entries for host") != -1 or \
+            if line.find("Exception") != -1 or \
+               line.find("does not exist") != -1 or \
                line.find("srm client error") != -1:
+                cacheP = line.split(":")[-1]
+                if cacheP not in problems:
+                    problems.append(cacheP)
+            if line.find("UnknownHostException") != -1 or \
+               line.find("No entries for host") != -1: # or \
+               #line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
             elif line.find("already exists") != -1 or \
                line.find("SRM_DUPLICATION_ERROR") != -1:
                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
-            elif line.find("Exception") != -1 or \
-               line.find("does not exist") != -1:
-                cacheP = line.split(":")[-1]
-                if cacheP not in problems:
-                    problems.append(cacheP)
             elif line.find("unrecognized option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
