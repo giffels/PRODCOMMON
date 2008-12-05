@@ -51,7 +51,7 @@ class Proxy:
         if ret != 0 :
             msg = "Error while checking proxy subject for %s"%proxy
             raise Exception(msg)
-        lines = out.split('\n')[0]
+        subject = out.split('\n')[0]
    
         return subject.strip()    
     
