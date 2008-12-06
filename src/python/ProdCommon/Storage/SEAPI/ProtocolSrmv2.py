@@ -32,6 +32,9 @@ class ProtocolSrmv2(Protocol):
                line.find("No entries for host") != -1: # or \
                #line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("SRM_AUTHORIZATION_FAILURE") != -1 or \
+               line.find("Permission denied") != -1:
+                raise AuthorizationException("Permission denied", [line], outLines)
             elif line.find("already exists") != -1 or \
                line.find("SRM_DUPLICATION_ERROR") != -1:
                 raise AlreadyExistsException("File already exists!", \
@@ -137,9 +140,12 @@ class ProtocolSrmv2(Protocol):
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
-
         if self.checkDirExists(fullSource , opt = "") is False:
-            elements =  fullSource.split('/')
+            #tempsource = fullSource
+            #if fullSource.find(source.port) != -1:
+            #    tempsource = tempsource.split(source.port,1)[-1]
+            #elements = tempsource.split('/')
+            elements = fullSource.split('/')
             elements.reverse()
             if '' in elements: elements.remove('') 
             toCreate = []
@@ -157,7 +163,6 @@ class ProtocolSrmv2(Protocol):
            
                 ### simple output parsing ###
                 problems = self.simpleOutputCheck(outputs)
-           
                 if exitcode != 0 or len(problems) > 0:
                     raise OperationException("Error creating [" +source.workon+ "]", \
                                               problems, outputs )
