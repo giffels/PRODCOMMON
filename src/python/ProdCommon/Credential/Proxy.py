@@ -68,8 +68,13 @@ class Proxy:
             msg = "Error while extracting User Name from proxy %s"%proxy
             raise Exception(msg)
 
-        emelments = out.split('/')
-        uName = elements[-1:][0].split('CN=')[1]   
+#        elements = out.split('/')
+#        uName = elements[-1:][0].split('CN=')[1]   
+        uName = ''
+        for cname in out.split('/'):
+            if cname[:3] == "CN=" and cname[3:].find('proxy') == -1:
+                if len(cname[3:]) > len(uName):
+                    uName = cname[3:]
 
         return uName.strip()
 
