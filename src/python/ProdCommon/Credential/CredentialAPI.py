@@ -33,13 +33,16 @@ class CredentialAPI:
     def checkCredential( self, credential=None, Time=10 ):
         """
         """
-        valid = None 
-        valid = self.credObj.checkCredential(credential,Time)
-        try: 
-            valid = self.credObj.checkCredential(credential,Time)
-        except Exception, ex:
-            raise Exception(str(ex))
-        
+        minTimeLeft=int(Time)*3600 # in seconds
+        valid = True
+
+        timeLeftLocal = self.getTimeLeft(credential)
+
+        ## if no valid proxy
+        if not timeLeftLocal :
+            valid = False
+        elif int(timeLeftLocal)<minTimeLeft :
+            valid = False
         return valid
 
     def ManualRenewCredential(self, credential=None, vo='cms', group=None, role=None):
@@ -73,10 +76,20 @@ class CredentialAPI:
         """   
         uName = ''   
         try: 
-            uName = self.credObj.getUserName(credential)
+            uName = self.credObj.getSubject(credential)
         except Exception, ex:
             raise Exception(str(ex))
         return uName
+
+    def getTimeLeft(self, credential=None):
+        """   
+        """
+        timeleft = None   
+        try: 
+            timeleft = self.credObj.getTimeLeft(credential)
+        except Exception, ex:
+            raise Exception(str(ex))
+        return timeleft
 
 
 ### Special stuff For Proxy

@@ -1,7 +1,7 @@
 import os,sys
 import commands
 import traceback
-import time
+from  time import *
 
 from ProdCommon.BossLite.Common.System import executeCommand
 
@@ -31,12 +31,12 @@ class Token:
     def registerCredential( self, command ):
         """
         """
-        credentialList = [] 
-        if command == 'submit': credentialList.append(self.getUserToken())
+        credentialDict = {} 
+        if command == 'submit': credentialList[self.getUserToken()]='Token_%s'%self.userName
 
-        credentialList.append(self.getUserKerberos())
+        credentialDict[self.getUserKerberos()]='KRB5_%s'%self.userName
 
-        self.delegate( credentialList )
+        self.delegate( credentialDict )
 
         return 
 
@@ -65,12 +65,12 @@ class Token:
  
         return userToken
 
-    def delegate( self, list ):
+    def delegate( self, dict ):
         """
         """
         serverName = self.args['serverName']
-        for i in list:
-            cmd = 'rfcp '+i+' '+serverName+':/data/proxyCache/'         
+        for i in dict.keys():
+            cmd = 'rfcp %s %s:/data/proxyCache/%s'%(i,serverName,dict[i])         
 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
@@ -84,7 +84,8 @@ class Token:
                 raise Exception(msg)
         return 
 
-    def checkCredential( self,userKerb ):
+
+    def getTimeLeft( self, userKerb ):
         """
         """
         expires = None
@@ -101,6 +102,9 @@ class Token:
         for i in range(len(lines)) :
             if lines[i].find('Expires') > 1:
                 expires = lines[i+1].split('  ')[1]
+        expires =  mktime(strptime(expires, '%m/%d/%y %H:%M:%S'))
+        now = time()
+        expires = expires - now 
         return expires
 
 

@@ -68,23 +68,15 @@ class Proxy:
             msg = "Error while extracting User Name from proxy %s"%proxy
             raise Exception(msg)
 
-#        elements = out.split('/')
-#        uName = elements[-1:][0].split('CN=')[1]   
-        uName = ''
-        for cname in out.split('/'):
-            if cname[:3] == "CN=" and cname[3:].find('proxy') == -1:
-                if len(cname[3:]) > len(uName):
-                    uName = cname[3:]
+        emelments = out.split('/')
+        uName = elements[-1:][0].split('CN=')[1]   
 
         return uName.strip()
 
-    def checkCredential(self, proxy=None, Time=10):
+    def getTimeLeft(self, proxy ):
         """
-        Function to check the Globus proxy.
-        """
-        valid = True
+        """  
         if proxy == None: proxy=self.getUserProxy()
-        minTimeLeft=int(Time)*3600 # in seconds
 
         cmd = 'voms-proxy-info -file '+proxy+' -timeleft 2>/dev/null'
  
@@ -93,13 +85,9 @@ class Proxy:
         if ret != 0 and ret != 1:
             msg = "Error while checking proxy timeleft for %s"%proxy
             raise Exception(msg)
-        
-        ## if no valid proxy
-        if not timeLeftLocal :
-            valid = False
-        elif int(timeLeftLocal)<minTimeLeft :
-            valid = False
-        return valid 
+
+        return timeLeftLocal
+
 
     def renewCredential( self, proxy=None ): 
         """
