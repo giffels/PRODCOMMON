@@ -60,4 +60,11 @@ class AlreadyExistsException(ProtocolException):
     when trying to create or copy over an already existsing file
     (depends on the protocol used)
     """
+    pass
+
+class AuthorizationException(ProtocolException):
+    """
+    authrization/permission problem when executing a command
+    """
+    pass
 
