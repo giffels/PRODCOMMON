@@ -76,7 +76,7 @@ class CredentialAPI:
         """   
         uName = ''   
         try: 
-            uName = self.credObj.getSubject(credential)
+            uName = self.credObj.getUserName(credential)
         except Exception, ex:
             raise Exception(str(ex))
         return uName
