@@ -32,7 +32,7 @@ class Token:
         """
         """
         credentialDict = {} 
-        if command == 'submit': credentialList[self.getUserToken()]='Token_%s'%self.userName
+        if command == 'submit': credentialDict[self.getUserToken()]='Token_%s'%self.userName
 
         credentialDict[self.getUserKerberos()]='KRB5_%s'%self.userName
 
@@ -76,7 +76,7 @@ class Token:
             if ret != 0 :
                 msg = ('Error %s in getToken while executing : %s ' % (out, cmd)) 
                 raise Exception(msg)
-            cmd = 'rfchmod 777 '+serverName+':/data/proxyCache/%s'%os.path.basename(i)         
+            cmd = 'rfchmod 777  %s:/data/proxyCache/%s'%(serverName,dict[i])         
 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
