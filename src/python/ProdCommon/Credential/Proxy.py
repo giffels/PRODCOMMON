@@ -130,7 +130,6 @@ class Proxy:
     def ManualRenewCredential( self, proxy=None, vo='cms', group=None, role=None ):
         """
         """
-
         cmd = 'voms-proxy-init -voms %s'%vo
 
         if group:
@@ -138,13 +137,27 @@ class Proxy:
         if role:
             cmd += '/role='+role
         cmd += ' -valid 192:00'
-        print cmd
         try:
             out = os.system(cmd)
             if (out>0): raise Exception("Unable to create a valid proxy!\n")
         except:
             msg = "Unable to create a valid proxy!\n"
             raise Exception(msg)
+
+    def destroyCredential(self, proxy):
+        """    
+        """    
+        if proxy == None:
+            msg = "Error no valid proxy to remove "
+            raise Exception(msg)
+        cmd = 'rm %s'%proxy
+
+        out, ret = self.ExecuteCommand(cmd)
+        if ret != 0 :
+            msg = "Error while removing proxy %s"%proxy
+            raise Exception(msg)
+
+        return  
 
     def checkMyProxy( self , proxy=None, Time=4 ):
         """

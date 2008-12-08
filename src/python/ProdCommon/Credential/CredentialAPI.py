@@ -91,6 +91,14 @@ class CredentialAPI:
             raise Exception(str(ex))
         return timeleft
 
+    def destroyCredential(self, credential = None):
+        """   
+        """   
+        try:  
+            self.credObj.destroyCredential( credential )
+        except Exception, ex:
+            raise Exception(str(ex))
+        
 
 ### Special stuff For Proxy
     def checkMyProxy(self, credential=None, Time=4 ):
