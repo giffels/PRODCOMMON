@@ -129,4 +129,31 @@ class Token:
     def getUserName( self,userKerb ):
         """
         """
-        return self.getSubject( userKerb ) 
+        return self.getSubject( userKerb )
+
+ 
+    def destroyCredential(self, userKerb):
+        """    
+        """    
+        if userKerb == None:
+            msg = "Error no valid user kerberos to remove "
+            raise Exception(msg)
+
+        cmd = 'rm %s'%proxy
+
+        out, ret = self.ExecuteCommand(cmd)
+        if ret != 0 :
+            msg = "Error while removing user kerberos %s"%userKerb
+            raise Exception(msg)
+
+    def ManualRenewCredential( self, proxy=None, vo='cms', group=None, role=None ):
+        """
+        """
+        cmd = 'kinit '
+
+        try:
+            out = os.system(cmd)
+            if (out>0): raise Exception("Unable to create a valid Token!\n")
+        except:
+            msg = "Unable to create a valid Token!\n"
+            raise Exception(msg)
