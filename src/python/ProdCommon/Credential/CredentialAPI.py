@@ -56,9 +56,10 @@ class CredentialAPI:
     def registerCredential( self, command=None ):
         """
         """
-
-        self.credObj.registerCredential(command)
- 
+        try:    
+            self.credObj.registerCredential(command)
+        except Exception, ex:
+            raise Exception( str(ex))
         return
 
     def getSubject(self, credential=None):
