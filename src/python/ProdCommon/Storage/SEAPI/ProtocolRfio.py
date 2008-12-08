@@ -12,7 +12,7 @@ class ProtocolRfio(Protocol):
 
     def __init__(self):
         super(ProtocolRfio, self).__init__()
-        self.ksuCmd = 'export PATH=/home/crab/bin:/home/crab/scripts:/usr/sue/bin:/afs/cern.ch/cms/bin/amd64_linux26:/afs/cern.ch/cms/system/bin:/usr/local/bin:/usr/local/bin/X11:/usr/bin:/bin:/usr/bin/X11:/cern/pro/bin:/afs/cern.ch/cms/sw/common:/afs/cern.ch/cms/sw/bin:/afs/cern.ch/cms/utils:/usr/kerberos/bin:/usr/X11R6/bin:/home/crab/bin ; '
+        self.ksuCmd = ' cd /tmp; unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; '
         self.ksuOut = [ \
                         "Authenticated ", \
                         "Acount ", \
