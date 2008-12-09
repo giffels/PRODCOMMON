@@ -328,6 +328,7 @@ class ProtocolRfio(Protocol):
         userName, token = token.split('::')#will be removed with next api version
         BaseCmd = self.ksuCmd +'/usr/kerberos/bin/ksu %s -k -c FILE:%s < '%(userName,token)
         exit, out = None, None
+        fname = None
         try:
             tmp, fname = tempfile.mkstemp( "", "ksu_", os.getcwd() )
             os.close( tmp )
