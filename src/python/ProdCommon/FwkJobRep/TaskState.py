@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.4 $"
-__revision__ = "$Id: TaskState.py,v 1.4 2008/11/13 18:23:19 swakef Exp $"
+__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: TaskState.py,v 1.5 2008/11/13 18:52:51 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -501,10 +501,10 @@ class TaskState:
                 parentageWiped = True
                 
             for parFile in parentFiles:
-                if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
-                    continue
                 parentLFN = '%s/%s.root' % \
                   (parFile['LFN'][:parFile['LFN'].rfind("/")], parFile['GUID'])
+                if parentLFN in [x['LFN'] for x in fileInfo.inputFiles]:
+                    continue
                 print "Add InputFile %s for %s" % (parentLFN, fileInfo['LFN'])
                 fileInfo.addInputFile(parFile['PFN'], parentLFN)
         return
