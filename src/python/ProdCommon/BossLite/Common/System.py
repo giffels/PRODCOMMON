@@ -11,8 +11,8 @@ import os
 import logging
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.8 2008/10/06 10:32:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: System.py,v 1.9 2008/10/26 09:49:02 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 
 
 def setPgid():
@@ -65,7 +65,6 @@ def executeCommand( command, timeout=None ):
             os.kill( p.pid, signal.SIGKILL)
             p.wait()
             p.stdout.close()
-            del( p )
         except OSError, err :
             logging.warning(
                 'Warning: an error occurred killing subprocess [%s]' \
@@ -84,7 +83,6 @@ def executeCommand( command, timeout=None ):
     returncode = p.returncode
     if returncode is None :
         returncode = -666666
-    del( p )
 
     return ''.join(outc), returncode
 
