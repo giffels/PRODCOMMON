@@ -133,9 +133,13 @@ class RequestJobFactory:
         self.loadPileupDatasets()
 
         result = []
-        numberOfJobs = (self.totalEvents/self.eventsPerJob) + 1
-
-        for i in range(numberOfJobs):
+        eventsLeft = self.totalEvents
+        
+        while eventsLeft:
+            
+            if eventsLeft < self.eventsPerJob:
+                self.eventsPerJob = eventsLeft
+            
             newJobSpec = self.createJobSpec()
             jobDict = {
                 "JobSpecId" : self.currentJob,
@@ -150,8 +154,9 @@ class RequestJobFactory:
             if self.overrideFirstEvent == None:
                 self.firstEvent += self.eventsPerJob
             else:
-                self.firstEvent = self.overrideFirstEvent                
-
+                self.firstEvent = self.overrideFirstEvent
+  
+            eventsLeft -= self.eventsPerJob
         return result
 
 
