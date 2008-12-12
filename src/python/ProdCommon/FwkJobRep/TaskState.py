@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.5 $"
-__revision__ = "$Id: TaskState.py,v 1.5 2008/11/13 18:52:51 swakef Exp $"
+__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: TaskState.py,v 1.6 2008/12/10 13:54:57 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -427,6 +427,12 @@ class TaskState:
         print "Output Module Label: %s" % outModLabel
         if outModLabel == None:
             return
+        
+        # add guid to LFN
+        if fileInfo['GUID'] != None:
+            fileInfo['LFN'] = '%s/%s.root' % \
+                    (os.path.dirname(fileInfo['LFN']), fileInfo['GUID'])
+
         if self.taskAttrs['DoSizeMerge']:
             print "Doing Size Merge Check"
             if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
@@ -501,12 +507,10 @@ class TaskState:
                 parentageWiped = True
                 
             for parFile in parentFiles:
-                parentLFN = '%s/%s.root' % \
-                  (parFile['LFN'][:parFile['LFN'].rfind("/")], parFile['GUID'])
-                if parentLFN in [x['LFN'] for x in fileInfo.inputFiles]:
+                if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
                     continue
-                print "Add InputFile %s for %s" % (parentLFN, fileInfo['LFN'])
-                fileInfo.addInputFile(parFile['PFN'], parentLFN)
+                print "Add InputFile %s for %s" % (parFile['LFN'], fileInfo['LFN'])
+                fileInfo.addInputFile(parFile['PFN'], parFile['LFN'])
         return
 
 
