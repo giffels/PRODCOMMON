@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.100 2008/12/05 11:56:43 gcodispo Exp $"
-__version__ = "$Revision: 1.100 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.101 2008/12/15 10:17:18 gcodispo Exp $"
+__version__ = "$Revision: 1.101 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1452,13 +1452,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                             passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew) >= 0:
+                            if ce.find(cew) != -1:
                                 celist.append( ce )
-
             return celist
 
         for se in seList :
@@ -1472,11 +1473,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 passblack = 1
                 if ce.find( "blah" ) == -1:
                     for ceb in blacklist :
-                        if ce.find(ceb) > 0:
+                        if ce.find(ceb) != -1:
                             passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
                         celist.append( ce )
                     else:
                         for cew in whitelist:
@@ -1486,10 +1489,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # a site matching is enough
             if not full and celist != []:
                 break
-
         return celist
-
-
 
 
     def delegateProxy( self, wms, config ) :
