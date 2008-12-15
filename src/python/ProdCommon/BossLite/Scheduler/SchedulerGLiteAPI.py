@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.99 2008/11/23 17:26:53 gcodispo Exp $"
-__version__ = "$Revision: 1.99 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.100 2008/12/05 11:56:43 gcodispo Exp $"
+__version__ = "$Revision: 1.100 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1445,8 +1445,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             out, ret = self.ExecuteCommand( self.proxyString + command )
             for ce in out.split() :
                 # blacklist
+                passblack = 1
                 if ce.find( "blah" ) == -1:
-                    passblack = 1
                     for ceb in blacklist :
                         if ce.find(ceb) > 0:
                             passblack = 0
@@ -1469,8 +1469,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             out, ret = self.ExecuteCommand( self.proxyString + singleComm )
             for ce in out.split() :
                 # blacklist
+                passblack = 1
                 if ce.find( "blah" ) == -1:
-                    passblack = 1
                     for ceb in blacklist :
                         if ce.find(ceb) > 0:
                             passblack = 0
