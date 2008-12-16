@@ -217,10 +217,13 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     tierList = makeTierList(datasetInfo['DataTier'])
 
     name = datasetInfo['ProcessedDataset']
+    algolist=[]
+    if algorithm not in ('', None):
+        algolist=[algorithm]
 
     processedDataset = DbsProcessedDataset (
         PrimaryDataset = primaryDataset,
-        AlgoList=[algorithm],
+        AlgoList=algolist,
         Name = name,
         TierList = tierList,
         ParentList = parents,
