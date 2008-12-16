@@ -11,7 +11,7 @@ manipulating the bits and pieces of it.
 from ProdCommon.FwkJobRep.FileInfo import FileInfo, AnalysisFile
 from ProdCommon.FwkJobRep.PerformanceReport import PerformanceReport
 import ProdCommon.FwkJobRep.StorageStats as StorageStats
-from ProdCommon.FwkJobRep.Utilities import FileParentageSorter
+import ProdCommon.FwkJobRep.Utilities as SortFilesUtil
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
@@ -76,8 +76,8 @@ class FwkJobReport:
         Return a list of output files for this job ordered based on parentage dependencies
 
         """
-        sorter = FileParentageSorter()
-        return sorter(self)
+
+        return SortFilesUtil.sortFiles(self)
 
 
     def newFile(self):
