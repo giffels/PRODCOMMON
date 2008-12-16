@@ -95,24 +95,16 @@ class FileParentageSorter:
         """
         allnames = [ x['LFN'] for x in self.result ]
         for name, deps in self.dependencies.items():
-            depEntries = []
+            cur = self.getEntry(name)
             for dep in deps:
                 if dep not in allnames:
                     continue
-                depEntries.append(self.getEntry(dep))
-
-            if len(depEntries) == 0:
-                continue
-
-            maxDep = self.maxEntry(depEntries)
-            currEntry = self.getEntry(name)
-            depPosition = self.result.index(maxDep)
-            currPosition = self.result.index(currEntry)
-
-            if depPosition > currPosition:
-                self.result.pop(currPosition)
-                self.result.insert(depPosition + 1, currEntry)
-
+                dep = self.getEntry(dep)
+                depPosition = self.result.index(dep)
+                currPosition = self.result.index(cur)
+                if depPosition > currPosition:
+                    self.result.pop(depPosition)
+                    self.result.insert(currPosition, dep)
 
         return self.result
 
