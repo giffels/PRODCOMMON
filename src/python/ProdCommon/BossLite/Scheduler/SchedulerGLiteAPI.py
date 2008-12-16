@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.98 2008/11/21 17:07:07 gcodispo Exp $"
-__version__ = "$Revision: 1.98 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.99 2008/11/23 17:26:53 gcodispo Exp $"
+__version__ = "$Revision: 1.99 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -799,7 +799,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # job.runningJob['statusHistory'].append(
                 #     'problems with output retrieval' )
                 job.runningJob.errors.append( joberr )
-            else :
+
+                
+            if job.runningJob.errors is None or job.runningJob.errors == [] :
                 # job.runningJob['statusHistory'].append(
                 #         'Output successfully retrieved' )
                 # try to purge files
