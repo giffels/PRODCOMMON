@@ -94,6 +94,15 @@ class FileInfo(dict):
                                 "LFN" : lfn})
         return
 
+    def parentLFNs(self):
+        """
+        _parentLFNs_
+
+        Util to get all parent LFNs
+
+        """
+        return [ x['LFN'] for x in self.inputFiles ]
+
     def newDataset(self):
         """
         _newDataset_
