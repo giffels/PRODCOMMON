@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.101 2008/12/15 10:17:18 gcodispo Exp $"
-__version__ = "$Revision: 1.101 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.102 2008/12/15 11:24:01 mcinquil Exp $"
+__version__ = "$Revision: 1.102 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -483,7 +483,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         os.environ["PROXY_REQUEST"] = proxycert
         cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " #\
               # + self.getUserProxy()
-        msg, ret = self.ExecuteCommand( cmd )
+        msg, ret = self.ExecuteCommand( self.proxyString + cmd )
 
         if ret != 0 or msg.find("Error") >= 0 :
             os.unlink( tmpfile )
