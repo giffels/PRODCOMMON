@@ -235,7 +235,8 @@ class ProtocolSrmv2(Protocol):
         Dir exists?
         """
 
-        cmd = "srmls " + opt +" "+ fullSource
+        cmd = "srmls -recursion_depth=0 " + opt +" "+ fullSource
+
         exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
