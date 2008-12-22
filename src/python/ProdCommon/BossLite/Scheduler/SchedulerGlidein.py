@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.9 2008/06/11 20:36:05 ewv Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.10 2008/11/07 21:17:08 ewv Exp $"
+__version__ = "$Revision: 1.10 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -39,7 +39,7 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       if x509:
           jdl += 'x509userproxy = %s\n' % x509
 
-      # Optional parameters that may be put in after the conversion from Perl to Python and escapes are fixed
+      # Glidein parameters
       jdl += '+JOB_Site = "$$(GLIDEIN_Site:Unknown)" \n'
       jdl += '+JOB_VM = "$$(Name:Unknown)" \n'
       #jdl += '+JOB_Machine_KFlops = \"\$\$(KFlops:Unknown)\" \n");
@@ -53,7 +53,9 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       jdl += '+JOB_Gatekeeper = "$$(GLIDEIN_Gatekeeper:Unknown)" \n'
       jdl += '+JOB_GridType = "$$(GLIDEIN_GridType:Unknown)" \n'
       jdl += '+JOB_GlobusRSL = "$$(GLIDEIN_GlobusRSL:Unknown)" \n'
-      jdl += 'Periodic_Remove = (((JobStatus == 2) && ((CurrentTime - JobCurrentStartDate) > (MaxWallTimeMins*60))) =?= True) \n'
+      jdl += 'since=(CurrentTime-EnteredCurrentStatus)\n'
+      jdl += 'Periodic_Remove = (((JobStatus == 2) && ((CurrentTime - JobCurrentStartDate) > (MaxWallTimeMins*60))) =?= True) || '
+      jdl += '(JobStatus==5 && $(since)>691200) || (JobStatus==1 && $(since)>691200)\n'
 
 
       return jdl, filelist, 'Unknown'
