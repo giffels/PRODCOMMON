@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.39 2008/11/07 21:17:08 ewv Exp $"
-__version__ = "$Revision: 1.39 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.40 2008/11/10 20:05:12 ewv Exp $"
+__version__ = "$Revision: 1.40 $"
 
 # For earlier history, see SchedulerCondorGAPI.py
 
@@ -137,7 +137,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 jdlFile = open(jdlFileName, 'w')
                 jdlFile.write(jdl)
                 jdlFile.close()
-                
+
                 if self.useGlexec:
                     command = '/opt/glexec/glexec-osg/sbin/glexec ' \
                               + self.condorTemp + '/' + self.glexecWrapper \
@@ -168,7 +168,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     job.runningJob['destination'] = execHost
 
         success = self.hostname
-        
+
         return ret_map, taskId, success
 
 
@@ -342,9 +342,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
                        ['JobStatus', 'GridJobId','ProcId','ClusterId',
                         'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
             parser = make_parser()
-            parser.setContentHandler(handler)
-            parser.setFeature(feature_external_ges, False)
-            parser.parse(outputFile)
+            try:
+                parser.setContentHandler(handler)
+                parser.setFeature(feature_external_ges, False)
+                parser.parse(outputFile)
+            except:
+                raise SchedulerError('Problem parsing output of command', cmd)
 
             jobDicts = handler.getJobInfo()
             for globalJobId in jobDicts.keys():
@@ -373,7 +376,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     statusRecord['service']         = service
                     if execHost:
                         statusRecord['destination']   = execHost
-                        
+
                     bossIds[schedd+'//'+jobId] = statusRecord
 
         for job in obj.jobs:
