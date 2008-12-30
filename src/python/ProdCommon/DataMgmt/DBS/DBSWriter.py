@@ -241,27 +241,26 @@ class DBSWriter:
         """
         #TODO: Whats the purpose of insertDetectorData
 
+	if len(files) < 1: 
+		return 
         affectedBlocks = set()
         insertFiles =  []
         addedRuns=[]
         seName = None
         
         #Get the algos in insertable form
-        
         ialgos = [DBSWriterObjects.createAlgorithmForInsert(dict(algo)) for algo in algos ]
-        
+       
         for outFile in files:
             #  //
             # // Convert each file into a DBS File object
             #//
             lumiList = []
 
-	    """
+	    #Somehing similar should be the real deal when multiple runs/lumi could be returned from wmbs file
 
-	    Somehing similar should be the real deal when multiple runs/lumi could be returned from wmbs file
-
-            for runlumiinfo in outFile['runs']:
-                lrun=long(runlumiinfo['run'])
+            for runlumiinfo in outFile.getRuns():
+                lrun=long(runlumiinfo.run)
                 run = DbsRun(
                     RunNumber = lrun,
                     NumberOfEvents = 0,
@@ -273,44 +272,22 @@ class DBSWriter:
                     )
                 #Only added if not added by another file in this loop, why waste a call to DBS
                 if lrun not in addedRuns:
-                    self.dbs.insertRun(run)
-                    addedRuns.append(lrun) #save it so we do not try to add it again to DBS
-                    
-                lumi = DbsLumiSection(
-                    LumiSectionNumber = long(runlumiinfo['LumiSectionNumber']),
-                    StartEventNumber = 0,
-                    EndEventNumber = 0,
-                    LumiStartTime = 0,
-                    LumiEndTime = 0,
-                    RunNumber = lrun,
-                )
-                lumiList.append(lumi)
+                	self.dbs.insertRun(run)
+                    	addedRuns.append(lrun) #save it so we do not try to add it again to DBS
+			logging.debug("run %s added to DBS " % str(lrun))
+                for alsn in runlumiinfo:    
+                	lumi = DbsLumiSection(
+                    		LumiSectionNumber = long(alsn),
+                    		StartEventNumber = 0,
+                    		EndEventNumber = 0,
+                    		LumiStartTime = 0,
+                    		LumiEndTime = 0,
+                    		RunNumber = lrun,
+                	)
+                	lumiList.append(lumi)
+
             logging.debug("lumi list created for the file")
-            """
 
-	    run = DbsRun(
-                    RunNumber = outFile['run'],
-                    NumberOfEvents = 0,
-                    NumberOfLumiSections = 0,
-                    TotalLuminosity = 0,
-                    StoreNumber = 0,
-                    StartOfRun = 0,
-                    EndOfRun = 0,
-                    )
-            #Only added if not added by another file in this loop, why waste a call to DBS
-            if outFile['run'] not in addedRuns:
-                    self.dbs.insertRun(run)
-                    addedRuns.append(outFile['run']) #save it so we do not try to add it again to DBS
-
-            lumi = DbsLumiSection(
-                    LumiSectionNumber = outFile['lumi'],
-                    StartEventNumber = 0,
-                    EndEventNumber = 0,
-                    LumiStartTime = 0,
-                    LumiEndTime = 0,
-                    RunNumber = outFile['run'],
-                )
-            lumiList.append(lumi)
             dbsfile = DbsFile(
                               Checksum = str(outFile['cksum']),
                               NumberOfEvents = outFile['events'],
@@ -326,8 +303,6 @@ class DBSWriter:
                               ParentList = outFile.getParentLFNs(),
                               #BranchHash = outFile['BranchHash'],
                             )
-
-
             #This check comes from ProdAgent, not sure if its required
             if len(outFile["locations"]) > 0:
                   seName = list(outFile["locations"])[0]
@@ -335,17 +310,14 @@ class DBSWriter:
             else:
                 msg = "Error in DBSWriter.insertFiles\n"
                 msg += "No SEname associated to file"
-                print "FAKING seName for now"
-		seName="cmssrm.fnal.gov"
-                #raise DBSWriterError(msg)
+                #print "FAKING seName for now"
+		#seName="cmssrm.fnal.gov"
+                raise DBSWriterError(msg)
             insertFiles.append(dbsfile)
         #  //Processing Jobs: 
         # // Insert the lists of sorted files into the appropriate
         #//  fileblocks
-        
-        
-        print "How many files", len(insertFiles)
-        
+       
         try:
             fileBlock = DBSWriterObjects.getDBSFileBlock(
                     self.dbs,
@@ -355,7 +327,7 @@ class DBSWriter:
                 msg = "Error in DBSWriter.insertFiles\n"
                 msg += "Cannot retrieve FileBlock for dataset:\n"
                 msg += " %s\n" % procDataset['Path']
-                msg += "In Storage Element:\n %s\n" % fileList.seName
+                #msg += "In Storage Element:\n %s\n" % insertFiles.seName
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
         
