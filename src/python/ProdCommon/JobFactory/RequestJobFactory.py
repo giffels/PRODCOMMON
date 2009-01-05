@@ -183,8 +183,9 @@ class RequestJobFactory:
         jobSpec.payload.operate(self.generateJobConfig)
         jobSpec.payload.operate(self.generateCmsGenConfig)
 
-        jobSpec.payload.cfgInterface.rawCfg = None
-        jobSpec.payload.cfgInterface.originalCfg = None
+        if jobSpec.payload.cfgInterface:
+            jobSpec.payload.cfgInterface.rawCfg = None
+            jobSpec.payload.cfgInterface.originalCfg = None
         
         specCacheDir =  os.path.join(
             self.specCache, str(self.count // 1000).zfill(4))
