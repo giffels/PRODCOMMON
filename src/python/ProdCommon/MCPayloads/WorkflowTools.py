@@ -17,6 +17,7 @@ from ProdCommon.MCPayloads import UUID as MCPayloadsUUID
 import ProdCommon.MCPayloads.DatasetConventions as DatasetConventions
 
 from IMProv.IMProvNode import IMProvNode
+from IMProv.IMProvLoader import loadIMProvString
 
 class NodeFinder:
     """
@@ -108,8 +109,18 @@ def addStageOutNode(cmsRunNode, nodeName, *nodes):
     stageOut.application["Version"] = ""
     stageOut.application["Architecture"] = ""
     stageOut.application["Executable"] = "RuntimeStageOut.py" # binary name
-    stageOut.configuration = " ".join(nodes)
 
+
+    config = IMProvNode("StageOutConfiguration")
+    for node in nodes:
+        config.addNode(IMProvNode("StageOutFor", None, NodeName = str(node)))
+
+    config.addNode(IMProvNode("NumberOfRetries", None, Value = 3))
+    config.addNode(IMProvNode("RetryPauseTime", None, Value = 600))
+
+
+
+    stageOut.configuration = config.makeDOMElement().toprettyxml()
     return
 
 def addLogArchNode(cmsRunNode, nodeName):
@@ -126,7 +137,7 @@ def addLogArchNode(cmsRunNode, nodeName):
     stageOut.application["Version"] = ""
     stageOut.application["Architecture"] = ""
     stageOut.application["Executable"] = "RuntimeLogArch.py" # binary name
-    stageOut.configuration = ""
+
 
     return
 
@@ -156,15 +167,20 @@ def addStageOutOverride(stageOutNode, command, option, seName, lfnPrefix):
     attribute
 
     """
+    if len(stageOutNode.configuration.strip()) == 0:
+        config = IMProvNode("StageOutConfiguration")
+    else:
+        config = loadIMProvString(stageOutNode.configuration)
 
     override = IMProvNode("Override")
-
     override.addNode(IMProvNode("command", command))
     override.addNode(IMProvNode("option" , option))
     override.addNode(IMProvNode("se-name" , seName))
     override.addNode(IMProvNode("lfn-prefix", lfnPrefix))
-    stageOutNode.configuration = override.makeDOMElement().toprettyxml()
+    config.addNode(override)
+    stageOutNode.configuration = config.makeDOMElement().toprettyxml()
     return
+
 
 def generateFilenames(workflowSpec):
     """
