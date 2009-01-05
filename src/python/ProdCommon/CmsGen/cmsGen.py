@@ -358,6 +358,63 @@ def madgraph():
 
     return 0
 
+""" 
+Sherpa generator 
+""" 
+def sherpa():
+    """
+    Generator dependent from here
+    This part will only set up the sherpa libs, the actual event generation will be done
+    in the following cmsRun step
+    """
+    # First line in the config file is the generator name
+    # Second line is the process name
+    # Third line is the tarball name incl version of madgraph
+    file      = open(cfgFile, 'r')
+    generatorLine    = file.readline() # Not used
+    nameLabel    = file.readline().strip()
+    tarballName      = file.readline().strip()
+
+    #  //
+    # // Build tarball location within release structure
+    #//
+    if os.environ.get("CMS_PATH", None) == None:
+        msg = "Error: CMS_PATH variable not set"
+        raise RuntimeError, msg
+    if os.environ.get("SCRAM_ARCH", None) == None:
+        msg = "Error: SCRAM_ARCH variable not set"
+        raise RuntimeError, msg
+
+
+    tarballLocation = "%s/%s/generatorData/" % (os.environ['CMS_PATH'],
+                                                os.environ['SCRAM_ARCH'])
+    tarballLocation += "sherpa/"
+    tarballLocation += "%s/" % nameLabel
+    tarballLocation += "%s" % tarballName
+    if not os.path.exists(tarballLocation):
+        msg = "Error: Sherpa Tarball Location not found:\n"
+        msg += tarballLocation
+        msg += "\nDoes not exist"
+        raise RuntimeError(msg)
+
+    #  //
+    # // unpack the tarball
+    #//
+    setupCommand = "/bin/cp %s . \n" % tarballLocation
+    setupCommand += "tar -zxf %s\n" % os.path.basename(tarballLocation)
+    os.system(setupCommand)
+ 
+    #  //
+    # // link everything so that the cmsRun finds the Sherpa libs
+    #//
+    try:
+        msg = "cd ../cmsRun1; ln -s ../cmsGen1/SherpaRun .;" 
+        os.system(msg)
+    except Exception, ex:
+        return 5
+
+    return 0
+
 def processFrameworkJobReport():
     """
     Runtime tool for processing the Framework Job Report produced
@@ -515,6 +572,19 @@ elif generator == "comphep":
 elif generator == "madgraph":
     jobFailed  = madgraph()
     processFrameworkJobReport()
+elif generator == "sherpa":
+    jobFailed  = sherpa()
+    # Create a dummy FwkJobReport
+    theJobReport = FwkJobReport()
+    if jobFailed == 0:
+       theJobReport.status = "Success"
+       theJobReport.exitCode = 0
+       theJobReport.write(jobReport)
+    else:
+       theJobReport.status = "Failed"
+       theJobReport.exitCode = jobFailed
+       errDetail = theJobReport.addError(jobFailed, "CmsGenFailure")
+       errDetail['Description'] = "Failed to set up Sherpa Libs"
 else:
     msg = "Generator %s Not Found" % generator
     raise RuntimeError, msg
