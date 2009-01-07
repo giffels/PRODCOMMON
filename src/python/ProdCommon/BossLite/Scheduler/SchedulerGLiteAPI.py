@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.102 2008/12/15 11:24:01 mcinquil Exp $"
-__version__ = "$Revision: 1.102 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.103 2008/12/17 18:20:30 gcodispo Exp $"
+__version__ = "$Revision: 1.103 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1448,7 +1448,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 passblack = 1
                 if ce.find( "blah" ) == -1:
                     for ceb in blacklist :
-                        if ce.find(ceb) > 0:
+                        if ce.find(ceb) >= 0:
                             passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
