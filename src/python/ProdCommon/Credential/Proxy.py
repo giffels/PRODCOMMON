@@ -68,8 +68,6 @@ class Proxy:
             msg = "Error while extracting User Name from proxy %s"%proxy
             raise Exception(msg)
 
-        #emelments = out.split('/')
-        #uName = elements[-1:][0].split('CN=')[1]   
         uName = '' 	 
         for cname in out.split('/'): 	 
             if cname[:3] == "CN=" and cname[3:].find('proxy') == -1: 	 
@@ -117,13 +115,15 @@ class Proxy:
         reg="/%s/"%vo
         if group:
             reg+=group
-        if role:
-            reg+="/Role=%s"%role
+            if role:
+                reg+="/Role=%s"%role
+        else:
+            reg+="Role=%s"%role
 
         att, ret = self.ExecuteCommand(cmd)
 
         if ret != 0 :
-            msg = "Error while checking proxy timeleft for %s"%proxy
+            msg = "Error while checking attribute for %s"%proxy
             raise Exception(msg)
  
        ## you always have at least  /cms/Role=NULL/Capability=NULL
@@ -139,8 +139,12 @@ class Proxy:
 
         if group:
             cmd += ':/'+vo+'/'+group
-        if role:
-            cmd += '/role='+role
+            if role:
+                cmd += '/Role='+role
+        else:
+            if role:
+                cmd += ':/'+vo+'/Role='+role
+
         cmd += ' -valid 192:00'
         try:
             out = os.system(cmd)
