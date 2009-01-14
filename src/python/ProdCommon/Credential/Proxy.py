@@ -115,10 +115,9 @@ class Proxy:
         reg="/%s/"%vo
         if group:
             reg+=group
-            if role:
-                reg+="/Role=%s"%role
+            if role: reg+="/Role=%s"%role
         else:
-            reg+="Role=%s"%role
+            if role: reg+="Role=%s"%role
 
         att, ret = self.ExecuteCommand(cmd)
 
@@ -139,11 +138,9 @@ class Proxy:
 
         if group:
             cmd += ':/'+vo+'/'+group
-            if role:
-                cmd += '/Role='+role
+            if role: cmd += '/Role='+role
         else:
-            if role:
-                cmd += ':/'+vo+'/Role='+role
+            if role: cmd += ':/'+vo+'/Role='+role
 
         cmd += ' -valid 192:00'
         try:
