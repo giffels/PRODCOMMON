@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.104 2009/01/07 16:55:20 fanzago Exp $"
-__version__ = "$Revision: 1.104 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.105 2009/01/09 10:20:17 gcodispo Exp $"
+__version__ = "$Revision: 1.105 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -196,9 +196,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # skipWMSAuth
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
+        self.skipWMSAuth = int( self.skipWMSAuth )
 
         # vo
         self.vo = args.get( "vo", "cms" )
+
+        # rename output files with submission number
+        self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
+        self.renameOutputFiles = int( self.renameOutputFiles )
 
         # x509 string for cli commands
         self.proxyString = ''
@@ -1265,7 +1270,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # output files handling
         outfiles = ''
         for filePath in job['outputFiles'] :
-            if filePath != '' :
+            if filePath == '' :
+                continue
+            if self.renameOutputFiles :
+                outfiles += '"' + filePath + '_' + \
+                            str(job.runningJob[ 'submission' ]) + '",'
+            else :
                 outfiles += '"' + filePath + '",'
 
         if len( outfiles ) != 0 :
@@ -1358,7 +1368,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # job output files handling
             outfiles = ''
             for filePath in job['outputFiles'] :
-                if filePath != '' :
+                if filePath == '' :
+                    continue
+                if self.renameOutputFiles :
+                    outfiles += '"' + filePath + '_' + \
+                                str(job.runningJob[ 'submission' ]) + '",'
+                else :
                     outfiles += '"' + filePath + '",'
 
             if len( outfiles ) != 0 :
@@ -1521,3 +1536,5 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
         os.system("rm -rf " + workdir)
+
+
