@@ -240,36 +240,27 @@ class DBSWriter:
         list of files inserted in DBS
         """
         #TODO: Whats the purpose of insertDetectorData
+
+	if len(files) < 1: 
+		return 
         affectedBlocks = set()
         insertFiles =  []
         addedRuns=[]
         seName = None
         
         #Get the algos in insertable form
-        
         ialgos = [DBSWriterObjects.createAlgorithmForInsert(dict(algo)) for algo in algos ]
-#[u'ID', u'LFN', u'Dataset', u'Checksum', u'NumberOfEvents', u'FileSize', u'FileStatus', u'FileType', u'RunLumiInfo', u'LastModificationDate']
-#[{'RunNumber': 1, 'LumiSectionNumber': 666666}] 
-    
-        
+       
         for outFile in files:
             #  //
             # // Convert each file into a DBS File object
             #//
-            #FIXME: Add SENames to the file in Buffer
-            print "FAKING SENames for files, just for TESTING"
-
-            #outFile['SEName']='cmssrm.fnal.gov'
             lumiList = []
-            #[{'RunNumber': 1, 'LumiSectionNumber': 666666}]
-            try:
-                runLumiInfos = eval(base64.decodestring(outFile['RunLumiInfo']))
-            except:
-                msg="Cannot understand  RunLumiInfo stored in DBSBuffer for file %s" %outFile
-                raise DBSWriterError(msg)
-           
-            for runlumiinfo in runLumiInfos:
-                lrun=long(runlumiinfo['RunNumber'])
+
+	    #Somehing similar should be the real deal when multiple runs/lumi could be returned from wmbs file
+
+            for runlumiinfo in outFile.getRuns():
+                lrun=long(runlumiinfo.run)
                 run = DbsRun(
                     RunNumber = lrun,
                     NumberOfEvents = 0,
@@ -281,26 +272,27 @@ class DBSWriter:
                     )
                 #Only added if not added by another file in this loop, why waste a call to DBS
                 if lrun not in addedRuns:
-                    self.dbs.insertRun(run)
-                    addedRuns.append(lrun) #save it so we do not try to add it again to DBS
-                    
-                lumi = DbsLumiSection(
-                    LumiSectionNumber = long(runlumiinfo['LumiSectionNumber']),
-                    StartEventNumber = 0,
-                    EndEventNumber = 0,
-                    LumiStartTime = 0,
-                    LumiEndTime = 0,
-                    RunNumber = lrun,
-                )
-                lumiList.append(lumi)
+                	self.dbs.insertRun(run)
+                    	addedRuns.append(lrun) #save it so we do not try to add it again to DBS
+			logging.debug("run %s added to DBS " % str(lrun))
+                for alsn in runlumiinfo:    
+                	lumi = DbsLumiSection(
+                    		LumiSectionNumber = long(alsn),
+                    		StartEventNumber = 0,
+                    		EndEventNumber = 0,
+                    		LumiStartTime = 0,
+                    		LumiEndTime = 0,
+                    		RunNumber = lrun,
+                	)
+                	lumiList.append(lumi)
+
             logging.debug("lumi list created for the file")
-            #
-            
+
             dbsfile = DbsFile(
-                              Checksum = outFile['Checksum'],
-                              NumberOfEvents = outFile['NumberOfEvents'],
-                              LogicalFileName = outFile['LFN'],
-                              FileSize = int(outFile['FileSize']),
+                              Checksum = str(outFile['cksum']),
+                              NumberOfEvents = outFile['events'],
+                              LogicalFileName = outFile['lfn'],
+                              FileSize = int(outFile['size']),
                               Status = "VALID",
                               ValidationStatus = 'VALID',
                               FileType = 'EDM',
@@ -308,28 +300,24 @@ class DBSWriter:
                               TierList = DBSWriterObjects.makeTierList(procDataset['Path'].split('/')[3]),
                               AlgoList = ialgos,
                               LumiList = lumiList,
-                              #ParentList = outFile['ParentLFNs'],
+                              ParentList = outFile.getParentLFNs(),
                               #BranchHash = outFile['BranchHash'],
                             )
-            
             #This check comes from ProdAgent, not sure if its required
-            if outFile.has_key("SEName"):
-               if outFile['SEName'] :
-                  seName = outFile['SEName']
+            if len(outFile["locations"]) > 0:
+                  seName = list(outFile["locations"])[0]
                   logging.debug("SEname associated to file is: %s"%seName)
-            if not seName:
+            else:
                 msg = "Error in DBSWriter.insertFiles\n"
                 msg += "No SEname associated to file"
-                
+                #print "FAKING seName for now"
+		#seName="cmssrm.fnal.gov"
                 raise DBSWriterError(msg)
             insertFiles.append(dbsfile)
         #  //Processing Jobs: 
         # // Insert the lists of sorted files into the appropriate
         #//  fileblocks
-        
-        
-        print "How many files", len(insertFiles)
-        
+       
         try:
             fileBlock = DBSWriterObjects.getDBSFileBlock(
                     self.dbs,
@@ -338,8 +326,8 @@ class DBSWriter:
         except DbsException, ex:
                 msg = "Error in DBSWriter.insertFiles\n"
                 msg += "Cannot retrieve FileBlock for dataset:\n"
-                msg += " %s\n" % procDatasetPath
-                msg += "In Storage Element:\n %s\n" % fileList.seName
+                msg += " %s\n" % procDataset['Path']
+                #msg += "In Storage Element:\n %s\n" % insertFiles.seName
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
         
@@ -384,7 +372,7 @@ class DBSWriter:
                     msg = "Error in DBSWriter.insertFiles\n"
                     msg += "Cannot insert processed files:\n"
                     msg += " %s\n" % (
-                        [ x['LogicalFileName'] for x in insertLists ],
+                        [ x['LogicalFileName'] for x in insertFiles ],
                         )
                     
                     msg += "%s\n" % formatEx(ex)
@@ -727,8 +715,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -756,7 +749,12 @@ class DBSWriter:
                 raise DBSWriterError(msg)
             del xferData
 
-            for sename in reader.listFileBlockLocation(block):
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)            
         
         return
@@ -795,8 +793,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDataset\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -811,8 +814,13 @@ class DBSWriter:
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-            
-            for sename in reader.listFileBlockLocation(block):
+                    
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDataset\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                                                                                 
         return
@@ -848,8 +856,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -857,14 +870,19 @@ class DBSWriter:
             try:                                                       
                 self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, noParentsReadOnly = True )
             except DbsException, ex:
-                msg = "Error in DBSWriter.importDatasetWithParentage\n"
+                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                 msg += "Could not write content of dataset:\n ==> %s\n" % (
                     sourceDatasetPath,)
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
 
-            for sename in reader.listFileBlockLocation(block):
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)            
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                 
         return    

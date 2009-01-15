@@ -7,112 +7,230 @@ Util objects for working with job report objects
 """
 
 
-
-class FileParentageSorter:
+class SearchOp:
     """
-    _FileParentageSorter_
+    _SearchOp_
 
-    With parent remapping in redneck style jobs where one output module needs to look like the parent of
-    another module, the files need to be sorted so that parents are inserted before children.
+    Search operator to act on a Tree
+    """
+    def __init__(self, lfn):
+        self.target = lfn
+        self.result = None
 
-    This sorting class will sort the files in a job report instance and return them as a list ordered by
-    parent dependencies
+    def __call__(self, node):
+        if node.lfn == self.target:
+            self.result = node
+
+class OrderOp:
+    """
+    _OrderOp_
+
+    Ordering operator to act on a Tree
 
     """
     def __init__(self):
         self.result = []
-        self.dependencies = {}
+
+    def __call__(self, node):
+        self.result.append(node.data)
 
 
 
+class FileNode:
+    """
+    _FileNode_
 
-    def __call__(self, jobReport):
+    Tree Node container class for a FileInfo object that allows
+    building a tree of FileInfo objects based on parentage information
+
+    """
+    def __init__(self, fileInfo):
+        self.lfn = fileInfo['LFN']
+        self.data = fileInfo
+        self.children = {}
+
+    def addChild(self, fileInfo):
         """
-        _operator(jobReport)_
+        _addChild_
 
-        return a sorted list of files in the job report instance provided
+        Add a child file to this node
+        """
+        self.children[fileInfo['LFN']] = FileNode(fileInfo)
+
+    def traverse(self,operator):
+        """
+        _traverse_
+
+        Recursive descent through children
+        Call operator on self and then pass down
+        """
+        operator(self)
+        for c in self.children.values():
+            c.traverse(operator)
+
+
+    def stringMe(self, indent = 0):
+        """
+        _stringMe_
+
+        Recursive print util that indents children to aid debugging
+        """
+        padding = ""
+        for x in range(0, indent):
+            padding += " "
+        msg = "%sNode : %s\n" % (padding, self.lfn)
+        for c in self.children.values():
+            msg += "%s%s" % (padding, c.stringMe(indent+1))
+        return msg
+
+class Tree:
+    """
+    _Tree_
+
+    Top level Tree object, maintains a list of FileNode roots
+    and allows them all to be queries and sorted in a single operation
+
+    """
+
+    def __init__(self):
+        self.roots = {}
+
+    def addRoot(self, fileInfo):
+        """
+        _addRoot_
+
+        Add a new Root node to the Tree
 
         """
-        self.result = []
-        self.dependencies = {}
-        [ self.append(f) for f in jobReport.files ]
-        return self.sort()
+        self.roots[fileInfo['LFN']] = FileNode(fileInfo)
 
 
-
-    def append(self, element):
+    def search(self, lfn):
         """
+        _search_
 
-        Add a file to the sorter, parentage is examined and added to the dependency map
+        Recursive search through all root trees for the LFN
+        requested, returning the node matching that LFN
 
         """
-        name = element['LFN']
-        parents = [ x['LFN'] for x in element.inputFiles ]
-        if parents != []:
-            self.dependencies[name] = parents
+        for root in self.roots.values():
+            searcher = SearchOp(lfn)
+            root.traverse(searcher)
+            if searcher.result != None:
+                return searcher.result
 
-        self.result.append(element)
-
-    def names(self):
-        """
-        _names_
-
-        Current list of LFNs
-
-        """
-        return [ x['LFN'] for x in self.results ]
-
-    def getEntry(self, name):
-        """
-        _getEntry_
-
-        Get the file entry based on the LFN
-
-        """
-        for x in self.result:
-            if x['LFN'] == name:
-                return x
         return None
-
-    def maxEntry(self, entryList):
-        """
-        _maxEntry_
-
-        get the entry with the biggest index in the list (IE the last one in the list order)
-
-        """
-        maxIndex = max( [ self.result.index(x) for x in entryList ] )
-        return self.result[maxIndex]
-
 
     def sort(self):
         """
         _sort_
 
-        generate the sorted list of file objects, reshuffling file entries with child dependencies
-        to ensure that they are behind the files they depend on
+        Collapse tree in order based on parentage tree for each root node
 
         """
-        allnames = [ x['LFN'] for x in self.result ]
-        for name, deps in self.dependencies.items():
-            depEntries = []
-            for dep in deps:
-                if dep not in allnames:
-                    continue
-                depEntries.append(self.getEntry(dep))
-
-            if len(depEntries) == 0:
-                continue
-
-            maxDep = self.maxEntry(depEntries)
-            currEntry = self.getEntry(name)
-            depPosition = self.result.index(maxDep)
-            currPosition = self.result.index(currEntry)
-
-            if depPosition > currPosition:
-                self.result.pop(currPosition)
-                self.result.insert(depPosition + 1, currEntry)
+        sorter = OrderOp()
+        for root in self.roots.values():
+            root.traverse(sorter)
+        return sorter.result
 
 
-        return self.result
+    def __str__(self):
+        """
+        format method to aid debugging
+        """
+        msg = ""
+        for root in self.roots.values():
+            msg += "%s\n" % root.stringMe()
+
+        return msg
+
+
+def processList(tree, *input):
+    """
+    _processList_
+
+    Operator that reduces the input list for each node that it
+    can add to the tree.
+    Any nodes that cannot be added in this pass are returned as
+    a list of remainders.
+
+    """
+    remainders = []
+    for r in input:
+        searchFor = r['MatchParent']
+        searchResult = tree.search(searchFor)
+        if searchResult != None:
+            searchResult.addChild(r)
+            continue
+        else:
+            remainders.append(r)
+    return remainders
+
+
+
+def sortFiles(report):
+    """
+    _sortFiles_
+
+    Sort the output files in the report based on parentage information
+    to ensure that any files that depend on each other are processed in
+    the correct order.
+
+    """
+    tree = Tree()
+    remainders = []
+    allLFNs = [ x['LFN'] for x in report.files ]
+    allParents = []
+    [ allParents.extend(x.parentLFNs()) for x in report.files ]
+    externalParents = set(allParents).difference(set(allLFNs))
+
+    #  //
+    # // firstly we build the tree roots from all the files that
+    #//  dont have parents within the list of files we are dealing with
+    for f in report.files:
+        parents = set(f.parentLFNs())
+        # strip out external parents
+        parents = list(parents.difference(externalParents))
+        if len(parents) == 0:
+            # No parents, top of tree
+            tree.addRoot(f)
+            continue
+        if len(parents) == 1:
+            f['MatchParent'] = parents[0]
+            remainders.append(f)
+            continue
+        if len(parents) > 1:
+            # Multiple parents ==> PANIC!
+            raise RuntimeError, "File has too many parents"
+
+    #  //
+    # // Now we have pruned out the roots, we process the
+    #//  dependencies for each node, we do this recursively
+    #  //and make sure the list keeps decreasing
+    # //
+    #//
+    recursionCheck = 0
+    remainderLen = len(remainders)
+    while len(remainders) > 0:
+        remainders = processList(tree, *remainders)
+        if len(remainders) == remainderLen:
+            recursionCheck += 1
+        remainderLen = len(remainders)
+
+        if recursionCheck > 10:
+            #  //
+            # // further reduction may not be possible
+            #//  for now, blow an exception
+            msg = "Parentage sorting appears to be stuck in a loop"
+            raise RuntimeError, msg
+
+    #  //
+    # // Now we have built the tree, we can traverse it in order
+    #//  to rebuild the ordered list of parents
+
+    return tree.sort()
+
+
+
+
 
