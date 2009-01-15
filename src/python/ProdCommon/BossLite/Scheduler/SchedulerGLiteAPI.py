@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.98 2008/11/21 17:07:07 gcodispo Exp $"
-__version__ = "$Revision: 1.98 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.105 2009/01/09 10:20:17 gcodispo Exp $"
+__version__ = "$Revision: 1.105 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -196,9 +196,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # skipWMSAuth
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
+        self.skipWMSAuth = int( self.skipWMSAuth )
 
         # vo
         self.vo = args.get( "vo", "cms" )
+
+        # rename output files with submission number
+        self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
+        self.renameOutputFiles = int( self.renameOutputFiles )
 
         # x509 string for cli commands
         self.proxyString = ''
@@ -483,7 +488,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         os.environ["PROXY_REQUEST"] = proxycert
         cmd =  "glite-proxy-cert -o " + tmpfile + " -e PROXY_REQUEST " #\
               # + self.getUserProxy()
-        msg, ret = self.ExecuteCommand( cmd )
+        msg, ret = self.ExecuteCommand( self.proxyString + cmd )
 
         if ret != 0 or msg.find("Error") >= 0 :
             os.unlink( tmpfile )
@@ -799,7 +804,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # job.runningJob['statusHistory'].append(
                 #     'problems with output retrieval' )
                 job.runningJob.errors.append( joberr )
-            else :
+
+                
+            if job.runningJob.errors is None or job.runningJob.errors == [] :
                 # job.runningJob['statusHistory'].append(
                 #         'Output successfully retrieved' )
                 # try to purge files
@@ -1263,7 +1270,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # output files handling
         outfiles = ''
         for filePath in job['outputFiles'] :
-            if filePath != '' :
+            if filePath == '' :
+                continue
+            if self.renameOutputFiles :
+                outfiles += '"' + filePath + '_' + \
+                            str(job.runningJob[ 'submission' ]) + '",'
+            else :
                 outfiles += '"' + filePath + '",'
 
         if len( outfiles ) != 0 :
@@ -1356,7 +1368,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # job output files handling
             outfiles = ''
             for filePath in job['outputFiles'] :
-                if filePath != '' :
+                if filePath == '' :
+                    continue
+                if self.renameOutputFiles :
+                    outfiles += '"' + filePath + '_' + \
+                                str(job.runningJob[ 'submission' ]) + '",'
+                else :
                     outfiles += '"' + filePath + '",'
 
             if len( outfiles ) != 0 :
@@ -1443,20 +1460,21 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             out, ret = self.ExecuteCommand( self.proxyString + command )
             for ce in out.split() :
                 # blacklist
+                passblack = 1
                 if ce.find( "blah" ) == -1:
-                    passblack = 1
                     for ceb in blacklist :
-                        if ce.find(ceb) > 0:
+                        if ce.find(ceb) >= 0:
                             passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
                         celist.append( ce )
                     else:
                         for cew in whitelist:
-                            if ce.find(cew) >= 0:
+                            if ce.find(cew) != -1:
                                 celist.append( ce )
-
             return celist
 
         for se in seList :
@@ -1467,14 +1485,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             out, ret = self.ExecuteCommand( self.proxyString + singleComm )
             for ce in out.split() :
                 # blacklist
+                passblack = 1
                 if ce.find( "blah" ) == -1:
-                    passblack = 1
                     for ceb in blacklist :
-                        if ce.find(ceb) > 0:
+                        if ce.find(ceb) != -1:
                             passblack = 0
                 # whitelist if surviving the blacklist selection
                 if passblack:
-                    if whitelist is None :
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
                         celist.append( ce )
                     else:
                         for cew in whitelist:
@@ -1484,19 +1504,16 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # a site matching is enough
             if not full and celist != []:
                 break
-
         return celist
 
 
-
-
-    def delegateProxy( self, wms, config ) :
+    def delegateProxy( self, config='', service='' ) :
         """
         _delegateProxy_
         """
 
         workdir = tempfile.mkdtemp( prefix = 'delegation', dir = os.getcwd() )
-        config, endpoints = self.mergeJDL('[]', wms, config)
+        config, endpoints = self.mergeJDL('[]', service, config)
 
         for wms in self.wmsResolve( endpoints ) :
             try :
@@ -1519,3 +1536,5 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
         os.system("rm -rf " + workdir)
+
+

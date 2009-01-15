@@ -244,7 +244,9 @@ class WorkflowMaker:
         cfg = ''
         for link in self.cmsRunNode._InputLinks:
             if link['AppearStandalone']:
-                cfg = '%s%s%s' % (cfg, self.origCfgs[link['InputNode']], sep)
+                prev_config = self.origCfgs.get(link['InputNode'], '')
+                if prev_config:
+                    cfg = '%s%s%s' % (cfg, prev_config, sep)
         cfg = '%s%s' % (cfg, honkingGreatString)
         self.cmsRunNode.cfgInterface.originalCfg = cfg
         self.origCfgs[self.cmsRunNode.name] = cfg

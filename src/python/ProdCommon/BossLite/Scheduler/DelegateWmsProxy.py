@@ -3,11 +3,12 @@
 _DelegateWmsProxy_
 """
 
-__revision__ = "$Id: DelegateWmsProxy.py,v 1.1 2008/10/29 11:45:03 gcodispo Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: DelegateWmsProxy.py,v 1.2 2008/10/29 14:53:17 gcodispo Exp $"
+__version__ = "$Revision: 1.2 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
+import sys
 import logging
 
 from ProdAgentDB.Config import defaultConfig as dbConfig
@@ -40,8 +41,18 @@ def main():
     """
     __main__
     """
-    wms = ''
-    config = ''
+    ''
+
+    try:
+        config = sys.argv[0]
+        try:
+            wms = sys.argv[1]
+        except IndexError:
+            wms = ''
+    except IndexError:
+        config = ''
+        wms = ''
+
     delegateWmsProxy( wms, config )
 
 
