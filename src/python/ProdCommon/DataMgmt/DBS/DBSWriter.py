@@ -715,8 +715,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -744,7 +749,12 @@ class DBSWriter:
                 raise DBSWriterError(msg)
             del xferData
 
-            for sename in reader.listFileBlockLocation(block):
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)            
         
         return
@@ -783,8 +793,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDataset\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -799,8 +814,13 @@ class DBSWriter:
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
-            
-            for sename in reader.listFileBlockLocation(block):
+                    
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDataset\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                                                                                 
         return
@@ -836,8 +856,13 @@ class DBSWriter:
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
+                    locations = reader.listFileBlockLocation(block)
+                    if not locations:
+                        msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                        msg += "Block has no locations defined: %s" % block
+                        raise DBSWriterError(msg)
                     logging.info("Update block locations to:")
-                    for sename in reader.listFileBlockLocation(block):
+                    for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
                         logging.info(sename)
                     continue
@@ -845,14 +870,19 @@ class DBSWriter:
             try:                                                       
                 self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, noParentsReadOnly = True )
             except DbsException, ex:
-                msg = "Error in DBSWriter.importDatasetWithParentage\n"
+                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                 msg += "Could not write content of dataset:\n ==> %s\n" % (
                     sourceDatasetPath,)
                 msg += "Block name:\n ==> %s\n" % block
                 msg += "%s\n" % formatEx(ex)
                 raise DBSWriterError(msg)
 
-            for sename in reader.listFileBlockLocation(block):
+            locations = reader.listFileBlockLocation(block)
+            if not locations:
+                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                msg += "Block has no locations defined: %s" % block
+                raise DBSWriterError(msg)            
+            for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                 
         return    
