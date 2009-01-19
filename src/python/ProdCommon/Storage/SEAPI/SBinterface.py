@@ -36,7 +36,7 @@ class SBinterface:
                                   ('Mismatch between protocols %s-%s'\
                                    %(storel1.protocol, storel2.protocol))
 
-    def copy( self, source = "", dest = "", proxy = None, opt = "" ):
+    def copy( self, source = None, dest = None, proxy = None, opt = "" ):
         """
         _copy_
 

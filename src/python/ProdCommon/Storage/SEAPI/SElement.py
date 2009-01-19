@@ -24,11 +24,11 @@ class SElement(object):
             self.protocol = prot
             if type(hostname) is FullPath:
                 ## using the full path
-                self.__full = True
+                self.full = True
                 self.hostname = hostname.path
             else:
                 ## need to compose the path 
-                self.__full = False
+                self.full = False
                 self.hostname = hostname
                 self.port     = port
                 if self.port is None:
@@ -74,7 +74,7 @@ class SElement(object):
         """
         from os.path import join
         ## if using the complete path
-        if self.__full:
+        if self.full:
             if self.protocol != "local":
                 return join(self.hostname, self.workon)
             else:
@@ -101,7 +101,7 @@ class SElement(object):
         """
         _getFullPath_
         """ 
-        if self.__full:
+        if self.full:
             if self.protocol != "local":
                 if self.hostname.find(":") != -1:
                     tmpath = self.hostname.split(":")[-1]
