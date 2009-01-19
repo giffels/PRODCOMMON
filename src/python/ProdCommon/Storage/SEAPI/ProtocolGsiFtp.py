@@ -53,18 +53,18 @@ class ProtocolGsiFtp(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +source.workon+ "].", problems, outputs)
 
-    def copyLcg(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = ""):
         """
         lcg-cp
         """
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
-        setProxy = ''
+        setProxy = ''  
         if proxy is not None:
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
-
+ 
         cmd = setProxy + " lcg-cp " + opt + " --vo cms " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
@@ -73,89 +73,6 @@ class ProtocolGsiFtp(Protocol):
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
-
-
-    def copy(self, source, dest, proxy = None, opt = ""):
-        """
-        lcg-cp
-        """
-        from os.path import join
-        from types import StringType, UnicodeType
-        import tempfile
-        import os
-
-        sourcesList = []
-        destsList   = []
-
-        if type(source.workon) == StringType or \
-           type(source.workon) == UnicodeType:
-           # self.copyLcg(source, dest, proxy, opt)
-            sourcesList.append(source.getLynk())
-        else:
-            for onesource in source.workon:
-                fullSource = ""
-                if source.full:
-                    if source.protocol != "local":
-                        fullSource = join(source.hostname, onesource)
-                    else:
-                        if source.hostname != "/":
-                            fullSource = "file://" + join(source.hostname, onesource)
-                        else:
-                            raise TransferException("Error for the path '/'")
-                elif source.protocol != "local":
-                    fullSource = "gsiftp://" + source.hostname + join("/", onesource)
-                else:
-                    if source.hostname != "/":
-                        fullSource = "file://" + join("/", onesource)
-                    else:
-                        raise TransferException("Error for the path '/'")
-                sourcesList.append(fullSource)
-        if type(dest.workon) == StringType or \
-           type(dest.workon) == UnicodeType:
-            destsList = [dest.getLynk()]*len(sourcesList)
-        else:
-           for destination in dest.workon:
-               fullDest = ""
-               if dest.full:
-                   if dest.protocol != "local":
-                        fullDest = join(dest.hostname, destination)
-                   else:
-                        if dest.hostname != "/":
-                            fullDest = "file://" + join(dest.hostname, destination)
-                        else:
-                            raise TransferException("Error for the path '/'")
-               elif dest.protocol != "local":
-                   fullDest = "gsiftp://" + dest.hostname + join("/", destination)
-               else:
-                   if dest.hostname != "/":
-                        fullDest = "file://" + join("/", destination)
-                   else:
-                        raise TransferException("Error for the path '/'")
-               destsList.append( fullDest )
-
-        setProxy = ''  
-        if proxy is not None:
-            self.checkUserProxy(proxy)
-            setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
-
-        fname = None
-        exitcode, outputs = "", ""
-        try:
-            tmp, fname = tempfile.mkstemp( "", "seapi_", os.getcwd() )
-            os.close( tmp )
-            toCopy = "\n".join([t[0] + " " + t[1] for t in map(None, sourcesList, destsList)]) + "\n"
-            super(ProtocolGsiFtp, self).__logout__("To copy: \n%s"%toCopy)
-            file(fname, 'w').write( toCopy )
-            cmd = setProxy + " globus-url-copy -f " + fname
-            exitcode, outputs = self.executeCommand(cmd)
-        finally:
-            os.unlink( fname )
-        ### simple output parsing ###
-        problems = self.simpleOutputCheck(outputs)
-        if exitcode != 0 or len(problems) > 0:
-            raise TransferException("Error copying [" +str(source.workon)+ "] to [" \
-                                    + str(dest.workon) + "]", problems, outputs )
-
 
     def move(self, source, dest, proxy = None, opt = ""):
         """
