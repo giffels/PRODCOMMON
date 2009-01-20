@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.105 2009/01/09 10:20:17 gcodispo Exp $"
-__version__ = "$Revision: 1.105 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.106 2009/01/15 09:37:58 gcodispo Exp $"
+__version__ = "$Revision: 1.106 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1430,7 +1430,28 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
 
     ##########################################################################
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
+    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+
+        result = []
+        for fqan in vos :
+            res = self.lcgInfoVo( tags, fqan, seList,
+                                  blacklist, whitelist, full)
+            if not full and res != [] :
+                return res
+            else :
+                for value in res :
+                    if value in result :
+                        continue
+                    result.append( value )
+
+        return result
+
+    ##########################################################################
+    def lcgInfoVo(self, tags, fqan, seList=None, blacklist=None, whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -1455,7 +1476,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             query = 'CEStatus=Production'
 
         if seList == None :
-            command = "lcg-info --vo " + self.vo + " --list-ce --query " + \
+            command = "lcg-info --vo " + fqan + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
             out, ret = self.ExecuteCommand( self.proxyString + command )
             for ce in out.split() :
@@ -1478,7 +1499,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             return celist
 
         for se in seList :
-            singleComm = "lcg-info --vo " + self.vo + \
+            singleComm = "lcg-info --vo " + fqan + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
 
