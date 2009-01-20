@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.20 2008/09/30 17:27:42 spiga Exp $"
-__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.21 2008/12/01 11:55:57 spiga Exp $"
+__version__ = "$Revision: 1.21 $"
 
 import re, os, time
 import tempfile
@@ -286,14 +286,6 @@ class SchedulerLsf (SchedulerInterface) :
         and write it in outfile
         """
 
-
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
-        """
-        perform a resources discovery
-        returns a list of resulting sites
-        """
-
-        return seList
 
 #### Ksu Related Stuff
     def createCommand(self, cmd, obj):

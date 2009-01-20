@@ -8,8 +8,8 @@ import os
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.30 2008/09/08 10:21:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.30 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.31 2008/09/09 09:04:11 gcodispo Exp $"
+__revision__ = "$Revision: 1.31 $"
 
 
 
@@ -212,11 +212,4 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
-        """
-        perform a resources discovery
-        returns a list of resulting sites
-        """
-        raise NotImplementedError
 
-    ##########################################################################

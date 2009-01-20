@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.15 2008/09/30 19:35:05 ewv Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.16 2008/11/03 19:39:47 ewv Exp $"
+__version__ = "$Revision: 1.16 $"
 
 import os
 
@@ -116,10 +116,3 @@ class SchedulerCondor(SchedulerCondorCommon) :
         return jdl, filelist, None
 
 
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
-        """
-        perform a resources discovery
-        returns a list of resulting sites
-        """
-
-        return  seList

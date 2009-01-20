@@ -5,8 +5,8 @@ _BossLiteAPI_
 """
 
 
-__version__ = "$Id: BossLiteAPISched.py,v 1.31 2008/09/23 10:16:10 gcodispo Exp $"
-__revision__ = "$Revision: 1.31 $"
+__version__ = "$Id: BossLiteAPISched.py,v 1.32 2008/11/18 17:44:44 gcodispo Exp $"
+__revision__ = "$Revision: 1.32 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -360,34 +360,6 @@ class BossLiteAPISched(object):
             # update & set logger
             self.bossLiteSession.updateRunningInstances( task, \
                                                          notSkipClosed=False )
-            self.bossLiteLogger = BossLiteLogger( task, e )
-
-            # re-throw exception
-            raise
-
-        # return list of sites
-        return resources
-
-
-    ##########################################################################
-
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, full=False):
-        """
-        execute a resources discovery through bdii
-        returns a list of resulting sites
-        """
-
-        task = None
-
-        try:
-
-            # scheduler matchResources
-            resources = self.scheduler.lcgInfo( tags, seList, \
-                                                blacklist, whitelist, full )
-
-        except BossLiteError, e:
-
-            # set logger
             self.bossLiteLogger = BossLiteLogger( task, e )
 
             # re-throw exception

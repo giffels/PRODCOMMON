@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.3 2008/08/27 15:38:15 gcodispo Exp $"
-__version__ = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.4 2008/09/08 10:21:46 gcodispo Exp $"
+__version__ = "$Revision: 1.4 $"
 
 import re, os
 
@@ -355,13 +355,4 @@ class SchedulerSge (SchedulerInterface) :
         execute any post mortem command such as logging-info
         and write it in outfile
         """
-
-    def lcgInfo(self, tags, seList=None, blacklist=None, whitelist=None, vo='cms'):
-        """
-        perform a resources discovery
-        returns a list of resulting sites
-        """
-        #print "SchedulerSge::lcgInfo: called"
-
-        return  seList
 
