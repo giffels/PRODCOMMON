@@ -93,18 +93,19 @@ def createLogCollectorJobSpec(workflowSpec, originalWf, site, lfnBase, stageOutP
     confNode.addNode(logNode)
     
     # stageout
-    stageOutNode = IMProvNode("Override")
-#    WorkflowTools.addStageOutOverride(confNode, stageOutParams['command'],
-#                                      stageOutParams['option'],
-#                                      stageOutParams['se-name'],
-#                                      stageOutParams['lfnPrefix'])
-    
-    
-    stageOutNode.addNode(IMProvNode("command", stageOutParams['command']))
-    stageOutNode.addNode(IMProvNode("option", stageOutParams['option']))
-    stageOutNode.addNode(IMProvNode("se-name", stageOutParams['se-name']))
-    stageOutNode.addNode(IMProvNode("lfn-prefix", stageOutParams['lfnPrefix']))
-    confNode.addNode(stageOutNode)
+    if stageOutParams:
+        stageOutNode = IMProvNode("Override")
+    #    WorkflowTools.addStageOutOverride(confNode, stageOutParams['command'],
+    #                                      stageOutParams['option'],
+    #                                      stageOutParams['se-name'],
+    #                                      stageOutParams['lfnPrefix'])
+        
+        
+        stageOutNode.addNode(IMProvNode("command", stageOutParams['command']))
+        stageOutNode.addNode(IMProvNode("option", stageOutParams['option']))
+        stageOutNode.addNode(IMProvNode("se-name", stageOutParams['se-name']))
+        stageOutNode.addNode(IMProvNode("lfn-prefix", stageOutParams['lfnPrefix']))
+        confNode.addNode(stageOutNode)
     
     
     #jobSpec.payload.configuration = logNode.makeDOMElement().toprettyxml()
