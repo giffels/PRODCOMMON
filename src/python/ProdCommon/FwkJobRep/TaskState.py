@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.7 $"
-__revision__ = "$Id: TaskState.py,v 1.7 2008/12/12 10:27:30 swakef Exp $"
+__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: TaskState.py,v 1.8 2009/01/09 20:34:41 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -453,9 +453,17 @@ class TaskState:
             else:
                 print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
 
+
+        controlKeys = ["FixedLFN","DisableGUID"  ]
         if datasetMap.has_key(outModLabel):
+            datasetMatch = datasetMap[outModLabel]
             datasetForFile = fileInfo.newDataset()
-            datasetForFile.update(datasetMap[outModLabel])
+            datasetForFile.update(datasetMatch)
+            for ck in controlKeys:
+                if datasetMatch.has_key(ck):
+                    fileInfo[ck] = datasetMatch[ck]
+
+
             msg = "File: %s\n" % fileInfo['LFN']
             msg += "Produced By Output Module: %s\n" % outModLabel
             msg += "Associated To Datasets:\n"
