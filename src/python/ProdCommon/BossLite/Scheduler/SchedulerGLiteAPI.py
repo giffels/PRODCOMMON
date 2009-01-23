@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.106 2009/01/15 09:37:58 gcodispo Exp $"
-__version__ = "$Revision: 1.106 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.107 2009/01/20 18:49:12 gcodispo Exp $"
+__version__ = "$Revision: 1.107 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -198,8 +198,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.skipWMSAuth = args.get("skipWMSAuth", 0)
         self.skipWMSAuth = int( self.skipWMSAuth )
 
-        # vo
+        # typical options
         self.vo = args.get( "vo", "cms" )
+        self.service = args.get( "service", "" )
+        self.config = args.get( "config", "" )
 
         # rename output files with submission number
         self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
@@ -1528,13 +1530,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         return celist
 
 
-    def delegateProxy( self, config='', service='' ) :
+    def delegateProxy( self ) :
         """
         _delegateProxy_
         """
 
         workdir = tempfile.mkdtemp( prefix = 'delegation', dir = os.getcwd() )
-        config, endpoints = self.mergeJDL('[]', service, config)
+        config, endpoints = self.mergeJDL('[]', self.service, self.config)
 
         for wms in self.wmsResolve( endpoints ) :
             try :
@@ -1554,7 +1556,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             except :
                 continue
-
 
         os.system("rm -rf " + workdir)
 
