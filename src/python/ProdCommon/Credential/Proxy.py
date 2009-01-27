@@ -89,7 +89,13 @@ class Proxy:
             msg = "Error while checking proxy timeleft for %s"%proxy
             raise Exception(msg)
 
-        return timeLeftLocal
+        result = -1
+        try:
+            result = int(timeLeftLocal)
+        except Exception:
+            result = 0
+ 
+        return result
 
 
     def renewCredential( self, proxy=None ): 
