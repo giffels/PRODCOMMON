@@ -12,14 +12,6 @@ class ProtocolRfio(Protocol):
 
     def __init__(self):
         super(ProtocolRfio, self).__init__()
-        self.ksuCmd = ' cd /tmp; unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; '
-        self.ksuOut = [ \
-                        "Authenticated ", \
-                        "Acount ", \
-                        "authorization for ", \
-                        "Changing uid to "
-                      ]
-
 
     def simpleOutputCheck(self, outLines):
         """
@@ -30,9 +22,6 @@ class ProtocolRfio(Protocol):
         for line in lines:
             if line.find("Network is unreachable") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("Permission denied") != -1:
-                raise AuthorizationException("Permission denied!", \
-                                              [line], outLines)
             elif line.find("File exists") != -1:
                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
@@ -47,19 +36,14 @@ class ProtocolRfio(Protocol):
         return problems
 
 
-    def setGrant(self, dest, values, token = None, opt = ""):
+    def setGrant(self, dest, values, opt = ""):
         """
         rfchomd
         """
         
         fullDest = dest.getLynk()
-
         cmd = "rfchmod " + opt + " " + str(values) + " " + fullDest
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -68,23 +52,20 @@ class ProtocolRfio(Protocol):
                                     "[" +fullDest+ "].", problems, outputs)
 
 
-    def createDir(self, dest, token = None, opt = ""):
+    def createDir(self, dest, opt = ""):
         """
         rfmkdir
         """
-        if self.checkDirExists(dest, token, opt = "") is True:
+        if self.checkDirExists(dest, opt = "") is True:
             problems = ["destination directory already existing", dest.workon]
-            raise AlreadyExistsException("Error creating directory [" +\
-                                          dest.workon+ "]", problems)
+            print problems
+            raise OperationException("Error creating directory [" +\
+                                      dest.workon+ "]", problems)
 
         fullDest = dest.getLynk()
 
         cmd = "rfmkdir -p " + opt + " " + fullDest 
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -92,7 +73,7 @@ class ProtocolRfio(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +fullDest+ "].", problems, outputs)
 
-    def copy(self, source, dest, token = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = ""):
         """
         rfcp
         """
@@ -103,52 +84,43 @@ class ProtocolRfio(Protocol):
         if dest.protocol != 'local':
             fullDest = dest.getLynk()
 
-        cmd = "rfcp " + opt + " "+ fullSource +" "+ fullDest 
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
-
+        cmd = "rfcp " + opt + " "+ fullSource +" "+ fullDest
+        exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, token = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = ""):
         """
         copy() + delete()
         """
-        if self.checkExists(dest, token, opt):
+        if self.checkExists(dest, opt):
             problems = ["destination file already existing", dest.workon]
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems)
-        self.copy(source, dest, token, opt)
-        if self.checkExists(dest, token, opt):
-            self.delete(source, token, opt)
+        self.copy(source, dest, opt)
+        if self.checkExists(dest, opt):
+            self.delete(source, opt)
         else:
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
-    def deleteRec(self, source, token = None, opt = ""):
+    def deleteRec(self, source, opt = ""):
         """
         _deleteRec_
         """
-        self.delete(source, token, opt)
+        self.delete(source, opt)
 
-    def delete(self, source, token = None, opt = ""):
+    def delete(self, source, opt = ""):
         """
         rfrm
         """
         fullSource = source.getLynk()
 
         cmd = "rfrm " + opt + " "+ fullSource
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -157,7 +129,7 @@ class ProtocolRfio(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def getFileInfo(self, source, token = None, opt = ""):
+    def getFileInfo(self, source, opt = ""):
         """
         rfdir
 
@@ -166,21 +138,13 @@ class ProtocolRfio(Protocol):
         fullSource = source.getLynk()
 
         cmd = "rfdir " + opt + " " + fullSource + " | awk '{print $5,$3,$4,$1}'"
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
         
-        if token is not None: 
-            outputs = outputs.split("\n",3)[-1]
-        
- 
         outt = []
         for out in outputs.split("\n"):
             fileout = out.split()
@@ -191,11 +155,11 @@ class ProtocolRfio(Protocol):
         return outt
 
 
-    def checkPermission(self, source, token = None, opt = ""):
+    def checkPermission(self, source, opt = ""):
         """
         return file/dir permission
         """
-        result = self.getFileInfo(source, token, opt)
+        result = self.getFileInfo(source, opt)
         if result.__type__ is list:
             if result[0].__type__ is list:
                 raise OperationException("Error: Not empty directory given!")
@@ -204,11 +168,11 @@ class ProtocolRfio(Protocol):
         else:
             raise OperationException("Error: Not empty directory given!")
 
-    def getFileSize(self, source, token = None, opt = ""):
+    def getFileSize(self, source, opt = ""):
         """
         file size
         """
-        result = self.getFileInfo(source, token, opt)
+        result = self.getFileInfo(source, opt)
         if result.__type__ is list:
             if result[0].__type__ is list:
                 raise OperationException("Error: Not empty directory given!")
@@ -219,7 +183,7 @@ class ProtocolRfio(Protocol):
 
         return int(result)
 
-    def listPath(self, source, token = None, opt = ""):
+    def listPath(self, source, opt = ""):
         """
         rfdir
 
@@ -228,34 +192,23 @@ class ProtocolRfio(Protocol):
         fullSource = source.getLynk()
 
         cmd = "rfdir " + opt + " "+ fullSource +" | awk '{print $9}'"
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
         
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
-
-        if token is not None:
-            outputs = outputs.split("\n",3)[-1]
-
-        outt = [] #outputs.split("\n")
-        import os
-        for line in outputs.split("\n"):
-            outt.append( os.path.join( source.getFullPath(), line ) )
-
+        outt = outputs.split("\n")
+        ### need to parse the output of the commands ###
         return outt
         
 
-    def checkExists(self, source, token = None, opt = ""):
+    def checkExists(self, source, opt = ""):
         """
         file exists?
         """
         try:
-            for filet in self.getFileInfo(source, token, opt):
+            for filet in self.getFileInfo(source, opt):
                 size = filet[0]
                 owner = filet[1]
                 group = filet[2]
@@ -270,7 +223,7 @@ class ProtocolRfio(Protocol):
         return False
 
 
-    def checkDirExists(self, source, token = None, opt = ""):
+    def checkDirExists(self, source, opt = ""):
         """
         rfstat
         note: rfdir prints nothing if dir is empty
@@ -279,11 +232,8 @@ class ProtocolRfio(Protocol):
         fullSource = source.getLynk()
 
         cmd = "rfstat " + opt + " " + fullSource
-        exitcode, outputs = None, None
-        if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token )
-        else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd)
+
         problems = self.simpleOutputCheck(outputs)
         for problema in problems:
             if "No such file or directory" in problema:
@@ -318,28 +268,3 @@ class ProtocolRfio(Protocol):
 
         return [ownSum, groSum, othSum]
 
-    def executeCommand(self, cmd, token):
-        """
-        execute the command passing by ksu (file input mode)
-        """
-        import tempfile
-        import os
-
-        userName, token = token.split('::')#will be removed with next api version
-        BaseCmd = self.ksuCmd +'/usr/kerberos/bin/ksu %s -k -c FILE:%s < '%(userName,token)
-        exit, out = None, None
-        fname = None
-        try:
-            tmp, fname = tempfile.mkstemp( "", "ksu_", os.getcwd() )
-            os.close( tmp )
-            file(fname, 'w').write( cmd + "\n" )
-
-            command = BaseCmd + fname
-            self.__logout__("Executing through ksu:\t" + str(cmd) + "\n")
-            #from ProdCommon.BossLite.Common.System import executeCommand
-            exit, out = super(ProtocolRfio, self).executeCommand(command)
-            #out, exit = executeCommand(command)
-        finally:
-            os.unlink( fname )
-
-        return exit, out
