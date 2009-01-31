@@ -143,7 +143,12 @@ class CMSSWConfig:
         #//
         self.extensions = {}
 
-
+    def lightweightClone(self):
+        result = CMSSWConfig()
+        for key, value in self.__dict__.items():
+            if key in ("originalCfg", "rawCfg"): continue
+            setattr(result , key, value)
+        return result
 
     def addExtension(self, extName, dataObject):
         """

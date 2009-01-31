@@ -36,12 +36,12 @@ class CfgGenerator:
         CMSSWConfig object and return it
 
         """
-        
-        newCfg = copy.deepcopy(self.template)
 
-        
+        newCfg = self.template.lightweightClone()
+
+
         #  //
-        # // Output modules first, use the module name in the 
+        # // Output modules first, use the module name in the
         #//  parameters in case of multiple modules
         #  //
         # //
@@ -55,8 +55,8 @@ class CfgGenerator:
                 outModule['logicalFileName'] = "%s/%s" % (
                     outModule['LFNBase'], outModule['logicalFileName']
                     )
-            
-        
+
+
         maxEvents = args.get("maxEvents", None)
         if maxEvents != None:
 
@@ -68,21 +68,21 @@ class CfgGenerator:
             #//
             if selectionEff != None:
                 newMaxEv = float(maxEvents) / float(selectionEff)
-                maxEvents = int(newMaxEv) 
+                maxEvents = int(newMaxEv)
 
             # // If this node has an Event Multiplier, adjust maxEvents
             #//
             if evMultiplier != None:
                 maxEvents = int(maxEvents) * int(evMultiplier)
-            
+
             newCfg.setInputMaxEvents(maxEvents)
 
         maxOutputEvents = args.get("maxEventsWritten", None)
         if maxOutputEvents != None:
             newCfg.setOutputMaxEvents(maxOutputEvents)
-            
-        
-           
+
+
+
         skipEvents = args.get("skipEvents", None)
         if skipEvents != None:
             newCfg.sourceParams['skipEvents'] = skipEvents
@@ -103,10 +103,10 @@ class CfgGenerator:
             #newCfg.inputFiles.extend(fileNames)
             newCfg.inputFiles = fileNames
 
-        
+
         for i in range(0, newCfg.requiredSeeds+1):
             newCfg.seeds.append(randomSeed())
-            
+
 
         return newCfg
 
