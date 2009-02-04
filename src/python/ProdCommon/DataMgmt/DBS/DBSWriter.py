@@ -67,6 +67,13 @@ class _CreateDatasetOperator:
             processed = DBSWriterObjects.createProcessedDataset(
                 primary, algo, dataset, self.apiRef)
             
+            # merge algo, used when process jobs produce merged files directly
+            mergeDataset = {}
+            mergeDataset.update(dataset)
+            mergeDataset['ApplicationFamily'] = 'Merged'
+            mergeAlgo = DBSWriterObjects.createAlgorithm(
+                mergeDataset, cfgMeta, self.apiRef)
+            
         return
 
 class _CreateMergeDatasetOperator:
