@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.21 2008/12/01 11:55:57 spiga Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.22 2009/01/20 18:49:45 gcodispo Exp $"
+__version__ = "$Revision: 1.22 $"
 
 import re, os, time
 import tempfile
@@ -87,8 +87,6 @@ class SchedulerLsf (SchedulerInterface) :
 
     def submitTask ( self, task, requirements=''):
 
-        if self.ksuCmd : self.storeToken()  
- 
         ret_map={}
         for job in task.getJobs() :
             map, taskId, queue = self.submitJob(job, task, requirements)
@@ -108,10 +106,9 @@ class SchedulerLsf (SchedulerInterface) :
         command = chDir + "bsub " + arg + resetDir 
         
         if self.ksuCmd :   
-            # token stuff are a temporary patch
-            cmd = "/afs/usr/local/etc/SetToken < %s\n"%self.userToken 
+            cmd = "#!/usr/bin/pagsh.krb\n"
+            cmd = "aklog\n"
             cmd += '%s\n'%command
-            cmd += "/afs/usr/local/etc/SetToken < %s\n"%self.serverToken 
             command,fname = self.createCommand(cmd, task)
 
         out, ret = self.ExecuteCommand( command )
@@ -306,24 +303,3 @@ class SchedulerLsf (SchedulerInterface) :
 
         return command, fname
    
-    def storeToken( self ):
-        """
-        This is a temporary method to 
-        allow server at caf working.... TO DEPRECATE..
-        (check if a valid token has already stored. If not 
-         or if older than 12h, recreate it.)   
-        """
-        # token stuff are a temporary patch
-        store = True
-        self.serverToken = '/tmp/Token_Server'
-        if os.path.exists(self.serverToken):
-            statinfo = os.stat(self.serverToken)
-            ## if the token is older then 12 hours it is re-downloaded to update the configuration
-            oldness = 12*3600
-            if (time.time() - statinfo.st_ctime) < oldness: store = False
-            else: os.remove(self.serverToken)
-        if store:
-            command  = "/afs/usr/local/etc/GetToken > %s \n"%self.serverToken
-            out, ret = self.ExecuteCommand( command )
-            if ret != 0 :
-                raise SchedulerError('Error cashing Token ', out, command )
