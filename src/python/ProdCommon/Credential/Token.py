@@ -28,11 +28,10 @@ class Token:
         return executeCommand( command, self.timeout )
 
         
-    def registerCredential( self, command ):
+    def registerCredential( self ):
         """
         """
         credentialDict = {} 
-        if command == 'submit': credentialDict[self.getUserToken()]='Token_%s'%self.userName
 
         credentialDict[self.getUserKerberos()]='KRB5_%s'%self.userName
 
@@ -51,20 +50,6 @@ class Token:
             raise Exception(msg)
         return kerbFile
 
-    def getUserToken(self):
-        """
-        """
-        userToken = os.path.join(self.shareDir,'Token_%s'%self.userName) 
-
-        cmd = '/afs/usr/local/etc/GetToken > ' + userToken
-
-        out, ret =  self.ExecuteCommand(cmd)  
-        if ret != 0 :
-            msg = ('Error %s in getToken while executing : %s ' % (out, cmd)) 
-            raise Exception(msg)
- 
-        return userToken
-
     def delegate( self, dict ):
         """
         """
@@ -74,13 +59,13 @@ class Token:
 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
-                msg = ('Error %s in getToken while executing : %s ' % (out, cmd)) 
+                msg = ('Error %s in delegate while executing : %s ' % (out, cmd)) 
                 raise Exception(msg)
             cmd = 'rfchmod 777  %s:/data/proxyCache/%s'%(serverName,dict[i])         
 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
-                msg = ('Error %s in getToken while executing : %s ' % (out, cmd)) 
+                msg = ('Error %s in delegate while executing : %s ' % (out, cmd)) 
                 raise Exception(msg)
         return 
 
