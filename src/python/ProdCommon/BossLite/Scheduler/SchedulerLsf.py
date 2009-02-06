@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.22 2009/01/20 18:49:45 gcodispo Exp $"
-__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.23 2009/02/06 17:52:11 spiga Exp $"
+__version__ = "$Revision: 1.23 $"
 
 import re, os, time
 import tempfile
@@ -45,7 +45,6 @@ class SchedulerLsf (SchedulerInterface) :
         self.ksuCmd = '' 
         if self.cert != '':
             self.ksuCmd = 'cd /tmp; unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; '
-            self.userToken = args.get('userToken','')
 
     def checkUserProxy( self, cert='' ):
         """ 
