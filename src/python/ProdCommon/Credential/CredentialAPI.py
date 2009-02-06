@@ -53,11 +53,11 @@ class CredentialAPI:
         except Exception, ex:
             raise Exception( str(ex))
 
-    def registerCredential( self, command=None ):
+    def registerCredential( self ):
         """
         """
         try:    
-            self.credObj.registerCredential(command)
+            self.credObj.registerCredential()
         except Exception, ex:
             raise Exception( str(ex))
         return
