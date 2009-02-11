@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.8 $"
-__revision__ = "$Id: TaskState.py,v 1.8 2009/01/09 20:34:41 evansde Exp $"
+__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: TaskState.py,v 1.9 2009/01/22 21:27:35 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -527,7 +527,11 @@ class TaskState:
 
         # merged by size update
         if fileInfo['MergedBySize'] == "True":
-            newLFN = "%s/%s" % ( fileInfo['MergedLFNBase'],
+            # the MergedLFNBase already has a / in it -- removing that first
+            mergeprefix=fileInfo['MergedLFNBase'] 
+            while mergeprefix.endswith("/"):
+               mergeprefix=mergeprefix[:-1]         
+            newLFN = "%s/%s" % ( mergeprefix,
                                  os.path.basename(fileInfo['LFN']))
             fileInfo['LFN'] = newLFN
             msg = "File is merged by size, updating LFN: %s\n" % fileInfo['LFN']
