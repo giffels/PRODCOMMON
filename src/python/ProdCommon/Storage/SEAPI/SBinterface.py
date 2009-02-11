@@ -48,7 +48,7 @@ class SBinterface:
             self.storage1.workon = source
             self.storage2.workon = dest
             ## check if the source file has size Zero
-            if self.storage1.action.getFileSize (self.storage1) == 0:
+            if self.storage1.action.getFileSize (self.storage1, proxy) == 0:
                 raise SizeZeroException("Source file has size zero")
             ## if proxy needed => executes standard command to copy
             if self.useProxy:
