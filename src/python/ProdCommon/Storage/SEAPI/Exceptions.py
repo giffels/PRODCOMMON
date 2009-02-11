@@ -68,3 +68,9 @@ class AuthorizationException(ProtocolException):
     """
     pass
 
+class SizeZeroException(ProtocolException):
+    """
+    actually used when a file to copy has zero size
+    (check before transfer)
+    """
+    pass

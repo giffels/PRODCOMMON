@@ -10,7 +10,8 @@ from ProtocolGsiFtp import ProtocolGsiFtp
 from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 from SElement import SElement
-from Exceptions import MissingDestination, ProtocolUnknown, ProtocolMismatch
+from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
+                       ProtocolMismatch
 
 
 class SBinterface:
@@ -46,6 +47,9 @@ class SBinterface:
         else:
             self.storage1.workon = source
             self.storage2.workon = dest
+            ## check if the source file has size Zero
+            if self.storage1.action.getFileSize (self.storage1) == 0:
+                raise SizeZeroException("Source file has size zero")
             ## if proxy needed => executes standard command to copy
             if self.useProxy:
                 self.storage1.action.copy(self.storage1, self.storage2, \
