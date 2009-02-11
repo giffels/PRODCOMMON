@@ -123,11 +123,11 @@ class ProtocolLocal(Protocol):
         """
         _getFileSize_
         """
-        sizeFile = ""
+        sizeFile = 0
         if self.checkExists(source, opt):
             try:
                 from os.path import getsize
-                sizeFile = getsize ( source.workon )
+                sizeFile = int(getsize ( source.workon ))
             except OSError:
                 return -1
         else:

@@ -209,15 +209,11 @@ class ProtocolRfio(Protocol):
         file size
         """
         result = self.getFileInfo(source, token, opt)
-        if result.__type__ is list:
-            if result[0].__type__ is list:
-                raise OperationException("Error: Not empty directory given!")
-            else:  
-                return result[0]
-        else:
+        try:
+            return int(result[0][0])
+        except:
             raise OperationException("Error: Not empty directory given!")
 
-        return int(result)
 
     def listPath(self, source, token = None, opt = ""):
         """

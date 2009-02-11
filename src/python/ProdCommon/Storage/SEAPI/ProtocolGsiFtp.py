@@ -262,11 +262,10 @@ class ProtocolGsiFtp(Protocol):
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
-
         if exitcode != 0 or len(problems) > 0:
-            return outputs
-        raise OperationException("Error getting size for [" +source.workon+ "]",
-                                  problems, outputs )
+            raise OperationException("Error getting size for [" +source.workon+ "]",
+                                      problems, outputs )
+        return outputs
  
     def getTurl(self, source, proxy = None, opt = ""):
         """
