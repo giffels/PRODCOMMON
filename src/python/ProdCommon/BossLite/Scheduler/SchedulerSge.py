@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.4 2008/09/08 10:21:46 gcodispo Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.5 2009/01/20 18:49:45 gcodispo Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import re, os
 
@@ -13,6 +13,7 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+#from common import work_space
 
 class SchedulerSge (SchedulerInterface) :
     """
@@ -125,11 +126,14 @@ class SchedulerSge (SchedulerInterface) :
         txt += "MYTMPDIR=$TMP/$JOB_NAME\n"
         txt += "mkdir -p $MYTMPDIR \n"
         txt += "cd $MYTMPDIR\n"
+
         # Need to copy InputSandBox to WN
         if task:
             subDir=task[ 'startDirectory' ]
             for inpFile in task[ 'globalSandbox' ].split(','):
-                txt += "cp "+subDir+inpFile+" . \n"
+                #txt += "cp "+subDir+inpFile+" . \n"
+                txt += "cp "+inpFile+" . \n"
+                 
         ## Job specific ISB
         #for inpFile in job[ 'inputFiles' ]:
         #    if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+"/"+inpFile+" . \n"
@@ -138,6 +142,7 @@ class SchedulerSge (SchedulerInterface) :
         args = job[ 'arguments' ]
         exe = job[ 'executable' ]
         txt += "./"+os.path.basename(exe)+" "+args+"\n"
+
         
         ## And finally copy back the output
         outputDir=task['outputDirectory']
