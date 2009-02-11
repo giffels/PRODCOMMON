@@ -119,7 +119,7 @@ class ProtocolLocal(Protocol):
  
         return outputs
  
-    def getFileSize(self, source, opt = ""):
+    def getFileSize(self, source, credential = None, opt = ""):
         """
         _getFileSize_
         """
