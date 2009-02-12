@@ -98,7 +98,7 @@ class _CreateMergeDatasetOperator:
             # doesnt contain pset content - taken from processing (same hash)
             mergeDirectAlgo = DBSWriterObjects.createAlgorithm(
                 dataset, None, self.apiRef)
-            self.apiRef.insertAlgoInPD(makeDS2Name(dataset), mergeDirectAlgo)
+            self.apiRef.insertAlgoInPD(makeDSName2(dataset), mergeDirectAlgo)
             
             logging.debug("ProcessedDataset: %s"%processedDataset)
             logging.debug("inputDataset: %s"%inputDataset)
