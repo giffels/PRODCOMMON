@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.22 2008/09/25 13:42:23 gcodispo Exp $"
-__revision__ = "$Revision: 1.22 $"
+__version__ = "$Id: TrackingDB.py,v 1.23 2008/10/02 14:30:01 gcodispo Exp $"
+__revision__ = "$Revision: 1.23 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -175,18 +175,35 @@ class TrackingDB:
 
     ##########################################################################
 
-    def selectJoin(self, template, jTemplate, jMap=None, strict = True, jType='', limit=None, offset=None, inList=None):
+    def selectJoin(self, template, jTemplate, jMap=None, less=None, more=None, options=None):
         """
         _selectJoin_
 
         select from template and jTemplate, using join condition from jMap
         """
 
+        # evaluate options
+        opt = { 'strict' : True,
+                'jType'  : '',
+                'limit'  : None,
+                'offset' : None,
+                'inList' : None }
+        if options is not None :
+            opt.update( options )
+
+        if more is None :
+            more = {}
+
+        if less is None :
+            less = {}
+
         # get template information
+        dbMap = template.__class__.fields
         mapping = template.__class__.fields.items()
         tableName = template.__class__.tableName
 
         # get template information
+        jDbMap = jTemplate.__class__.fields
         jMapping = jTemplate.__class__.fields.items()
         jTableName = jTemplate.__class__.tableName
 
@@ -207,27 +224,31 @@ class TrackingDB:
         jFields = self.getFields(jTemplate)
 
         # evaluate eventual lists
-        if inList is None :
+        if opt['inList'] is None :
             listOfFields = ''
         else :
-            for key in inList.keys() :
+            for key in opt['inList'].keys() :
                 k = template.__class__.fields[key]
                 listOfFields = 't1.' + k + ' in (' + \
-                                ','.join( str(val ) for val in inList[key]) + ') ' 
+                                ','.join( str(val ) for val in opt['inList'][key]) + ') ' 
         if listOfFields != "" :
             listOfFields += ' and '
 
         # determine if comparison is strict or not
-        if strict:
+        if opt['strict']:
             operator = '='
         else:
             operator = ' like '
+
+        # is there a set of field for more/less comparison?
         listOfFields += ' and '.join([('t1.%s'+ operator +'%s') % (key, value)
-                                     for key, value in fields
+                                      for key, value in fields
+                                      if key not in more and key not in less
                                 ])
         jListOfFields = ' and '.join([('t2.%s'+ operator +'%s') \
                                       % (key, value)
                                       for key, value in jFields
+                                      if key not in more and key not in less
                                 ])
 
         # check for general query for all objects
@@ -239,6 +260,21 @@ class TrackingDB:
 
         elif jListOfFields != "":
             listOfFields = " where " + jListOfFields
+
+        # evaluate more
+        for key, val in more.iteritems():
+            print key, jDbMap[key], val
+            if key in objectFields :
+                listOfFields += ' and t1.%s>%s ' % ( dbMap[key], val )
+            elif key in jObjectFields :
+                listOfFields += ' and t2.%s>%s ' % ( jDbMap[key], val )
+
+        # evaluate less
+        for key, val in less.iteritems():
+            if key in objectFields :
+                listOfFields += ' and t1.%s<%s ' % ( dbMap[key], val )
+            elif key in jObjectFields :
+                listOfFields += ' and t2.%s<%s ' % ( jDbMap[key], val )
 
         # evaluate join conditions
         jLFields = ''
@@ -253,11 +289,11 @@ class TrackingDB:
             jLFields = ' on (' + jLFields + ') '
 
         # what kind of join?
-        if jType == '' :
+        if opt['jType'] == '' :
             qJoin = ' inner join '
-        elif jType == 'left' :
+        elif opt['jType'] == 'left' :
             qJoin = ' left join '
-        elif jType == 'right' :
+        elif opt['jType'] == 'right' :
             qJoin = ' right join '
 
         # prepare query
@@ -267,14 +303,16 @@ class TrackingDB:
                 jTableName + ' t2 ' + jLFields + listOfFields
 
         # limit?
-        if limit is not None :
-            if offset is None or int(offset) == 0 :
-                query += ' limit %s' % limit
+        if opt['limit'] is not None :
+            if opt['offset'] is None or int(opt['offset']) == 0 :
+                query += ' limit %s' % opt['limit']
             else  :
-                query += ' limit %s,%s' % (offset, limit)
+                query += ' limit %s,%s' % (opt['offset'], opt['limit'])
 
         # execute query
         try:
+            import logging
+            logging.info(query)
             self.session.execute(query)
         except Exception, msg:
             raise DbError(msg)
