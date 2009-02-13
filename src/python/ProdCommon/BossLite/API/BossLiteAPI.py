@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.76 2008/12/02 07:54:57 gcodispo Exp $"
-__revision__ = "$Revision: 1.76 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.77 2008/12/02 11:50:30 gcodispo Exp $"
+__revision__ = "$Revision: 1.77 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -578,6 +578,47 @@ class BossLiteAPI(object):
 
 
     ##########################################################################
+    def loadJobsByTimestamp( self, more, less, runningAttrs=None, jobAttributes=None) :
+        """
+        retrieve job information from db for job
+        whose running instance match attributes
+        """
+
+        # db connect
+        if self.db is None :
+            self.connect()
+
+        # creating running jobs
+        if runningAttrs is None :
+            run = RunningJob()
+        else:
+            run = RunningJob( runningAttrs )
+
+        # creating jobs
+        if jobAttributes is None :
+            job = Job()
+        else :
+            job = Job( jobAttributes )
+
+        # load job from db
+        jMap = { 'jobId' : 'jobId',
+                 'taskId' : 'taskId',
+                 'submissionNumber' : 'submission' }
+
+        runJobList = self.db.selectJoin( job, run, \
+                                         jMap=jMap, \
+                                         less=less, \
+                                         more=more )
+
+        # recall jobs
+        for job, runningJob in runJobList :
+            job.setRunningInstance( runningJob )
+
+        # return
+        return [key[0] for key in runJobList]
+
+
+    ##########################################################################
     def loadJobsByRunningAttr( self, runningAttrs=None, jobAttributes=None, all=False, strict=True, limit=None, offset=None, jobList=None ) :
         """
         retrieve job information from db for job
@@ -614,13 +655,18 @@ class BossLiteAPI(object):
             inList = {'jobId' : jobList}
 
         # load job from db
+        jMap = { 'jobId' : 'jobId',
+                 'taskId' : 'taskId',
+                 'submissionNumber' : 'submission' }
+        options = { 'strict' : strict,
+                    'jType'  : jType,
+                    'limit'  : limit,
+                    'offset' : offset,
+                    'inList' : inList }
+
         runJobList = self.db.selectJoin( job, run, \
-                                         {'jobId' : 'jobId',
-                                          'taskId' : 'taskId',
-                                          'submissionNumber' : 'submission'}, \
-                                         strict=strict, jType=jType, \
-                                         limit=limit, offset=offset, \
-                                         inList=inList )
+                                         jMap=jMap , \
+                                         options=options )
 
         # recall jobs
         for job, runningJob in runJobList :
