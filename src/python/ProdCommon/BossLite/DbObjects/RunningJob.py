@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.21 2008/09/25 08:58:20 gcodispo Exp $"
-__revision__ = "$Revision: 1.21 $"
+__version__ = "$Id: RunningJob.py,v 1.22 2008/10/01 11:36:42 gcodispo Exp $"
+__revision__ = "$Revision: 1.22 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -38,6 +38,9 @@ class RunningJob(DbObject):
                'stopTime' : 'stop_time',
                'stageOutTime' : 'stageout_time',
                'getOutputTime' : 'getoutput_time',
+               'outputRequestTime' : 'output_request_time',
+               'outputEnqueueTime' : 'output_enqueue_time',
+               'getOutputRetry' : 'getoutput_retry',
                'outputDirectory' : 'output_dir',
                'executionUser' : 'execution_user',
                'executionHost' : 'execution_host',
@@ -74,6 +77,9 @@ class RunningJob(DbObject):
                  'stopTime' : None,
                  'stageOutTime' : None,
                  'getOutputTime' : None,
+                 'outputRequestTime' : None,
+                 'outputEnqueueTime' : None,
+                 'getOutputRetry' : 0,
                  'outputDirectory' : None,
                  'executionUser' : None,
                  'executionHost' : None,
@@ -91,7 +97,7 @@ class RunningJob(DbObject):
     tableIndex = ["taskId", "jobId", "submission"]
     timeFields = ['lbTimestamp', 'submissionTime', 'startTime', \
                   'scheduledAtSite' , 'stopTime', 'stageOutTime', \
-                  'getOutputTime']
+                  'outputRequestTime', 'outputEnqueueTime', 'getOutputTime']
     # exception class
     exception = JobError
 

@@ -63,6 +63,9 @@ CREATE TABLE bl_runningjob
     stop_time TIMESTAMP,
     stageout_time TIMESTAMP,
     getoutput_time TIMESTAMP,
+    output_request_time TIMESTAMP,
+    output_enqueue_time TIMESTAMP,
+    getoutput_retry INT,
     output_dir TEXT,
     execution_user VARCHAR(255),
     execution_host TEXT,
@@ -92,6 +95,6 @@ CREATE TABLE jt_group
   UNIQUE KEY task_id (task_id,job_id),
   FOREIGN KEY(job_id) references bl_job(job_id) ON DELETE CASCADE,
   FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
-  ) 
+  )
   ENGINE = InnoDB DEFAULT CHARSET=latin1;
 
