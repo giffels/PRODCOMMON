@@ -3,6 +3,7 @@
 try:
     from BdiiLdap import *
 except ImportError:
+    print "LDAP library not available, reverting to ldap-search. This may cause problems matching sites."
     from BdiiLdapsearch import *
 
 if __name__ == '__main__':
