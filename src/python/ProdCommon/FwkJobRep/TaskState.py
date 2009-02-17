@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.8 $"
-__revision__ = "$Id: TaskState.py,v 1.8 2009/01/09 20:34:41 evansde Exp $"
+__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: TaskState.py,v 1.4 2008/11/13 18:23:19 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -66,7 +66,7 @@ def getTaskState(taskName):
         return None
     result = result[0]
     dirname = os.path.join(os.environ['PRODAGENT_JOB_DIR'], result)
-
+    
     taskState = TaskState(dirname)
     taskState.loadJobReport()
     taskState.loadRunResDB()
@@ -81,7 +81,7 @@ class TaskState:
 
     API object for extracting information from a CMSSW Task from the
     components of that task including the RunResDB and FrameworkJobReport
-
+    
 
     """
     def __init__(self, taskDirectory):
@@ -90,7 +90,7 @@ class TaskState:
         self.runresdb = os.path.join(self.dir, "RunResDB.xml")
         self.jobSpecNode = None
         self.jobSpec = None
-
+        
         self.taskAttrs = {}
         self.taskAttrs.setdefault("Name", None)
         self.taskAttrs.setdefault("CfgFile", None)
@@ -100,7 +100,7 @@ class TaskState:
         self.taskAttrs.setdefault("JobType", None)
         self.taskAttrs.setdefault("DoSizeMerge", False)
         self.taskAttrs.setdefault("MinMergeFileSize", 2000000000)
-
+        
         self._RunResDB = None
         self._JobReport = None
         self._CatalogEntries = None
@@ -138,7 +138,7 @@ class TaskState:
         dbDict = self._RunResDB.toDictionary()
         self.taskAttrs['Name'] = dbDict.keys()[0]
         tName = self.taskAttrs['Name']
-
+        
         self.taskAttrs['WorkflowSpecID'] = \
                  dbDict[tName]['WorkflowSpecID'][0]
         self.taskAttrs['JobSpecID'] = \
@@ -157,8 +157,8 @@ class TaskState:
         if len(mergeSize) > 0:
             size = int(mergeSize[0])
             self.taskAttrs["MinMergeFileSize"] = size
-
-
+            
+        
         return
 
     def loadJobSpecNode(self):
@@ -167,7 +167,7 @@ class TaskState:
 
         Load the job spec file referenced by PRODAGENT_JOB_SPEC env var and extract the node
         from it with the name provided
-
+        
         """
         if not os.environ.has_key("PRODAGENT_JOBSPEC"):
             print " No PRODAGENT_JOBSPEC set"
@@ -183,7 +183,7 @@ class TaskState:
         self.jobSpecLoaded = True
         return
 
-
+        
 
     def configurationDict(self):
         """
@@ -222,8 +222,8 @@ class TaskState:
             return exitCode
         except:
             return None
-
-
+        
+        
 
     def loadJobReport(self):
         """
@@ -234,7 +234,7 @@ class TaskState:
         """
         if not os.path.exists(self.jobReport):
             return
-
+        
         jobReport = readJobReport(self.jobReport)[0]
         self._JobReport = jobReport
         self.jobReportLoaded = True
@@ -246,13 +246,13 @@ class TaskState:
             pfn = fileInfo['PFN']
             if pfn.startswith("file:"):
                 pfn = pfn.replace("file:", "")
-
+            
             pfnPath = os.path.join(self.dir, pfn)
             if not os.path.exists(pfnPath):
                 continue
             fileInfo['PFN'] = pfnPath
         return
-
+    
 
     def dumpJobReport(self):
         """
@@ -272,12 +272,12 @@ class TaskState:
             handle2 = open(backupCopy, 'w')
             handle2.write(content)
             handle2.close()
-
+            
         else:
             print "NOT FOUND: %s" % self.jobReport
         print "======================End Dump Job Report======================"
         return
-
+        
     def getJobReport(self):
         """
         _getJobReport_
@@ -287,7 +287,7 @@ class TaskState:
 
         """
         return self._JobReport
-
+    
     def saveJobReport(self):
         """
         _saveJobReport_
@@ -298,10 +298,10 @@ class TaskState:
         """
         self._JobReport.write(os.path.join(self.dir,"FrameworkJobReport.xml"))
         return
+    
 
 
-
-
+                                        
     def loadSiteConfig(self):
         """
         _loadSiteConfig_
@@ -330,15 +330,15 @@ class TaskState:
         if not self.siteConfigLoaded:
             self.loadSiteConfig()
         return self._SiteConfig
-
-
+    
+            
 
     def outputDatasets(self):
         """
         _outputDatasets_
 
         Retrieve a list of output datasets from the RunResDB
-
+        
         """
         if not self.jobSpecLoaded:
             return []
@@ -352,11 +352,11 @@ class TaskState:
             if outModules.has_key(modName):
                 dataset['LFNBase'] = outModules[modName].get('LFNBase', None)
                 dataset['MergedLFNBase'] = outModules[modName].get('MergedLFNBase', None)
-
+        
 
         return datasets
-
-
+        
+        
 
     def inputSource(self):
         """
@@ -381,12 +381,12 @@ class TaskState:
             if len(value) == 1:
                 result[key] = value[0]
             else:
-                result[key] = value
+                result[key] = value        
         return result
+        
 
 
-
-
+    
 
     def assignFilesToDatasets(self):
         """
@@ -397,27 +397,23 @@ class TaskState:
 
         Matching is done by matching OutputModuleName in dataset to
         ModuleLabel for the File entry
-
+        
         """
-
+        
         datasets = self.outputDatasets()
         datasetMap = {}
         for dataset in datasets:
             datasetMap[dataset['OutputModuleName']] = dataset
-
+        
         for fileInfo in self._JobReport.files:
             self.matchDataset(fileInfo, datasetMap)
-
-        for fileInfo in self._JobReport.files:
-            self.updateFileLFN(fileInfo)
-
-
+        
         # have to do this after the dataset/file matching is complete
         for fileInfo in self._JobReport.files:
             self.matchFileParents(fileInfo)
 
         return
-
+        
 
     def matchDataset(self, fileInfo, datasetMap):
         """
@@ -431,8 +427,6 @@ class TaskState:
         print "Output Module Label: %s" % outModLabel
         if outModLabel == None:
             return
-
-
         if self.taskAttrs['DoSizeMerge']:
             print "Doing Size Merge Check"
             if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
@@ -442,28 +436,22 @@ class TaskState:
                 mergeModLabel = "%s-Merged" % outModLabel
                 ds = datasetMap.get(mergeModLabel, None)
                 unmergedDs = datasetMap.get(outModLabel, None)
-
+                
                 if ds != None:
                     outModLabel = mergeModLabel
+                    newLFN = "%s/%s" % ( unmergedDs['MergedLFNBase'],
+                                         os.path.basename(fileInfo['LFN']))
+                    fileInfo['LFN'] = newLFN
                     fileInfo['MergedBySize'] = "True"
-                    fileInfo['MergedLFNBase'] = unmergedDs['MergedLFNBase']
                     msg = "File Associated to Merge Output based on size:\n"
-                    msg += " %s\n Size = %s\n" % (fileInfo['LFN'], fileInfo['Size'])
+                    msg += " %s\n Size = %s\n" % (newLFN, fileInfo['Size'])
                     print msg
             else:
                 print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
 
-
-        controlKeys = ["FixedLFN","DisableGUID"  ]
         if datasetMap.has_key(outModLabel):
-            datasetMatch = datasetMap[outModLabel]
             datasetForFile = fileInfo.newDataset()
-            datasetForFile.update(datasetMatch)
-            for ck in controlKeys:
-                if datasetMatch.has_key(ck):
-                    fileInfo[ck] = datasetMatch[ck]
-
-
+            datasetForFile.update(datasetMap[outModLabel])
             msg = "File: %s\n" % fileInfo['LFN']
             msg += "Produced By Output Module: %s\n" % outModLabel
             msg += "Associated To Datasets:\n"
@@ -475,111 +463,50 @@ class TaskState:
                     )
             print msg
         return
-
-
-    def updateFileLFN(self, fileInfo):
-        """
-        _updateFileLFN_
-
-        Given the file information and the output module/dataset informtion to which it was matched,
-        update the LFN based on the configuration in the output module
-
-        Algorithm:
-
-        Check OutputModule settings to see if the LFN is fixed by presence of FixedLFN setting.
-
-        If not fixed, insert a GUID unless DisableGUID is set.
-
-        If MergedBySize is True, adapt the LFN to the merged LFN base.
-
-        """
-        msg = "Updating LFN: %s\n" % fileInfo['LFN']
-        print msg
-        fixedLFN = fileInfo.get("FixedLFN", None)
-        if str(fixedLFN).lower() == "true":
-            fixedLFN = True
-        else:
-            fixedLFN = False
-
-
-        msg = "FixedLFN Option is %s\n" % fixedLFN
-        print msg
-        if fixedLFN:
-            # do nothing to LFN
-            return
-
-        disableGUID = fileInfo.get("DisableGUID", None)
-        if str(disableGUID).lower() == "true":
-            disableGUID = True
-        else:
-            disableGUID = False
-        msg = "DisableGUID Option is %s\n" % disableGUID
-        print msg
-
-        # add guid to LFN
-        if not disableGUID:
-            if fileInfo['GUID'] != None:
-                fileInfo['LFN'] = '%s/%s.root' % \
-                                  (os.path.dirname(fileInfo['LFN']), fileInfo['GUID'])
-
-            msg = "GUID Inserted for LFN: %s\n" % fileInfo['LFN']
-            print msg
-
-        # merged by size update
-        if fileInfo['MergedBySize'] == "True":
-            newLFN = "%s/%s" % ( fileInfo['MergedLFNBase'],
-                                 os.path.basename(fileInfo['LFN']))
-            fileInfo['LFN'] = newLFN
-            msg = "File is merged by size, updating LFN: %s\n" % fileInfo['LFN']
-            print msg
-
-        return
-
-
-
-
-
+    
 
     def matchFileParents(self, fileInfo):
         """
-
+        
         Set input files based on their membership of parent datasets, these
         will either be the original input files or in the case's where the
-        parentage (actually parentDataset) is overriden (i.e. for HLTDEBUG)
+        parentage (actually parentDataset) is overriden (i.e. for HLTDEBUG) 
         only those files belonging to that dataset will be used (irrespective
         of what actual input files were run over).
-
+        
         This is used to fake the file/dataset parentage info as required by the
         2 file read.
 
         I.e. If RAW and HLTDEBUG are created in the same process this can be
         used to force HLTDEBUG to be a child of RAW.
-
+        
         """
         parentageWiped = False
-
+        
         for ds in fileInfo.dataset:
             parentDataset = ds.get('ParentDataset', None)
-
+            
             if not parentDataset:
                 continue
-
+            
             parentFiles = [x for x in self._JobReport.files if \
                                                     dsSearch(x, parentDataset)]
             if not parentFiles:
                 # Input files weren't produced in this job
                 # Standard processing job - leave InputFiles alone
                 continue
-
-            if not parentageWiped:
+            
+            if not parentageWiped: 
                 fileInfo.inputFiles = []
                 parentageWiped = True
-
+                
             for parFile in parentFiles:
                 if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
                     continue
-                print "Add InputFile %s for %s" % (parFile['LFN'], fileInfo['LFN'])
-                fileInfo.addInputFile(parFile['PFN'], parFile['LFN'])
+                parentLFN = '%s/%s.root' % \
+                  (parFile['LFN'][:parFile['LFN'].rfind("/")], parFile['GUID'])
+                print "Add InputFile %s for %s" % (parentLFN, fileInfo['LFN'])
+                fileInfo.addInputFile(parFile['PFN'], parentLFN)
         return
 
 
@@ -591,7 +518,7 @@ class TaskState:
         size and cksum value
 
         """
-
+       
         for fileInfo in self._JobReport.files:
             pfn = fileInfo['PFN']
             if pfn.startswith("file:"):
@@ -602,20 +529,20 @@ class TaskState:
             fileInfo['Size'] = size
             fileInfo.addChecksum("cksum", readCksum(pfn))
         return
-
+    
     def reportFiles(self):
         """
         _reportFiles_
 
         Return a list of FileInfo objects from the JobReport
-
+        
         """
         result = []
         if not self.jobReportLoaded:
             return result
 
         return self._JobReport.files
-
+        
 
 
 def readCksum(filename):
@@ -636,4 +563,4 @@ def readCksum(filename):
     value = content.split()[0]
     return value
 
-
+            
