@@ -93,6 +93,13 @@ class _CreateMergeDatasetOperator:
             processedDataset = dataset["ProcessedDataset"]
             self.apiRef.insertMergedDataset(
                 inputDataset, processedDataset, mergeAlgo)
+            
+            # algorithm used when process jobs produce merged files directly
+            # doesnt contain pset content - taken from processing (same hash)
+            mergeDirectAlgo = DBSWriterObjects.createAlgorithm(
+                dataset, None, self.apiRef)
+            self.apiRef.insertAlgoInPD(makeDSName2(dataset), mergeDirectAlgo)
+            
             logging.debug("ProcessedDataset: %s"%processedDataset)
             logging.debug("inputDataset: %s"%inputDataset)
             logging.debug("mergeAlgo: %s"%mergeAlgo)
@@ -158,6 +165,9 @@ fileMatcher = lambda x, dataset, seName: (x['CompleteDatasetName'] == dataset) a
 makeDSName = lambda x: "/%s/%s/%s" % (x['PrimaryDataset'],
                                       x['DataTier'],
                                       x['ProcessedDataset'])
+makeDSName2 = lambda x: "/%s/%s/%s" % (x['PrimaryDataset'],
+                                      x['ProcessedDataset'],
+                                      x['DataTier'],)
 makeDBSDSName = lambda x: "/%s/%s/%s" % (
     x['Dataset']['PrimaryDataset']['Name'],
     '-'.join(sorted(x['Dataset']['TierList'])),
