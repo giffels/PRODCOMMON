@@ -22,23 +22,19 @@ class ProtocolSrmv2(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("Exception") != -1 or \
-               line.find("does not exist") != -1 or \
-               line.find("srm client error") != -1:
-                cacheP = line.split(":")[-1]
-                if cacheP not in problems:
-                    problems.append(cacheP)
             if line.find("UnknownHostException") != -1 or \
-               line.find("No entries for host") != -1: # or \
-               #line.find("srm client error") != -1:
+               line.find("No entries for host") != -1 or \
+               line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("SRM_AUTHORIZATION_FAILURE") != -1 or \
-               line.find("Permission denied") != -1:
-                raise AuthorizationException("Permission denied", [line], outLines)
             elif line.find("already exists") != -1 or \
                line.find("SRM_DUPLICATION_ERROR") != -1:
                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
+            elif line.find("Exception") != -1 or \
+               line.find("does not exist") != -1:
+                cacheP = line.split(":")[-1]
+                if cacheP not in problems:
+                    problems.append(cacheP)
             elif line.find("unrecognized option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
@@ -140,12 +136,9 @@ class ProtocolSrmv2(Protocol):
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
+
         if self.checkDirExists(fullSource , opt = "") is False:
-            #tempsource = fullSource
-            #if fullSource.find(source.port) != -1:
-            #    tempsource = tempsource.split(source.port,1)[-1]
-            #elements = tempsource.split('/')
-            elements = fullSource.split('/')
+            elements =  fullSource.split('/')
             elements.reverse()
             if '' in elements: elements.remove('') 
             toCreate = []
@@ -163,6 +156,7 @@ class ProtocolSrmv2(Protocol):
            
                 ### simple output parsing ###
                 problems = self.simpleOutputCheck(outputs)
+           
                 if exitcode != 0 or len(problems) > 0:
                     raise OperationException("Error creating [" +source.workon+ "]", \
                                               problems, outputs )
@@ -171,17 +165,17 @@ class ProtocolSrmv2(Protocol):
         """
         return file/dir permission
         """
-        return int(self.listFile(source, proxy, opt)[3])
+        return int(self.listPath(source, proxy, opt)[3])
 
     def getFileSize(self, source, proxy = None, opt = ""):
         """
         file size
         """
-        ##size, owner, group, permMode = self.listFile(filePath, SEhost, port)
-        size = self.listFile(source, proxy, opt)[0]
+        ##size, owner, group, permMode = self.listPath(filePath, SEhost, port)
+        size = self.listPath(source, proxy, opt)[0]
         return int(size)
 
-    def listFile(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = ""):
         """
         srmls
 
@@ -221,7 +215,7 @@ class ProtocolSrmv2(Protocol):
         file exists?
         """
         try:
-            size, owner, group, permMode = self.listFile(source, proxy, opt)
+            size, owner, group, permMode = self.listPath(source, proxy, opt)
             if size >= 0:
                 return True
         except NotExistsException:
@@ -235,8 +229,7 @@ class ProtocolSrmv2(Protocol):
         Dir exists?
         """
 
-        cmd = "srmls -recursion_depth=0 " + opt +" "+ fullSource
-
+        cmd = "srmls " + opt +" "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         problems = self.simpleOutputCheck(outputs)
@@ -262,40 +255,5 @@ class ProtocolSrmv2(Protocol):
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
         return outputs.split('\n')[0]
-
-    def listPath(self, source, proxy = None, opt = ""):
-        """
-        srmls
-
-        returns size, owner, group, permMode of the file-dir
-        """
-        fullSource = source.getLynk()
-
-        opt += self._options
-        if proxy is not None:
-            opt += " -x509_user_proxy=%s " % proxy
-            self.checkUserProxy(proxy)
-
-        cmd = "srmls " + opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
-
-        problems = self.simpleOutputCheck(outputs)
-        if exitcode != 0 or len(problems) > 0:
-            raise OperationException("Error reading [" +source.workon+ "]", \
-                                      problems, outputs )
-
-        ### need to parse the output of the commands ###
-        filesres = []
-        # for each listed file
-        for line in outputs.split("\n"):
-            # get correct lines
-            if line.find(source.getFullPath()) != -1 and line.find("surl[0]=") == -1:
-                values = line.split(" ")
-                # sum file sizes
-                if len(values) > 1:
-                    filesres.append(values[-1])
-
-        return filesres
-
 
 # srm-reserve-space srm-release-space srmrmdir srmmkdir srmping srm-bring-online

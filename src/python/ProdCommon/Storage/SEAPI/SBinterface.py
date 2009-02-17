@@ -25,7 +25,7 @@ class SBinterface:
         self.useProxy = True
         if self.storage2 != None:
             self.mono = True
-        if self.storage1.protocol in ['local']: #, 'rfio']:
+        if self.storage1.protocol in ['local', 'rfio']:
             self.useProxy = False
         if self.mono:
             if storel1.protocol != storel2.protocol:
@@ -36,7 +36,7 @@ class SBinterface:
                                   ('Mismatch between protocols %s-%s'\
                                    %(storel1.protocol, storel2.protocol))
 
-    def copy( self, source = None, dest = None, proxy = None, opt = "" ):
+    def copy( self, source = "", dest = "", proxy = None, opt = "" ):
         """
         _copy_
 
@@ -54,7 +54,7 @@ class SBinterface:
             elif self.storage2.protocol != 'local':
                 self.storage2.action.copy(self.storage1, self.storage2, \
                                           proxy, opt)
-            ## if copy using local-local
+            ## if copy using local(rfio)-local(rfio)
             else:
                 self.storage1.action.copy(self.storage1, self.storage2, opt)
             self.storage1.workon = ""
@@ -119,18 +119,11 @@ class SBinterface:
             self.storage1.action.setGrant(self.storage1, values, opt = opt)
         self.storage1.workon = ""
 
-    def dirContent( self, source = "", proxy = None, opt = "" ):
+    def getList( self, source = "", proxy = None, opt = "" ):
         """
-        _dirContent_
+        _getList_
         """
-        self.storage1.workon = source
-        resval = []
-        if self.useProxy:
-            resval = self.storage1.action.listPath(self.storage1, proxy, opt)
-        else:
-            resval = self.storage1.action.listPath(self.storage1, opt = opt)
-        self.storage1.workon = ""
-        return resval
+        pass
 
     def delete( self, source = "", proxy = None, opt = "" ):
         """
@@ -194,12 +187,12 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2', 'rfio']:
+        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        if self.storage1.protocol in ['local']: #'rfio', 'local']:
+        if self.storage1.protocol in ['rfio', 'local']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, opt = opt)
             self.storage1.workon = ""
@@ -220,6 +213,6 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol in ['local']: #, "rfio"]:
+        elif self.storage1.protocol in ['local', "rfio"]:
             return ""
 
