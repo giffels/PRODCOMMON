@@ -170,43 +170,43 @@ class MergeJobFactory:
         thefiles = Fileset(name='FilesToSplit')
         print "Connection to DBS at: ",self.dbsUrl
         reader = DBSReader(self.dbsUrl)
-        fileList = reader.dbs.listFiles(path = self.inputDataset(),
-                                        retriveList = [ 'retrive_block',
-                                                        'retrive_run'])
 
+        blockList = reader.dbs.listBlocks(dataset = self.inputDataset())
+        jobDefs = []
         blocks = {}
 
-        for f in fileList:
-            block = f['Block']['Name']
-            if not blocks.has_key(block):
-                blocks[block] = reader.listFileBlockLocation(block)
-            f['Block']['StorageElementList'].extend(blocks[block])
-            wmbsFile = File(f['LogicalFileName'])
-            [ wmbsFile['locations'].add(x) for x in blocks[block] ]
-            wmbsFile['block'] = block
-            wmbsFile['size'] = f['FileSize']
-            thefiles.addFile(wmbsFile)
+        for block in blockList:
+            blockName = block['Name']
+            locations = reader.listFileBlockLocation(blockName)
+            fileList  = reader.dbs.listFiles(blockName = blockName)
 
-        work = Workflow()
-        subs = Subscription(
-            fileset = thefiles,
-            workflow = work,
-            split_algo = 'MergeBySize',
-            type = "Processing")
-        splitter = SplitterFactory()
-        jobfactory = splitter(subs)
+            for f in fileList:
+                f['Block']['StorageElementList'].extend(locations)
+                wmbsFile = File(f['LogicalFileName'])
+                [ wmbsFile['locations'].add(x) for x in locations ]
+                wmbsFile['block'] = blockName
+                wmbsFile['size']  = f['FileSize']
+                thefiles.addFile(wmbsFile)
 
-        jobs = jobfactory(merge_size=self.mergeSize*1024*1024, all_files=True) # in Bytes
+            work = Workflow()
+            subs = Subscription(
+                fileset = thefiles,
+                workflow = work,
+                split_algo = 'MergeBySize',
+                type = "Processing")
+            splitter = SplitterFactory()
+            jobfactory = splitter(subs)
 
-        jobDefs = []
-        for job in jobs.jobs:
-            jobDef = JobDefinition()
-            jobDef['LFNS'].extend(job.getFiles(type='lfn'))
-            jobDef['SkipEvents'] = 0
-            jobDef['MaxEvents'] = -1
-            [ jobDef['SENames'].extend(list(x['locations']))
-              for x in job.getFiles() ]
-            jobDefs.append(jobDef)
+            jobs = jobfactory(merge_size=self.mergeSize*1024*1024, all_files=True) # in Bytes
+
+            for job in jobs:
+                jobDef = JobDefinition()
+                jobDef['LFNS'].extend(job.getFiles(type='lfn'))
+                jobDef['SkipEvents'] = 0
+                jobDef['MaxEvents'] = -1
+                [ jobDef['SENames'].extend(list(x['locations']))
+                for x in job.getFiles() ]
+                jobDefs.append(jobDef)
 
         print "Job definitions: "
         import pprint
