@@ -14,6 +14,8 @@ CREATE TABLE bl_task
     server_name TEXT,
     job_type TEXT,
     user_proxy TEXT,
+    outfile_basename TEXT,
+    common_requirements TEXT,
     primary key(id),
     unique(name)
   )
@@ -34,6 +36,7 @@ CREATE TABLE bl_job
     output_files TEXT,
     dls_destination TEXT,
     submission_number INT default 0,
+    closed CHAR default "N",
     PRIMARY KEY(id),
     UNIQUE(job_id, task_id),
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
@@ -46,6 +49,7 @@ CREATE TABLE bl_runningjob
     job_id INT NOT NULL,
     task_id INT NOT NULL, 
     submission INT NOT NULL,
+    state VARCHAR(255),
     scheduler TEXT,
     service TEXT,
     sched_attr TEXT,
@@ -67,9 +71,6 @@ CREATE TABLE bl_runningjob
     output_enqueue_time TIMESTAMP,
     getoutput_retry INT,
     output_dir TEXT,
-    execution_user VARCHAR(255),
-    execution_host TEXT,
-    execution_path TEXT,
     storage TEXT,
     lfn TEXT,
     application_return_code INT,

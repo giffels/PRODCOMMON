@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.22 2008/10/01 11:36:42 gcodispo Exp $"
-__revision__ = "$Revision: 1.22 $"
+__version__ = "$Id: RunningJob.py,v 1.23 2009/02/13 09:33:16 gcodispo Exp $"
+__revision__ = "$Revision: 1.23 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -22,6 +22,7 @@ class RunningJob(DbObject):
                'jobId' : 'job_id',
                'taskId' : 'task_id',
                'submission' : 'submission',
+               'state' : 'state',
                'scheduler' : 'scheduler',
                'service' : 'service',
                'schedulerAttributes' : 'sched_attr',
@@ -42,9 +43,6 @@ class RunningJob(DbObject):
                'outputEnqueueTime' : 'output_enqueue_time',
                'getOutputRetry' : 'getoutput_retry',
                'outputDirectory' : 'output_dir',
-               'executionUser' : 'execution_user',
-               'executionHost' : 'execution_host',
-               'executionPath' : 'execution_path',
                'storage' : 'storage',
                'lfn' : 'lfn',
                'applicationReturnCode' : 'application_return_code',
@@ -61,6 +59,7 @@ class RunningJob(DbObject):
                  'jobId' : None,
                  'taskId' : None,
                  'submission' : None,
+                 'state' : None,
                  'scheduler' : None,
                  'service' : None,
                  'schedulerAttributes' : None,
@@ -81,9 +80,6 @@ class RunningJob(DbObject):
                  'outputEnqueueTime' : None,
                  'getOutputRetry' : 0,
                  'outputDirectory' : None,
-                 'executionUser' : None,
-                 'executionHost' : None,
-                 'executionPath' : None,
                  'storage' : None,
                  'lfn' : [],
                  'applicationReturnCode' : None,

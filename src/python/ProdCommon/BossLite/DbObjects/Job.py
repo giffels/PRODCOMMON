@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.16 2008/07/28 09:06:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.16 $"
+__version__ = "$Id: Job.py,v 1.17 2008/09/23 12:29:15 gcodispo Exp $"
+__revision__ = "$Revision: 1.17 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -20,17 +20,18 @@ class Job(DbObject):
     # fields on the object and their names on database
     fields = { 'id' : 'id',
                'jobId' : 'job_id',
+               'taskId' : 'task_id',
                'name' : 'name',
                'executable' : 'executable',
                'arguments' : 'arguments',
-               'taskId' : 'task_id',
                'standardInput' : 'stdin',
                'standardOutput' : 'stdout',
                'standardError' : 'stderr',
                'inputFiles' : 'input_files',
                'outputFiles' : 'output_files',
                'dlsDestination' : 'dls_destination',
-               'submissionNumber' : 'submission_number'
+               'submissionNumber' : 'submission_number',
+               'closed' : 'closed'
               }
 
     # mapping between field names and database fields
@@ -53,7 +54,8 @@ class Job(DbObject):
                  'inputFiles' : [],
                  'outputFiles' : [],
                  'dlsDestination' : [],
-                 'submissionNumber' : 0
+                 'submissionNumber' : 0,
+                 'closed' : 'N'
               }
 
     # database properties
