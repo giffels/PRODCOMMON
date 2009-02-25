@@ -26,6 +26,7 @@ class FileInfo(dict):
 
     def __init__(self):
         dict.__init__(self)
+        self.setdefault("Stream", None)
         self.setdefault("LFN", None)
         self.setdefault("PFN", None)
         self.setdefault("GUID", None)
