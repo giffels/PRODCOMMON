@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.9 $"
-__revision__ = "$Id: TaskState.py,v 1.9 2009/01/22 21:27:35 evansde Exp $"
+__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: TaskState.py,v 1.10 2009/02/11 04:57:52 dmason Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -415,6 +415,13 @@ class TaskState:
         # have to do this after the dataset/file matching is complete
         for fileInfo in self._JobReport.files:
             self.matchFileParents(fileInfo)
+            
+        for fileInfo in self._JobReport.files:
+        	# Assume at least one outModule exists.
+        	# Job spec node should be loaded at this point.
+        	#TODO: If above assumption is not correct, add the safety check 
+            outModules = self.jobSpecNode.cfgInterface.outputModules
+            fileInfo["Stream"] = outModules.values()[0].get("Stream", None)
 
         return
 
