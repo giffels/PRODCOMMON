@@ -170,11 +170,30 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "edg-gridftp-rm " + opt + " " + fullSource
-        #if self.checkNotDir(source, proxy, opt = ""):
-        #    cmd = "edg-gridftp-rm " + options + " " + fullSource
-        #else:
-        #    cmd = "edg-gridftp-rmdir " + options + " " + fullSource
-            
+
+        exitcode, outputs = self.executeCommand(cmd)
+
+        ### simple output parsing ###
+        problems = self.simpleOutputCheck(outputs)
+
+        if ' Is a directory' in problems:
+            self.deleteDir( source, proxy, opt )
+        elif exitcode != 0 or len(problems) > 0:
+            raise OperationException("Error deleting [" +source.workon+ "]", \
+                                      problems, outputs )
+        
+    def deleteDir(self, source, proxy = None, opt = ""):
+        """
+        edg-gridftp-rmdir
+        """
+        fullSource = source.getLynk()
+
+        if proxy is not None:
+            opt += " --proxy=%s " % str(proxy)
+            self.checkUserProxy(proxy)
+
+        cmd = "edg-gridftp-rmdir " + opt + " " + fullSource
+
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -292,7 +311,8 @@ class ProtocolGsiFtp(Protocol):
         filesres = []
         for filet in outputs.split('\n'):
             import os
-            filesres.append( os.path.join(source.getFullPath(), filet) )
+            if filet != "." and filet != "..":
+                filesres.append( os.path.join(source.getFullPath(), filet) )
 
         return filesres
 
