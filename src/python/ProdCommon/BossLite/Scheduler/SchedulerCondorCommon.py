@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.41 2008/12/29 19:39:49 ewv Exp $"
-__version__ = "$Revision: 1.41 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.42 2008/12/29 19:40:15 ewv Exp $"
+__version__ = "$Revision: 1.42 $"
 
 import os
 import popen2
@@ -226,10 +226,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobId = int(job['jobId'])
         # Make arguments condor friendly (space delimited w/o backslashes)
         jobArgs = job['arguments']
-        jobArgs = jobArgs.replace(',',' ')
-        jobArgs = jobArgs.replace('\\ ',',')
-        jobArgs = jobArgs.replace('\\','')
-        jobArgs = jobArgs.replace('"','')
+        if not self.useGlexec:
+            jobArgs = jobArgs.replace(',',' ')
+            jobArgs = jobArgs.replace('\\ ',',')
+            jobArgs = jobArgs.replace('\\','')
+            jobArgs = jobArgs.replace('"','')
 
         jdl += 'Arguments  = %s\n' % jobArgs
         if job['standardInput'] != '':
