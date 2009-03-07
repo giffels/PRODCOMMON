@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.9 2007/10/24 13:52:09 evansde Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.10 2008/05/15 07:04:01 dmason Exp $"
+__version__ = "$Revision: 1.10 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -90,7 +90,7 @@ def mergedLFNBase(workflowSpecInstance, lfnGroup = None):
         )
       if lfnGroup != None:
         result += "/%s" % lfnGroup
-    
+
     #  //
     # // Add this to the WorkflowSpec instance
     #//
@@ -115,7 +115,7 @@ class DefaultLFNMaker:
         self.jobname = jobSpecInstance.parameters['JobName']
         self.run = int(jobSpecInstance.parameters['RunNumber'])
         self.lfnGroup = str(self.run // 1000).zfill(4)
-        
+
 
     def __call__(self, node):
         """
@@ -140,16 +140,16 @@ class DefaultLFNMaker:
         acqEra=None
         if node.hasParameter("AcquisitionEra"):
           acqEra = node.getParameter("AcquisitionEra")[0]
-        
-        
+
+
         #  //
         # // iterate over outputmodules/data tiers
         #//  Generate LFN, PFN and Catalog for each module
-        
+
         for modName, outModule in node.cfgInterface.outputModules.items():
 
-            
-            
+
+
             if ( not outModule.has_key('fileName') ):
                 msg = "OutputModule %s does not contain a fileName entry" % modName
                 raise RuntimeError, msg
@@ -160,16 +160,18 @@ class DefaultLFNMaker:
         #\\  of the AcquisitionEra parameter in the workflow
         # \\ The new convention just takes from what was already defined
         #  \\in the datasets and if necessary does minor surgery
-             
+
             preserveLfnGroup = str(self.lfnGroup)
 
             if acqEra ==None:
               filterName = outModule.get("filterName", None)
-              if filterName not in ("None", "none", None):
+              # add protection against filterName being empty string
+              filterName = filterName.strip()
+              if filterName not in ("None", "none", None, ""):
                  lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
               else:
                  lfnGroup = str(self.lfnGroup)
-            
+
               outModule['LFNBase'] = os.path.join(base,
                                                   outModule['dataTier'],
                                                   lfnGroup)
@@ -192,11 +194,11 @@ class DefaultLFNMaker:
 
               thingtoStrip="%s_" % acqEra
               mypieces=lastBit.split(thingtoStrip,1)
-              if len(mypieces)>1:  
+              if len(mypieces)>1:
                 remainingBits=mypieces[1].split("-unmerged",1)[0]
               else:
-                remainingBits=lastBit            
-             
+                remainingBits=lastBit
+
               outModule['LFNBase'] = os.path.join(base,
                                                   outModule['primaryDataset'],
                                                   outModule['dataTier'],
