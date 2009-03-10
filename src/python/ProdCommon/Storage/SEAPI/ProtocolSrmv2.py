@@ -35,6 +35,8 @@ class ProtocolSrmv2(Protocol):
             elif line.find("SRM_AUTHORIZATION_FAILURE") != -1 or \
                line.find("Permission denied") != -1:
                 raise AuthorizationException("Permission denied", [line], outLines)
+            elif line.find("Connection timed out") != -1:
+                raise OperationException("Connection timed out", [line], outLines)
             elif line.find("already exists") != -1 or \
                line.find("SRM_DUPLICATION_ERROR") != -1:
                 raise AlreadyExistsException("File already exists!", \
@@ -154,7 +156,10 @@ class ProtocolSrmv2(Protocol):
                 fullSource_tmp = fullSource.split('/')
                 if '' in fullSource_tmp[-1:] : fullSource_tmp = fullSource_tmp[:-1] 
                 fullSource = string.join(fullSource_tmp[:-1],'/') 
-                if self.checkDirExists(fullSource, opt = "" ) is True: break
+                if fullSource != "srm:/":
+                    if self.checkDirExists(fullSource, opt = "" ) is True: break
+                else:
+                    break
             toCreate.reverse()   
             for i in toCreate:
                 fullSource = fullSource+'/'+i
