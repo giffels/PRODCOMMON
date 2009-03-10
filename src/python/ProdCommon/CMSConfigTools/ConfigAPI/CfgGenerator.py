@@ -103,9 +103,8 @@ class CfgGenerator:
             #newCfg.inputFiles.extend(fileNames)
             newCfg.inputFiles = fileNames
 
-
-        for i in range(0, newCfg.requiredSeeds+1):
-            newCfg.seeds.append(randomSeed())
+        seeds = [ randomSeed() for i in range(0, newCfg.requiredSeeds+1)]
+        newCfg.seeds = seeds
 
 
         return newCfg
