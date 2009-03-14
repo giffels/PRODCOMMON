@@ -57,7 +57,7 @@ class ProtocolSrmv2(Protocol):
         if dest.protocol != 'local':
             fullDest = dest.getLynk()
 
-        opt += self._options
+        opt += " %s --delegate=false "%self._options
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
