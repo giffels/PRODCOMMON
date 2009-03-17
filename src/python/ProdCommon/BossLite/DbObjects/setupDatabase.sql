@@ -38,6 +38,7 @@ CREATE TABLE bl_job
     submission_number INT default 0,
     closed CHAR default "N",
     PRIMARY KEY(id),
+    INDEX sub_n (submission_number),
     UNIQUE(job_id, task_id),
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
   )
@@ -80,6 +81,9 @@ CREATE TABLE bl_runningjob
 			'processed') default 'created',
     closed CHAR default "N",
     PRIMARY KEY(id),
+    INDEX closed_ind (closed),
+    INDEX procs_st (process_status),
+    INDEX sts (status),
     UNIQUE(submission, job_id, task_id),
     FOREIGN KEY(job_id) references bl_job(job_id) ON DELETE CASCADE,
     FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
@@ -93,6 +97,7 @@ CREATE TABLE jt_group
   task_id int(11) NOT NULL,
   job_id int(11) NOT NULL,
   PRIMARY KEY  (id),
+  INDEX gr (group_id),
   UNIQUE KEY task_id (task_id,job_id),
   FOREIGN KEY(job_id) references bl_job(job_id) ON DELETE CASCADE,
   FOREIGN KEY(task_id) references bl_task(id) ON DELETE CASCADE
