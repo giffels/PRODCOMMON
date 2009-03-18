@@ -67,13 +67,6 @@ class _CreateDatasetOperator:
             processed = DBSWriterObjects.createProcessedDataset(
                 primary, algo, dataset, self.apiRef)
             
-            # merge algo, used when process jobs produce merged files directly
-            mergeDataset = {}
-            mergeDataset.update(dataset)
-            mergeDataset['ApplicationFamily'] = 'Merged'
-            mergeAlgo = DBSWriterObjects.createAlgorithm(
-                mergeDataset, cfgMeta, self.apiRef)
-            
         return
 
 class _CreateMergeDatasetOperator:
@@ -91,15 +84,28 @@ class _CreateMergeDatasetOperator:
         if pnode.type != "CMSSW":
             return
         for dataset in pnode._OutputDatasets:
+            
+            primary = DBSWriterObjects.createPrimaryDataset(
+                dataset, self.apiRef)
+            
             mergeAlgo = DBSWriterObjects.createMergeAlgorithm(dataset,
                                                               self.apiRef)
-
+            DBSWriterObjects.createProcessedDataset(
+                primary, mergeAlgo, dataset, self.apiRef)
+            
             inputDataset = dataset.get('ParentDataset', None)
             if inputDataset == None:
                 continue
             processedDataset = dataset["ProcessedDataset"]
             self.apiRef.insertMergedDataset(
                 inputDataset, processedDataset, mergeAlgo)
+            
+            # algorithm used when process jobs produce merged files directly
+            # doesnt contain pset content - taken from processing (same hash)
+            mergeDirectAlgo = DBSWriterObjects.createAlgorithm(
+                dataset, None, self.apiRef)
+            self.apiRef.insertAlgoInPD(makeDSName2(dataset), mergeDirectAlgo)
+            
             logging.debug("ProcessedDataset: %s"%processedDataset)
             logging.debug("inputDataset: %s"%inputDataset)
             logging.debug("mergeAlgo: %s"%mergeAlgo)
@@ -165,6 +171,9 @@ fileMatcher = lambda x, dataset, seName: (x['CompleteDatasetName'] == dataset) a
 makeDSName = lambda x: "/%s/%s/%s" % (x['PrimaryDataset'],
                                       x['DataTier'],
                                       x['ProcessedDataset'])
+makeDSName2 = lambda x: "/%s/%s/%s" % (x['PrimaryDataset'],
+                                      x['ProcessedDataset'],
+                                      x['DataTier'],)
 makeDBSDSName = lambda x: "/%s/%s/%s" % (
     x['Dataset']['PrimaryDataset']['Name'],
     '-'.join(sorted(x['Dataset']['TierList'])),

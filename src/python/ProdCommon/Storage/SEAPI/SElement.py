@@ -24,11 +24,11 @@ class SElement(object):
             self.protocol = prot
             if type(hostname) is FullPath:
                 ## using the full path
-                self.full = True
+                self.__full = True
                 self.hostname = hostname.path
             else:
                 ## need to compose the path 
-                self.full = False
+                self.__full = False
                 self.hostname = hostname
                 self.port     = port
                 if self.port is None:
@@ -74,7 +74,7 @@ class SElement(object):
         """
         from os.path import join
         ## if using the complete path
-        if self.full:
+        if self.__full:
             if self.protocol != "local":
                 return join(self.hostname, self.workon)
             else:
@@ -96,26 +96,6 @@ class SElement(object):
         else:
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
-
-    def getFullPath(self):
-        """
-        _getFullPath_
-        """ 
-        if self.full:
-            if self.protocol != "local":
-                if self.hostname.find(":") != -1:
-                    tmpath = self.hostname.split(":")[-1]
-                    if tmpath.find("/") != -1:
-                        tmpath = tmpath.split("/",1)[1]
-                        from os.path import join
-                        if tmpath.find("?SFN=") != -1:
-                            return join(tmpath.split("?SFN=",1)[-1],self.workon)
-                        else:
-                            return join(tmpath, self.workon)
-            else:
-                if self.hostname != "/":
-                    return ("file://" + join(self.hostname, self.workon))
-        return self.workon
 
 class FullPath(object):
     """
