@@ -84,9 +84,15 @@ class _CreateMergeDatasetOperator:
         if pnode.type != "CMSSW":
             return
         for dataset in pnode._OutputDatasets:
+            
+            primary = DBSWriterObjects.createPrimaryDataset(
+                dataset, self.apiRef)
+            
             mergeAlgo = DBSWriterObjects.createMergeAlgorithm(dataset,
                                                               self.apiRef)
-
+            DBSWriterObjects.createProcessedDataset(
+                primary, mergeAlgo, dataset, self.apiRef)
+            
             inputDataset = dataset.get('ParentDataset', None)
             if inputDataset == None:
                 continue
