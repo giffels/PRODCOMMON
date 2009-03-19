@@ -428,6 +428,9 @@ class SchedulerARC(SchedulerInterface):
         giis = m.group(1)
         base_str = m.group(2)
 
+        # If the 'base' part has the format 'y=b/x=a'
+        # it has to be converted to 'x=a,y=b'. If it's in
+        # the latter format already, we'll use it as it is.
         m = re.match("(.*=.*)/(.*=.*)", base_str)
         if m:
             base = m.group(2) + ',' + m.group(1)
