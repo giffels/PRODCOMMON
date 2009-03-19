@@ -385,23 +385,13 @@ class SchedulerARC(SchedulerInterface):
                 raise SchedulerError('ngkill returned %i' % stat, output, cmd)
 
 
-    def postMortem (self, schedIdList, outfile, service):
+    def postMortem (self, jobId, outfile, service):
         """
         execute any post mortem command such as logging-info
         and write it in outfile
         """
-        raise NotImplementedError
-
-
-    def purgeService(self, obj):
-        """
-        purge the service used by the scheduler from job files
-        not available for every scheduler
-
-        does not return
-        """
-        raise NotImplementedError
-        #return
+        cmd = "ngcat -l " + jobId + " > " + outfile
+        return self.ExecuteCommand(cmd)[0]
 
 
     def matchResources(self, obj, requirements='', config='', service=''):
