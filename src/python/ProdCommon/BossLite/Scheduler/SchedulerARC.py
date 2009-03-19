@@ -13,22 +13,9 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 import logging
+import ldap
 import re
 #import arclib as arc
-
-## Import gLite specific modules
-#try:
-    #from wmproxymethods import Wmproxy
-    #from wmproxymethods import BaseException
-    #from wmproxymethods import WMPException
-#except StandardError, stde:
-    #warn = \
-         #"""
-         #missing glite environment.
-         #Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
-         #"""
-    #raise ImportError(warn + str(stde))
-
 
 #
 # Mapping from ARC status codes to BossLite dito.
@@ -61,6 +48,51 @@ StatusCodes = {
     "UNKNOWN":     "UN", # Job not known by ARC server (or, more typically, info.sys. too slow!)
     "WTF?":        "UN"  # Job not recognized as a job by the ARC client!
 }
+
+
+def ldapsearch(host, dn, filter, attr, retries=5):
+     timeout = 30  # seconds
+
+     for i in range(retries+1):
+          try:
+               if i > 0:
+                    sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
+                    sleep(i*10)
+
+               con = ldap.initialize(host)      # host = ldap://hostname[:port]
+               con.simple_bind_s()
+               con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
+               try:
+                    x = con.result(all=1, timeout=timeout)[1]
+               except ldap.SIZELIMIT_EXCEEDED:
+                    # Apparently too much output. Let's try to get one entry at a time
+                    # instead; that way we'll hopefully get at least a part of the
+                    # total output.
+                    sys.stderr.write("ldap.SIZELIMIT_EXCEEDED ...\n")
+                    x = []
+                    con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
+                    tmp = con.result(all=0, timeout=timeout)
+                    while tmp:
+                         x.append(tmp[1][0])
+                         try:
+                              tmp = con.result(all=0, timeout=timeout)
+                         except ldap.SIZELIMIT_EXCEEDED, e:
+                              break;
+               con.unbind()
+               break;
+          except ldap.LDAPError, e:
+               con.unbind()
+     else:
+          raise SchedulerError('Ldapsearch failure', "")
+
+     return x
+
+
+def intersection(a, b):
+    r = []
+    for x in a:
+        if x in b: r.append(x)
+    return r
 
 
 class SchedulerARC(SchedulerInterface):
@@ -379,17 +411,85 @@ class SchedulerARC(SchedulerInterface):
         """
         raise NotImplementedError
 
-
-    def lcgInfo(self, tags, fqan, seList=None, blacklist=None, whitelist=None, full=False):
+    def parseGiisStr(self, giis_str):
         """
-        execute a resources discovery through bdii
-        returns a list of resulting sites
+        Parse a giis string in either of the formats
+            ldap://giis.csc.fi:2135/O=Grid/Mds-Vo-name=Finland
+        or
+            ldap://giis.csc.fi:2135/Mds-Vo-name=Finland,O=Grid
+        and return the giis itself, and base, e.g.
+        "ldap://giis.csc.fi:2135",  "Mds-Vo-name=Finland,O=Grid"
         """
 
-        # Let's do with this extraordinarily primitive implementation for
-        # now.  Eventually, we may want to implement something that queries
-        # info systems instead (like, e.g., what
-        # SchedulerGLiteAPI.lcgInfo() does).
+        m = re.match("(ldap://[^/]*)/(.*)", giis_str)
+        if not m:
+            raise SchedulerError("Parse error in giis string " + giis_str, "") 
 
-        return [ "ametisti.grid.helsinki.fi:2811/nordugrid-SGE-mgrid",
-                 "sepeli.csc.fi:2811/nordugrid-GE-arc" ]
+        giis = m.group(1)
+        base_str = m.group(2)
+
+        m = re.match("(.*=.*)/(.*=.*)", base_str)
+        if m:
+            base = m.group(2) + ',' + m.group(1)
+        else:
+            # FIXME: Check that base_str has some sane format
+            # (e.g. "x=a,y=b")
+            base = base_str
+
+        return giis, base
+
+
+    def getGiisStr(self):
+        """
+        Find out which giis to use
+        """
+        cmd = "ngtest -O"
+        output, exitStat = self.ExecuteCommand(cmd)
+        m = re.match(".*Top-level GIIS's used:\s(ldap://[^\s]*).*", output.replace('\n',' '))
+
+        if not m:
+            raise SchedulerError("Can't find Top-level giis", output, cmd) 
+
+        return m.group(1)
+
+
+    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
+        """
+        Query grid information system for CE:s.
+        Returns a list of resulting sites
+        """
+
+        # FIXME: Currently we ignore 'vos'!
+
+        attr = [ 'nordugrid-cluster-name', 'nordugrid-cluster-localse',
+                 'nordugrid-cluster-runtimeenvironment' ]
+
+        giis_str = self.getGiisStr()
+        giis, base = self.parseGiisStr(giis_str)
+        ldap_result = ldapsearch(giis, base, '(objectClass=nordugrid-cluster)', attr)
+
+        accepted_CEs = []
+        for item in ldap_result:
+            ce = item[1]
+            name = ce['nordugrid-cluster-name'][0]
+            localSEs = ce.get('nordugrid-cluster-localse', [])
+            RTEs = ce.get('nordugrid-cluster-runtimeenvironment', [])
+
+            if seList and not intersection(seList, localSEs):
+                continue
+
+            if tags and not intersection(tags, RTEs):
+                continue
+
+            if blacklist and name in blacklist:
+                continue
+
+            if whitelist and name not in whitelist:
+                continue
+
+            if full:
+                accepted_CEs.append(name)
+            else:
+                return [ name ]
+
+        return accepted_CEs
