@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 """
-_ADSJobFactory_
+_MergeJobFactory_
 
 Given a processing workflow, generate a complete set of
 job specs for it.
 
 
 """
+
+__revision__ = "$Id: ResultsFeeder.py,v 1.2 2009/03/23 20:26:25 ewv Exp $"
+__version__  = "$Revision: 1.2 $"
+__author__   = "ewv@fnal.gov"
+
 
 import os
 import logging
@@ -96,7 +101,7 @@ class MergeJobFactory:
 
         self.allowedSites = []
 
-        self.mergeSize = int(self.workflowSpec.parameters.get("MergeSize", 1024)) # in MB
+        self.mergeSize = 50 # in GB
 
         self.generators = GeneratorMaker()
         self.generators(self.workflowSpec.payload)
@@ -168,15 +173,15 @@ class MergeJobFactory:
         logging.debug("MergeSize = %s" % self.mergeSize)
         logging.debug("AllowedSites = %s" % self.allowedSites)
         thefiles = Fileset(name='FilesToSplit')
-        print "Connection to DBS at: ",self.dbsUrl
+        logging.debug("Connection to DBS at: %s" % self.dbsUrl)
         reader = DBSReader(self.dbsUrl)
 
         blockList = reader.dbs.listBlocks(dataset = self.inputDataset())
         jobDefs = []
-        blocks = {}
 
         for block in blockList:
             blockName = block['Name']
+            logging.debug("Getting files for block %s" % blockName)
             locations = reader.listFileBlockLocation(blockName)
             fileList  = reader.dbs.listFiles(blockName = blockName)
 
@@ -194,11 +199,17 @@ class MergeJobFactory:
                 workflow = work,
                 split_algo = 'MergeBySize',
                 type = "Processing")
+            logging.debug("Info for Subscription %s" % subs)
             splitter = SplitterFactory()
             jobfactory = splitter(subs)
 
-            jobs = jobfactory(merge_size=self.mergeSize*1024*1024, all_files=True) # in Bytes
-
+            jobs = jobfactory(
+                merge_size=self.mergeSize*1024*1024, # min in Bytes
+                all_files=True                       # merge all files
+                )
+            logging.debug("Jobs are %s" % jobs)
+            if not jobs:
+                raise(SyntaxError)
             for job in jobs:
                 jobDef = JobDefinition()
                 jobDef['LFNS'].extend(job.getFiles(type='lfn'))
