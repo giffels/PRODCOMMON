@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.10 $"
-__revision__ = "$Id: TaskState.py,v 1.10 2009/02/11 04:57:52 dmason Exp $"
+__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: TaskState.py,v 1.11 2009/03/04 16:32:32 sryu Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -442,23 +442,26 @@ class TaskState:
 
         if self.taskAttrs['DoSizeMerge']:
             print "Doing Size Merge Check"
-            if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
-                #  //
-                # // File bigger than threshold
-                #//
-                mergeModLabel = "%s-Merged" % outModLabel
-                ds = datasetMap.get(mergeModLabel, None)
-                unmergedDs = datasetMap.get(outModLabel, None)
+            unmergedDs = datasetMap.get(outModLabel, None)
+            if unmergedDs['MergedLFNBase'] != None:
+                if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
+                    #  //
+                    # // File bigger than threshold
+                    #//
+                    mergeModLabel = "%s-Merged" % outModLabel
+                    ds = datasetMap.get(mergeModLabel, None)
 
-                if ds != None:
-                    outModLabel = mergeModLabel
-                    fileInfo['MergedBySize'] = "True"
-                    fileInfo['MergedLFNBase'] = unmergedDs['MergedLFNBase']
-                    msg = "File Associated to Merge Output based on size:\n"
-                    msg += " %s\n Size = %s\n" % (fileInfo['LFN'], fileInfo['Size'])
-                    print msg
+                    if ds != None:
+                        outModLabel = mergeModLabel
+                        fileInfo['MergedBySize'] = "True"
+                        fileInfo['MergedLFNBase'] = unmergedDs['MergedLFNBase']
+                        msg = "File Associated to Merge Output based on size:\n"
+                        msg += " %s\n Size = %s\n" % (fileInfo['LFN'], fileInfo['Size'])
+                        print msg
+                else:
+                    print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
             else:
-                print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
+                print "No MergedLFNBase defined, skipping Size Merge Check"
 
 
         controlKeys = ["FixedLFN","DisableGUID"  ]
