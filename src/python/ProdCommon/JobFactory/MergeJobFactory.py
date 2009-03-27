@@ -8,30 +8,24 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: ResultsFeeder.py,v 1.2 2009/03/23 20:26:25 ewv Exp $"
-__version__  = "$Revision: 1.2 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.3 2009/03/23 20:33:10 ewv Exp $"
+__version__  = "$Revision: 1.3 $"
 __author__   = "ewv@fnal.gov"
 
 
 import os
 import logging
 
-
-from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
-from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 from ProdCommon.CMSConfigTools.ConfigAPI.CfgGenerator import CfgGenerator
+from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 from ProdCommon.DataMgmt.JobSplit.JobSplitter import JobDefinition
+from ProdCommon.MCPayloads.LFNAlgorithm import DefaultLFNMaker
 
-from WMCore.JobSplitting.SplitterFactory import SplitterFactory
-from WMCore.DataStructs.Job import Job
-from WMCore.DataStructs.Subscription import Subscription
 from WMCore.DataStructs.File import File
 from WMCore.DataStructs.Fileset import Fileset
+from WMCore.DataStructs.Subscription import Subscription
 from WMCore.DataStructs.Workflow import Workflow
-
-
-from ProdCommon.DataMgmt.DBS.DBSWriter import DBSWriter
-from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
+from WMCore.JobSplitting.SplitterFactory import SplitterFactory
 
 
 class FilterSites:
@@ -101,7 +95,7 @@ class MergeJobFactory:
 
         self.allowedSites = []
 
-        self.mergeSize = 50 # in GB
+        self.mergeSize = 2*1024*1024*1024 # in GB
 
         self.generators = GeneratorMaker()
         self.generators(self.workflowSpec.payload)
@@ -148,7 +142,7 @@ class MergeJobFactory:
             jobDict = {
                 "JobSpecId" : self.currentJob,
                 "JobSpecFile": newJobSpec,
-                "JobType" : "Processing",
+                "JobType" : "Merge",
                 "WorkflowSpecId" : self.workflowSpec.workflowName(),
                 "WorkflowPriority" : 10,
                 "Sites" : jobDef['SENames'],
@@ -198,14 +192,14 @@ class MergeJobFactory:
                 fileset = thefiles,
                 workflow = work,
                 split_algo = 'MergeBySize',
-                type = "Processing")
+                type = "Merge")
             logging.debug("Info for Subscription %s" % subs)
             splitter = SplitterFactory()
             jobfactory = splitter(subs)
 
             jobs = jobfactory(
-                merge_size=self.mergeSize*1024*1024, # min in Bytes
-                all_files=True                       # merge all files
+                merge_size=self.mergeSize,                # min in Bytes
+                all_files=True                            # merge all files
                 )
             logging.debug("Jobs are %s" % jobs)
             if not jobs:
@@ -216,12 +210,9 @@ class MergeJobFactory:
                 jobDef['SkipEvents'] = 0
                 jobDef['MaxEvents'] = -1
                 [ jobDef['SENames'].extend(list(x['locations']))
-                for x in job.getFiles() ]
+                    for x in job.getFiles() ]
                 jobDefs.append(jobDef)
 
-        print "Job definitions: "
-        import pprint
-        pprint.pprint(jobDefs)
         return jobDefs
 
 
@@ -257,7 +248,7 @@ class MergeJobFactory:
         self.currentJob    = jobName
         self.currentJobDef = jobDef
         jobSpec.setJobName(jobName)
-        jobSpec.setJobType("Processing")
+        jobSpec.setJobType("Merge")
         jobSpec.parameters['RunNumber'] = self.count
 
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
@@ -293,7 +284,7 @@ class MergeJobFactory:
 
         generator = self.generators[jobSpecNode.name]
 
-        args = {'fileNames' : self.currentJobDef['LFNS'],}
+        args = {'fileNames' : self.currentJobDef['LFNS'], }
 
         args['maxEvents'] = -1
 
