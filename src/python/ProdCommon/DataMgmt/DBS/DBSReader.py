@@ -154,7 +154,7 @@ class DBSReader:
         unknownFiles = setOfKnownLfns.difference(knownFiles)
         return list(unknownFiles)
 
-    def getFileBlocksInfo(self, dataset):
+    def getFileBlocksInfo(self, dataset, onlyClosedBlocks = False):
         """
         """
         self.checkDatasetPath(dataset)
@@ -164,6 +164,9 @@ class DBSReader:
             msg = "Error in DBSReader.listFileBlocks(%s)\n" % dataset
             msg += "%s\n" % formatEx(ex)
             raise DBSReaderError(msg)
+        
+        if onlyClosedBlocks:
+            return [x for x in blocks if str(x['OpenForWriting']) != "1"]
 
         return blocks
 

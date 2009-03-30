@@ -167,6 +167,9 @@ class JobSplitter:
 
         fileblock = self.fileblocks.get(fileblockName)
         
+        # block contains no files
+        if not fileblock:
+            return result
 
         carryOver = 0
         currentJob = JobDefinition()

@@ -717,8 +717,9 @@ class DBSWriter:
 
         """
         reader = DBSReader(sourceDBS)
-        inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
-        for block in inputBlocks:
+        inputBlocks = reader.getFileBlocksInfo(sourceDatasetPath, onlyClosed)
+        for inputBlock in inputBlocks:
+            block = inputBlock['Name']
             #  //
             # // Test block does not exist in target
             #//
@@ -726,13 +727,14 @@ class DBSWriter:
                 #  //
                 # // block exists
                 #//  If block is closed dont attempt transfer
-                if not self.reader.blockIsOpen(block):
+                if not str(inputBlock['OpenForWriting']) != '1':
                     msg = "Block already exists in target DBS and is closed:\n"
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
-                    if not locations:
+                    # only empty file blocks can have no location
+                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
                         msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -766,7 +768,8 @@ class DBSWriter:
             del xferData
 
             locations = reader.listFileBlockLocation(block)
-            if not locations:
+            # only empty file blocks can have no location
+            if not locations and str(inputBlock['NumberOfFiles']) != 0:
                 msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)
@@ -791,9 +794,10 @@ class DBSWriter:
                                                                                                               
         """
         reader = DBSReader(sourceDBS)
-        inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
+        inputBlocks = reader.getFileBlocksInfo(sourceDatasetPath, onlyClosed)
         blkCounter=0
-        for block in inputBlocks:
+        for inputBlock in inputBlocks:
+            block = inputBlock['Name']
             #  //
             # // Test block does not exist in target
             #//
@@ -804,13 +808,14 @@ class DBSWriter:
                 #  //
                 # // block exists
                 #//  If block is closed dont attempt transfer
-                if not self.reader.blockIsOpen(block):
+                if str(inputBlock['OpenForWriting']) != '1':
                     msg = "Block already exists in target DBS and is closed:\n"
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
-                    if not locations:
+                    # only empty file blocks can have no location
+                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
                         msg = "Error in DBSWriter.importDataset\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -832,7 +837,8 @@ class DBSWriter:
                 raise DBSWriterError(msg)
                     
             locations = reader.listFileBlockLocation(block)
-            if not locations:
+            # only empty file blocks can have no location
+            if not locations and str(inputBlock['NumberOfFiles']) != 0:
                 msg = "Error in DBSWriter.importDataset\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)
@@ -858,8 +864,9 @@ class DBSWriter:
 
         """
         reader = DBSReader(sourceDBS)
-        inputBlocks = reader.listFileBlocks(sourceDatasetPath, onlyClosed)
-        for block in inputBlocks:
+        inputBlocks = reader.getFileBlocksInfo(sourceDatasetPath, onlyClosed)
+        for inputBlock in inputBlocks:
+            block = inputBlock['Name']
             #  //
             # // Test block does not exist in target
             #//
@@ -867,13 +874,14 @@ class DBSWriter:
                 #  //
                 # // block exists
                 #//  If block is closed dont attempt transfer
-                if not self.reader.blockIsOpen(block):
+                if str(inputBlock['OpenForWriting']) != '1':
                     msg = "Block already exists in target DBS and is closed:\n"
                     msg += " ==> %s\n" % block
                     msg += "Skipping Import of that block"
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
-                    if not locations:
+                    # only empty file blocks can have no location
+                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
                         msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -894,7 +902,8 @@ class DBSWriter:
                 raise DBSWriterError(msg)
 
             locations = reader.listFileBlockLocation(block)
-            if not locations:
+            # only empty file blocks can have no location
+            if not locations and str(inputBlock['NumberOfFiles']) != 0:
                 msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)            
