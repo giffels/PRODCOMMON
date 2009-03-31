@@ -181,7 +181,15 @@ def getSoftwareAndArch(host_list, software, arch, bdii='exp-bdii.cern.ch'):
     query = "'(&(GlueHostApplicationSoftwareRunTimeEnvironment="+software+ ")"
     query +=   "(GlueHostApplicationSoftwareRunTimeEnvironment="+arch+")"
 
-    query += buildOrQuery('GlueChunkKey=GlueClusterUniqueID', [ce_to_cluster_map[h] for h in host_list])
+    clusterlist = []
+    for h in host_list:
+        try:
+            clusterlist.append(ce_to_cluster_map[h])
+        except KeyError:
+            # CE does not map to a Cluster; remove it!
+            host_list.remove(h)
+
+    query += buildOrQuery('GlueChunkKey=GlueClusterUniqueID', clusterlist)
     query += ")"
 
     pout = runldapquery(query, 'GlueHostApplicationSoftwareRunTimeEnvironment GlueChunkKey', bdii)
