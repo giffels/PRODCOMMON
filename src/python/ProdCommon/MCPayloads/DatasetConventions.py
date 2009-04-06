@@ -133,6 +133,32 @@ def csa08ProcessedDatasetName (**args):
     return datasetName
 
 
+def properProcessedDatasetName (**args):
+    """
+    _properProcessedDatasetName_
+
+    Create a dataset name based on conventions
+
+    """
+    checkArgs = ['AcquisitionEra',
+                 'ProcessingVersion']
+
+    for arg in checkArgs:
+        if args.get(arg, None) == None:
+            msg = "%s Not Specified\n" % arg
+            msg += "This is required for a processed dataset name"
+            raise DatasetConvError(msg)
+
+    if args.get('ProcessingString', None) == None:
+       datasetName = "%s-%s" % (args['AcquisitionEra'],
+                                args['ProcessingVersion'])
+    else:
+       datasetName = "%s-%s-%s" % (args['AcquisitionEra'],
+                                   args['ProcessingString'],
+                                   args['ProcessingVersion'])
+
+    return datasetName
+
 
 def checkDataTier(dataTier):
     """

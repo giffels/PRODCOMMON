@@ -8,9 +8,9 @@ to add details
 
 """
 
-
-import time
 import os
+import time
+
 from ProdCommon.MCPayloads.WorkflowSpec import WorkflowSpec
 from ProdCommon.Core.ProdException import ProdException
 
@@ -56,8 +56,13 @@ class WorkflowMaker:
         self.psetHashes = {}
         self.origCfgs = {}
         self.acquisitionEra = None
+        self.processingString = None
         self.processingVersion = None
         self.conditions = None
+
+        # turn on use of proper naming convention for datasets
+        # should be made the default soon, lets deprecate all the old crap
+        self.useProperNamingConventions = False
         
         self.options = {}
         self.options.setdefault('FakeHash', False)
@@ -144,12 +149,32 @@ class WorkflowMaker:
         """
         self.workflow.setAcquisitionEra(era)
         self.acquisitionEra=era
+        return
 
+
+    def setNamingConventionParameters(self, era, procString, procVers):
+        """
+        _setNamingConventionParameters_
+
+        Sets AcquisitionEra, ProcessingString and ProcessingVersion
+
+        """
+        self.workflow.setAcquisitionEra(era)
+        self.workflow.parameters['ProcessingString'] = procString
+        self.workflow.parameters['ProcessingVersion'] = procVers
+        
+        self.acquisitionEra=era
+        self.processingString = procString
+        self.processingVersion = procVers
+
+        self.useProperNamingConventions = True
+
+        return
 
     
     def setActivity(self, activity):
         """
-        _changeWorkflowType"
+        _changeWorkflowType_
         
         Set the workflow type
         i.e. Simulation, Reconstruction, Reprocessing, Skimming
@@ -404,26 +429,33 @@ class WorkflowMaker:
                 primaryName = DatasetConventions.primaryDatasetName(
                                         PhysicsChannel = self.channel,
                                         )
-                if self.acquisitionEra == None:
-                  processedName = DatasetConventions.processedDatasetName(
-                      Version = cmsRunNode.application['Version'],
-                      Label = self.label,
-                      Group = self.group,
-                      FilterName = filterName,
-                      RequestId = self.requestId,
-                      Unmerged = True
-                      )
+
+                if self.useProperNamingConventions:
+                    processedName = DatasetConventions.properProcessedDatasetName(
+                        AcquisitionEra = self.acquisitionEra,
+                        ProcessingString = self.processingString,
+                        ProcessingVersion = self.processingVersion,
+                        )
+                elif self.acquisitionEra == None:
+                    processedName = DatasetConventions.processedDatasetName(
+                        Version = cmsRunNode.application['Version'],
+                        Label = self.label,
+                        Group = self.group,
+                        FilterName = filterName,
+                        RequestId = self.requestId,
+                        Unmerged = True
+                        )
                 else:
-                  processedName = DatasetConventions.csa08ProcessedDatasetName(
-                      AcquisitionEra = self.acquisitionEra,
-                      Conditions = self.workflow.parameters['Conditions'],
-                      ProcessingVersion = self.workflow.parameters['ProcessingVersion'],
-                      FilterName = filterName,
-                      Unmerged = True
-                      )
+                    processedName = DatasetConventions.csa08ProcessedDatasetName(
+                        AcquisitionEra = self.acquisitionEra,
+                        Conditions = self.workflow.parameters['Conditions'],
+                        ProcessingVersion = self.workflow.parameters['ProcessingVersion'],
+                        FilterName = filterName,
+                        Unmerged = True
+                        )
                   
                 dataTier = DatasetConventions.checkDataTier(dataTier)
-    
+
                 moduleInstance['primaryDataset'] = primaryName
                 moduleInstance['processedDataset'] = processedName
     
