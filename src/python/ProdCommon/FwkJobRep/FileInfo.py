@@ -41,6 +41,8 @@ class FileInfo(dict):
         self.setdefault("OutputModuleClass", None)
         self.setdefault("Checksum", None)
         self.setdefault("MergedBySize", "False")
+        self.setdefault("FileType", "EDM")
+        self.setdefault("StreamerIndexFile", None)
 
         #  //
         # // Is this an input or output file?
