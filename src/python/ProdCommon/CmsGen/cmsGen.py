@@ -154,8 +154,8 @@ def compHep():
     try:
         msg="wget %s/%s" % (compHepPath, compHepTgz)
 	os.system(msg)
-	msg = "tar xvzf  %s;" % compHepTgz
-	###msg+= "cd  Z2ll_bb-07; tar xvzf comphep-4.2p1.tgz;"
+	msg = "tar -xzf  %s;" % compHepTgz
+	###msg+= "cd  Z2ll_bb-07; tar -xzf comphep-4.2p1.tgz;"
 	###msg+= "cd comphep-4.2p1; ./configure; make; make setup;"
 	os.system(msg)
 	myCompHepDir = os.getcwd()+"/Z2ll_bb-07/comphep-4.2p1/END"
@@ -178,7 +178,7 @@ def compHep():
     	###msg+= "cp ../num_batch.pl .;"
     	###msg+= "cp ../num_batch_v1.5.pl .;"
     	###msg+= "cp ../run-evnt.csh .;"
-    	###msg+= "tar xvzf Zbb_llbb_mass_prod.tar.gz;"
+    	###msg+= "tar -xzf Zbb_llbb_mass_prod.tar.gz;"
     	os.system(msg)
     except Exception, ex:
     	return 6
@@ -238,7 +238,7 @@ def compHep():
     try:
         msg = "echo Events mixing to produce PEV files;"
       	msg+= "cd Z2ll_bb-07;"
-      	#msg+= "tar xvzf cpyth-1.2.3.tgz;"
+      	#msg+= "tar -xzf cpyth-1.2.3.tgz;"
       	msg+= "cd cpyth-1.2.3;"
       	#msg+= "./configure;"
       	#msg+= "make;"
@@ -315,7 +315,7 @@ def madgraph():
     # // unpack the tarball and set up the software
     #//
     setupCommand = "/bin/cp %s . \n" % tarballLocation
-    setupCommand += "tar -zxf %s\n" % os.path.basename(tarballLocation)
+    setupCommand += "tar -xzf %s\n" % os.path.basename(tarballLocation)
     #setupCommand += "cd madevent;"
     #setupCommand += "./bin/compile dynamic;"
     #setupCommand += "./bin/clean4grid;"
@@ -401,7 +401,7 @@ def sherpa():
     # // unpack the tarball
     #//
     setupCommand = "/bin/cp %s . \n" % tarballLocation
-    setupCommand += "tar -zxf %s\n" % os.path.basename(tarballLocation)
+    setupCommand += "tar -xzf %s\n" % os.path.basename(tarballLocation)
     os.system(setupCommand)
  
     #  //
