@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.107 2009/01/20 18:49:12 gcodispo Exp $"
-__version__ = "$Revision: 1.107 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.109 2009/02/25 10:03:40 gcodispo Exp $"
+__version__ = "$Revision: 1.109 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -542,7 +542,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl, endpoints = self.mergeJDL( jdl, service, config )
         if endpoints == [] :
             raise SchedulerError( "failed submission", "empty WMS list" )
-
+ 
         # emulate ui round robin
         try :
             import random
@@ -575,21 +575,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # typical exception
             except BaseException, err:
                 # actions.append( "Failed submit to : " + wms )
-                errors += 'failed to submit to ' + wms + \
-                          ' : ' + formatWmpError( err ) + ';   '
+                errors += 'failed to submit to %s : %s ;\n' % \
+                          ( wms,  formatWmpError( err ) )
                 continue
             
             ### very very bad! wms exceptions...
-            except IndexError, err:
-                errors += 'failed SSL auth to wms ' + wms + \
-                          ' : ' +  str(err) + ';   '
+            except Exception, err:
+                errors += 'failed to submit to %s : %s ;\n' % ( wms, err )
                 continue
             
             except :
                 import sys
                 if isinstance( sys.exc_type, str):
                     errors += 'failed SSL auth to wms ' + wms + \
-                              ' : ' +  str(sys.exc_info()[0]) + ';   '
+                              ' : ' +  str(sys.exc_info()[0]) + ';\n'
                     continue
                 raise
 
@@ -739,7 +738,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
 
             ### very very bad! wms exceptions...
-            except IndexError, err:
+            except Exception, err:
                 raise SchedulerError('Failed SSL auth to wms', err)
             except :
                 import sys
@@ -916,7 +915,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     job.runningJob.errors.append( output )
 
             ### very very bad! wms exceptions...
-            except IndexError, err:
+            except Exception, err:
                 raise SchedulerError('Failed SSL auth to wms', err)
             except :
                 import sys
@@ -1480,6 +1479,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if seList == None :
             command = "lcg-info --vo " + fqan + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
+            logging.debug('issuing : %s' % command)
+
             out, ret = self.ExecuteCommand( self.proxyString + command )
             for ce in out.split() :
                 # blacklist
@@ -1504,6 +1505,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             singleComm = "lcg-info --vo " + fqan + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
+            logging.debug('issuing : %s' % singleComm)
 
             out, ret = self.ExecuteCommand( self.proxyString + singleComm )
             for ce in out.split() :
@@ -1555,6 +1557,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 continue
 
             except :
+                logging.error( 'failed to delegate proxy to ' + wms )
                 continue
 
         os.system("rm -rf " + workdir)

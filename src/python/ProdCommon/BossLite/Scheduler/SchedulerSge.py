@@ -13,7 +13,6 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
-#from common import work_space
 
 class SchedulerSge (SchedulerInterface) :
     """
@@ -41,6 +40,9 @@ class SchedulerSge (SchedulerInterface) :
   
         
     def checkUserProxy( self, cert='' ):
+        """
+        Dummy function for non-grid scheduler
+        """
         return
 
     def jobDescription ( self, obj, requirements='', config='', service = '' ):
@@ -69,7 +71,7 @@ class SchedulerSge (SchedulerInterface) :
         - bulkId is an eventual bulk submission identifier
         - service is a endpoit to connect withs (such as the WMS)
         """
-
+	#print "schedulerSge.py called"
         #print "config"+config
         if type(obj) == RunningJob or type(obj) == Job:
             return self.submitJob(obj, requirements)
@@ -90,9 +92,9 @@ class SchedulerSge (SchedulerInterface) :
         arg = self.decode(job, task, requirements )
 
         command = "qsub " + arg 
-        #print command + "\n"
+        print command + "\n"
         out, ret = self.ExecuteCommand(command)
-        #print "out:" + out + "\n"
+        print "crab: " + out + "\n"
         r = re.compile("Your job (\d+) .* has been submitted")
 
         m= r.search(out)
@@ -126,14 +128,12 @@ class SchedulerSge (SchedulerInterface) :
         txt += "MYTMPDIR=$TMP/$JOB_NAME\n"
         txt += "mkdir -p $MYTMPDIR \n"
         txt += "cd $MYTMPDIR\n"
-
         # Need to copy InputSandBox to WN
         if task:
             subDir=task[ 'startDirectory' ]
             for inpFile in task[ 'globalSandbox' ].split(','):
-                #txt += "cp "+subDir+inpFile+" . \n"
+	        #print "inpFile: ", inpFile, "\n", "subDir: ", subDir
                 txt += "cp "+inpFile+" . \n"
-                 
         ## Job specific ISB
         #for inpFile in job[ 'inputFiles' ]:
         #    if inpFile != '': txt += self.cpCmd+" "+self.rfioSer+"/"+inpFile+" . \n"
@@ -142,13 +142,15 @@ class SchedulerSge (SchedulerInterface) :
         args = job[ 'arguments' ]
         exe = job[ 'executable' ]
         txt += "./"+os.path.basename(exe)+" "+args+"\n"
-
         
         ## And finally copy back the output
         outputDir=task['outputDirectory']
+	## Before exec crab -getouput, outputs are in temp dir
+	txt += "mkdir -p "+outputDir+"/temp \n"
         for outFile in job['outputFiles']:
             #print "outputFile:"+outFile
-            txt += "cp "+outFile+" "+outputDir+"/. \n"
+            #txt += "cp "+outFile+" "+outputDir+"/. \n"
+            txt += "cp "+outFile+" "+outputDir+"/temp \n"
 
         txt += "cd $SGE_O_HOME\n"
         txt += "rm -rf $MYTMPDIR\n"
@@ -311,7 +313,8 @@ class SchedulerSge (SchedulerInterface) :
         #print "SchedulerSGE:getOutput called!"
             
         if type(obj) == Task :
-            oldoutdir=obj[ 'outputDirectory' ]
+#           oldoutdir=obj[ 'outputDirectory' ]
+	    oldoutdir=obj[ 'outputDirectory' ]+'/temp' ## copy new output  files from temp"
             if(outdir != oldoutdir):
                 for job in obj.jobs:
                     jobid = job[ 'id' ];
@@ -360,4 +363,5 @@ class SchedulerSge (SchedulerInterface) :
         execute any post mortem command such as logging-info
         and write it in outfile
         """
+
 
