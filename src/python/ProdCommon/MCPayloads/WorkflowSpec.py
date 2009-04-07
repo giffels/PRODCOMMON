@@ -39,6 +39,7 @@ class WorkflowSpec:
         self.parameters.setdefault("RequestCategory", "PreProd")
         self.parameters.setdefault("WorkflowType", "Processing")
         self.parameters.setdefault("WorkflowRunNumber", 1)
+        self.parameters.setdefault("StreamerIndexDir", None)
         self.pythonLibs = []
         self._NodeMap = {}
 
