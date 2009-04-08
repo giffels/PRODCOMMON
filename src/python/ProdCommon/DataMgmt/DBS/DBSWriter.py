@@ -734,7 +734,7 @@ class DBSWriter:
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
                     # only empty file blocks can have no location
-                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
+                    if not locations and str(inputBlock['NumberOfFiles']) != "0":
                         msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -769,7 +769,7 @@ class DBSWriter:
 
             locations = reader.listFileBlockLocation(block)
             # only empty file blocks can have no location
-            if not locations and str(inputBlock['NumberOfFiles']) != 0:
+            if not locations and str(inputBlock['NumberOfFiles']) != "0":
                 msg = "Error in DBSWriter.importDatasetWithExistingParents\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)
@@ -815,7 +815,7 @@ class DBSWriter:
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
                     # only empty file blocks can have no location
-                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
+                    if not locations and str(inputBlock['NumberOfFiles']) != "0":
                         msg = "Error in DBSWriter.importDataset\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -838,7 +838,7 @@ class DBSWriter:
                     
             locations = reader.listFileBlockLocation(block)
             # only empty file blocks can have no location
-            if not locations and str(inputBlock['NumberOfFiles']) != 0:
+            if not locations and str(inputBlock['NumberOfFiles']) != "0":
                 msg = "Error in DBSWriter.importDataset\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)
@@ -881,7 +881,7 @@ class DBSWriter:
                     logging.warning(msg)
                     locations = reader.listFileBlockLocation(block)
                     # only empty file blocks can have no location
-                    if not locations and str(inputBlock['NumberOfFiles']) != 0:
+                    if not locations and str(inputBlock['NumberOfFiles']) != "0":
                         msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                         msg += "Block has no locations defined: %s" % block
                         raise DBSWriterError(msg)
@@ -903,7 +903,7 @@ class DBSWriter:
 
             locations = reader.listFileBlockLocation(block)
             # only empty file blocks can have no location
-            if not locations and str(inputBlock['NumberOfFiles']) != 0:
+            if not locations and str(inputBlock['NumberOfFiles']) != "0":
                 msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
                 msg += "Block has no locations defined: %s" % block
                 raise DBSWriterError(msg)            
