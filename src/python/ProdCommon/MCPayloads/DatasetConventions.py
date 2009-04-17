@@ -157,6 +157,10 @@ def properProcessedDatasetName (**args):
                                    args['ProcessingString'],
                                    args['ProcessingVersion'])
 
+    isUnmerged = args.get("Unmerged", False)
+    if isUnmerged:
+        datasetName += "-unmerged"
+
     return datasetName
 
 

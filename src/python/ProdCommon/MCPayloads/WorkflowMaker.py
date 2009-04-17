@@ -435,6 +435,7 @@ class WorkflowMaker:
                         AcquisitionEra = self.acquisitionEra,
                         ProcessingString = self.processingString,
                         ProcessingVersion = self.processingVersion,
+                        Unmerged = True
                         )
                 elif self.acquisitionEra == None:
                     processedName = DatasetConventions.processedDatasetName(
