@@ -74,3 +74,10 @@ class SizeZeroException(ProtocolException):
     (check before transfer)
     """
     pass
+
+class MissingCommand(ProtocolException):
+    """
+    when a command is not found
+    """
+    pass
+

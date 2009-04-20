@@ -44,6 +44,11 @@ class ProtocolSrmv2(Protocol):
             elif line.find("unrecognized option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
+            elif line.find("Command not found") != -1 or \
+                 line.find("command not found") != -1:
+                raise MissingCommand("Command not found: client not " \
+                                     "installed or wrong environment", \
+                                     [line], outLines)
         return problems
 
     def copy(self, source, dest, proxy = None, opt = ""):

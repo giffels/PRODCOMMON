@@ -43,7 +43,11 @@ class ProtocolLcgUtils(Protocol):
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                   [line], outLines)
- 
+            elif line.find("Command not found") != -1 or \
+                 line.find("command not found") != -1: 
+                raise MissingCommand("Command not found: client not " \
+                                     "installed or wrong environment", \
+                                     [line], outLines)
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
