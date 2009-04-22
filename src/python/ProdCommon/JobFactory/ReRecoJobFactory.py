@@ -8,7 +8,7 @@ job specs for it.
 
 
 """
-__version__ = "$Revision: 1.3 $"
+__version__ = "$Revision: 1.4 $"
 __revision__ = \
    "$id$"
 
@@ -52,6 +52,9 @@ class GeneratorMaker(dict):
 
 
     def __call__(self, payloadNode):
+        if payloadNode.type != "CMSSW":
+            return
+
         if payloadNode.cfgInterface != None:
             generator = CfgGenerator(payloadNode.cfgInterface, False,
                                      payloadNode.applicationControls)
@@ -117,7 +120,8 @@ class ReRecoJobFactory:
         self.splitSize = int(self.workflowSpec.parameters.get("SplitSize", 1))
         
         self.generators = GeneratorMaker()
-        self.generators(self.workflowSpec.payload)
+        self.workflowSpec.payload.operate(self.generators)
+        #self.generators(self.workflowSpec.payload)
 
         
         #  //

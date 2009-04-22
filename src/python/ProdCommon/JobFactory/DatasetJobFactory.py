@@ -48,6 +48,9 @@ class GeneratorMaker(dict):
 
 
     def __call__(self, payloadNode):
+        if payloadNode.type != "CMSSW":
+            return
+
         if payloadNode.cfgInterface != None:
             generator = CfgGenerator(payloadNode.cfgInterface, False,
                                      payloadNode.applicationControls)
@@ -110,7 +113,8 @@ class DatasetJobFactory:
         self.splitSize = int(self.workflowSpec.parameters.get("SplitSize", 1))
 
         self.generators = GeneratorMaker()
-        self.generators(self.workflowSpec.payload)
+        self.workflowSpec.payload.operate(self.generators)
+        #self.generators(self.workflowSpec.payload)
 
         self.pileupDatasets = {}
         
@@ -341,7 +345,7 @@ class DatasetJobFactory:
         args = {
             'fileNames' : self.currentJobDef['LFNS'],
             }
-            
+ 
         if self.splitType == "file":
            maxEvents = -1
         if maxEvents != None:
