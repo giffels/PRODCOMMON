@@ -11,7 +11,7 @@ manipulating the bits and pieces of it.
 from ProdCommon.FwkJobRep.FileInfo import FileInfo, AnalysisFile
 from ProdCommon.FwkJobRep.PerformanceReport import PerformanceReport
 import ProdCommon.FwkJobRep.StorageStats as StorageStats
-import ProdCommon.FwkJobRep.Utilities as SortFilesUtil
+from WMCore.Algorithms.TreeSort import TreeSort
 
 from IMProv.IMProvNode import IMProvNode
 from IMProv.IMProvQuery import IMProvQuery
@@ -76,8 +76,9 @@ class FwkJobReport:
         Return a list of output files for this job ordered based on parentage dependencies
 
         """
-
-        return SortFilesUtil.sortFiles(self)
+        name = lambda x: x['LFN']
+        parents = lambda x: x.parentLFNs()
+        return TreeSort(name, parents, self.files).sort()
 
 
     def newFile(self):

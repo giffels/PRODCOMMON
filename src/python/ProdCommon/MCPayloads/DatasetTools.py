@@ -10,6 +10,13 @@ JobSpecNodes
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
+from WMCore.Algorithms.TreeSort import TreeSort
+
+def _sortDatasets(datasets):
+    name = lambda x: x.name()
+    parents = lambda x: x['ParentDataset']
+    return TreeSort(name, parents, datasets).sort()
+
 
 def getOutputDatasets(payloadNode):
     """
@@ -31,8 +38,8 @@ def getOutputDatasets(payloadNode):
         resultEntry["ApplicationProject"] = payloadNode.application['Project']
         resultEntry["ApplicationVersion"] = payloadNode.application['Version']
         result.append(resultEntry)
-        
-    return result
+    
+    return _sortDatasets(result)
 
 def getOutputDatasetsWithPSet(payloadNode):
     """
@@ -64,7 +71,7 @@ def getOutputDatasetsWithPSet(payloadNode):
         
         result.append(resultEntry)
         
-    return result
+    return _sortDatasets(result)
 
 
 def getPileupDatasets(payloadNode):
@@ -99,7 +106,7 @@ def getInputDatasets(payloadNode):
         resultEntry = DatasetInfo()
         resultEntry.update(item)
         result.append(resultEntry)
-    return result
+    return _sortDatasets(result)
 
 
 class Accumulator:
@@ -135,7 +142,7 @@ def getOutputDatasetsFromTree(topPayloadNode):
     """
     accum = Accumulator(getOutputDatasets)
     topPayloadNode.operate(accum)
-    return accum.result
+    return _sortDatasets(accum.result)
 
 def getInputDatasetsFromTree(topPayloadNode):
     """
@@ -147,7 +154,7 @@ def getInputDatasetsFromTree(topPayloadNode):
     """
     accum = Accumulator(getInputDatasets)
     topPayloadNode.operate(accum)
-    return accum.result
+    return _sortDatasets(accum.result)
 
 def getOutputDatasetsWithPSetFromTree(topPayloadNode):
     """
@@ -159,7 +166,7 @@ def getOutputDatasetsWithPSetFromTree(topPayloadNode):
     """
     accum = Accumulator(getOutputDatasetsWithPSet)
     topPayloadNode.operate(accum)
-    return accum.result
+    return _sortDatasets(accum.result)
 
 def getPileupDatasetsFromTree(topPayloadNode):
     """
@@ -215,5 +222,5 @@ def getOutputDatasetDetailsFromTree(topJobSpecNode):
     """
     accum = Accumulator(getOutputDatasetDetails)
     topJobSpecNode.operate(accum)
-    return accum.result
+    return _sortDatasets(accum.result)
 
