@@ -101,7 +101,6 @@ class SchedulerARC(SchedulerInterface):
     """
 
     def __init__(self, **args):
-        sys.stderr.write("ProdCommon/SchedulerARC\n")
         super(SchedulerARC, self).__init__(**args)
 
         #self.warnings = []
@@ -134,8 +133,6 @@ class SchedulerARC(SchedulerInterface):
 
         used by self.submit(), return xrsl code.
         """
-
-        print job
         xrsl = '&'
         xrsl += '(executable="%s")' % job['executable']
 
@@ -187,8 +184,6 @@ class SchedulerARC(SchedulerInterface):
         - bulkId is an eventual bulk submission identifier
         - service is a endpoit to connect withs (such as the WMS)
         """
-        sys.stderr.write("submit: %s\n### obj: %s\n### reg: %s\n### conf: %s\n### serv: %s\n" % (type(obj), str(obj), requirements, config, service))
-
         if type(obj) == Job:
             raise NotImplementedError
         elif type(obj) == Task:
@@ -197,7 +192,6 @@ class SchedulerARC(SchedulerInterface):
 
     def submitTask(self, task, requirements=''):
         map = {}
-        print 'task = ', task
         for job in task.getJobs():
             m, bulkId, service = self.submitJob(job, task, requirements)
             map.update(m)
