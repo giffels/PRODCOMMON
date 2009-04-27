@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.23 2009/02/06 17:52:11 spiga Exp $"
-__version__ = "$Revision: 1.23 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.24 2009/02/06 17:53:29 spiga Exp $"
+__version__ = "$Revision: 1.24 $"
 
 import re, os, time
 import tempfile
@@ -99,17 +99,20 @@ class SchedulerLsf (SchedulerInterface) :
         arg = self.decode(job, task, requirements )
 
         # command = "bsub " + arg 
-        # execute bsub in the directory where files have be returned
-        chDir = "pushd . > /dev/null; cd " + task['outputDirectory'] + "; "
+        chDir= "pushd . > /dev/null ; "
         resetDir = " ; popd > /dev/null"
-        command = chDir + "bsub " + arg + resetDir 
+        command =  " bsub " + arg + resetDir 
         
         if self.ksuCmd :   
+            chDir +=  "cd /tmp; "
             cmd = "#!/usr/bin/pagsh.krb\n"
-            cmd = "aklog\n"
-            cmd += '%s\n'%command
+            cmd += "aklog\n"
+            cmd += '%s %s\n'%(chDir,command)
             command,fname = self.createCommand(cmd, task)
-
+        else:
+            # execute bsub in the directory where files have be returned
+            chDir += " cd %s ;"% task['outputDirectory'] 
+            command = '%s %s'%(chDir,command)
         out, ret = self.ExecuteCommand( command )
         if self.ksuCmd: os.unlink( fname )
         if ret != 0 :
