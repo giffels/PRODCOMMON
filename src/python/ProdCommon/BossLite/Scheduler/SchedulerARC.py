@@ -151,18 +151,13 @@ class SchedulerARC(SchedulerInterface):
         if job['standardInput'] != '':
             xrsl += '(stdin="%s")' % job['standardInput']
 
-        xrsl += "(runTimeEnvironment=\"ENV/GLITE-3.1.6\")"
+        xrsl += "(runTimeEnvironment=\"APPS/HEP/CMSSW-PA\")"
         for s in task['jobType'].split('&&'):
             if re.match('Member\(".*", .*RunTimeEnvironment', s):
                 rte = re.sub(", .*", "", re.sub("Member\(", "", s))
                 xrsl += "(runTimeEnvironment=%s)" % rte
 
         xrsl += '(inputFiles='
-
-        # FIXME: Is this really the best way to send the proxy?  Should it
-        # be done by the RTE-scripts instead?
-        xrsl += '("user.proxy" "/tmp/x509up_u%i")' % os.getuid()
-
         for f in task['globalSandbox'].split(','):
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
         xrsl += ')'
