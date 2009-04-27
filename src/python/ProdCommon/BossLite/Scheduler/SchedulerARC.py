@@ -5,7 +5,7 @@ _SchedulerARC_
 
 import sys  # Needed for anything else than debugging?
 
-import os
+import os, time
 #import socket
 #import tempfile
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -57,7 +57,7 @@ def ldapsearch(host, dn, filter, attr, retries=5):
           try:
                if i > 0:
                     sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
-                    sleep(i*10)
+                    time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
                con.simple_bind_s()
