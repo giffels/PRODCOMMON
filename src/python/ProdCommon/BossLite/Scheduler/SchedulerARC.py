@@ -125,7 +125,6 @@ class SchedulerARC(SchedulerInterface):
         """
         raise NotImplementedError
 
-
         
     def decode(self, job, task, requirements=''):
         """
@@ -148,12 +147,6 @@ class SchedulerARC(SchedulerInterface):
         if job['standardInput'] != '':
             xrsl += '(stdin="%s")' % job['standardInput']
 
-        xrsl += "(runTimeEnvironment=\"APPS/HEP/CMSSW-PA\")"
-        for s in task['jobType'].split('&&'):
-            if re.match('Member\(".*", .*RunTimeEnvironment', s):
-                rte = re.sub(", .*", "", re.sub("Member\(", "", s))
-                xrsl += "(runTimeEnvironment=%s)" % rte
-
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
@@ -169,7 +162,6 @@ class SchedulerARC(SchedulerInterface):
 
         print xrsl
         return xrsl
-
 
 
     def submit (self, obj, requirements='', config='', service = ''):
