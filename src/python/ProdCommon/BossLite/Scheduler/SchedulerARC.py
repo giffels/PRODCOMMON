@@ -102,20 +102,7 @@ class SchedulerARC(SchedulerInterface):
 
     def __init__(self, **args):
         super(SchedulerARC, self).__init__(**args)
-
-        #self.warnings = []
-        self.vo = args.get( "vo", "cms" )
-
-        # FIXME: Do we need the rest of this function (originally copied
-        # from SchedulerGLiteAPI.py)?  It doesn't do anything. But
-        # something that sets X509_USER_PROXY automatically could be
-        # userfriendly!
-        self.envProxy = os.environ.get("X509_USER_PROXY",'')
-
-        # x509 string for cli commands
-        self.proxyString = ''
-        if self.cert != '':
-            self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
+        self.vo = args.get("vo", "cms")
 
 
     def jobDescription (self, obj, requirements='', config='', service = ''):
