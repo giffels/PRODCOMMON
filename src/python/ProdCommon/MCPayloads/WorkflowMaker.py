@@ -431,9 +431,10 @@ class WorkflowMaker:
                                         )
 
                 if self.useProperNamingConventions:
+                    processingString = filterName or self.processingString
                     processedName = DatasetConventions.properProcessedDatasetName(
                         AcquisitionEra = self.acquisitionEra,
-                        ProcessingString = self.processingString,
+                        ProcessingString = processingString,
                         ProcessingVersion = self.processingVersion,
                         Unmerged = True
                         )
