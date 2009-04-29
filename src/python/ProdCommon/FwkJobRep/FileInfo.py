@@ -368,6 +368,11 @@ class AnalysisFile(dict):
     def __init__(self):
         dict.__init__(self)
         self.setdefault("FileName", None)
+        ### FEDE ###
+        self.setdefault("LFN", None)
+        self.setdefault("PFN", None)
+        self.setdefault("SEName", None)
+        ############                                                                
 
 
     def save(self):
