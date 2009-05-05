@@ -85,6 +85,7 @@ class RequestJobFactory:
         self.currentJob = None
         self.pileupDatasets = {}
         self.eventsPerJob = args.get("EventsPerJob",  100)
+        self.firstNodeCfg = None #Chain job: cfg options needed in next steps
 
         self.sites = args.get("Sites", [] )
         self.generators = GeneratorMaker()
@@ -182,6 +183,7 @@ class RequestJobFactory:
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
         jobSpec.payload.operate(self.generateJobConfig)
         jobSpec.payload.operate(self.generateCmsGenConfig)
+        self.firstNodeCfg = None # reset after job configured
 
         if jobSpec.payload.cfgInterface:
             jobSpec.payload.cfgInterface.rawCfg = None
@@ -223,20 +225,22 @@ class RequestJobFactory:
             if outMaxEv != None:
                 useOutputMaxEv = True
 
-
-
+        if self.firstNodeCfg: # we are n'th job in chain - run over all data
+            maxEvents = -1
+        else:
+            maxEvents = self.eventsPerJob
 
         if useOutputMaxEv:
             jobCfg = generator(
                 self.currentJob,
-                maxEventsWritten = self.eventsPerJob,
+                maxEventsWritten = maxEvents,
                 firstEvent = self.firstEvent,
                 firstRun = self.workflowSpec.workflowRunNumber(),
                 firstLumi = self.count)
         else:
             jobCfg = generator(
                 self.currentJob,
-                maxEvents = self.eventsPerJob,
+                maxEvents = maxEvents,
                 firstEvent = self.firstEvent,
                 firstRun = self.workflowSpec.workflowRunNumber(),
                 firstLumi = self.count)
@@ -246,7 +250,9 @@ class RequestJobFactory:
         #  //
         # // Is there pileup for this node?
         #//
-        if self.pileupDatasets.has_key(jobSpecNode.name):
+        if self.firstNodeCfg: # n'th job in chain - use initial pileup settings
+            jobCfg.pileupFiles = self.firstNodeCfg.pileupFiles
+        elif self.pileupDatasets.has_key(jobSpecNode.name):
             puDataset = self.pileupDatasets[jobSpecNode.name]
             logging.debug("Node: %s has a pileup dataset: %s" % (
                 jobSpecNode.name,  puDataset.dataset,
@@ -263,8 +269,8 @@ class RequestJobFactory:
             logging.debug("Pileup Files Added: %s" % fileList)
 
 
-
-
+        if not self.firstNodeCfg:
+            self.firstNodeCfg = jobCfg
         jobSpecNode.cfgInterface = jobCfg
         return
 

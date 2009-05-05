@@ -117,7 +117,8 @@ class DatasetJobFactory:
         #self.generators(self.workflowSpec.payload)
 
         self.pileupDatasets = {}
-        
+        self.firstNodeCfg = None #Chain job: cfg options needed in next steps
+
         #  //
         # // Does the workflow contain a site restriction??
         #//
@@ -300,6 +301,7 @@ class DatasetJobFactory:
 
         jobSpec.payload.operate(DefaultLFNMaker(jobSpec))
         jobSpec.payload.operate(self.generateJobConfig)
+        self.firstNodeCfg = None # reset after job configured
 
         jobSpec.payload.cfgInterface.rawCfg = None
         jobSpec.payload.cfgInterface.originalCfg = None
@@ -338,16 +340,21 @@ class DatasetJobFactory:
 
         generator = self.generators[jobSpecNode.name]
         
-        
-        maxEvents = self.currentJobDef.get("MaxEvents", None)
+        if self.firstNodeCfg:
+            # we are the n'th node in a chain job
+            # process all events from previous step
+            maxEvents = -1
+        elif self.splitType == "file":
+            maxEvents = -1
+        else:
+            maxEvents = self.currentJobDef.get("MaxEvents", None)
+
         skipEvents = self.currentJobDef.get("SkipEvents", None)
         
         args = {
             'fileNames' : self.currentJobDef['LFNS'],
             }
  
-        if self.splitType == "file":
-           maxEvents = -1
         if maxEvents != None:
             args['maxEvents'] = maxEvents
         if skipEvents != None:
@@ -357,7 +364,9 @@ class DatasetJobFactory:
         #  //
         # // Is there pileup for this node?
         #//
-        if self.pileupDatasets.has_key(jobSpecNode.name):
+        if self.firstNodeCfg: # n'th job in chain - use initial pileup settings
+            jobCfg.pileupFiles = self.firstNodeCfg.pileupFiles
+        elif self.pileupDatasets.has_key(jobSpecNode.name):
             puDataset = self.pileupDatasets[jobSpecNode.name]
             logging.debug("Node: %s has a pileup dataset: %s" % (
                 jobSpecNode.name,  puDataset.dataset,
@@ -369,7 +378,8 @@ class DatasetJobFactory:
             jobCfg.pileupFiles = fileList
             
 
-        
+        if not self.firstNodeCfg:
+            self.firstNodeCfg = jobCfg
         jobSpecNode.cfgInterface = jobCfg
         return
     
