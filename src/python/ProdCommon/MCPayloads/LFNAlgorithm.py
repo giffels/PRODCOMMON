@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.10 2008/05/15 07:04:01 dmason Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.11 2009/03/07 15:29:51 evansde Exp $"
+__version__ = "$Revision: 1.11 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -166,11 +166,12 @@ class DefaultLFNMaker:
             if acqEra ==None:
               filterName = outModule.get("filterName", None)
               # add protection against filterName being empty string
-              filterName = filterName.strip()
+              if filterName:
+                  filterName = filterName.strip()
               if filterName not in ("None", "none", None, ""):
-                 lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
+                  lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
               else:
-                 lfnGroup = str(self.lfnGroup)
+                  lfnGroup = str(self.lfnGroup)
 
               outModule['LFNBase'] = os.path.join(base,
                                                   outModule['dataTier'],
