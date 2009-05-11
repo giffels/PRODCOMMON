@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.13 2008/10/08 10:52:35 gcodispo Exp $"
-__revision__ = "$Revision: 1.13 $"
+__version__ = "$Id: Task.py,v 1.14 2009/02/25 09:52:55 gcodispo Exp $"
+__revision__ = "$Revision: 1.14 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -29,6 +29,7 @@ class Task(DbObject):
                'cfgName' : 'cfg_name',
                'serverName' : 'server_name',
                'jobType' : 'job_type',
+               'totalEvents' : 'total_events',
                'user_proxy' : 'user_proxy',
                'outfileBasename' : 'outfile_basename',
                'commonRequirements' : 'common_requirements'
@@ -47,6 +48,7 @@ class Task(DbObject):
                  'cfgName' : None,
                  'serverName' : None,
                  'jobType' : None,
+                 'total_events' : 0,
                  'user_proxy' : None,
                  'outfileBasename' : None,
                  'commonRequirements' : None

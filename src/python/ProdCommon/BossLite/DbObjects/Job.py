@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.17 2008/09/23 12:29:15 gcodispo Exp $"
-__revision__ = "$Revision: 1.17 $"
+__version__ = "$Id: Job.py,v 1.18 2009/02/25 09:52:55 gcodispo Exp $"
+__revision__ = "$Revision: 1.18 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -23,6 +23,7 @@ class Job(DbObject):
                'taskId' : 'task_id',
                'name' : 'name',
                'executable' : 'executable',
+               'events' : 'events',
                'arguments' : 'arguments',
                'standardInput' : 'stdin',
                'standardOutput' : 'stdout',
@@ -44,10 +45,11 @@ class Job(DbObject):
     # default values for fields
     defaults = { 'id' : None,
                  'jobId' : None,
+                 'taskId' : None,
                  'name' : None,
                  'executable' : None,
+                 'events' : 0,
                  'arguments' : "",
-                 'taskId' : None,
                  'standardInput' : "",
                  'standardOutput' : "",
                  'standardError' : "",
