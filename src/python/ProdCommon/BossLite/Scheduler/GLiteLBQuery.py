@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.21 2008/11/21 14:00:49 gcodispo Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: GLiteLBQuery.py,v 1.22 2009/04/22 12:16:31 gcodispo Exp $"
+__version__ = "$Revision: 1.22 $"
 
 from socket import getfqdn
 from glite_wmsui_LbWrapper import Status
@@ -88,7 +88,7 @@ class GLiteLBQuery(object):
         fill job dictionary with LB informations
         """
 
-        if forceAborted and self.statusMap[jobInfo[self.status]] == 'S' :
+        if forceAborted and self.statusMap[jobInfo[self.status]] == 'SU' :
             runningJob['statusScheduler'] = 'Aborted'
         elif runningJob['status'] == self.statusMap[jobInfo[self.status]]:
             return
