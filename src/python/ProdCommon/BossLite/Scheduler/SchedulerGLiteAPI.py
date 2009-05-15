@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.110 2009/04/01 08:48:27 gcodispo Exp $"
-__version__ = "$Revision: 1.110 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.111 2009/05/15 12:38:17 gcodispo Exp $"
+__version__ = "$Revision: 1.111 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -547,6 +547,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # handle wms and prepare jdl
         jdl, endpoints = self.mergeJDL( jdl, service, config )
+        endpoints = self.wmsResolve( endpoints )
         if endpoints == [] :
             raise SchedulerError( "failed submission", "empty WMS list" )
  
@@ -564,7 +565,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         workdir = tempfile.mkdtemp( prefix = obj['name'], dir = os.getcwd() )
 
-        for wms in self.wmsResolve( endpoints ) :
+        for wms in endpoints :
             try :
 
                 wms = wms.replace("\"", "").strip()
@@ -601,6 +602,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # clean files
         os.system("rm -rf " + workdir)
+
+        if returnMap == {} or taskId == '' :
+            raise SchedulerError( "Invalid WMS list", "%s" % endpoints )
+            endpoints
 
         # handle jobs
         for job in obj.jobs :
