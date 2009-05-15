@@ -34,7 +34,8 @@ class ProtocolLcgUtils(Protocol):
                                               [line], outLines)
             elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
-               line.find("CacheException") != -1:
+               line.find("CacheException") != -1 or \
+               line.find("does not exist") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -48,6 +49,7 @@ class ProtocolLcgUtils(Protocol):
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
+                
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
