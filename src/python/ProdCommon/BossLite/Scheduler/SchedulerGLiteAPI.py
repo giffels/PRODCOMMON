@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.109 2009/02/25 10:03:40 gcodispo Exp $"
-__version__ = "$Revision: 1.109 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.110 2009/04/01 08:48:27 gcodispo Exp $"
+__version__ = "$Revision: 1.110 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -395,11 +395,18 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             
         # retrieve parent id
         taskId = str( task.getJobId() )
+        if taskId == '':
+            raise SchedulerError( "wmproxy.getJobId",
+                                  "returned empty collection parent id" )
 
         # retrieve nodes id
         returnMap = {}
         for job in task.getChildren():
             returnMap[ str( job.getNodeName() ) ] = str( job.getJobId() )
+
+        if returnMap == {} :
+            raise SchedulerError( "wmproxy.getChildren",
+                                  "returned empty list of node ids" )
 
         # handle input sandbox :
         if sandboxFileList != '' :
