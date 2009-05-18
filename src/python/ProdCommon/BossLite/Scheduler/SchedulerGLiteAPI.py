@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.111 2009/05/15 12:38:17 gcodispo Exp $"
-__version__ = "$Revision: 1.111 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.112 2009/05/15 16:19:29 gcodispo Exp $"
+__version__ = "$Revision: 1.112 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -603,18 +603,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # clean files
         os.system("rm -rf " + workdir)
 
-        if returnMap == {} or taskId == '' :
-            raise SchedulerError( "Invalid WMS list", "%s" % endpoints )
-            endpoints
-
-        # handle jobs
-        for job in obj.jobs :
-
-            # wmproxy converts . to _ in jobIds - convert back
-            if job['name'].count('.'):
-                wmproxyName = job['name'].replace('.', '_')
-                returnMap[job['name']] = returnMap.pop(wmproxyName)
-
         # log warnings
         obj.warnings.extend( self.warnings )
         del self.warnings [:]
@@ -627,6 +615,19 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # if submission failed, raise error
         if success is None :
             raise SchedulerError( "failed submission", errors )
+
+        # further check on submission consistency: valid grid ids
+        if returnMap == {} or taskId == '' :
+            raise SchedulerError( "Invalid WMS list", "%s" % endpoints )
+            endpoints
+
+        # handle jobs
+        for job in obj.jobs :
+
+            # wmproxy converts . to _ in jobIds - convert back
+            if job['name'].count('.'):
+                wmproxyName = job['name'].replace('.', '_')
+                returnMap[job['name']] = returnMap.pop(wmproxyName)
 
         return returnMap, taskId, success
 
