@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.112 2009/05/15 16:19:29 gcodispo Exp $"
-__version__ = "$Revision: 1.112 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.113 2009/05/18 07:54:59 gcodispo Exp $"
+__version__ = "$Revision: 1.113 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -567,7 +567,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         for wms in endpoints :
             try :
-
+                success = None
                 wms = wms.replace("\"", "").strip()
                 if  len( wms ) == 0 or wms[0]=='#' or wms in seen:
                     continue
@@ -605,21 +605,25 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # log warnings
         obj.warnings.extend( self.warnings )
-        del self.warnings [:]
-        if errors != '' :
-            if success is not None :
-                obj.warnings.append( errors )
-            else :
+
+        # check success consistency
+        if success is not None :
+                
+            # further check on submission consistency: valid grid ids
+            if returnMap == {} or taskId == '':
+                errors += "UNKNOWN ERROR: empty ids! WMS reported as success: "
+                errors += " {%s}; List of WMS failed {%s}" \
+                          % ( success, seen )
                 success = None
+
+            # if ok, log eventual failed submissions
+            elif errors != '' :
+                obj.warnings.append( errors )
+
 
         # if submission failed, raise error
         if success is None :
             raise SchedulerError( "failed submission", errors )
-
-        # further check on submission consistency: valid grid ids
-        if returnMap == {} or taskId == '' :
-            raise SchedulerError( "Invalid WMS list", "%s" % endpoints )
-            endpoints
 
         # handle jobs
         for job in obj.jobs :
