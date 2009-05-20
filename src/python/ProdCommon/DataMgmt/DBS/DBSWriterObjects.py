@@ -208,6 +208,8 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     physicsGroup = datasetInfo.get("PhysicsGroup", "NoGroup")
     status = datasetInfo.get("Status", "VALID")
     dataTier = datasetInfo['DataTier']
+    globalTag = datasetInfo['Conditions']
+    if globalTag is None: globalTag = ''
 
     parents = []
     inputDataset = datasetInfo.get('ParentDataset', None)
@@ -229,6 +231,7 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
         ParentList = parents,
         PhysicsGroup = physicsGroup,
         Status = status,
+        GlobalTag = globalTag,
         )
 
     if apiRef != None:

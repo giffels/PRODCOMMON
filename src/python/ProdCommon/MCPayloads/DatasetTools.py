@@ -66,6 +66,7 @@ def getOutputDatasetsWithPSet(payloadNode):
             config = payloadNode.cfgInterface
             psetStr = config.originalContent()
             resultEntry['PSetContent'] = psetStr
+            resultEntry['Conditions'] = config.conditionsTag
         except Exception, ex:
             resultEntry['PSetContent'] = None
         
