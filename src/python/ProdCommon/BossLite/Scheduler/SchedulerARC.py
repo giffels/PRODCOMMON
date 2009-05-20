@@ -57,7 +57,7 @@ def ldapsearch(host, dn, filter, attr, retries=5):
           try:
                if i > 0:
                     sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
-                    time.sleep(i*10)
+                    time.sleep(i*15)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
                con.simple_bind_s()
@@ -83,7 +83,7 @@ def ldapsearch(host, dn, filter, attr, retries=5):
           except ldap.LDAPError, e:
                con.unbind()
      else:
-          raise SchedulerError('Ldapsearch failure', "")
+          raise e
 
      return x
 
@@ -369,6 +369,7 @@ class SchedulerARC(SchedulerInterface):
         """
         raise NotImplementedError
 
+
     def parseGiisStr(self, giis_str):
         """
         Parse a giis string in either of the formats
@@ -380,8 +381,7 @@ class SchedulerARC(SchedulerInterface):
         """
 
         m = re.match("(ldap://[^/]*)/(.*)", giis_str)
-        if not m:
-            raise SchedulerError("Parse error in giis string " + giis_str, "") 
+        assert(m)
 
         giis = m.group(1)
         base_str = m.group(2)
@@ -400,18 +400,40 @@ class SchedulerARC(SchedulerInterface):
         return giis, base
 
 
-    def getGiisStr(self):
+    def getGiisStrList(self):
         """
-        Find out which giis to use
+        Find out which GIIS(s) to use
         """
-        cmd = "ngtest -O"
-        output, exitStat = self.ExecuteCommand(cmd)
-        m = re.match(".*Top-level GIIS's used:\s(ldap://[^\s]*).*", output.replace('\n',' '))
+        giises = []
 
-        if not m:
-            raise SchedulerError("Can't find Top-level giis", output, cmd) 
+        # First look in the file ~/.arc/client.conf
+        if "HOME" in os.environ.keys():
+            home = os.environ["HOME"]
+            try:
+                clientconf = open(home + "/.arc/client.conf", "r").readlines()
+            except IOError:
+                clientconf = []
 
-        return m.group(1)
+            for line in clientconf:
+                m = re.match("giis=\"*(ldap://[^\"]*)\"*", line)
+                if m:
+                    g = m.group(1)
+                    giises.append(g)
+
+        # Look for site-wide giislist
+        try:
+            arc_location = os.environ["NORDUGRID_LOCATION"]
+        except KeyError:
+            sys.stderr.write("ERROR: Environment variable NORDUGRID_LOCATION not set!\n")
+            raise
+
+        giislist = open(arc_location + "/etc/giislist", "r").readlines()
+            
+        for line in giislist:
+            if line not in giises:
+                giises.append(line)
+
+        return giises
 
 
     def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
@@ -425,9 +447,22 @@ class SchedulerARC(SchedulerInterface):
         attr = [ 'nordugrid-cluster-name', 'nordugrid-cluster-localse',
                  'nordugrid-cluster-runtimeenvironment' ]
 
-        giis_str = self.getGiisStr()
-        giis, base = self.parseGiisStr(giis_str)
-        ldap_result = ldapsearch(giis, base, '(objectClass=nordugrid-cluster)', attr)
+        giis_list = self.getGiisStrList()
+        if not giis_list:
+            raise SchedulerError("No GIISes?", "Something must be wrong with ARC's setup!")
+        
+        for giis_str in giis_list:
+            giis, base = self.parseGiisStr(giis_str)
+            try:
+                ldap_result = ldapsearch(giis, base, '(objectClass=nordugrid-cluster)', attr, retries=2)
+            except ldap.LDAPError, e:
+                sys.stderr.write("WARNING: No reply from GIIS %s, trying another\n" % giis)
+                pass
+            else:
+                break
+        else:
+            sys.stderr.write("ERROR: No more GIISes to try!  All GIISes down? Please wait for a while and try again\n")
+            raise SchedulerError("No reply from GIISes", "")
 
         accepted_CEs = []
         for item in ldap_result:
