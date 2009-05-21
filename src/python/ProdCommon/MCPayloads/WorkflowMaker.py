@@ -431,7 +431,14 @@ class WorkflowMaker:
                                         )
 
                 if self.useProperNamingConventions:
-                    processingString = filterName or self.processingString
+                    if self.processingString and filterName:
+                        processingString = "_".join((self.processingString, filterName))
+                    elif self.processingString:
+                        processingString = self.processingString
+                    elif filterName:
+                        processingString = filterName
+                    else:
+                        processingString = None
                     processedName = DatasetConventions.properProcessedDatasetName(
                         AcquisitionEra = self.acquisitionEra,
                         ProcessingString = processingString,
