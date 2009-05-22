@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.14 2009/02/25 09:52:55 gcodispo Exp $"
-__revision__ = "$Revision: 1.14 $"
+__version__ = "$Id: Task.py,v 1.15 2009/05/11 12:43:31 gcodispo Exp $"
+__revision__ = "$Revision: 1.15 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -48,7 +48,7 @@ class Task(DbObject):
                  'cfgName' : None,
                  'serverName' : None,
                  'jobType' : None,
-                 'total_events' : 0,
+                 'totalEvents' : 0,
                  'user_proxy' : None,
                  'outfileBasename' : None,
                  'commonRequirements' : None
