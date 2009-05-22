@@ -83,7 +83,7 @@ class _CreateMergeDatasetOperator:
     def __call__(self, pnode):
         if pnode.type != "CMSSW":
             return
-        for dataset in pnode._OutputDatasets:
+        for dataset in getOutputDatasetsWithPSet(pnode):
             
             primary = DBSWriterObjects.createPrimaryDataset(
                 dataset, self.apiRef)
