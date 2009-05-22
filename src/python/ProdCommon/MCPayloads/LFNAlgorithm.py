@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.12 2009/05/08 15:01:01 ewv Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.13 2009/05/22 16:05:50 swakef Exp $"
+__version__ = "$Revision: 1.13 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -154,6 +154,13 @@ class DefaultLFNMaker:
 
             preserveLfnGroup = str(self.lfnGroup)
             lastBit = outModule['processedDataset']
+            #  //
+            # // Skip if the file does not stage out. (i.e.
+            #//   --stageout-intermediates=False)
+            if lastBit is None:
+                msg = "OutputModule does not stage out. Skipping."
+                logging.info(msg)
+                continue
             #  //but this guy has the AcquisitionEra at the beginning... delimited
             # // by a dash... we don't need it twice...  we try to safely
             #//  remove it from the beginning, basically punting if its not
