@@ -5,8 +5,8 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.11 2009/03/07 15:29:51 evansde Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.12 2009/05/08 15:01:01 ewv Exp $"
+__version__ = "$Revision: 1.12 $"
 __author__ = "evansde@fnal.gov"
 
 import time
@@ -148,68 +148,34 @@ class DefaultLFNMaker:
 
         for modName, outModule in node.cfgInterface.outputModules.items():
 
-
-
             if ( not outModule.has_key('fileName') ):
                 msg = "OutputModule %s does not contain a fileName entry" % modName
                 raise RuntimeError, msg
 
-        #  //
-        # // Should be noted that this is transitioning here from the old
-        #//  lfn conventions to new -- with the line marked by the existence
-        #\\  of the AcquisitionEra parameter in the workflow
-        # \\ The new convention just takes from what was already defined
-        #  \\in the datasets and if necessary does minor surgery
-
             preserveLfnGroup = str(self.lfnGroup)
-
-            if acqEra ==None:
-              filterName = outModule.get("filterName", None)
-              # add protection against filterName being empty string
-              if filterName:
-                  filterName = filterName.strip()
-              if filterName not in ("None", "none", None, ""):
-                  lfnGroup = "%s/%s" % (filterName, self.lfnGroup)
-              else:
-                  lfnGroup = str(self.lfnGroup)
-
-              outModule['LFNBase'] = os.path.join(base,
-                                                  outModule['dataTier'],
-                                                  lfnGroup)
-              outModule['MergedLFNBase'] = os.path.join(mergedBase,
-                                                        outModule['dataTier'],
-                                                        lfnGroup)
-            else:
-
-        #  //
-        # // hack for CSA08 production
-        #//
-
-              lastBit=outModule['processedDataset']
-
-        #  //but this guy has the AcquisitionEra at the beginning... delimited
-        # // by underscores... we don't need it twice...  we try to safely
-        #//  remove it from the beginning, basically punting if its not
-        #\\  disadvantage of getting this from the ds name is having to
-        # \\ then strip off -unmerged
-
-              thingtoStrip="%s_" % acqEra
-              mypieces=lastBit.split(thingtoStrip,1)
-              if len(mypieces)>1:
-                remainingBits=mypieces[1].split("-unmerged",1)[0]
-              else:
-                remainingBits=lastBit
-
-              outModule['LFNBase'] = os.path.join(base,
-                                                  outModule['primaryDataset'],
-                                                  outModule['dataTier'],
-                                                  remainingBits,
-                                                  preserveLfnGroup)
-              outModule['MergedLFNBase'] = os.path.join(mergedBase,
-                                                  outModule['primaryDataset'],
-                                                  outModule['dataTier'],
-                                                  remainingBits,
-                                                  preserveLfnGroup)
+            lastBit = outModule['processedDataset']
+            #  //but this guy has the AcquisitionEra at the beginning... delimited
+            # // by a dash... we don't need it twice...  we try to safely
+            #//  remove it from the beginning, basically punting if its not
+            #\\  disadvantage of getting this from the ds name is having to
+            # \\ then strip off -unmerged
+            if acqEra is not None:
+                thingtoStrip="%s-" % acqEra
+                mypieces = lastBit.split(thingtoStrip, 1)
+                if len(mypieces) > 1: 
+                    lastBit = mypieces[1]
+            remainingBits = lastBit.split("-unmerged", 1)[0]
+        
+            outModule['LFNBase'] = os.path.join(base,
+                                              outModule['primaryDataset'],
+                                              outModule['dataTier'],
+                                              remainingBits,
+                                              preserveLfnGroup)
+            outModule['MergedLFNBase'] = os.path.join(mergedBase,
+                                              outModule['primaryDataset'],
+                                              outModule['dataTier'],
+                                              remainingBits,
+                                              preserveLfnGroup)
 
         return
 
