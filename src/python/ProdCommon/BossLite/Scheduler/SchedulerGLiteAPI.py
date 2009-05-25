@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.113 2009/05/18 07:54:59 gcodispo Exp $"
-__version__ = "$Revision: 1.113 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.114 2009/05/18 17:51:26 gcodispo Exp $"
+__version__ = "$Revision: 1.114 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -14,7 +14,6 @@ from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
-import logging
 #
 # Import gLite specific modules
 try:
@@ -380,7 +379,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
-        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+        self.logging.debug( 'DBG for proxy cert=%s X509=%s' % \
                ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # register job: time consumng operation
@@ -705,7 +704,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
-        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+        self.logging.debug( 'DBG for proxy cert=%s X509=%s' % \
                ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # loop over jobs
@@ -900,7 +899,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.hackEnv() ### TEMP FIX
 
         # initialize wms connection
-        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+        self.logging.debug( 'DBG for proxy cert=%s X509=%s' % \
                ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
         wmproxy = self.wmproxyInit( wms )
 
@@ -1047,7 +1046,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
         # initialize wms connection
         wmproxy = self.wmproxyInit( wms )
-        logging.debug( 'DBG for proxy cert=%s X509=%s' % \
+        self.logging.debug( 'DBG for proxy cert=%s X509=%s' % \
                ( self.cert, os.environ.get("X509_USER_PROXY", 'notdefined') ) )
 
         # loop over jobs
@@ -1496,7 +1495,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if seList == None :
             command = "lcg-info --vo " + fqan + " --list-ce --query " + \
                        "\'" + query + "\' --sed"
-            logging.debug('issuing : %s' % command)
+            self.logging.debug('issuing : %s' % command)
 
             out, ret = self.ExecuteCommand( self.proxyString + command )
             for ce in out.split() :
@@ -1522,7 +1521,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             singleComm = "lcg-info --vo " + fqan + \
                          " --list-ce --query " + \
                          "\'" + query + ",CloseSE="+ se + "\' --sed"
-            logging.debug('issuing : %s' % singleComm)
+            self.logging.debug('issuing : %s' % singleComm)
 
             out, ret = self.ExecuteCommand( self.proxyString + singleComm )
             for ce in out.split() :
@@ -1561,20 +1560,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             try :
                 wmproxy = self.wmproxyInit( wms )
                 self.delegateWmsProxy( wmproxy, workdir )
-                logging.info('Delegated proxy to %s' % wms)
+                self.logging.info('Delegated proxy to %s' % wms)
             except BaseException, err:
                 # actions.append( "Failed submit to : " + wms )
-                logging.error( 'failed to delegate proxy to ' + wms + \
-                               ' : ' + formatWmpError( err ) )
+                self.logging.error( 'failed to delegate proxy to ' + wms + \
+                                    ' : ' + formatWmpError( err ) )
                 continue
 
             except Exception, err:
-                logging.error( 'failed to delegate proxy to ' + wms + \
+                self.logging.error( 'failed to delegate proxy to ' + wms + \
                                ' : ' + str( err ) )
                 continue
 
             except :
-                logging.error( 'failed to delegate proxy to ' + wms )
+                self.logging.error( 'failed to delegate proxy to ' + wms )
                 continue
 
         os.system("rm -rf " + workdir)
