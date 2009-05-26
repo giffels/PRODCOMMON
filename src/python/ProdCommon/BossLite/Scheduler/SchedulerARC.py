@@ -14,7 +14,7 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 import logging
 import ldap
-import re
+import re, signal
 #import arclib as arc
 
 #
@@ -50,24 +50,66 @@ StatusCodes = {
 }
 
 
-def ldapsearch(host, dn, filter, attr, retries=5):
-     timeout = 30  # seconds
+class TimeoutFunctionException(Exception): 
+    """Exception to raise on a timeout""" 
+    pass 
+
+
+class TimeoutFunction: 
+    def __init__(self, function, timeout): 
+        self.timeout = timeout 
+        self.function = function 
+
+    def handle_timeout(self, signum, frame): 
+        raise TimeoutFunctionException()
+
+    def __call__(self, *args): 
+        old = signal.signal(signal.SIGALRM, self.handle_timeout) 
+        signal.alarm(self.timeout) 
+        try: 
+            result = self.function(*args)
+        finally: 
+            signal.signal(signal.SIGALRM, old)
+        signal.alarm(0)
+        return result 
+
+
+def get_ngsub_opts(xrsl):
+    """
+    If the xrsl-code contains (cluster=...), we can speed up submitting a lot by using option '-c ...' to ngsub
+    """
+    opt = ""
+    clusters = []
+    for attr in xrsl.split(')('):
+        m = re.match(".*cluster=([^)]*)", attr)
+        if m and m.group(1) not in clusters:
+            opt += " -c " + m.group(1)
+            clusters.append(m.group(1))
+    return opt
+
+
+def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
+     timeout = 45  # seconds
 
      for i in range(retries+1):
           try:
                if i > 0:
                     sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
-                    time.sleep(i*15)
+                    time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
-               con.simple_bind_s()
-               con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
+               bind = TimeoutFunction(con.simple_bind_s, timeout)
                try:
-                    x = con.result(all=1, timeout=timeout)[1]
+                   bind()
+               except TimeoutFunctionException:
+                   raise ldap.LDAPError("Bind timeout")
+               con.search(dn, scope, filter, attr)
+               try:
+                   x = con.result(all=1, timeout=timeout)[1]
                except ldap.SIZELIMIT_EXCEEDED:
-                    # Apparently too much output. Let's try to get one entry at a time
-                    # instead; that way we'll hopefully get at least a part of the
-                    # total output.
+                    # Apparently too much output. Let's try to get one
+                    # entry at a time instead; that way we'll hopefully get
+                    # at least a part of the total output.
                     sys.stderr.write("ldap.SIZELIMIT_EXCEEDED ...\n")
                     x = []
                     con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
@@ -88,11 +130,70 @@ def ldapsearch(host, dn, filter, attr, retries=5):
      return x
 
 
-def intersection(a, b):
-    r = []
-    for x in a:
-        if x in b: r.append(x)
-    return r
+def parseGiisUrl(giis_url):
+    """
+    Parse a giis string in either of the formats
+        ldap://giis.csc.fi:2135/O=Grid/Mds-Vo-name=Finland
+    or
+        ldap://giis.csc.fi:2135/Mds-Vo-name=Finland,O=Grid
+    and return the giis itself, and base, e.g.
+    "ldap://giis.csc.fi:2135",  "Mds-Vo-name=Finland,O=Grid"
+    """
+
+    m = re.match("(ldap://[^/]*)/(.*)", giis_url)
+    assert(m)
+
+    host = m.group(1)
+    base_str = m.group(2)
+
+    # If the 'base' part has the format 'y=b/x=a'
+    # it has to be converted to 'x=a,y=b'. If it's in
+    # the latter format already, we'll use it as it is.
+    m = re.match("(.*=.*)/(.*=.*)", base_str)
+    if m:
+        base = m.group(2) + ',' + m.group(1)
+    else:
+        # FIXME: Check that base_str has some sane format
+        # (e.g. "x=a,y=b")
+        base = base_str
+
+    return host, base
+
+
+def getGiisUrlList():
+    """
+    Find out which GIIS(s) to use
+    """
+    giises = []
+
+    # First look in the file ~/.arc/client.conf
+    if "HOME" in os.environ.keys():
+        home = os.environ["HOME"]
+        try:
+            clientconf = open(home + "/.arc/client.conf", "r").readlines()
+        except IOError:
+            clientconf = []
+
+        for line in clientconf:
+            m = re.match("giis=\"*(ldap://[^\"]*)\"*", line)
+            if m:
+                g = m.group(1)
+                giises.append(g)
+
+    # Look for site-wide giislist
+    try:
+        arc_location = os.environ["NORDUGRID_LOCATION"]
+    except KeyError:
+        sys.stderr.write("ERROR: Environment variable NORDUGRID_LOCATION not set!\n")
+        raise
+
+    giislist = open(arc_location + "/etc/giislist", "r").readlines()
+            
+    for line in giislist:
+        if line not in giises:
+            giises.append(line)
+
+    return giises
 
 
 class SchedulerARC(SchedulerInterface):
@@ -103,6 +204,8 @@ class SchedulerARC(SchedulerInterface):
     def __init__(self, **args):
         super(SchedulerARC, self).__init__(**args)
         self.vo = args.get("vo", "cms")
+        self.giis_result = {}
+        self.ce_result = {}
 
 
     def jobDescription (self, obj, requirements='', config='', service = ''):
@@ -147,7 +250,6 @@ class SchedulerARC(SchedulerInterface):
 
         xrsl += requirements
 
-        print xrsl
         return xrsl
 
 
@@ -170,30 +272,41 @@ class SchedulerARC(SchedulerInterface):
 
 
     def submitTask(self, task, requirements=''):
-        map = {}
+
+        # Build xRSL
+        xrsl = '+'
+        n = 0
+        name = {}
         for job in task.getJobs():
-            m, bulkId, service = self.submitJob(job, task, requirements)
-            map.update(m)
+            n += 1
+            xrsl += '(' + self.decode(job, task, requirements) + ')'
+            name[n] = job['name']
+            bulkId = job['taskId']
 
-        return map, bulkId, service
+        opt = get_ngsub_opts(xrsl)
 
-
-    def submitJob(self, job, task, requirements=''):
-
-        xrsl = self.decode(job, task, requirements)
-        command = "ngsub -e '%s'" % xrsl
+        # Submit
+        command = "ngsub -e '%s' %s" % (xrsl, opt)
+        sys.stderr.write(command)
+        self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
-
-        successfulMatch = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
-        if not successfulMatch or exitStat != 0:
+        if exitStat != 0:
             raise SchedulerError('Error in submit', output, command)
 
-        jobId = successfulMatch.group(1)
-        map={job['name'] : jobId}
-        bulkId = job['taskId']
-        ceName = successfulMatch.group(2)
+        # Parse output of submit command
+        i = 0
+        map = {}
+        for line in output.split('\n'):
+            i += 1
+            if i <= n:
+                match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", line)
+                if not match:
+                    raise SchedulerError('Error in submit', output, command)
+                jobId = match.group(1)
+                m={name[i] : jobId}
+                map.update(m)
 
-        return map, bulkId, ceName
+        return map, bulkId, ""
 
 
     def query(self, obj, service='', objType='node'):
@@ -370,111 +483,85 @@ class SchedulerARC(SchedulerInterface):
         raise NotImplementedError
 
 
-    def parseGiisStr(self, giis_str):
+    def query_giis(self, giises):
         """
-        Parse a giis string in either of the formats
-            ldap://giis.csc.fi:2135/O=Grid/Mds-Vo-name=Finland
-        or
-            ldap://giis.csc.fi:2135/Mds-Vo-name=Finland,O=Grid
-        and return the giis itself, and base, e.g.
-        "ldap://giis.csc.fi:2135",  "Mds-Vo-name=Finland,O=Grid"
+        Return CEs and sub-GIISes from the first GIIS in
+        'giises'-list that replies.
         """
 
-        m = re.match("(ldap://[^/]*)/(.*)", giis_str)
-        assert(m)
+        attr = [ 'giisregistrationstatus' ]
 
-        giis = m.group(1)
-        base_str = m.group(2)
+        for giis in giises:
+            # Use cached result if we have it:
+            if giis['host'] in self.giis_result.keys():
+                ldap_result = self.giis_result[giis['host']]
+                break
 
-        # If the 'base' part has the format 'y=b/x=a'
-        # it has to be converted to 'x=a,y=b'. If it's in
-        # the latter format already, we'll use it as it is.
-        m = re.match("(.*=.*)/(.*=.*)", base_str)
-        if m:
-            base = m.group(2) + ',' + m.group(1)
-        else:
-            # FIXME: Check that base_str has some sane format
-            # (e.g. "x=a,y=b")
-            base = base_str
-
-        return giis, base
-
-
-    def getGiisStrList(self):
-        """
-        Find out which GIIS(s) to use
-        """
-        giises = []
-
-        # First look in the file ~/.arc/client.conf
-        if "HOME" in os.environ.keys():
-            home = os.environ["HOME"]
             try:
-                clientconf = open(home + "/.arc/client.conf", "r").readlines()
-            except IOError:
-                clientconf = []
-
-            for line in clientconf:
-                m = re.match("giis=\"*(ldap://[^\"]*)\"*", line)
-                if m:
-                    g = m.group(1)
-                    giises.append(g)
-
-        # Look for site-wide giislist
-        try:
-            arc_location = os.environ["NORDUGRID_LOCATION"]
-        except KeyError:
-            sys.stderr.write("ERROR: Environment variable NORDUGRID_LOCATION not set!\n")
-            raise
-
-        giislist = open(arc_location + "/etc/giislist", "r").readlines()
-            
-        for line in giislist:
-            if line not in giises:
-                giises.append(line)
-
-        return giises
-
-
-    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
-        """
-        Query grid information system for CE:s.
-        Returns a list of resulting sites
-        """
-
-        # FIXME: Currently we ignore 'vos'!
-
-        attr = [ 'nordugrid-cluster-name', 'nordugrid-cluster-localse',
-                 'nordugrid-cluster-runtimeenvironment' ]
-
-        giis_list = self.getGiisStrList()
-        if not giis_list:
-            raise SchedulerError("No GIISes?", "Something must be wrong with ARC's setup!")
-        
-        for giis_str in giis_list:
-            giis, base = self.parseGiisStr(giis_str)
-            try:
-                ldap_result = ldapsearch(giis, base, '(objectClass=nordugrid-cluster)', attr, retries=2)
-            except ldap.LDAPError, e:
-                sys.stderr.write("WARNING: No reply from GIIS %s, trying another\n" % giis)
+                sys.stderr.write("DEBUG: Using GIIS %s, %s\n" % (giis['host'], giis['base']))
+                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, scope=ldap.SCOPE_BASE, retries=0)
+            except ldap.LDAPError:
+                sys.stderr.write("WARNING: No reply from GIIS %s, trying another\n" % giis['host'])
                 pass
             else:
+                self.giis_result[giis['host']] = ldap_result
                 break
         else:
             sys.stderr.write("ERROR: No more GIISes to try!  All GIISes down? Please wait for a while and try again\n")
             raise SchedulerError("No reply from GIISes", "")
 
-        accepted_CEs = []
-        for item in ldap_result:
-            ce = item[1]
-            name = ce['nordugrid-cluster-name'][0]
-            localSEs = ce.get('nordugrid-cluster-localse', [])
-            RTEs = ce.get('nordugrid-cluster-runtimeenvironment', [])
+        CEs = []
+        giises = []
+        for r in ldap_result:
+            item = r[1]
 
-            if seList and not intersection(seList, localSEs):
+            if item['Mds-Reg-status'][0] != 'VALID':
                 continue
 
-            if tags and not intersection(tags, RTEs):
+            m_ce = re.match("nordugrid-cluster-name=", item['Mds-Service-Ldap-suffix'][0])
+            m_giis = re.match("Mds-Vo-name=.*, *[oO]=[gG]rid", item['Mds-Service-Ldap-suffix'][0])
+
+            if m_ce:
+                CEs.append({'name': item['Mds-Service-hn'][0], 'port': item['Mds-Service-port'][0]})
+            elif m_giis:
+                giises.append({'name': item['Mds-Service-hn'][0], 'port': item['Mds-Service-port'][0],
+                               'base':item['Mds-Service-Ldap-suffix'][0]})
+        return CEs, giises
+
+
+    def check_CEs(self, CEs, tags, vos, seList, blacklist, whitelist, full):
+        """
+        Return those CEs that fullfill requirements.
+        """
+
+        accepted_CEs = []
+
+        attr = ['nordugrid-cluster-name', 'nordugrid-cluster-localse',
+                'nordugrid-cluster-runtimeenvironment' ]
+
+        for ce in CEs:
+            if ce['name'] in self.ce_result.keys():
+                ldap_result = self.ce_result[ce['name']]
+            else:
+                host = 'ldap://' + ce['name'] + ':' + ce['port']
+                try:
+                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, retries=0)
+                    self.ce_result[ce['name']] = ldap_result
+                except ldap.LDAPError:
+                    continue
+
+            if not ldap_result:
+                continue
+
+            ce = ldap_result[0][1]
+            name = ce['nordugrid-cluster-name'][0]
+            localSEs = set(ce.get('nordugrid-cluster-localse', []))
+            RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
+
+            if seList and not set(seList) & localSEs:
+                continue
+
+            if tags and not set(tags) <= RTEs:
                 continue
 
             if blacklist and name in blacklist:
@@ -483,9 +570,58 @@ class SchedulerARC(SchedulerInterface):
             if whitelist and name not in whitelist:
                 continue
 
-            if full:
-                accepted_CEs.append(name)
-            else:
-                return [ name ]
+            accepted_CEs.append(name)
+            #if not full:
+            #    break
 
         return accepted_CEs
+
+
+    def pick_CEs_from_giis_trees(self, roots, tags, vos, seList, blacklist, whitelist, full):
+        """
+        Recursively traverse the GIIS tree, starting from the first 'root' that replies;
+        return CEs fullfilling requirements.
+        """
+
+        CEs, giises = self.query_giis(roots)
+        accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
+
+        if len(accepted_CEs) > 0 and not full:
+            return accepted_CEs
+
+        for g in giises:
+            host = 'ldap://' + g['name'] + ':' + g['port']
+            root = {'host':host, 'base': g['base']}
+            accepted_CEs += self.pick_CEs_from_giis_trees([root], tags, vos, seList, blacklist, whitelist, full)
+            if len(accepted_CEs) > 0 and not full:
+                break
+
+        return accepted_CEs
+
+
+
+    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
+        """
+        Query grid information system for CE:s.
+        Returns a list of resulting sites (or the first one, if full == False)
+        """
+
+        # FIXME: Currently we ignore 'vos'!
+
+        if type(full) == type(""):  
+            full = (full == "True")
+
+        giis_urls = getGiisUrlList()
+
+        if not giis_urls:
+            raise SchedulerError("No Toplevel GIISes?", "Something must be wrong with ARC's setup!")
+    
+        tolevel_giises = []
+        for g in giis_urls:
+            host, base = parseGiisUrl(g)
+            tolevel_giises.append({'host': host, 'base': base})
+
+        accepted_CEs = self.pick_CEs_from_giis_trees(tolevel_giises, tags, vos, seList, blacklist, whitelist, full)
+
+        return accepted_CEs
+
