@@ -3,6 +3,7 @@ import commands
 import traceback
 import time
 import re
+import logging
 from ProdCommon.BossLite.Common.System import executeCommand
 
 class Proxy:
@@ -133,7 +134,7 @@ class Proxy:
  
        ## you always have at least  /cms/Role=NULL/Capability=NULL
         if not re.compile(r"^"+reg).search(att):
-            if self.debug: print "\tWrong VO group/role.\n"
+            logging.info("Wrong VO group/role.")
             valid = False
         return valid 
 
@@ -187,7 +188,7 @@ class Proxy:
             raise Exception(msg)
 
         if not out:
-            if self.debug: print '\tNo credential delegated to myproxy server %s will do now'%self.myproxyServer
+            logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
             valid = False
         else:
             ## minimum time: 5 days
@@ -202,7 +203,7 @@ class Proxy:
                     seconds = g.group("seconds")
                     timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
                     if timeleft < minTime:
-                        if self.debug: print '\tYour proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds)
+                        logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                         valid = False
         return valid    
 
