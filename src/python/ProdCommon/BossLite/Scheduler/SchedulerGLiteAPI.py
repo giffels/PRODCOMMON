@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.114 2009/05/18 17:51:26 gcodispo Exp $"
-__version__ = "$Revision: 1.114 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.115 2009/05/25 16:05:35 gcodispo Exp $"
+__version__ = "$Revision: 1.115 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -333,7 +333,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 for wms in ipaddrlist :                
                     wmsList.append(pre + socket.gethostbyaddr( wms )[0] + post)
             except socket.gaierror, msg:
-                self.warnings.append( wmsHostName + ' : ' + str( msg ) )
+                self.warnings.append( '%s : %s ' % ( wmsHostName, msg ) )
+                self.logging.warning( '%s : %s ' % ( wmsHostName, msg ) )
 
         return wmsList
 
@@ -542,7 +543,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # return values
         taskId = ''
         returnMap = {}
-        # actions = []
 
         # handle wms and prepare jdl
         jdl, endpoints = self.mergeJDL( jdl, service, config )
@@ -556,6 +556,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             random.shuffle(endpoints)
         except ImportError:
             self.warnings.append(
+                "random access to wms not allowed, using sequential access" )
+            self.logging.warning(
                 "random access to wms not allowed, using sequential access" )
 
         errors = ''
@@ -572,30 +574,35 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                     continue
                 else :
                     seen.append( wms)
-                # actions.append( "Submitting to : " + wms )
+                self.logging.debug( "Submitting to : %s" % wms )
                 taskId, returnMap = \
                         self.wmproxySubmit( jdl, wms, sandboxFileList, workdir)
                 success = wms
-                # actions.append( "Submitted successfully to : " + wms )
+                self.logging.debug( "Submitted successfully to : %s" % wms )
                 break
             
             # typical exception
             except BaseException, err:
-                # actions.append( "Failed submit to : " + wms )
-                errors += 'failed to submit to %s : %s ;\n' % \
-                          ( wms,  formatWmpError( err ) )
+                wmserr = 'failed to submit to %s : %s ;\n' % \
+                         ( wms,  formatWmpError( err ) )
+                errors += wmserr
+                self.logging.debug( wmserr )
                 continue
             
             ### very very bad! wms exceptions...
             except Exception, err:
-                errors += 'failed to submit to %s : %s ;\n' % ( wms, err )
+                wmserr = 'failed to submit to %s : %s ;\n' % ( wms, err )
+                errors += wmserr
+                self.logging.debug( wmserr )
                 continue
             
             except :
                 import sys
                 if isinstance( sys.exc_type, str):
-                    errors += 'failed SSL auth to wms ' + wms + \
-                              ' : ' +  str(sys.exc_info()[0]) + ';\n'
+                    wmserr = 'failed SSL auth to wms ' + wms + \
+                             ' : ' +  str(sys.exc_info()[0]) + ';\n'
+                    errors += wmserr
+                    self.logging.debug( wmserr )
                     continue
                 raise
 
@@ -737,20 +744,20 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 elif output.find( "has been purged" ) != -1 :
                     job.runningJob.warnings.append( 
                         'Job has been purged, recovering status' )
-                    # job.runningJob['statusHistory'].append(
-                    #     'Job has been purged, recovering status' )
+                    self.logging.warning(
+                        'Job has been purged, recovering status' )
                     continue
 
                 # not ready for GO: waiting for next round
                 elif output.find( "Job current status doesn" ) != -1 :
+                    self.logging.warning( output )
                     job.runningJob.errors.append( output )
                     continue
 
                 # not ready for GO: waiting for next round
                 else :
                     job.runningJob.errors.append( output )
-                    # job.runningJob['statusHistory'].append(
-                    #     'error retrieving output' )
+                    self.logging.error( output )
                     continue
 
             ### very very bad! wms exceptions...
@@ -811,30 +818,27 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # no files?
             if retrieved == 0:
-                # job.runningJob['statusHistory'].append(
-                #     'Warning: non files retrieved' )
+                self.logging.warning( 'Warning: non files to be retrieved' )
                 job.runningJob.errors.append(
                     'Warning: no files to be retrieved' )
 
             # got errors?
             if joberr != '' :
-                # job.runningJob['statusHistory'].append(
-                #     'problems with output retrieval' )
+                self.logging.warning( 'problems with output retrieval' )
                 job.runningJob.errors.append( joberr )
 
                 
             if job.runningJob.errors is None or job.runningJob.errors == [] :
-                # job.runningJob['statusHistory'].append(
-                #         'Output successfully retrieved' )
+                self.logging.debug( 'Output successfully retrieved' )
                 # try to purge files
                 try :
                     wmproxy.jobPurge( jobId )
                 except BaseException, err:
                     job.runningJob.warnings.append("unable to purge WMS")
-                    # job.runningJob['statusHistory'].append(
-                    #     "unable to purge WMS")
+                    self.logging.warning( "unable to purge WMS" )
                 except :
                     job.runningJob.warnings.append("unable to purge WMS")
+                    self.logging.warning( "unable to purge WMS" )
 
         self.hackEnv(restore=True) ### TEMP FIX
 
@@ -925,6 +929,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 # purged: probably already retrieved. Archive
                 if output.find( "Cancel has already been requested" ) != -1 :
                     job.runningJob.warnings.append( 
+                        'Cancel has already been requested, recovering status')
+                    self.logging.warning( 
                         'Cancel has already been requested, recovering status')
                     continue
                 else :
@@ -1136,10 +1142,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     ##########################################################################
     def postMortem( self, schedulerId, outfile, service):
         """
-        perform scheduler logging-info
+        perform scheduler self.logging-info
 
         """
-        command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
+        command = "glite-wms-job.logging-info -v 3 " + schedulerId + \
                   " > " + outfile
 
         return self.ExecuteCommand( self.proxyString + command )[0]
@@ -1562,7 +1568,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 self.delegateWmsProxy( wmproxy, workdir )
                 self.logging.info('Delegated proxy to %s' % wms)
             except BaseException, err:
-                # actions.append( "Failed submit to : " + wms )
                 self.logging.error( 'failed to delegate proxy to ' + wms + \
                                     ' : ' + formatWmpError( err ) )
                 continue
