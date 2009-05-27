@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.12 $"
-__revision__ = "$Id: TaskState.py,v 1.12 2009/03/24 15:41:12 hufnagel Exp $"
+__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: TaskState.py,v 1.11 2009/03/04 16:32:32 sryu Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -343,7 +343,7 @@ class TaskState:
         if not self.jobSpecLoaded:
             return []
 
-        datasets = getOutputDatasetDetails(self.jobSpecNode, sorted = False)
+        datasets = getOutputDatasetDetails(self.jobSpecNode)
         datasets.extend(getSizeBasedMergeDatasetsFromNode(self.jobSpecNode))
         outModules = self.jobSpecNode.cfgInterface.outputModules
 
