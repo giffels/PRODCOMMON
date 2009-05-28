@@ -1,9 +1,11 @@
 from Exceptions import OperationException
+import logging
 
 class Protocol(object):
     '''Represents any Protocol'''
 
-    def __init__(self):
+    def __init__(self, logger = None):
+        self.logger = logger
         pass
 
     def move(self, source, sest):
@@ -128,16 +130,21 @@ class Protocol(object):
         """
         import commands
         status, output = commands.getstatusoutput( command )
-        self.__logout__("Executed:\t" + str(command) + "\n" + \
-                      "Done with exit code:\t" + str(status) + "\n" + \
-                      " and output:\n" + str(output) + "\n" )
+        self.__logout__(str(command), str(status), str(output))
         return status, output
 
-    def __logout__(self, mess):
+    def __logout__(self, command, status, output):
         """
         write to log file
         """
-        logfile = "./.SEinteraction.log"
-        import datetime
-        writeout = str(datetime.datetime.now()) + ":\n" + str(mess) + "\n"
-        file(logfile, 'a').write(writeout)
+        if self.logger == None:
+            logfile = "./.SEinteraction.log"
+            import datetime
+            tow = "Executed:\t%s\nDone with exit code:\t%s\nand output:\n%s\n"%(command,status,output)
+            writeout = str(datetime.datetime.now()) + ":\n" + str(mess) + "\n"
+            file(logfile, 'a').write(writeout)
+        else:
+            self.logger.debug("Command:\t%s"%command)
+            self.logger.debug("ExitCode:\t%s"%status)
+            self.logger.debug("Output:\t%s"%output)
+
