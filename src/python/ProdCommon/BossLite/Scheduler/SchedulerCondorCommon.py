@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.43 2009/03/06 16:11:16 ewv Exp $"
-__version__ = "$Revision: 1.43 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.44 2009/06/02 19:20:45 ewv Exp $"
+__version__ = "$Revision: 1.44 $"
 
 import os
 import popen2
@@ -34,6 +34,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
         self.glexec     = args.get('glexec', None)
+        self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
         self.glexecWrapper = 'glexecWrapper.sh'
 
@@ -320,12 +321,19 @@ class SchedulerCondorCommon(SchedulerInterface) :
                                   str(type(obj)) + ' ' + str(objType))
 
         for schedd in jobIds.keys() :
-            cmd = 'condor_q -xml '
-            if schedd != self.hostname:
-                cmd += '-name ' + schedd + ' '
-            cmd += """-constraint 'BLTaskID=="%s"'""" % taskId
+            if self.condorQCacheDir:
+                try:
+                    xmlFile = self.condorQCacheDir + "/condorq_" + schedd + ".xml"
+                    outputFp = open(xmlFile, 'r')
+                except:
+                    raise SchedulerError("Could not open file %s" % xmlFile)
+            else:
+                cmd = 'condor_q -xml '
+                if schedd != self.hostname:
+                    cmd += '-name ' + schedd + ' '
+                cmd += """-constraint 'BLTaskID=="%s"'""" % taskId
 
-            (inputFile, outputFp) = os.popen4(cmd)
+                (inputFile, outputFp) = os.popen4(cmd)
 
             # Throw away first three lines. Junk
             outputFp.readline()
@@ -337,7 +345,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             # If the command succeeded, close returns None
             # Otherwise, close returns the exit code
             if outputFp.close():
-                raise SchedulerError("condor_q command failed.")
+                raise SchedulerError("condor_q command or cache file failed.")
 
             handler = CondorHandler('GlobalJobId',
                        ['JobStatus', 'GridJobId','ProcId','ClusterId',
