@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.42 2008/12/29 19:40:15 ewv Exp $"
-__version__ = "$Revision: 1.42 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.43 2009/03/06 16:11:16 ewv Exp $"
+__version__ = "$Revision: 1.43 $"
 
 import os
 import popen2
@@ -33,6 +33,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.outputDir  = args.get('outputDirectory', None)
         self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
+        self.glexec     = args.get('glexec', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
         self.glexecWrapper = 'glexecWrapper.sh'
 
@@ -137,7 +138,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 jdlFile.close()
 
                 if self.useGlexec:
-                    command = '/opt/glexec/glexec-osg/sbin/glexec ' \
+                    command = self.glexec + ' ' \
                               + self.condorTemp + '/' + self.glexecWrapper \
                               + ' ' + self.condorTemp + '/' + jdlFileName
                 else:
@@ -226,6 +227,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobId = int(job['jobId'])
         # Make arguments condor friendly (space delimited w/o backslashes)
         jobArgs = job['arguments']
+        # Server args already correct, probably revisit for CondorG+Server
         if not self.useGlexec:
             jobArgs = jobArgs.replace(',',' ')
             jobArgs = jobArgs.replace('\\ ',',')
