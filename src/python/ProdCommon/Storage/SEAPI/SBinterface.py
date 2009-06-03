@@ -21,9 +21,11 @@ class SBinterface:
 
     def __init__(self, storel1, storel2 = None, logger = None):
         self.storage1 = storel1
-        self.storage1.protocol.logger = logger
+        if self.storage1 != None:
+            self.storage1.action.logger = logger
         self.storage2 = storel2
-        self.storage2.protocol.logger = logger
+        if self.storage2 != None:
+            self.storage2.action.logger = logger
 
         self.mono     = False
         self.useProxy = True

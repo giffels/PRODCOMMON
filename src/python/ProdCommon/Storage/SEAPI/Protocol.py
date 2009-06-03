@@ -141,7 +141,7 @@ class Protocol(object):
             logfile = "./.SEinteraction.log"
             import datetime
             tow = "Executed:\t%s\nDone with exit code:\t%s\nand output:\n%s\n"%(command,status,output)
-            writeout = str(datetime.datetime.now()) + ":\n" + str(mess) + "\n"
+            writeout = str(datetime.datetime.now()) + ":\n" + str(tow) + "\n"
             file(logfile, 'a').write(writeout)
         else:
             self.logger.debug("Command:\t%s"%command)
