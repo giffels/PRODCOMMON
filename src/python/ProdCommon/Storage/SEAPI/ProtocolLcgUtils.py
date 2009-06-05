@@ -130,6 +130,7 @@ class ProtocolLcgUtils(Protocol):
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("No such file or directory") != -1 or \
                    str(problems).find("no such file or directory") != -1 or \
+                   str(problems).find("does not exist") != -1 or \
                    (str(problems).find("not found") != -1 and \
                     str(problems).find("CacheException") != -1):
                     return False
@@ -191,6 +192,7 @@ class ProtocolLcgUtils(Protocol):
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("No such file or directory") != -1 or \
+                   str(problems).find("does not exist") != -1 or \
                    (str(problems).find("not found") != -1 and \
                     str(problems).find("CacheException") != -1):
                     return False
