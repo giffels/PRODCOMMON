@@ -26,7 +26,8 @@ class ProtocolLcgUtils(Protocol):
             if line.find("No entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("user has no permission") != -1:
+            elif line.find("user has no permission") != -1 or\
+                 line.find("Permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
                                               [line], outLines)
             elif line.find("File exists") != -1:
