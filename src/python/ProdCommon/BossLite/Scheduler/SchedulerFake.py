@@ -3,21 +3,15 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.7 2008/05/16 14:44:52 gcodispo Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.8 2008/09/08 10:21:45 gcodispo Exp $"
+__version__ = "$Revision: 1.8 $"
 
-import os
-import traceback
+import re, os
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
-#
-# Import scheduler specific modules
-#
-# Add any generic utility function
-#
 
 
     ##########################################################################
@@ -30,75 +24,31 @@ class SchedulerFake(SchedulerInterface) :
         # call super class init method
         super(SchedulerFake, self).__init__(**args)
 
+        self.cpCmd = args.get("cpCmd", 'cp')
+        self.remoteDir  = args.get("remoteDir", '')
+        
+
     # Generic static parameter, if needed
     delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
-    names = {}
-
-    ##########################################################################
-    def mergeConfig( self, jdl, configfile='' ):
-        """
-        maybe we need to merge a configuration file with the job description
-        """
-        
-        jdl = configfile + jdl
-
-        return jdl
-
-
-    ##########################################################################
-
-    def actualSubmit( self, jdl, service, options = '' ) :
-        """
-        actual submission function
-        
-        provides the interaction with the scheduler
-        """
-
-        ret_map = {}
-        taskId = ''
-    
-        try :
-            # connect to service if needed
-            # e.g. : wmproxy = Wmproxy(wms, proxy=self.cert)
-
-            # submit:
-            # 1)
-            #   out, ret = self.ExecuteCommand( "qsub " + options + ' ' + jdl )
-            # 2)
-            #   task = wmproxy.jobRegister ( jdl, self.delegationId )
-
-            # retrieve parent id
-            # 1)
-            #   ft = re.compile("Some regexp")
-            #   task = ft.match( out ).group(1, 2, ...)
-            #   nay regexp to fill up a map { "jobName" : "schedId" }
-            # 2)
-            #   taskId = str( task.getJobId() )
-            #   dag = task.getChildren()
-            #   for job in dag:
-            #      ret_map[ str( job.getNodeName() ) ] = str( job.getJobId() )
-
-            # fake output:
-            taskId = "ImTheParent"
-            idx = 0
-            for job in self.names:
-                ret_map[ job ] = "child_%d" % idx
-                idx += 1
-
-            
-        except SchedulerError, err:
-            SchedulerError( "failed submission to " + service, err )
-        except StandardError, error:
-            raise SchedulerError( "failed submission to " + service, error )
-                
-        return taskId, ret_map
+    statusMap = {
+        'PEND'  : 'SW',
+        'RUN'   : 'R',
+        'EXIT'  : 'SD',
+        'PSUSP' : 'DA',
+        'USUSP' : 'DA',
+        'SSUSP' : 'DA',
+        'UNKWN' : 'UN',
+        'DONE'  : 'SD',
+        'WAIT'  : 'SW',
+        'ZOMBI' : 'DA'
+        }
 
 
     ##########################################################################
 
-    def submit( self, obj, requirements='', config ='', service='' ):
+    def submit( self, task, requirements='', config ='', service='' ):
         """
         user submission function
         
@@ -117,45 +67,31 @@ class SchedulerFake(SchedulerInterface) :
         
         """
 
-        # decode obj
-        jdl = self.decode( obj, requirements )
+        taskId = None
+        queue = None
+        retMap = {}
 
-        # return values
-        taskId = ''
-        ret_map = {}
+        for job in task.jobs:
+            command = self.decodeJob (job, task, requirements )
+            out, ret = self.ExecuteCommand( command )
+            if ret != 0 :
+                raise SchedulerError('Error in submit', out, command )
 
-        # handle config file
-        jdl = self.mergeConfig( jdl, config )
+            r = re.compile("Job <(\d+)> is submitted.*<(\w+)>")
 
-        # jdl ready!
-        # print "Using jdl : \n" + jdl
+            m = r.search(out)
+            if m is not None:
+                jobId = m.group(1)
+                queue = m.group(2)
+                retMap[job['name']] = jobId
+            else:
+                rNot = re.compile("Job not submitted.*<(\w+)>")
+                m = rNot.search(out)
+                if m is not None:
+                    self.logging.error( "Job NOT submitted: %s" % out)
+                    raise SchedulerError('Cannot submit ', out, command)
 
-        # emulate ui round robin
-        if type( service ) == str :
-            service = [ service ]
-        try :
-            import random
-            random.shuffle(endpoints)
-        except:
-            print "random access to wms not allowed, using sequential access"
-            pass
-
-        success = ''
-        seen = []
-        for serv in service :
-            try :
-                print "Submitting to : " + serv
-                # use a specific method???
-                taskId, ret_map = \
-                        self.actualSubmit( jdl, serv )
-                success = serv
-                break
-            except SchedulerError, err:
-                print err
-                continue
-
-        # clean eventual files if needed...
-        return ret_map, taskId
+        return retMap, taskId, queue
 
 
     ##########################################################################
@@ -173,23 +109,21 @@ class SchedulerFake(SchedulerInterface) :
 
         errorList = []
 
-        if type(obj) == Task :
+        if outdir == '' and obj['outputDirectory'] is not None:
+            outdir = obj['outputDirectory']
 
-            if outdir == '' and obj['outputDirectory'] is not None:
-                outdir = obj['outputDirectory']
-
-            if outdir != '' and not os.path.exists( outdir ) :
-                raise SchedulerError( 'Permission denied', \
-                                      'Unable to write files in ' + outdir )
+        if outdir != '' and not os.path.exists( outdir ) :
+            raise SchedulerError( 'Permission denied', \
+                                  'Unable to write files in ' + outdir )
                 
 
-            # retrieve scheduler id list
-            schedIdList = {}
-            for job in obj.jobs:
-                if self.valid( job.runningJob ):
-                    # retrieve output
-                    # if error: job.runningJob.errors.append( error )
-                    pass
+        # retrieve scheduler id list
+        schedIdList = {}
+        for job in obj.jobs:
+            if self.valid( job.runningJob ):
+                # retrieve output
+                # if error: job.runningJob.errors.append( error )
+                pass
 
     ##########################################################################
 
@@ -202,13 +136,11 @@ class SchedulerFake(SchedulerInterface) :
         # 1) connect to a service and perform a kill
         # 2) wrap a CLI command like glite-wms-job-cancel
 
-        if type(obj) == Task :
-
-            for job in obj.jobs:
-                if self.valid( job.runningJob ):
-                    # kill
-                    # if error: job.runningJob.errors.append( error )
-                    pass
+        for job in obj.jobs:
+            if self.valid( job.runningJob ):
+                # kill
+                # if error: job.runningJob.errors.append( error )
+                pass
 
 
     ##########################################################################
@@ -269,27 +201,43 @@ class SchedulerFake(SchedulerInterface) :
         # ask for the job informations, mainly status
         # some systems allow a query job per job, others also bulk queries
 
-        ret_map = {}
+        #print schedIdList, service, objType
+        r = re.compile("(\d+)\s+\w+\s+(\w+).*")
+        rfull = re.compile("(\d+)\s+\w+\s+(\w+)\s+(\w+)\s+\w+\s+(\w+).*")
+        rnotfound = re.compile("Job <(\d+)> is not found")
+        for job in obj.jobs :
 
-        if objType == 'node':
-            for job in obj.jobs :
-                # do query
-                # ...
-                values = { 'destination' : 'home',
-                           'statusScheduler' : 'Running',
-                           'status' : 'R',
-                           'statusReason' : 'on site'}
-                ret_map[ schedId ] = values
-        elif objType == 'parent' :
-            for job in obj.jobs :
-                #  a bulk command  may give many jobs in one shot!
-                newIdList = bulkQueryCommand( schedId )
-                for newId in newIdList :
-                    values = { 'destination' : 'home',
-                               'statusScheduler' : 'Running',
-                               'status' : 'R',
-                               'statusReason' : 'on site'}
-                    ret_map[ newId ] = values
+            if not self.valid( job.runningJob ) :
+                continue
+
+            jobid = str(job.runningJob['schedulerId']).strip()
+            command = 'bjobs ' + str(jobid)
+            out, ret = self.ExecuteCommand( command )
+            if ret != 0 :
+                raise SchedulerError('Error in status query', out, command )
+
+            mnotfound = rnotfound.search(out)
+            queue = None
+            host = None
+            sid = None
+            st = None
+            if (mnotfound):
+                sid = mnotfound.group(1)
+                st = 'DONE'
+            else:
+                mfull = rfull.search(out)
+                if (mfull):
+                    sid, st, queue, host = mfull.groups()
+                else:
+                    m = r.search(out)
+                    if (m):
+                        sid, st = m.groups()
+
+            if (st) :
+                job.runningJob['statusScheduler'] = st
+                job.runningJob['status'] = self.statusMap[st]
+            if (host):
+                job.runningJob['destination'] = host
 
 
 
@@ -302,159 +250,58 @@ class SchedulerFake(SchedulerInterface) :
         """
 
         # decode obj
-        jdl, sandboxFileList = self.decode( obj, requirements )
-
-        # return values
-        taskId = ''
-        ret_map = {}
-
-        # handle wms
-        return self.mergeConfig( jdl, service, config )[0]
-
+        return self.decode( obj, requirements )
 
     ##########################################################################
-    def decode  ( self, obj, requirements='' ) :
+    def decode  ( self, task, requirements='' ) :
         """
         prepare file for submission
         """
-        if type(obj) == RunningJob or type(obj) == Job :
-            return self.singleApiJdl ( obj, requirements ) 
-        elif type(obj) == Task :
-            return self.collectionApiJdl ( obj, requirements ) 
 
+        ret = []
+        for job in task.jobs:
+            ret.append( self.decodeJob (job, task, requirements ) )
+
+        return '\n'.join(ret)
 
     ##########################################################################
-
-    def singleApiJdl( self, job, requirements='' ) :
+    def decodeJob (self, job, task, requirements='' ):
         """
-        build a job jdl easy to be handled by the wmproxy API interface
-        and gives back the list of input files for a better handling
+        prepare file for submission
         """
 
-        # general part
-        self.names = {}
-        self.names[job[ 'name' ]] = ''
-        jdl = "[\n"
-        jdl += 'Type = "job";\n'
-        jdl += 'AllowZippedISB = true;\n'
-        jdl += 'ZippedISB = "%s";\n'  % self.zippedISB
-        jdl += 'Executable = "%s";\n' % job[ 'executable' ]
-        jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
+        # prepare submission commanda
+        command = 'cd ' + task['outputDirectory'] + "; "
         if job[ 'standardInput' ] != '':
-            jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
-        jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
-        jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
-
-        # input files handling
-        infiles = ''
-        filelist = ''
-        for infile in job['fullPathInputFiles'] :
-            if infile != '' :
-                infiles += '"file://' + infile + '",'
-            filelist += infile + ' '
-        if len( infiles ) != 0 :
-            jdl += 'InputSandbox = {%s};\n'% infiles[:-1]
-
-        # output files handling
-        outfiles = ''
-        for outfile in job['fullPathOutputFiles'] :
-            if outfile != '' :
-                outfiles += '"' + outfile + '",'
-        if len( outfiles ) != 0 :
-            jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
-
-        # extra job attributes
-        if job.runningJob is not None \
-               and job.runningJob[ 'schedulerAttributes' ] is not None :
-            jdl += job.runningJob[ 'schedulerAttributes' ]
+            command += 'bsub -i %s ' % job[ 'standardInput' ]
+        command += ' -o %s -e %s ' % \
+                   ( job[ 'standardOutput' ], job[ 'standardError' ] )
 
         # blindly append user requirements
-        jdl += requirements + '\n]\n'
-        
-        # return values
-        return jdl
+        command += requirements + " '"
 
-    ##########################################################################
+        # buid up execution commands
+        for inpFile in task[ 'globalSandbox' ].split(','):
+            command += self.cpCmd + " " + \
+                       self.remoteDir + "/" + inpFile + " .;"
 
-    def collectionApiJdl( self, task, requirements='' ):
-        """
-        build a collection jdl easy to be handled by the wmproxy API interface
-        and gives back the list of input files for a better handling
-        """
-        
-        # general part for task
-        jdl = "[\n"
-        jdl += 'Type = "collection";\n'
-        jdl += 'AllowZippedISB = true;\n'
-        jdl += 'ZippedISB = "%s";\n' % self.zippedISB
+        ## Job specific ISB
+        for inpFile in job[ 'inputFiles' ]:
+            if inpFile != '':
+                command += self.cpCmd + " " + \
+                           self.remoteDir + "/" + inpFile + " .;"
 
-        # global task attributes :
-        # \\ the list of files for the JDL common part
-        GlobalSandbox = ''
-        # \\ the list of physical files to be returned
-        filelist = ''
-        # \\ the list of common files to be put in every single node
-        #  \\ in the form root.inputsandbox[ISBindex]
-        commonFiles = ''
-        ISBindex = 0
+        ## set up the execution command
+        command += "./" + os.path.basename( job[ 'executable' ] ) + \
+                   " " + job[ 'arguments' ] + " ; "
 
-        # single job definition
-        self.names = {}
-        jdl += "Nodes = {\n"
-        for job in task.jobs :
-            self.names[job[ 'name' ]] = ''
-            jdl += '[\n'
-            jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
-            jdl += 'Executable = "%s";\n' % job[ 'executable' ] 
-            jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
-            if job[ 'standardInput' ] != '':
-                jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
-            jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
-            jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
-            
-            # extra job attributes
-            if job.runningJob is not None \
-                   and job.runningJob[ 'schedulerAttributes' ] is not None :
-                jdl += job.runningJob[ 'schedulerAttributes' ]
+        ## And finally copy back the output
+        for outFile in job['outputFiles']:
+            command += self.cpCmd + " " + outFile + " " + \
+                   self.remoteDir + "/" + task['outputDirectory'] + "/. ; "
 
-            # job output files handling
-            outfiles = ''
-            for filePath in job['fullPathOutputFiles'] :
-                jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
+        command += "'"
 
-            # job input files handling:
-            # add their name in the global sanbox and put a reference
-            if task['startDirectory'] is None \
-                   or task['startDirectory'][0] == '/':
-                # files are stored locally, compose with 'file://'
-                for filePath in job['fullPathInputFiles']:
-                    GlobalSandbox += '"file://' + filePath + '",'
-            else :
-                # files are elsewhere, just add their composed path
-                for filePath in job['fullPathInputFiles']:
-                    GlobalSandbox += filePath
 
-            jdl += '],\n'
-        jdl  = jdl[:-2] + "\n};\n"
-        
-        # global sandbox definition
-        if GlobalSandbox != '' :
-            jdl += "InputSandbox = {%s};\n"% (GlobalSandbox[:-1])
-        jdl += \
-            'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
-        
-        # blindly append user requirements
-        try :
-            requirements = requirements.strip()
-            while requirements[0] == '[':
-                requirements = requirements[1:-1].strip()
-            jdl += '\n' + requirements + '\n'
-        except :
-            pass
-        
-        jdl += "]"
-        
-        # return values
-        return jdl
-
+        return command
 
