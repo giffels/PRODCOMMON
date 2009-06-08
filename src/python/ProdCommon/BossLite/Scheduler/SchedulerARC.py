@@ -294,7 +294,7 @@ class SchedulerARC(SchedulerInterface):
         if not match:
             raise SchedulerError('Error in submit', output, command)
         jobId = match.group(1)
-        m={job['name'] : job['taskId']}
+        m={job['name'] : jobId}
 
         return m, job['taskId'], ""
 
@@ -320,7 +320,7 @@ class SchedulerARC(SchedulerInterface):
             if not self.valid(job.runningJob):
                 continue
             
-            jobid = str(job['name']).strip()
+            jobid = str(job.runningJob['schedulerId']).strip()
             cmd = 'ngstat ' + jobid
             output, stat = self.ExecuteCommand(cmd)
 
