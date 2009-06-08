@@ -268,45 +268,35 @@ class SchedulerARC(SchedulerInterface):
         if type(obj) == Job:
             raise NotImplementedError
         elif type(obj) == Task:
-            return self.submitTask(obj, requirements) 
+            map = {}
+            for job in obj.getJobs():
+                m, builkId, blah = self.submitTask(obj, job, requirements)
+                map.update(m)
+            return map, builkId, blah 
 
 
-    def submitTask(self, task, requirements=''):
+    def submitTask(self, task, job, requirements):
 
-        # Build xRSL
-        xrsl = '+'
-        n = 0
-        name = {}
-        for job in task.getJobs():
-            n += 1
-            xrsl += '(' + self.decode(job, task, requirements) + ')'
-            name[n] = job['name']
-            bulkId = job['taskId']
-
+        # Build xRSL & cmdline-options
+        xrsl = self.decode(job, task, requirements)
         opt = get_ngsub_opts(xrsl)
 
         # Submit
         command = "ngsub -e '%s' %s" % (xrsl, opt)
-        sys.stderr.write(command)
+        sys.stderr.write(command + '\n')
         self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
         if exitStat != 0:
             raise SchedulerError('Error in submit', output, command)
 
         # Parse output of submit command
-        i = 0
-        map = {}
-        for line in output.split('\n'):
-            i += 1
-            if i <= n:
-                match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", line)
-                if not match:
-                    raise SchedulerError('Error in submit', output, command)
-                jobId = match.group(1)
-                m={name[i] : jobId}
-                map.update(m)
+        match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
+        if not match:
+            raise SchedulerError('Error in submit', output, command)
+        jobId = match.group(1)
+        m={job['name'] : job['taskId']}
 
-        return map, bulkId, ""
+        return m, job['taskId'], ""
 
 
     def query(self, obj, service='', objType='node'):
