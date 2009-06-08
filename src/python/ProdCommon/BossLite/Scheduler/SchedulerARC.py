@@ -320,13 +320,12 @@ class SchedulerARC(SchedulerInterface):
             if not self.valid(job.runningJob):
                 continue
             
-            jobid = str(job.runningJob['schedulerId']).strip()
-            command = 'ngstat ' + jobid
-            output, exitStat = self.ExecuteCommand(command)
+            jobid = str(job['name']).strip()
+            cmd = 'ngstat ' + jobid
+            output, stat = self.ExecuteCommand(cmd)
 
-            if exitStat != 0:
-                raise SchedulerError('%i exit status for ngstat' % exitStat,
-                                      output, command)
+            if stat != 0:
+                raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
 
             arcStat = None
             host = None
