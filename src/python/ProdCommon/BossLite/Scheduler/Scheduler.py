@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.44 2008/11/07 21:18:45 ewv Exp $"
-__revision__ = "$Revision: 1.44 $"
+__version__ = "$Id: Scheduler.py,v 1.45 2009/01/20 18:49:45 gcodispo Exp $"
+__revision__ = "$Revision: 1.45 $"
 
 
 ##########################################################################
@@ -89,6 +89,11 @@ class Scheduler(object):
                 # evaluate errors:
                 elif job.runningJob.isError() :
                     errors += str( job.runningJob.errors )
+                    continue
+
+                if job.runningJob['schedulerId'] is None :
+                    job.runningJob.errors.append(
+                        "Unknown Error: missing schedulerId")
                     continue
 
                 # update success jobs
