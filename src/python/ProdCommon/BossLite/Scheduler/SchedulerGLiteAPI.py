@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.115 2009/05/25 16:05:35 gcodispo Exp $"
-__version__ = "$Revision: 1.115 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.116 2009/05/27 14:51:35 gcodispo Exp $"
+__version__ = "$Revision: 1.116 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -877,7 +877,8 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # retrieve output for all jobs
             for service, idList in schedIdList.iteritems() :
-                self.doWMScancel( idList, service )
+                if service is not None:
+                    self.doWMScancel( idList, service )
 
         # unknown object type
         else:
