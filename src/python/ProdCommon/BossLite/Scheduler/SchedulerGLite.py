@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.4 2008/08/27 14:19:10 gcodispo Exp $"
-__version__ = "$Revision: 1.4 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.5 2008/09/08 10:21:45 gcodispo Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import sys
 import os
@@ -89,7 +89,7 @@ class SchedulerGLite (SchedulerInterface) :
             )
 
         if ret != 0 or msg.find("Error -") >= 0 :
-            print "Warning : \n", msg
+            self.logging.warning( "Warning : %s" % msg )
 
 
     ##########################################################################
@@ -131,7 +131,7 @@ class SchedulerGLite (SchedulerInterface) :
         except IndexError:
             raise SchedulerError( 'wrong parent id',  out )
         
-        print "Your job identifier is: ", taskId
+        logging.info( "Your job identifier is: %s" % taskId )
         return getChildrens( taskId )
 
 

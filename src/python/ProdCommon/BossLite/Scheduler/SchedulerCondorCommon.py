@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.44 2009/06/02 19:20:45 ewv Exp $"
-__version__ = "$Revision: 1.44 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.45 2009/06/02 21:31:27 ewv Exp $"
+__version__ = "$Revision: 1.45 $"
 
 import os
 import popen2
@@ -156,9 +156,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 try:
                     jobName = ret_map[ job['name']  ]
                 except KeyError:
-                    print "Job not submitted:"
-                    print stdout.readlines()
-                    print stderr.readlines()
+                    out = stdout.readlines()
+                    err = stderr.readlines()
+                    job.runningJob.errors.append('Job not submitted:\n%s\n%s' \
+                                                 % ( out, err ) )
+                    self.logging.error("Job not submitted:")
+                    self.logging.error( out )
+                    self.logging.error( err )
                 os.chdir(cacheDir)
                 jobCount += 1
 
@@ -457,7 +461,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             try:
                 shutil.move(self.condorTemp+'/'+fileName, outdir)
             except IOError:
-                print "Could not move file ", fileName
+                self.logging.error( "Could not move file %s" % fileName)
 
 
 

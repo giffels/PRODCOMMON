@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.24 2009/02/06 17:53:29 spiga Exp $"
-__version__ = "$Revision: 1.24 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.25 2009/04/27 19:39:08 spiga Exp $"
+__version__ = "$Revision: 1.25 $"
 
 import re, os, time
 import tempfile
@@ -128,9 +128,10 @@ class SchedulerLsf (SchedulerInterface) :
             rNot = re.compile("Job not submitted.*<(\w+)>")
             m= rNot.search(out)
             if m is not None:
-                print m
-                print "Job NOT submitted"
-                print out
+                self.logging.error( m )
+                self.logging.error( "Job NOT submitted" )
+                self.logging.error( out )
+                job.runningJob.errors.append( out )
             raise SchedulerError('Cannot submit ', out, command)
         taskId = None 
         #print "Your job identifier is: ", taskId, queue

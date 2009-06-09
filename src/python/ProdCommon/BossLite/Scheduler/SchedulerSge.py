@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.5 2009/01/20 18:49:45 gcodispo Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.7 2009/04/07 08:05:28 spiga Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import re, os
 
@@ -92,9 +92,9 @@ class SchedulerSge (SchedulerInterface) :
         arg = self.decode(job, task, requirements )
 
         command = "qsub " + arg 
-        print command + "\n"
+        self.logging.debug( command )
         out, ret = self.ExecuteCommand(command)
-        print "crab: " + out + "\n"
+        self.logging.debug( "crab:  %s" % out )
         r = re.compile("Your job (\d+) .* has been submitted")
 
         m= r.search(out)
