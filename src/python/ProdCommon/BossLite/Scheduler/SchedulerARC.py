@@ -270,12 +270,12 @@ class SchedulerARC(SchedulerInterface):
         elif type(obj) == Task:
             map = {}
             for job in obj.getJobs():
-                m, builkId, blah = self.submitTask(obj, job, requirements)
+                m, builkId, blah = self.submitJob(obj, job, requirements)
                 map.update(m)
             return map, builkId, blah 
 
 
-    def submitTask(self, task, job, requirements):
+    def submitJob(self, task, job, requirements):
 
         # Build xRSL & cmdline-options
         xrsl = self.decode(job, task, requirements)
