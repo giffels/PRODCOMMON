@@ -94,7 +94,7 @@ def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
      for i in range(retries+1):
           try:
                if i > 0:
-                    sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
+                    self.logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
                     time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
@@ -110,7 +110,7 @@ def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
                     # Apparently too much output. Let's try to get one
                     # entry at a time instead; that way we'll hopefully get
                     # at least a part of the total output.
-                    sys.stderr.write("ldap.SIZELIMIT_EXCEEDED ...\n")
+                    self.logging.info("ldap.SIZELIMIT_EXCEEDED ...")
                     x = []
                     con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
                     tmp = con.result(all=0, timeout=timeout)
@@ -166,6 +166,10 @@ def getGiisUrlList():
     """
     giises = []
 
+    # 
+    # FIXME: Maybe we could just parse the output of 'ngtest -O'?
+    #
+
     # First look in the file ~/.arc/client.conf
     if "HOME" in os.environ.keys():
         home = os.environ["HOME"]
@@ -184,7 +188,7 @@ def getGiisUrlList():
     try:
         arc_location = os.environ["NORDUGRID_LOCATION"]
     except KeyError:
-        sys.stderr.write("ERROR: Environment variable NORDUGRID_LOCATION not set!\n")
+        self.logging.error("Environment variable NORDUGRID_LOCATION not set!")
         raise
 
     giislist = open(arc_location + "/etc/giislist", "r").readlines()
@@ -283,7 +287,7 @@ class SchedulerARC(SchedulerInterface):
 
         # Submit
         command = "ngsub -e '%s' %s" % (xrsl, opt)
-        sys.stderr.write(command + '\n')
+        self.logging.debug(command)
         self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
         if exitStat != 0:
@@ -487,16 +491,16 @@ class SchedulerARC(SchedulerInterface):
                 break
 
             try:
-                sys.stderr.write("DEBUG: Using GIIS %s, %s\n" % (giis['host'], giis['base']))
+                self.logging.debug("Using GIIS %s, %s" % (giis['host'], giis['base']))
                 ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, scope=ldap.SCOPE_BASE, retries=0)
             except ldap.LDAPError:
-                sys.stderr.write("WARNING: No reply from GIIS %s, trying another\n" % giis['host'])
+                self.logging.warning("No reply from GIIS %s, trying another" % giis['host'])
                 pass
             else:
                 self.giis_result[giis['host']] = ldap_result
                 break
         else:
-            sys.stderr.write("ERROR: No more GIISes to try!  All GIISes down? Please wait for a while and try again\n")
+            self.logging.error("No more GIISes to try!  All GIISes down? Please wait for a while and try again")
             raise SchedulerError("No reply from GIISes", "")
 
         CEs = []
