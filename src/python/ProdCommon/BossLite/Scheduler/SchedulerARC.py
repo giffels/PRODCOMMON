@@ -300,6 +300,8 @@ class SchedulerARC(SchedulerInterface):
         jobId = match.group(1)
         m={job['name'] : jobId}
 
+        job.runningJob['schedulerId'] = jobId 
+
         return m, job['taskId'], ""
 
 
