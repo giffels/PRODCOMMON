@@ -1,7 +1,18 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Scheduler for the Nordugrid ARC middleware.
+#
+# Maintainers:
+# Erik Edelmann <erik.edelmann@ndgf.fi>
+# Jesper Koivumäki <jesper.koivumaki@hip.fi>
+# 
+
 """
 _SchedulerARC_
 """
+
+
 
 import sys  # Needed for anything else than debugging?
 
@@ -88,13 +99,13 @@ def get_ngsub_opts(xrsl):
     return opt
 
 
-def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
+def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retries=5):
      timeout = 45  # seconds
 
      for i in range(retries+1):
           try:
                if i > 0:
-                    self.logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
+                    logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
                     time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
@@ -110,7 +121,7 @@ def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
                     # Apparently too much output. Let's try to get one
                     # entry at a time instead; that way we'll hopefully get
                     # at least a part of the total output.
-                    self.logging.info("ldap.SIZELIMIT_EXCEEDED ...")
+                    logging.info("ldap.SIZELIMIT_EXCEEDED ...")
                     x = []
                     con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
                     tmp = con.result(all=0, timeout=timeout)
@@ -301,6 +312,7 @@ class SchedulerARC(SchedulerInterface):
         m={job['name'] : jobId}
 
         job.runningJob['schedulerId'] = jobId 
+        self.logging.info("Submitted job with id %s" % jobId)
 
         return m, job['taskId'], ""
 
@@ -324,6 +336,7 @@ class SchedulerARC(SchedulerInterface):
         for job in obj.jobs:
 
             if not self.valid(job.runningJob):
+                self.logging.warning("job %s not valid!" % job['name'])
                 continue
             
             jobid = str(job.runningJob['schedulerId']).strip()
@@ -493,8 +506,8 @@ class SchedulerARC(SchedulerInterface):
                 break
 
             try:
-                self.logging.debug("Using GIIS %s, %s" % (giis['host'], giis['base']))
-                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, scope=ldap.SCOPE_BASE, retries=0)
+                self.logging.info("Using GIIS %s, %s" % (giis['host'], giis['base']))
+                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, self.logging, scope=ldap.SCOPE_BASE, retries=0)
             except ldap.LDAPError:
                 self.logging.warning("No reply from GIIS %s, trying another" % giis['host'])
                 pass
@@ -540,7 +553,7 @@ class SchedulerARC(SchedulerInterface):
             else:
                 host = 'ldap://' + ce['name'] + ':' + ce['port']
                 try:
-                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, retries=0)
+                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, self.logging, retries=0)
                     self.ce_result[ce['name']] = ldap_result
                 except ldap.LDAPError:
                     continue
