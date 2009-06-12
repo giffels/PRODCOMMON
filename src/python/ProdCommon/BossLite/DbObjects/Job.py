@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.18 2009/02/25 09:52:55 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: Job.py,v 1.19 2009/05/11 12:43:31 gcodispo Exp $"
+__revision__ = "$Revision: 1.19 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -57,7 +57,7 @@ class Job(DbObject):
                  'outputFiles' : [],
                  'dlsDestination' : [],
                  'submissionNumber' : 0,
-                 'closed' : 'N'
+                 'closed' : None
               }
 
     # database properties
