@@ -5,12 +5,13 @@ _LFNAlgorithm_
 Algorithmic generation of Logical File Names using the CMS LFN Convention
 
 """
-__revision__ = "$Id: LFNAlgorithm.py,v 1.13 2009/05/22 16:05:50 swakef Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: LFNAlgorithm.py,v 1.14 2009/05/22 19:32:41 direyes Exp $"
+__version__ = "$Revision: 1.14 $"
 __author__ = "evansde@fnal.gov"
 
 import time
 import os
+import logging
 
 #  //
 # // All LFNS start with this constant value
@@ -159,7 +160,7 @@ class DefaultLFNMaker:
             #//   --stageout-intermediates=False)
             if lastBit is None:
                 msg = "OutputModule does not stage out. Skipping."
-                logging.info(msg)
+                logging.debug(msg)
                 continue
             #  //but this guy has the AcquisitionEra at the beginning... delimited
             # // by a dash... we don't need it twice...  we try to safely
