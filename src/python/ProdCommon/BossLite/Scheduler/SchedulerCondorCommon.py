@@ -4,11 +4,12 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.45 2009/06/02 21:31:27 ewv Exp $"
-__version__ = "$Revision: 1.45 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.46 2009/06/09 13:41:36 gcodispo Exp $"
+__version__ = "$Revision: 1.46 $"
 
 import os
 import popen2
+import commands
 import re
 import shutil
 import cStringIO
@@ -131,39 +132,35 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 jdl += "Queue 1\n"
 
                 # Write and submit JDL
-                jdlFileName = job['name']+'.jdl'
-                cacheDir = os.getcwd()
-                os.chdir(self.condorTemp)
+                jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
                 jdlFile = open(jdlFileName, 'w')
                 jdlFile.write(jdl)
                 jdlFile.close()
 
+                command = 'cd %s; ' % self.condorTemp
                 if self.useGlexec:
-                    command = self.glexec + ' ' \
+                    command += self.glexec + ' ' \
                               + self.condorTemp + '/' + self.glexecWrapper \
-                              + ' ' + self.condorTemp + '/' + jdlFileName
+                              + ' ' + jdlFileName
                 else:
-                    command = 'condor_submit ' + submitOptions + jdlFileName
-                stdout, stdin, stderr = popen2.popen3(command)
+                    command += 'condor_submit ' + submitOptions + jdlFileName
+                (status,output) = commands.getstatusoutput(command)
 
                 # Parse output, build numbers
-                for line in stdout:
-                    matchObj = jobRegExp.match(line)
-                    if matchObj:
-                        ret_map[job['name']] = self.hostname + "//" \
-                            + matchObj.group(2) + ".0"
-                        job.runningJob['schedulerId'] = ret_map[job['name']]
+                if not status:
+                    for line in output.split('\n'):
+                        matchObj = jobRegExp.match(line)
+                        if matchObj:
+                            ret_map[job['name']] = self.hostname + "//" \
+                                + matchObj.group(2) + ".0"
+                            job.runningJob['schedulerId'] = ret_map[job['name']]
                 try:
                     jobName = ret_map[ job['name']  ]
                 except KeyError:
-                    out = stdout.readlines()
-                    err = stderr.readlines()
-                    job.runningJob.errors.append('Job not submitted:\n%s\n%s' \
-                                                 % ( out, err ) )
+                    job.runningJob.errors.append('Job not submitted:\n%s' \
+                                                 % output )
                     self.logging.error("Job not submitted:")
-                    self.logging.error( out )
-                    self.logging.error( err )
-                os.chdir(cacheDir)
+                    self.logging.error(output)
                 jobCount += 1
 
                 if ce:
