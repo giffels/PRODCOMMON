@@ -4,12 +4,13 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.46 2009/06/09 13:41:36 gcodispo Exp $"
-__version__ = "$Revision: 1.46 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.47 2009/06/25 15:01:03 ewv Exp $"
+__version__ = "$Revision: 1.47 $"
 
 import os
 import popen2
 import commands
+import logging
 import re
 import shutil
 import cStringIO
@@ -35,9 +36,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
         self.glexec     = args.get('glexec', None)
+        self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
-        self.glexecWrapper = 'glexecWrapper.sh'
 
     def submit( self, obj, requirements='', config ='', service='' ):
         """
@@ -71,23 +72,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
             os.mkdir(self.condorTemp)
 
         if self.useGlexec:
-            # Write the submitter script
-            stdout, stdin  = popen2.popen2('which condor_submit')
-            condorSubmit = stdout.read().strip()
-
-            cacheDir = os.getcwd()
-            os.chdir(self.condorTemp)
-            wrapper = open(self.glexecWrapper, 'w')
-            wrapper.writelines([
-                '#! /bin/sh\n',
-                'cd %s\n' % seDir,
-                'export X509_USER_PROXY=$PWD/userProxy\n',
-                '%s $1\n' % condorSubmit,
-                ])
-            wrapper.close()
-            os.chmod(self.glexecWrapper, 0755)
-            os.chdir(cacheDir)
-
             # Set up the environment
             os.environ['GLEXEC_CLIENT_CERT']  = obj['user_proxy']
             os.environ['GLEXEC_SOURCE_PROXY'] = obj['user_proxy']
@@ -109,7 +93,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             raise NotImplementedError
         elif type(obj) == Task :
             taskId = obj['name']
-            jobCount = 0
+            jobCount = 1
             for job in obj.getJobs():
                 submitOptions = ''
                 if scheddList:
@@ -139,9 +123,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 command = 'cd %s; ' % self.condorTemp
                 if self.useGlexec:
-                    command += self.glexec + ' ' \
-                              + self.condorTemp + '/' + self.glexecWrapper \
-                              + ' ' + jdlFileName
+                    command += "%s %s %s" % (self.glexec, self.glexecWrapper,
+                                             jdlFileName)
                 else:
                     command += 'condor_submit ' + submitOptions + jdlFileName
                 (status,output) = commands.getstatusoutput(command)
