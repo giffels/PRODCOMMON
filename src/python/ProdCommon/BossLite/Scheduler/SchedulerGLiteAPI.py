@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.117 2009/06/09 13:35:01 gcodispo Exp $"
-__version__ = "$Revision: 1.117 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.118 2009/06/24 21:16:42 spiga Exp $"
+__version__ = "$Revision: 1.118 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1146,7 +1146,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         perform scheduler self.logging-info
 
         """
-        command = "glite-wms-job.logging-info -v 3 " + schedulerId + \
+        command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
 
         return self.ExecuteCommand( self.proxyString + command )[0]
