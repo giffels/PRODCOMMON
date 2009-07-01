@@ -17,6 +17,8 @@ class Proxy:
         self.shareDir = args.get( "shareDir", '')
         self.userName = args.get( "userName", '')
         self.debug = args.get("debug",False)
+        self.logging = args.get( "logger", logging )
+        
         self.args = args
 
     def ExecuteCommand( self, command ):
@@ -95,9 +97,52 @@ class Proxy:
             result = int(timeLeftLocal)
         except Exception:
             result = 0
- 
+        if result > 0: 
+            ACTimeLeftLocal = self.getVomsLife(proxy)
+            if ACTimeLeftLocal > 0:
+                result = self.checkLifeTimes(int(timeLeftLocal), ACTimeLeftLocal)
+            else:
+                result = 0  
         return result
 
+    def checkLifeTimes(self, ProxyLife, VomsLife):
+        """ 
+        """ 
+        if abs(ProxyLife - VomsLife) > 30 :
+            h=intTimeLeftLocal/3600
+            m=(intTimeLeftLocal-h*3600)/60
+            proxyLife="%d:%02d" % (h,m)
+            h=intACTimeLeftLocal/3600
+            m=(intACTimeLeftLocal-h*3600)/60
+            vomsLife="%d:%02d" % (h,m)
+            msg =  "proxy lifetime %s is different from voms extension "
+            msg += "lifetime%s for proxy %s\n CRAB will ask ask you create a new proxy" % (proxyLife, vomsLife, proxy)
+            self.logging.info(msg)
+            result = 0  
+        else:
+            result = ProxyLife
+        return result   
+
+    def getVomsLife(self, proxy):
+        """ 
+        """ 
+        cmd = 'voms-proxy-info -file '+proxy+' -actimeleft 2>/dev/null'
+ 
+        ACtimeLeftLocal,  ret = self.ExecuteCommand(cmd)
+       
+        if ret != 0 and ret != 1:
+            msg = "Error while checking proxy actimeleft for %s"%proxy
+            raise Exception(msg)
+
+        result = -1
+        try:
+            result = int(ACtimeLeftLocal)
+        except Exception:
+            msg  =  "voms extension lifetime for proxy %s is 0 \n"%proxy
+            msg +=  "\tCRAB will ask ask you create a new proxy" 
+            self.logging.info(msg)
+            result = 0
+        return result  
 
     def renewCredential( self, proxy=None ): 
         """
@@ -134,7 +179,7 @@ class Proxy:
  
        ## you always have at least  /cms/Role=NULL/Capability=NULL
         if not re.compile(r"^"+reg).search(att):
-            logging.info("Wrong VO group/role.")
+            self.logging.info("Wrong VO group/role.")
             valid = False
         return valid 
 
@@ -188,7 +233,7 @@ class Proxy:
             raise Exception(msg)
 
         if not out:
-            logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
+            self.logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
             valid = False
         else:
             ## minimum time: 5 days
@@ -203,7 +248,7 @@ class Proxy:
                     seconds = g.group("seconds")
                     timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
                     if timeleft < minTime:
-                        logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
+                        self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                         valid = False
         return valid    
 
