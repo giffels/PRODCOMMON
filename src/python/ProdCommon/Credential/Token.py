@@ -16,6 +16,7 @@ class Token:
         self.shareDir = args.get( "shareDir", '')
         self.userName = args.get( "userName", '')
         self.debug = args.get("debug",False)
+        self.logging = args.get( "logger", logging )
         self.args = args
 
     def ExecuteCommand( self, command ):
