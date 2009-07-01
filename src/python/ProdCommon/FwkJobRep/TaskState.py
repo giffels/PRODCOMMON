@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.14 $"
-__revision__ = "$Id: TaskState.py,v 1.14 2009/06/17 14:06:23 direyes Exp $"
+__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: TaskState.py,v 1.15 2009/06/17 14:17:51 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -618,6 +618,9 @@ class TaskState:
             size = os.stat(pfn)[6]
             fileInfo['Size'] = size
             fileInfo.addChecksum("cksum", readCksum(pfn))
+            adler32sum = readAdler32(pfn)
+            if adler32sum is not None:
+                fileInfo.addChecksum("adler32", adler32sum)
         return
 
     def reportFiles(self):
@@ -654,3 +657,23 @@ def readCksum(filename):
     return value
 
 
+def readAdler32(filename):
+    """
+    _readAdler32_
+
+    Get the adler32 checksum of a file. Return None on error
+
+    Process line by line and adjust for known signed vs. unsigned issues
+      http://docs.python.org/library/zlib.html
+
+    """
+    try:
+        from zlib import adler32
+        sum = 1L
+        f = open(filename, 'rb')
+        for line in f:
+            sum = adler32(line, sum)
+        f.close()
+        return '%04x' % (sum & 0xffffffffL) # +ve values and convert to hex
+    except StandardError, e:
+        print('Error computing Adler32 checksum of %s. %s' % (filename, str(e)))

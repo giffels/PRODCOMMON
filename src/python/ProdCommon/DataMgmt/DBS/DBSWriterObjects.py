@@ -256,6 +256,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
     results = []
     inputLFNs = [ x['LFN'] for x in fjrFileInfo.inputFiles]
     checksum = fjrFileInfo.checksums['cksum']
+    adler32sum = fjrFileInfo.checksums.get('adler32', '')
 
     nEvents = int(fjrFileInfo['TotalEvents'])
 
@@ -337,6 +338,7 @@ def createDBSFiles(fjrFileInfo, jobType = None, apiRef = None):
 
         dbsFileInstance = DbsFile(
             Checksum = checksum,
+            Adler32 = adler32sum,
             NumberOfEvents = nEvents,
             LogicalFileName = fjrFileInfo['LFN'],
             FileSize = int(fjrFileInfo['Size']),

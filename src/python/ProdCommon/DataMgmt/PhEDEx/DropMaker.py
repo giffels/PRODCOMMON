@@ -46,13 +46,16 @@ class XMLFileblock(list):
         result = IMProvNode("block")
         result.attrs['name'] = self.fileblockName
         result.attrs['is-open'] = self.isOpen
-        for entry in self:
-            checksum="cksum:%s"%entry[1] #add cksum:
+        for lfn, checksums, size in self:
+            # checksums is a comma separated list of key:value pair
+            checksum = ",".join(["%s:%s" % (x, y) for x, y \
+                                 in checksums.items() \
+                                 if y not in (None, '')])
             result.addNode(
                 IMProvNode("file", None,
-                           lfn = entry[0],
+                           lfn = lfn,
                            checksum = checksum,
-                           size = entry[2])
+                           size = size)
                 )
         return result
 
@@ -64,7 +67,7 @@ class XMLInjectionSpec:
 
     <dataset name='DatasetNameHere' is-open='boolean' is-transient='boolean'>
     <block name='fileblockname' is-open='boolean'>
-    <file lfn='lfn1Here' checksum='cksum:0' size ='fileSize1Here'/>
+    <file lfn='lfn1Here' checksum='cksum:0,cksum2:0' size ='fileSize1Here'/>
     <file lfn='lfn2Here' checksum='cksum:0' size ='fileSize2Here'/> </block>
     </dataset>
     </dbs> 
@@ -166,9 +169,11 @@ def makePhEDExDrop(dbsUrl, datasetPath, *blockNames):
         else:
             xmlBlock = spec.getFileblock(block, "n")
 
-        [ xmlBlock.addFile(
-            x['LogicalFileName'],x['Checksum'] ,x['FileSize']
-            ) for x in blockContent[block]['Files'] ]
+        for x in blockContent[block]['Files']:
+            checksums = {'cksum' : x['Checksum']}
+            if x.get('Adler32'):
+                checksum['adler32'] = x['Adler32'] 
+            xmlBlock.addFile(x['LogicalFileName'], checksums, x['FileSize'])
 
     improv = spec.save()
     xmlString = improv.makeDOMElement().toprettyxml()
