@@ -88,7 +88,7 @@ class _CreateMergeDatasetOperator:
         #the AppFamily to the processing configuration, hence file insertions
         #fail due to a missing algo. WARNING: relies on identical dataset order 
         glblTags = [x['Conditions'] for x in getOutputDatasetsWithPSet(pnode)]
-        for dataset, globalTag in zip(pnode._OutputDatasets, glblTags):
+        for dataset, globalTag in zip(getOutputDatasets(pnode), glblTags):
             
             dataset['Conditions'] = globalTag
             
