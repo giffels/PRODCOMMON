@@ -83,7 +83,14 @@ class _CreateMergeDatasetOperator:
     def __call__(self, pnode):
         if pnode.type != "CMSSW":
             return
-        for dataset in getOutputDatasetsWithPSet(pnode):
+
+        #Can't take datasetInfo from getOutputDatasetsWithPSet as that changes
+        #the AppFamily to the processing configuration, hence file insertions
+        #fail due to a missing algo. WARNING: relies on identical dataset order 
+        glblTags = [x['Conditions'] for x in getOutputDatasetsWithPSet(pnode)]
+        for dataset, globalTag in zip(getOutputDatasets(pnode), glblTags):
+            
+            dataset['Conditions'] = globalTag
             
             primary = DBSWriterObjects.createPrimaryDataset(
                 dataset, self.apiRef)

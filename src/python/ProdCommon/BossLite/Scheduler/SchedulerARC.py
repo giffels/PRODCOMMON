@@ -1,7 +1,18 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Scheduler for the Nordugrid ARC middleware.
+#
+# Maintainers:
+# Erik Edelmann <erik.edelmann@ndgf.fi>
+# Jesper Koivumäki <jesper.koivumaki@hip.fi>
+# 
+
 """
 _SchedulerARC_
 """
+
+
 
 import sys  # Needed for anything else than debugging?
 
@@ -88,13 +99,13 @@ def get_ngsub_opts(xrsl):
     return opt
 
 
-def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
+def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retries=5):
      timeout = 45  # seconds
 
      for i in range(retries+1):
           try:
                if i > 0:
-                    sys.stderr.write("Retrying ldapsearch ... (%i/%i)\n" % (i, retries))
+                    logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
                     time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
@@ -110,7 +121,7 @@ def ldapsearch(host, dn, filter, attr, scope=ldap.SCOPE_SUBTREE, retries=5):
                     # Apparently too much output. Let's try to get one
                     # entry at a time instead; that way we'll hopefully get
                     # at least a part of the total output.
-                    sys.stderr.write("ldap.SIZELIMIT_EXCEEDED ...\n")
+                    logging.info("ldap.SIZELIMIT_EXCEEDED ...")
                     x = []
                     con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
                     tmp = con.result(all=0, timeout=timeout)
@@ -166,6 +177,10 @@ def getGiisUrlList():
     """
     giises = []
 
+    # 
+    # FIXME: Maybe we could just parse the output of 'ngtest -O'?
+    #
+
     # First look in the file ~/.arc/client.conf
     if "HOME" in os.environ.keys():
         home = os.environ["HOME"]
@@ -184,7 +199,7 @@ def getGiisUrlList():
     try:
         arc_location = os.environ["NORDUGRID_LOCATION"]
     except KeyError:
-        sys.stderr.write("ERROR: Environment variable NORDUGRID_LOCATION not set!\n")
+        self.logging.error("Environment variable NORDUGRID_LOCATION not set!")
         raise
 
     giislist = open(arc_location + "/etc/giislist", "r").readlines()
@@ -268,45 +283,38 @@ class SchedulerARC(SchedulerInterface):
         if type(obj) == Job:
             raise NotImplementedError
         elif type(obj) == Task:
-            return self.submitTask(obj, requirements) 
+            map = {}
+            for job in obj.getJobs():
+                m, builkId, blah = self.submitJob(obj, job, requirements)
+                map.update(m)
+            return map, builkId, blah 
 
 
-    def submitTask(self, task, requirements=''):
+    def submitJob(self, task, job, requirements):
 
-        # Build xRSL
-        xrsl = '+'
-        n = 0
-        name = {}
-        for job in task.getJobs():
-            n += 1
-            xrsl += '(' + self.decode(job, task, requirements) + ')'
-            name[n] = job['name']
-            bulkId = job['taskId']
-
+        # Build xRSL & cmdline-options
+        xrsl = self.decode(job, task, requirements)
         opt = get_ngsub_opts(xrsl)
 
         # Submit
         command = "ngsub -e '%s' %s" % (xrsl, opt)
-        sys.stderr.write(command)
+        self.logging.debug(command)
         self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
         if exitStat != 0:
             raise SchedulerError('Error in submit', output, command)
 
         # Parse output of submit command
-        i = 0
-        map = {}
-        for line in output.split('\n'):
-            i += 1
-            if i <= n:
-                match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", line)
-                if not match:
-                    raise SchedulerError('Error in submit', output, command)
-                jobId = match.group(1)
-                m={name[i] : jobId}
-                map.update(m)
+        match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
+        if not match:
+            raise SchedulerError('Error in submit', output, command)
+        jobId = match.group(1)
+        m={job['name'] : jobId}
 
-        return map, bulkId, ""
+        job.runningJob['schedulerId'] = jobId 
+        self.logging.info("Submitted job with id %s" % jobId)
+
+        return m, job['taskId'], ""
 
 
     def query(self, obj, service='', objType='node'):
@@ -328,15 +336,15 @@ class SchedulerARC(SchedulerInterface):
         for job in obj.jobs:
 
             if not self.valid(job.runningJob):
+                self.logging.warning("job %s not valid!" % job['name'])
                 continue
             
             jobid = str(job.runningJob['schedulerId']).strip()
-            command = 'ngstat ' + jobid
-            output, exitStat = self.ExecuteCommand(command)
+            cmd = 'ngstat ' + jobid
+            output, stat = self.ExecuteCommand(cmd)
 
-            if exitStat != 0:
-                raise SchedulerError('%i exit status for ngstat' % exitStat,
-                                      output, command)
+            if stat != 0:
+                raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
 
             arcStat = None
             host = None
@@ -498,16 +506,16 @@ class SchedulerARC(SchedulerInterface):
                 break
 
             try:
-                sys.stderr.write("DEBUG: Using GIIS %s, %s\n" % (giis['host'], giis['base']))
-                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, scope=ldap.SCOPE_BASE, retries=0)
+                self.logging.info("Using GIIS %s, %s" % (giis['host'], giis['base']))
+                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, self.logging, scope=ldap.SCOPE_BASE, retries=0)
             except ldap.LDAPError:
-                sys.stderr.write("WARNING: No reply from GIIS %s, trying another\n" % giis['host'])
+                self.logging.warning("No reply from GIIS %s, trying another" % giis['host'])
                 pass
             else:
                 self.giis_result[giis['host']] = ldap_result
                 break
         else:
-            sys.stderr.write("ERROR: No more GIISes to try!  All GIISes down? Please wait for a while and try again\n")
+            self.logging.error("No more GIISes to try!  All GIISes down? Please wait for a while and try again")
             raise SchedulerError("No reply from GIISes", "")
 
         CEs = []
@@ -545,7 +553,7 @@ class SchedulerARC(SchedulerInterface):
             else:
                 host = 'ldap://' + ce['name'] + ':' + ce['port']
                 try:
-                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, retries=0)
+                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, self.logging, retries=0)
                     self.ce_result[ce['name']] = ldap_result
                 except ldap.LDAPError:
                     continue
