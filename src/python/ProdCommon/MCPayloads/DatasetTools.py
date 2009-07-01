@@ -10,15 +10,15 @@ JobSpecNodes
 
 from ProdCommon.MCPayloads.DatasetInfo import DatasetInfo
 from ProdCommon.CMSConfigTools.ConfigAPI.CMSSWConfig import CMSSWConfig
-from WMCore.Algorithms.TreeSort import TreeSort
 
 def _sortDatasets(datasets):
+    from WMCore.Algorithms.TreeSort import TreeSort
     name = lambda x: x.name()
     parents = lambda x: x['ParentDataset']
     return TreeSort(name, parents, datasets).sort()
 
 
-def getOutputDatasets(payloadNode, sorted = True):
+def getOutputDatasets(payloadNode, sorted = False):
     """
     _getOutputDatasets_
 
@@ -43,7 +43,7 @@ def getOutputDatasets(payloadNode, sorted = True):
         result = _sortDatasets(result)
     return result
 
-def getOutputDatasetsWithPSet(payloadNode, sorted = True):
+def getOutputDatasetsWithPSet(payloadNode, sorted = False):
     """
     _getOutputDatasetsWithPSet_
 
@@ -95,7 +95,7 @@ def getPileupDatasets(payloadNode):
         result.append(resultEntry)
     return result
 
-def getInputDatasets(payloadNode, sorted = True):
+def getInputDatasets(payloadNode, sorted = False):
     """
     _getInputDatasets_
 
@@ -138,7 +138,7 @@ class Accumulator:
         self.result.extend(self.operator(payloadNodeRef))
         return
 
-def getOutputDatasetsFromTree(topPayloadNode, sorted = True):
+def getOutputDatasetsFromTree(topPayloadNode, sorted = False):
     """
     _getOutputDatasetsFromTree_
 
@@ -154,7 +154,7 @@ def getOutputDatasetsFromTree(topPayloadNode, sorted = True):
     return result
 
 
-def getInputDatasetsFromTree(topPayloadNode, sorted = True):
+def getInputDatasetsFromTree(topPayloadNode, sorted = False):
     """
     _getInputDatasetsFromTree_
 
@@ -170,7 +170,7 @@ def getInputDatasetsFromTree(topPayloadNode, sorted = True):
     return result
 
 
-def getOutputDatasetsWithPSetFromTree(topPayloadNode, sorted = True):
+def getOutputDatasetsWithPSetFromTree(topPayloadNode, sorted = False):
     """
     _getOutputDatasetsWithPSetFromTree_
 
@@ -186,7 +186,7 @@ def getOutputDatasetsWithPSetFromTree(topPayloadNode, sorted = True):
     return result
 
 
-def getPileupDatasetsFromTree(topPayloadNode, sorted = True):
+def getPileupDatasetsFromTree(topPayloadNode, sorted = False):
     """
     _getPileupDatasetsFromTree_
 
@@ -202,7 +202,7 @@ def getPileupDatasetsFromTree(topPayloadNode, sorted = True):
     return result
     
 
-def getOutputDatasetDetails(jobSpecNode, sorted = True):
+def getOutputDatasetDetails(jobSpecNode, sorted = False):
     """
     _getOutputDatasetDetails_
 
@@ -232,7 +232,7 @@ def getOutputDatasetDetails(jobSpecNode, sorted = True):
 
         
     
-def getOutputDatasetDetailsFromTree(topJobSpecNode, sorted = True):
+def getOutputDatasetDetailsFromTree(topJobSpecNode, sorted = False):
     """
     _getOutputDatasetDetailsFromTree_
 

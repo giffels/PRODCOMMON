@@ -46,7 +46,7 @@ class _CreateDatasetOperator:
     def __call__(self, pnode):
         if pnode.type != "CMSSW":
             return
-        datasets = getOutputDatasetsWithPSet(pnode)
+        datasets = getOutputDatasetsWithPSet(pnode, sorted = True)
         cfgMeta = None
         try:
             cfgInt = pnode.cfgInterface
@@ -87,8 +87,10 @@ class _CreateMergeDatasetOperator:
         #Can't take datasetInfo from getOutputDatasetsWithPSet as that changes
         #the AppFamily to the processing configuration, hence file insertions
         #fail due to a missing algo. WARNING: relies on identical dataset order 
-        glblTags = [x['Conditions'] for x in getOutputDatasetsWithPSet(pnode)]
-        for dataset, globalTag in zip(getOutputDatasets(pnode), glblTags):
+        glblTags = [x['Conditions'] for x in getOutputDatasetsWithPSet(pnode,
+                                                                sorted = True)]
+        for dataset, globalTag in zip(getOutputDatasets(pnode, sorted = True),
+                                      glblTags):
             
             dataset['Conditions'] = globalTag
             
