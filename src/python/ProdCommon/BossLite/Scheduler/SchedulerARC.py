@@ -337,6 +337,9 @@ class SchedulerARC(SchedulerInterface):
 
             if not self.valid(job.runningJob):
                 self.logging.warning("job %s not valid!" % job['name'])
+                self.logging.debug("job not valid: schedulerId = %s" % str(job.runningJob['schedulerId']))
+                self.logging.debug("job not valid: closed = %s" % str(job.runningJob['closed']))
+                self.logging.debug("job not valid: status = %s" % str(job.runningJob['status']))
                 continue
             
             jobid = str(job.runningJob['schedulerId']).strip()
