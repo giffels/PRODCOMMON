@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.16 2009/06/10 16:56:30 spiga Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.11 2008/12/22 21:16:52 ewv Exp $"
+__version__ = "$Revision: 1.11 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -40,8 +40,7 @@ class SchedulerGlidein(SchedulerCondorCommon) :
           jdl += 'x509userproxy = %s\n' % x509
 
       # Glidein parameters
-      jdl += 'Environment = JobRunCount=$$([ GJobRunCount ])\n'
-      jdl += '+GJobRunCount=ifThenElse(isUndefined(JobRunCount),0,JobRunCount)\n'
+      jdl += 'Environment = JobRunCount=$$([ ifThenElse(isUndefined(JobRunCount),0,JobRunCount) ]);GlideinMemory=$$([ ifThenElse(isUndefined(ImageSize_RAW),0,ImageSize_RAW) ]);Glidein_MonitorID=$$([ ifThenElse(isUndefined(Glidein_MonitorID),0,Glidein_MonitorID) ]) \n'
       jdl += '+JOB_Site = "$$(GLIDEIN_Site:Unknown)" \n'
       jdl += '+JOB_VM = "$$(Name:Unknown)" \n'
       #jdl += '+JOB_Machine_KFlops = \"\$\$(KFlops:Unknown)\" \n");
