@@ -206,7 +206,7 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     """
 
     physicsGroup = datasetInfo.get("PhysicsGroup", "NoGroup")
-    status = datasetInfo.get("Status", "VALID")
+    status = datasetInfo.get("Status", "PRODUCTION")
     dataTier = datasetInfo['DataTier']
     globalTag = datasetInfo['Conditions']
     if globalTag is None: globalTag = ''
