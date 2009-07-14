@@ -31,33 +31,56 @@ import re, signal
 #
 # Mapping from ARC status codes to BossLite dito.
 #
-# Meaning ARC status codes in comments below.
+# Meaning ARC status codes StatusReason table below.
 # BossLite status code docs:
 # https://twiki.cern.ch/twiki/bin/view/CMS/BossLiteJob
 #
 
 StatusCodes = {
-    "ACCEPTING": "SU ", # Job has reaced the CE
-    "ACCEPTED":  "SU",  # Job submitted but not yet processed
-    "PREPARING": "SW",  # Input files are being transferred
-    "PREPARED":  "SW",  # Transferring input files done
-    "SUBMITTING":"SR",  # Interaction with the LRMS at the CE ongoing
-    "INLRMS:Q":  "SS",  # In the queue of the LRMS at the CE
-    "INLRMS:R":  "R",   # Running
-    "INLRMS:S":  "R",   # Suspended
-    "INLRMS:E":  "R",   # About to finish in the LRMS
-    "INLRMS:O":  "R",   # Other LRMS state
-    "EXECUTED":  "R",   # Job is completed in the LRMS
-    "FINISHING": "R",   # Output files are being transferred
-    "KILLING":   "K",   # Job is being cancelled on user request
-    "KILLED":    "K",   # Job canceled on user request
-    "DELETED":   "A",   # Job removed due to expiration time
-    "FAILED":    "DA",  # Job finished with an error.
-    "FINISHED":  "SD",  # Job finished successfully.
+    "ACCEPTING": "SU ",
+    "ACCEPTED":  "SU",
+    "PREPARING": "SW",
+    "PREPARED":  "SW",
+    "SUBMITTING":"SR",
+    "INLRMS:Q":  "SS",
+    "INLRMS:R":  "R",
+    "INLRMS:S":  "R",
+    "INLRMS:E":  "R",
+    "INLRMS:O":  "R",
+    "EXECUTED":  "R",
+    "FINISHING": "R",
+    "KILLING":   "K",
+    "KILLED":    "K",
+    "DELETED":   "A",
+    "FAILED":    "DA",
+    "FINISHED":  "SD",
 
     # In addition, let's define a few of our own
-    "UNKNOWN":     "UN", # Job not known by ARC server (or, more typically, info.sys. too slow!)
-    "WTF?":        "UN"  # Job not recognized as a job by the ARC client!
+    "UNKNOWN":     "UN",
+    "WTF?":        "UN"
+}
+
+StatusReason = {
+    "ACCEPTING": "Job has reaced the CE",
+    "ACCEPTED":  "Job submitted but not yet processed",
+    "PREPARING": "Input files are being transferred",
+    "PREPARED":  "Transferring input files done",
+    "SUBMITTING":"Interaction with the LRMS at the CE ongoing",
+    "INLRMS:Q":  "In the queue of the LRMS at the CE",
+    "INLRMS:R":  "Running",
+    "INLRMS:S":  "Suspended",
+    "INLRMS:E":  "About to finish in the LRMS",
+    "INLRMS:O":  "Other LRMS state",
+    "EXECUTED":  "Job is completed in the LRMS",
+    "FINISHING": "Output files are being transferred",
+    "KILLING":   "Job is being cancelled on user request",
+    "KILLED":    "Job canceled on user request",
+    "DELETED":   "Job removed due to expiration time",
+    "FAILED":    "Job finished with an error.",
+    "FINISHED":  "Job finished successfully.",
+
+    "UNKNOWN":    "Job not known by ARC server (or info.sys. too slow!)",
+    "WTF?":       "Job not recognized as a job by the ARC client!"
 }
 
 
@@ -399,6 +422,7 @@ class SchedulerARC(SchedulerInterface):
             if arcStat:
                 job.runningJob['statusScheduler'] = arcStat
                 job.runningJob['status'] = StatusCodes[arcStat]
+                job.runningJob['statusReason'] = StatusReason[arcStat]
             if host:
                 job.runningJob['destination'] = host
             if jobExitCode:
