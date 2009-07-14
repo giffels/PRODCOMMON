@@ -67,6 +67,10 @@ class WorkflowMaker:
         self.options = {}
         self.options.setdefault('FakeHash', False)
 
+        # Should we use another attribute for setting the output dataset
+        # status in DBS?
+        self.outputDatasetStatus = 'VALID'
+
         self.inputDataset = {}
         self.inputDataset['IsUsed'] = False
         self.inputDataset['DatasetName'] = None
@@ -362,7 +366,25 @@ class WorkflowMaker:
         self.cmsRunNode.applicationControls["SelectionEfficiency"] = \
                                                              selectionEff
         return
-    
+
+    def setOutputDatasetDbsStatus(self, status):
+        """
+        _setOutputDatasetDbsStatus_
+
+        The output datasets will have this status in the field dataset.status.
+        This value will be use when registering the output dataset in DBS.
+
+        Only two values are acepted:
+            - VALID
+            - PRODUCTION
+
+        """
+        
+        if status in ('VALID', 'PRODUCTION'):
+            self.outputDatasetStatus = status
+
+        return
+
     def makeWorkflow(self):
         """
         _makeWorkflow_
@@ -471,7 +493,8 @@ class WorkflowMaker:
                 outDS = cmsRunNode.addOutputDataset(primaryName, 
                                                          processedName,
                                                          outModName)
-                
+
+                outDS['Status'] = self.outputDatasetStatus                
                 outDS['DataTier'] = dataTier
                 outDS["ApplicationName"] = \
                                          cmsRunNode.application["Executable"]
