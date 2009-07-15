@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.47 2009/06/25 15:01:03 ewv Exp $"
-__version__ = "$Revision: 1.47 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.48 2009/06/25 15:27:10 ewv Exp $"
+__version__ = "$Revision: 1.48 $"
 
 import os
 import popen2
@@ -315,7 +315,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 cmd = 'condor_q -xml '
                 if schedd != self.hostname:
                     cmd += '-name ' + schedd + ' '
-                cmd += """-constraint 'BLTaskID=="%s"'""" % taskId
+                cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
 
                 (inputFile, outputFp) = os.popen4(cmd)
 
