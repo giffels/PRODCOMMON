@@ -8,8 +8,8 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: MergeJobFactory.py,v 1.3 2009/03/23 20:33:10 ewv Exp $"
-__version__  = "$Revision: 1.3 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.4 2009/03/27 18:54:42 ewv Exp $"
+__version__  = "$Revision: 1.4 $"
 __author__   = "ewv@fnal.gov"
 
 
@@ -168,8 +168,8 @@ class MergeJobFactory:
         logging.debug("AllowedSites = %s" % self.allowedSites)
         thefiles = Fileset(name='FilesToSplit')
         logging.debug("Connection to DBS at: %s" % self.dbsUrl)
-        reader = DBSReader(self.dbsUrl)
 
+        reader = DBSReader(self.dbsUrl)
         blockList = reader.dbs.listBlocks(dataset = self.inputDataset())
         jobDefs = []
 
