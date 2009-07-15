@@ -84,6 +84,14 @@ StatusReason = {
 }
 
 
+def count_nonempty(list):
+    """Count number of non-empty items"""
+    n = 0
+    for i in list:
+        if i: n += 1
+    return n
+
+
 class TimeoutFunctionException(Exception): 
     """Exception to raise on a timeout""" 
     pass 
@@ -594,16 +602,16 @@ class SchedulerARC(SchedulerInterface):
             localSEs = set(ce.get('nordugrid-cluster-localse', []))
             RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
 
-            if seList and not set(seList) & localSEs:
+            if count_nonempty(seList) > 0 and not set(seList) & localSEs:
                 continue
 
-            if tags and not set(tags) <= RTEs:
+            if count_nonempty(tags) > 0 and not set(tags) <= RTEs:
                 continue
 
-            if blacklist and name in blacklist:
+            if count_nonempty(blacklist) > 0 and name in blacklist:
                 continue
 
-            if whitelist and name not in whitelist:
+            if count_nonempty(whitelist) > 0 and name not in whitelist:
                 continue
 
             accepted_CEs.append(name)
@@ -641,8 +649,9 @@ class SchedulerARC(SchedulerInterface):
         Query grid information system for CE:s.
         Returns a list of resulting sites (or the first one, if full == False)
         """
-
         # FIXME: Currently we ignore 'vos'!
+
+        self.logging.debug("lcgInfo called with %s, %s, %s, %s, %s, %s" % (str(tags), str(vos), str(seList), str(blacklist), str(whitelist), str(full)))
 
         if type(full) == type(""):  
             full = (full == "True")
