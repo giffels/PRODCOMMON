@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.15 2009/05/11 12:43:31 gcodispo Exp $"
-__revision__ = "$Revision: 1.15 $"
+__version__ = "$Id: Task.py,v 1.16 2009/05/22 10:50:03 gcodispo Exp $"
+__revision__ = "$Revision: 1.16 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -361,19 +361,14 @@ class Task(DbObject):
         update private information on it and on its jobs
         """
 
-        # get output directory
-        if self.data['outputDirectory'] is not None:
-            outputDirectory = self.data['outputDirectory']
-        else:
-            outputDirectory = ""
-
         # update job status and private information
         for job in self.jobs:
 
             # comput full path for output files
-            job['fullPathOutputFiles'] = [os.path.join(outputDirectory, ofile)
-                                          for ofile in job['outputFiles']
-                                          if ofile != '']
+            job['fullPathOutputFiles'] = [
+                joinPath( self.data['outputDirectory'],  ofile)
+                for ofile in job['outputFiles']
+                if ofile != '']
 
         # get input directory
         if self.data['globalSandbox'] is not None:
@@ -385,7 +380,23 @@ class Task(DbObject):
         for job in self.jobs:
 
             # comput full path for output files
-            job['fullPathInputFiles'] = [os.path.join(inputDirectory, ifile)
-                                         for ifile in job['inputFiles']
-                                         if ifile != '']
+            job['fullPathInputFiles'] = [
+                joinPath( self.data['startDirectory'],  ofile)
+                for ifile in job['inputFiles']
+                if ifile != '']
 
+
+
+   ##########################################################################
+
+    def joinPath(self, path, name):
+        """
+        joining files with base directory
+        """
+        if path is None or path == '' :
+            return name
+
+        if name.find( 'file:/' ) == 0:
+            return name
+
+        return os.path.join(dir, name)
