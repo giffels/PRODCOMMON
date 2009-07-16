@@ -4,8 +4,8 @@ _Monitoring_
 
 """
 
-__version__ = "$Id: Monitoring.py,v 1.0 2008/10/02 14:30:01 gcodispo Exp $"
-__revision__ = "$Revision: 1.0 $"
+__version__ = "$Id: Monitoring.py,v 1.1 2008/12/04 14:54:17 gcodispo Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 
@@ -171,6 +171,83 @@ class Monitoring:
         rows = self.bossSession.select(query)
 
         return rows
+
+
+
+    ##########################################################################
+    def jtComponentDelay(self, span, time, stop=None):
+        """
+        delay between job Done and jt notification
+        """
+
+        query = """
+        select (output_request_time-lb_timestamp)/60 from bl_runningjob where
+        getoutput_time!=0 and stop_time!=0
+        """
+
+        query += self.getTimeLimits( span, time, stop )
+        rows = self.bossSession.select(query)
+
+        return rows
+
+
+    ##########################################################################
+    def jtToGoDelay(self, span, time, stop=None):
+        """
+        delay in JT to GO communication
+        """
+
+        query = """
+        select (output_enqueue_time-output_request_time)/60 from bl_runningjob
+        where getoutput_time!=0 and stop_time!=0
+        """
+
+        query += self.getTimeLimits( span, time, stop )
+        rows = self.bossSession.select(query)
+
+        return rows
+
+
+    ##########################################################################
+    def goComponentDelay(self, span, time, stop=None):
+        """
+        internal GO delay
+        """
+
+        query = """
+        select (getoutput_time-output_enqueue_time)/60 from bl_runningjob where
+        getoutput_time!=0 and stop_time!=0
+        """
+
+        query += self.getTimeLimits( span, time, stop )
+        rows = self.bossSession.select(query)
+
+        return rows
+
+
+
+    ##########################################################################
+    def delaysSummary(self, span, time, stop=None):
+        """
+        delay summary
+        """
+
+        query = """
+        select
+        (start_time-submission_time)/60,
+        (start_time-scheduled_at_site)/60,
+        (output_request_time-lb_timestamp)/60,
+        (output_enqueue_time-output_request_time)/60,
+        (getoutput_time-output_enqueue_time)/60 from bl_runningjob where
+        getoutput_time!=0 and stop_time!=0
+        """
+
+        query += self.getTimeLimits( span, time, stop )
+        rows = self.bossSession.select(query)
+
+        return rows
+
+    
 
 
     ##########################################################################
