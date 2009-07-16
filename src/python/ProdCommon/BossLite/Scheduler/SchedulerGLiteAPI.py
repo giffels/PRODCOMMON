@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.118 2009/06/24 21:16:42 spiga Exp $"
-__version__ = "$Revision: 1.118 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.119 2009/06/30 09:14:35 slacapra Exp $"
+__version__ = "$Revision: 1.119 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1359,6 +1359,12 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                         continue
                     #filename = task['startDirectory'] + '/' + ifile
                     #globalSandbox += '"' + filename + '",'
+                    if ifile.find( 'file://' ) == 0:
+                        globalSandbox += ifile + '",'
+                        filelist += ifile + ' '
+                        commonFiles += "root.inputsandbox[%d]," % ISBindex
+                        ISBindex += 1
+                        continue
                     if ifile[0] == '/':
                         ifile = ifile[1:]
                     #globalSandbox += '"' + ifile + '",'
