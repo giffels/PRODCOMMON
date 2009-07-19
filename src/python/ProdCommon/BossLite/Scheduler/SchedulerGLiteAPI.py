@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.119 2009/06/30 09:14:35 slacapra Exp $"
-__version__ = "$Revision: 1.119 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.120 2009/07/16 16:24:41 gcodispo Exp $"
+__version__ = "$Revision: 1.120 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1343,7 +1343,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # files are stored locally, compose with 'file://'
             if task['globalSandbox'] is not None :
                 for ifile in task['globalSandbox'].split(','):
-                    if ifile == '' :
+                    if ifile.strip() == '' :
                         continue
                     filename = os.path.abspath( ifile )
                     globalSandbox += '"file://' + filename + '",'
@@ -1355,11 +1355,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if task['globalSandbox'] is not None :
                 jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
                 for ifile in task['globalSandbox'].split(','):
-                    if ifile == '' :
+                    if ifile.strip() == '' :
                         continue
-                    #filename = task['startDirectory'] + '/' + ifile
-                    #globalSandbox += '"' + filename + '",'
-                    if ifile.find( 'file://' ) == 0:
+                    if ifile.find( 'file:/' ) == 0:
                         globalSandbox += ifile + '",'
                         filelist += ifile + ' '
                         commonFiles += "root.inputsandbox[%d]," % ISBindex
@@ -1367,10 +1365,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                         continue
                     if ifile[0] == '/':
                         ifile = ifile[1:]
-                    #globalSandbox += '"' + ifile + '",'
-                    #commonFiles += "root.inputsandbox[%d]," % ISBindex
                     commonFiles += '"' + ifile + '",'
-                    ISBindex += 1
 
         # output bypass WMS?
         if task['outputDirectory'] is not None and \
