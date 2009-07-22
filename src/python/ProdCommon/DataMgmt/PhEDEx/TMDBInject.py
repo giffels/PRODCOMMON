@@ -112,7 +112,7 @@ def tmdbInject(phedexConfig, xmlFile, nodes, *storageElements):
 
     """
 
-    command = "TMDBInject -db %s " % phedexConfig
+    command = "TMDBInject -version0 -db %s " % phedexConfig
 
     if nodes:
       command +=" -nodes=%s " % nodes 
