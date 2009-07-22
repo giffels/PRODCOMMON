@@ -31,34 +31,65 @@ import re, signal
 #
 # Mapping from ARC status codes to BossLite dito.
 #
-# Meaning ARC status codes in comments below.
+# Meaning ARC status codes StatusReason table below.
 # BossLite status code docs:
 # https://twiki.cern.ch/twiki/bin/view/CMS/BossLiteJob
 #
 
 StatusCodes = {
-    "ACCEPTING": "SU ", # Job has reaced the CE
-    "ACCEPTED":  "SU",  # Job submitted but not yet processed
-    "PREPARING": "SW",  # Input files are being transferred
-    "PREPARED":  "SW",  # Transferring input files done
-    "SUBMITTING":"SR",  # Interaction with the LRMS at the CE ongoing
-    "INLRMS:Q":  "SS",  # In the queue of the LRMS at the CE
-    "INLRMS:R":  "R",   # Running
-    "INLRMS:S":  "R",   # Suspended
-    "INLRMS:E":  "R",   # About to finish in the LRMS
-    "INLRMS:O":  "R",   # Other LRMS state
-    "EXECUTED":  "R",   # Job is completed in the LRMS
-    "FINISHING": "R",   # Output files are being transferred
-    "KILLING":   "K",   # Job is being cancelled on user request
-    "KILLED":    "K",   # Job canceled on user request
-    "DELETED":   "A",   # Job removed due to expiration time
-    "FAILED":    "DA",  # Job finished with an error.
-    "FINISHED":  "SD",  # Job finished successfully.
+    "ACCEPTING": "SU ",
+    "ACCEPTED":  "SU",
+    "PREPARING": "SW",
+    "PREPARED":  "SW",
+    "SUBMITTING":"SR",
+    "INLRMS:Q":  "SS",
+    "INLRMS:R":  "R",
+    "INLRMS:S":  "R",
+    "INLRMS:E":  "R",
+    "INLRMS:O":  "R",
+    "EXECUTED":  "R",
+    "FINISHING": "R",
+    "KILLING":   "K",
+    "KILLED":    "K",
+    "DELETED":   "A",
+    "FAILED":    "DA",
+    "FINISHED":  "SD",
 
     # In addition, let's define a few of our own
-    "UNKNOWN":     "UN", # Job not known by ARC server (or, more typically, info.sys. too slow!)
-    "WTF?":        "UN"  # Job not recognized as a job by the ARC client!
+    "UNKNOWN":     "UN",
+    "WTF?":        "UN"
 }
+
+StatusReason = {
+    "ACCEPTING": "Job has reaced the CE",
+    "ACCEPTED":  "Job submitted but not yet processed",
+    "PREPARING": "Input files are being transferred",
+    "PREPARED":  "Transferring input files done",
+    "SUBMITTING":"Interaction with the LRMS at the CE ongoing",
+    "INLRMS:Q":  "In the queue of the LRMS at the CE",
+    "INLRMS:R":  "Running",
+    "INLRMS:S":  "Suspended",
+    "INLRMS:E":  "About to finish in the LRMS",
+    "INLRMS:O":  "Other LRMS state",
+    "EXECUTED":  "Job is completed in the LRMS",
+    "FINISHING": "Output files are being transferred",
+    "KILLING":   "Job is being cancelled on user request",
+    "KILLED":    "Job canceled on user request",
+    "DELETED":   "Job removed due to expiration time",
+    "FAILED":    "Job finished with an error.",
+    "FINISHED":  "Job finished successfully.",
+
+    "UNKNOWN":    "Job not known by ARC server (or info.sys. too slow!)",
+    "WTF?":       "Job not recognized as a job by the ARC client!"
+}
+
+
+def count_nonempty(list):
+    """Count number of non-empty items"""
+    n = 0
+    for i in list:
+        if i: n += 1
+    return n
 
 
 class TimeoutFunctionException(Exception): 
@@ -336,7 +367,11 @@ class SchedulerARC(SchedulerInterface):
         for job in obj.jobs:
 
             if not self.valid(job.runningJob):
-                self.logging.warning("job %s not valid!" % job['name'])
+                if not job.runningJob['schedulerId']:
+                    self.logging.warning("job %s has no schedulerId!" % job['name'])
+                self.logging.debug("job invalid: schedulerId = %s"%str(job.runningJob['schedulerId']))
+                self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
+                self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
                 continue
             
             jobid = str(job.runningJob['schedulerId']).strip()
@@ -395,6 +430,7 @@ class SchedulerARC(SchedulerInterface):
             if arcStat:
                 job.runningJob['statusScheduler'] = arcStat
                 job.runningJob['status'] = StatusCodes[arcStat]
+                job.runningJob['statusReason'] = StatusReason[arcStat]
             if host:
                 job.runningJob['destination'] = host
             if jobExitCode:
@@ -566,16 +602,16 @@ class SchedulerARC(SchedulerInterface):
             localSEs = set(ce.get('nordugrid-cluster-localse', []))
             RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
 
-            if seList and not set(seList) & localSEs:
+            if count_nonempty(seList) > 0 and not set(seList) & localSEs:
                 continue
 
-            if tags and not set(tags) <= RTEs:
+            if count_nonempty(tags) > 0 and not set(tags) <= RTEs:
                 continue
 
-            if blacklist and name in blacklist:
+            if count_nonempty(blacklist) > 0 and name in blacklist:
                 continue
 
-            if whitelist and name not in whitelist:
+            if count_nonempty(whitelist) > 0 and name not in whitelist:
                 continue
 
             accepted_CEs.append(name)
@@ -613,8 +649,9 @@ class SchedulerARC(SchedulerInterface):
         Query grid information system for CE:s.
         Returns a list of resulting sites (or the first one, if full == False)
         """
-
         # FIXME: Currently we ignore 'vos'!
+
+        self.logging.debug("lcgInfo called with %s, %s, %s, %s, %s, %s" % (str(tags), str(vos), str(seList), str(blacklist), str(whitelist), str(full)))
 
         if type(full) == type(""):  
             full = (full == "True")

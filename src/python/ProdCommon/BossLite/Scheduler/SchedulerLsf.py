@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.25 2009/04/27 19:39:08 spiga Exp $"
-__version__ = "$Revision: 1.25 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.26 2009/06/09 13:41:36 gcodispo Exp $"
+__version__ = "$Revision: 1.26 $"
 
 import re, os, time
 import tempfile
@@ -306,3 +306,9 @@ class SchedulerLsf (SchedulerInterface) :
 
         return command, fname
    
+    def delegateProxy(self):
+        """
+        fake    
+        """
+        return
+

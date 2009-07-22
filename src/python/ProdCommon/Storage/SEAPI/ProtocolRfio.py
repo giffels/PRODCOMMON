@@ -337,9 +337,9 @@ class ProtocolRfio(Protocol):
             file(fname, 'w').write( cmd + "\n" )
 
             command = BaseCmd + fname
-            self.__logout__("Executing through ksu:\t" + str(cmd) + "\n")
             #from ProdCommon.BossLite.Common.System import executeCommand
             exit, out = super(ProtocolRfio, self).executeCommand(command)
+            self.__logout__("Executing through ksu:\t" + str(cmd) + "\n",exit,out)
             #out, exit = executeCommand(command)
         finally:
             os.unlink( fname )
