@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.16 $"
-__revision__ = "$Id: TaskState.py,v 1.16 2009/07/01 14:21:10 swakef Exp $"
+__version__ = "$Revision: 1.17 $"
+__revision__ = "$Id: TaskState.py,v 1.17 2009/07/05 19:20:04 hufnagel Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -677,9 +677,12 @@ def readAdler32(filename):
         from zlib import adler32
         sum = 1L
         f = open(filename, 'rb')
-        for line in f:
+        while True:
+            line = f.readline(4096) #limit so binary files don't blow up
+            if not line:
+                break
             sum = adler32(line, sum)
         f.close()
-        return '%04x' % (sum & 0xffffffffL) # +ve values and convert to hex
+        return '%x' % (sum & 0xffffffffL) # +ve values and convert to hex
     except StandardError, e:
         print('Error computing Adler32 checksum of %s. %s' % (filename, str(e)))
