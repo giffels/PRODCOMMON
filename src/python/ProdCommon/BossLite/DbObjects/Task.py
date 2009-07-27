@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.16 2009/05/22 10:50:03 gcodispo Exp $"
-__revision__ = "$Revision: 1.16 $"
+__version__ = "$Id: Task.py,v 1.17 2009/07/16 16:19:19 gcodispo Exp $"
+__revision__ = "$Revision: 1.17 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -366,7 +366,7 @@ class Task(DbObject):
 
             # comput full path for output files
             job['fullPathOutputFiles'] = [
-                joinPath( self.data['outputDirectory'],  ofile)
+                self.joinPath( self.data['outputDirectory'],  ofile)
                 for ofile in job['outputFiles']
                 if ofile != '']
 
@@ -381,7 +381,7 @@ class Task(DbObject):
 
             # comput full path for output files
             job['fullPathInputFiles'] = [
-                joinPath( self.data['startDirectory'],  ofile)
+                self.joinPath( self.data['startDirectory'],  ofile)
                 for ifile in job['inputFiles']
                 if ifile != '']
 
