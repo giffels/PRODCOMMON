@@ -25,13 +25,13 @@ class InputSource:
     def __str__(self):
         return self.data.dumpConfig()
 
-        
+
     def maxevents(self):
         """get value of MaxEvents, None if not set"""
         cfgType = getattr(self.data, "maxEvents", _CfgNoneType())
         return cfgType.value()
 
-        
+
     def setMaxEvents(self, maxEv):
         """setMaxEvents value"""
         self.data.maxEvents = CfgTypes.untracked(CfgTypes.int32(maxEv))
@@ -49,7 +49,7 @@ class InputSource:
         """get firstRun value of None if not set"""
         cfgType = getattr(self.data, "firstRun", _CfgNoneType())
         return cfgType.value()
-    
+
     def setFirstRun(self, firstRun):
         """set first run number"""
         self.data.firstRun = CfgTypes.untracked(CfgTypes.uint32(int(firstRun)))
@@ -74,7 +74,7 @@ class InputSource:
         """
         cfgType = getattr(self.data, "firstLuminosityBlock", _CfgNoneType())
         return cfgType.value()
-    
+
     def setFirstEvent(self, firstEv):
         """
         set first event number
@@ -90,8 +90,8 @@ class InputSource:
         """
         cfgType = getattr(self.data, "firstEvent", _CfgNoneType())
         return cfgType.value()
-        
-        
+
+
     def fileNames(self):
         """ return value of fileNames, None if not provided """
         cfgType = getattr(self.data, "fileNames", _CfgNoneType())
@@ -116,8 +116,8 @@ class InputSource:
         for entry in fileNames:
             self.data.secondaryFileNames.append(entry)
         return
-    
-        
+
+
     def setFileMatchMode(self, matchMode):
         """set file match mode for reading files in same job"""
         self.data.fileMatchMode = CfgTypes.untracked(
@@ -134,8 +134,29 @@ class InputSource:
         """set overrideCatalog to allow local files to be read via LFN"""
         uri = "trivialcatalog_file:%s?protocol=%s" % (catalog, protocol)
         self.data.overrideCatalog = CfgTypes.untracked(CfgTypes.string(uri))
-        
-        
+
+
+    def lumisToProcess(self):
+        """ return value of lumisToProcess, None if not provided """
+        cfgType = getattr(self.data, "lumisToProcess", _CfgNoneType())
+        value = cfgType.value()
+        if value == None:
+            return []
+        if type(value) == type("string"):
+            return [value]
+        return value
+
+
+    def setLumisToProcess(self, *lumiList):
+        """set lumisToProcess vector"""
+        self.data.lumisToProcess = CfgTypes.untracked(
+            CfgTypes.VLuminosityBlockRange())
+        for entry in lumiList:
+            self.data.lumisToProcess.append(entry)
+
+        return
+
+
     def sourceParameters(self):
         """
         _sourceParamaters_
@@ -145,6 +166,7 @@ class InputSource:
         """
         result = {}
         result['fileNames'] = self.fileNames()
+        result['lumisToProcess'] = self.lumisToProcess()
         result['firstRun'] = self.firstRun()
         result['skipEvents'] = self.skipevents()
         result['overrideCatalog'] = self.overrideCatalog()
