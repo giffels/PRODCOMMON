@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.17 $"
-__revision__ = "$Id: TaskState.py,v 1.17 2009/07/05 19:20:04 hufnagel Exp $"
+__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: TaskState.py,v 1.18 2009/07/22 15:57:27 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -577,7 +577,10 @@ class TaskState:
 
         I.e. If RAW and HLTDEBUG are created in the same process this can be
         used to force HLTDEBUG to be a child of RAW.
-
+        
+        For files produced with either SecondarySource or MixingModule files
+        these are stripped out as their dataset will not be listed
+        as a parent.
         """
         parentageWiped = False
 
@@ -590,9 +593,11 @@ class TaskState:
             parentFiles = [x for x in self._JobReport.files if \
                                                     dsSearch(x, parentDataset)]
             if not parentFiles:
-                # Input files weren't produced in this job
-                # Standard processing job - leave InputFiles alone
-                continue
+                # Standard processing job - input files weren't made in the job
+                #  - Reset file parents to the job spec input list
+                #    - This removes SecondarySource and MixingModule files
+                parentFiles = [x for x in fileInfo.inputFiles \
+                               if x['LFN'] in self.inputSource()['InputFiles']]
 
             if not parentageWiped:
                 fileInfo.inputFiles = []
