@@ -243,6 +243,7 @@ def getOutputDatasetDetailsFromTree(topJobSpecNode, sorted = False):
     """
     accum = Accumulator(getOutputDatasetDetails)
     topJobSpecNode.operate(accum)
+    result = accum.result
     if sorted:
         result = _sortDatasets(result)
     return result
