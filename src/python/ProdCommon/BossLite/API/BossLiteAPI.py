@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.77 2008/12/02 11:50:30 gcodispo Exp $"
-__revision__ = "$Revision: 1.77 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.78 2009/02/13 09:32:13 gcodispo Exp $"
+__revision__ = "$Revision: 1.78 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -76,7 +76,10 @@ class BossLiteAPI(object):
         will be used, enabling a better multithread usage
         """
 
-        if pool is None and makePool == False:
+        if database == "WMCore":
+            from ProdCommon.BossLite.API.BossLiteDBWMCore import BossLiteDBWMCore
+            self.bossLiteDB = BossLiteDBWMCore( database, dbConfig=dbConfig )
+        elif pool is None and makePool == False:
             self.bossLiteDB = BossLiteDB( database, dbConfig=dbConfig )
         else :
             from ProdCommon.BossLite.API.BossLitePoolDB import BossLitePoolDB
@@ -93,7 +96,7 @@ class BossLiteAPI(object):
 
         # open Db and create a db access
         self.bossLiteDB.connect()
-        self.db = TrackingDB(self.bossLiteDB.session)
+        self.db = TrackingDB(self.bossLiteDB)
 
 
     ##########################################################################
@@ -109,7 +112,7 @@ class BossLiteAPI(object):
 
         # update
         obj.update(self.db)
-        self.bossLiteDB.session.commit()
+        self.bossLiteDB.commit()
 
 
     ##########################################################################
@@ -129,7 +132,7 @@ class BossLiteAPI(object):
             if job.runningJob is not None:
                 job.updateRunningInstance(self.db, notSkipClosed)
 
-        self.bossLiteDB.session.commit()
+        self.bossLiteDB.commit()
 
 
     ##########################################################################
@@ -183,7 +186,7 @@ class BossLiteAPI(object):
         try :
             task.updateInternalData()
             task.save(self.db)
-            self.bossLiteDB.session.commit()
+            self.bossLiteDB.commit()
         except TaskError, err:
             if str(err).find( 'column name is not unique') == -1 and \
                    str(err).find( 'Duplicate entry') == -1 and \
@@ -217,7 +220,7 @@ class BossLiteAPI(object):
 
         # remove job
         job.remove( self.db )
-        self.bossLiteDB.session.commit()
+        self.bossLiteDB.commit()
 
         job = None
 
@@ -250,7 +253,7 @@ class BossLiteAPI(object):
 
         # remove task
         task.remove( self.db )
-        self.bossLiteDB.session.commit()
+        self.bossLiteDB.commit()
 
         task = None
 
@@ -953,7 +956,7 @@ class BossLiteAPI(object):
 
         # update object
         obj.update(self.db)
-        self.bossLiteDB.session.commit()
+        self.bossLiteDB.commit()
 
 
     ##########################################################################

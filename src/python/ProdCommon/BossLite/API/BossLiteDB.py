@@ -4,8 +4,8 @@ _BossLiteDB_
 
 """
 
-__version__ = "$Id: BossLiteDB.py,v 1.7 2008/07/14 13:20:09 gcodispo Exp $"
-__revision__ = "$Revision: 1.7 $"
+__version__ = "$Id: BossLiteDB.py,v 1.8 2008/10/10 13:32:37 gcodispo Exp $"
+__revision__ = "$Revision: 1.8 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -71,7 +71,7 @@ class BossLiteDB(object):
             from ProdCommon.Database.MysqlInstance import MysqlInstance
             self.dbInstance = MysqlInstance(self.dbConfig)
 
-        else:
+        else :
             # update db config
             self.dbConfig =  {'dbName':'BossLiteDB'}
             dbConfig['dbName'] = expandvars( dbConfig['dbName'] )
@@ -134,13 +134,10 @@ class BossLiteDB(object):
         # db connect
         self.connect()
 
-        if (self.session.execute(query) > 0):
-            out = self.session.fetchall()
-        else :
-            out = None
+        self.session.execute(query)
 
         # return query results
-        return out
+        return self.session.fetchall()
 
 
     ##########################################################################
@@ -152,13 +149,10 @@ class BossLiteDB(object):
         # db connect
         self.connect()
 
-        if (self.session.execute(query) > 0):
-            out = self.session.fetchone()[0]
-        else :
-            out = None
+        self.session.execute(query)
 
         # return query results
-        return out
+        return self.session.fetchone()[0]
 
 
     ##########################################################################
@@ -171,8 +165,10 @@ class BossLiteDB(object):
         self.connect()
 
         # return query results
-        self.session.execute( query )
+        rows = self.session.execute( query )
         self.session.commit()
+
+        return rows
 
 
     ##########################################################################
