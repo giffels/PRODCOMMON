@@ -258,14 +258,37 @@ class Proxy:
         """
         """
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
+
+        if len( self.serverDN.strip() ) > 0:
+            cmd += ' -x -Z \'%s\' '%self.serverDN
+
         out = os.system(cmd)
         if (out>0):
-            raise Exception("Unable to delegate the proxy to myproxyserver %s"%self.myproxyServer+" !\n")
+            raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
 
-    def logonProxy( self ):
+    def logonProxy( self, proxy, userDN, vo='cms', group=None, role=None ):
         """
-        To be implemented
         """
-        #
+        # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> --voms <attribs>
+
+        if proxy == None :
+            msg = "Error: proxy filename must be specified."
+            raise Exception(msg)
+
+        voAttr = vo
+        if group:
+            voAttr += ':/'+vo+'/'+group
+            if role: voAttr += '/Role='+role
+        else:
+            if role: voAttr += ':/'+vo+'/Role='+role
+
+        cmd = 'myproxy-logon -d -n -s %s'%self.myproxyServer
+        cmd += '-o %s -l \'%s\' '%(proxy, userDN)
+        cmd += '--voms %s'%(voAttr) 
+
+        out = os.system(cmd)
+        if (out>0):
+            raise Exception("Unable to retrieve delegated proxy for user DN %s !\n" % userDN )
         return
+
