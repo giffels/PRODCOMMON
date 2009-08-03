@@ -3,18 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-<<<<<<< SchedulerGLiteAPI.py
-<<<<<<< SchedulerGLiteAPI.py
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.119 2009/06/30 09:14:35 slacapra Exp $"
-__version__ = "$Revision: 1.119 $"
-=======
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.120 2009/07/16 16:24:41 gcodispo Exp $"
-__version__ = "$Revision: 1.120 $"
->>>>>>> 1.120
-=======
 __revision__ = "$Id: SchedulerGLiteAPI.py,v 1.123 2009/07/22 08:05:23 gcodispo Exp $"
 __version__ = "$Revision: 1.123 $"
->>>>>>> 1.123
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -804,6 +794,25 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 else:
                     checkSize = True
 
+                # retrieve file
+                dest = os.path.join( outdir + '/' + \
+                                     os.path.basename(m['name']) )
+                command = "globus-url-copy -verbose " + m['name'] \
+                          + " file://" + dest
+                msg, ret = self.ExecuteCommand(self.proxyString + command)
+
+                if checkSize :
+                    if ret != 0 or msg.upper().find("ERROR") >= 0 \
+                           or msg.find("wrong format") >= 0 :
+                        joberr = '[ ' + command + ' ] : ' + msg + '; '
+                        continue
+
+                    # check file size
+                    if os.path.getsize(dest) !=  size  :
+                        joberr =  'size mismatch : expected ' \
+                                 + str( os.path.getsize(dest) ) \
+                                 + ' got ' + m['size'] + '; '
+
                 # update files counter
                 retrieved += 1
 
@@ -822,6 +831,14 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             if job.runningJob.errors is None or job.runningJob.errors == [] :
                 self.logging.debug( 'Output successfully retrieved' )
                 # try to purge files
+                try :
+                    wmproxy.jobPurge( jobId )
+                except BaseException, err:
+                    job.runningJob.warnings.append("unable to purge WMS")
+                    self.logging.warning( "unable to purge WMS" )
+                except :
+                    job.runningJob.warnings.append("unable to purge WMS")
+                    self.logging.warning( "unable to purge WMS" )
 
         self.hackEnv(restore=True) ### TEMP FIX
 
@@ -1568,6 +1585,5 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 continue
 
         os.system("rm -rf " + workdir)
-
 
 
