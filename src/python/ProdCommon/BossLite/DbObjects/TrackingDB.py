@@ -4,8 +4,8 @@ _TrackingDB_
 
 """
 
-__version__ = "$Id: TrackingDB.py,v 1.24 2009/02/13 09:31:21 gcodispo Exp $"
-__revision__ = "$Revision: 1.24 $"
+__version__ = "$Id: TrackingDB.py,v 1.25 2009/02/13 09:32:34 gcodispo Exp $"
+__revision__ = "$Revision: 1.25 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from copy import deepcopy
@@ -52,7 +52,7 @@ class TrackingDB:
 
         # execute query
         try:
-            rows = self.session.execute(query)
+            rows = self.session.modify(query)
         except Exception, msg:
             raise DbError(msg)
 
@@ -96,14 +96,18 @@ class TrackingDB:
                 ' ' + listOfFields
 
         # execute query
+        results = None
+        theList = []
         try:
-            self.session.execute(query)
+            results = self.session.select(query)
         except Exception, msg:
             raise DbError(msg)
 
+        if results is None :
+            return theList
+
         # get all information and build objects
-        theList = []
-        for row in self.session.fetchall():
+        for row in results:
 
             # fill object
             obj = self.fillObject( row, template, objectFields )
@@ -152,16 +156,17 @@ class TrackingDB:
                 ' ' + listOfFields
 
         # execute query
+        results = None
+        theList = []
         try:
-            self.session.execute(query)
+            results = self.session.select(query)
         except Exception, msg:
             raise DbError(msg)
 
-        # get all information
-        results = self.session.fetchall()
+        if results is None :
+            return theList
 
-        # build objects
-        theList = []
+        # get all information and build objects
         for row in results:
 
             # fill object
@@ -309,16 +314,21 @@ class TrackingDB:
             else  :
                 query += ' limit %s,%s' % (opt['offset'], opt['limit'])
 
+
         # execute query
+        results = None
+        theList = []
         try:
-            self.session.execute(query)
+            results = self.session.select(query)
         except Exception, msg:
             raise DbError(msg)
 
-        # build objects
-        theList = []
+        if results is None :
+            return theList
+
+        # get all information and build objects
         size =  len( mapping )
-        for row in self.session.fetchall():
+        for row in results:
         
             # fill objects
             obj = self.fillObject( row, template, objectFields )
@@ -383,7 +393,7 @@ class TrackingDB:
                 keysSpec
         # execute query
         try:
-            rows = self.session.execute(query)
+            rows = self.session.modify(query)
         except Exception, msg:
             raise DbError(msg)
 
@@ -416,7 +426,7 @@ class TrackingDB:
 
         # execute query
         try:
-            rows = self.session.execute(query)
+            rows = self.session.modify(query)
         except Exception, msg:
             raise DbError(msg)
 
@@ -517,17 +527,19 @@ class TrackingDB:
         # prepare query
         query = 'select distinct (' + ', '.join(dbFields) + ') from ' +  tableName + \
                 ' ' + listOfFields
+
         # execute query
+        results = None
+        theList = []
         try:
-            self.session.execute(query)
+            results = self.session.select(query)
         except Exception, msg:
             raise DbError(msg)
 
-        # get all information
-        results = self.session.fetchall()
+        if results is None :
+            return theList
 
-        # build objects
-        theList = []
+        # get all information and build objects
         for row in results:
 
             # create a single object
@@ -603,17 +615,19 @@ class TrackingDB:
         # prepare query
         query = 'select distinct (' + ', '.join(dbFields) + ') from ' +  tableName + \
                 ' ' + listOfFields
+
         # execute query
+        results = None
+        theList = []
         try:
-            self.session.execute(query)
+            results = self.session.select(query)
         except Exception, msg:
             raise DbError(msg)
 
-        # get all information
-        results = self.session.fetchall()
+        if results is None :
+            return theList
 
-        # build objects
-        theList = []
+        # get all information and build objects
         for row in results:
 
             # create a single object
