@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.18 $"
-__revision__ = "$Id: TaskState.py,v 1.18 2009/07/22 15:57:27 swakef Exp $"
+__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: TaskState.py,v 1.19 2009/07/30 09:18:15 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -661,7 +661,10 @@ def readCksum(filename):
         exitStatus = pop.poll()
     exitStatus = pop.poll()
     if exitStatus:
-        return None
+        msg = pop.fromchild.read()
+        if msg.find(filename) < 0:
+            msg = "cksum %s: %s" % (filename, msg)
+        raise RuntimeError, msg
     content = pop.fromchild.read()
     value = content.strip()
     value = content.split()[0]
