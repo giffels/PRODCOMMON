@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.19 $"
-__revision__ = "$Id: TaskState.py,v 1.19 2009/07/30 09:18:15 swakef Exp $"
+__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: TaskState.py,v 1.20 2009/08/04 11:10:20 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -373,8 +373,7 @@ class TaskState:
         inputParams = dbDict[self.taskAttrs['Name']]['Input']
         for key, value in inputParams.items():
             if key == "InputFiles":
-                inputFiles = value['InputFile']
-                result['InputFiles'] = inputFiles
+                result['InputFiles'] = value
                 continue
             if len(value) == 0:
                 continue
