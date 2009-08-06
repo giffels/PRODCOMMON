@@ -26,7 +26,7 @@ def createCleanupWorkflowSpec():
     timestamp = timestamp.replace(":", "_")
     workflow = WorkflowSpec()
     workflow.setWorkflowName("CleanUp-%s" % timestamp)
-    
+    workflow.setActivity("CleanUp")
     workflow.setRequestCategory("mc-cleanup")
     workflow.setRequestTimestamp(timestamp)
     workflow.parameters['WorkflowType']="CleanUp"

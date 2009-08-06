@@ -27,7 +27,7 @@ def createLogCollectorWorkflowSpec(wf):
     timestamp = timestamp.replace(":", "_")
     workflow = WorkflowSpec()
     workflow.setWorkflowName("LogCollect-%s" % timestamp)
-    
+    workflow.setActivity("LogCollect")
     workflow.setRequestCategory("logcollect")
     workflow.setRequestTimestamp(timestamp)
     workflow.parameters['WorkflowType']="LogCollect"
