@@ -260,7 +260,7 @@ class Proxy:
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
 
         if len( self.serverDN.strip() ) > 0:
-            cmd += ' -x -Z \'%s\' '%self.serverDN
+            cmd += ' -x -Z \'%s\' -R \'%s\''%(self.serverDN, self.serverDN)
 
         out = os.system(cmd)
         if (out>0):
