@@ -132,3 +132,12 @@ class CredentialAPI:
             self.credObj.ManualRenewMyProxy()
         except Exception, ex:
             raise Exception( str(ex))
+
+    def logonMyProxy(self, proxyFile, userDN, vo='cms', group=None, role=None) :
+        """
+        """
+        try:
+            self.credObj.logonMyProxy(proxyFile, userDN, vo, group, role)
+        except Exception, ex:
+            raise Exception( str(ex))
+

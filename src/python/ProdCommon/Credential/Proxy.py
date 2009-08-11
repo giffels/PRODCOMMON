@@ -267,12 +267,12 @@ class Proxy:
             raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
 
-    def logonProxy( self, proxy, userDN, vo='cms', group=None, role=None ):
+    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None):
         """
         """
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> --voms <attribs>
 
-        if proxy == None :
+        if not proxyFilename :
             msg = "Error: proxy filename must be specified."
             raise Exception(msg)
 
@@ -284,7 +284,7 @@ class Proxy:
             if role: voAttr += ':/'+vo+'/Role='+role
 
         cmd = 'myproxy-logon -d -n -s %s'%self.myproxyServer
-        cmd += '-o %s -l \'%s\' '%(proxy, userDN)
+        cmd += '-o %s -l \'%s\' '%(proxyFilename, userDN)
         cmd += '--voms %s'%(voAttr) 
 
         out = os.system(cmd)
