@@ -263,6 +263,7 @@ class Proxy:
             cmd += ' -x -Z \'%s\' -R \'%s\''%(self.serverDN, self.serverDN)
 
         out = os.system(cmd)
+        self.logging.debug('MyProxy delegation:\n%s'%cmd)
         if (out>0):
             raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
@@ -288,6 +289,7 @@ class Proxy:
         cmd += '--voms %s'%(voAttr) 
 
         out = os.system(cmd)
+        self.logging.debug('MyProxy logon:\n%s'%cmd)
         if (out>0):
             raise Exception("Unable to retrieve delegated proxy for user DN %s !\n" % userDN )
         return
