@@ -788,19 +788,27 @@ class DBSWriter:
         return
 
     def importDataset(self, sourceDBS, sourceDatasetPath, targetDBS,
-                      onlyClosed = True):
+                      onlyClosed = True, skipNoSiteError=False):
         """
         _importDataset_
 
         Import a dataset into the local scope DBS with full parentage hirerarchy
-        (at least not slow because branches info is dropped)
+        (at least not slow because branches info is dropped). Parents are also
+        imported. This method imports block by block, then each time a block
+        is imported, its parent blocks will be imported first.
 
         - *sourceDBS* : URL for input DBS instance
 
         - *sourceDatasetPath* : Dataset Path to be imported
 
         - *targetDBS* : URL for DBS to have dataset imported to
-                                                                                                              
+
+        - *onlyClosed* : Only closed blocks will be imported if set to True
+
+        - *skipNoSiteError* : If this is True, then this method wont raise an
+                              Exception if a block has no site information in 
+                              sourceDBS.
+
         """
         reader = DBSReader(sourceDBS)
         inputBlocks = reader.getFileBlocksInfo(sourceDatasetPath, onlyClosed)
@@ -825,9 +833,13 @@ class DBSWriter:
                     locations = reader.listFileBlockLocation(block)
                     # only empty file blocks can have no location
                     if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                        msg = "Error in DBSWriter.importDataset\n"
-                        msg += "Block has no locations defined: %s" % block
-                        raise DBSWriterError(msg)
+                        # we don't skip the error raising
+                        if not skipNoSiteError:
+                            msg = "Error in DBSWriter.importDataset\n"
+                            msg += "Block has no locations defined: %s" % block
+                            raise DBSWriterError(msg)
+                        msg = "Block has no locations defined: %s" % block
+                        logging.info(msg)
                     logging.info("Update block locations to:")
                     for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
@@ -848,9 +860,13 @@ class DBSWriter:
             locations = reader.listFileBlockLocation(block)
             # only empty file blocks can have no location
             if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                msg = "Error in DBSWriter.importDataset\n"
-                msg += "Block has no locations defined: %s" % block
-                raise DBSWriterError(msg)
+                # we don't skip the error raising
+                if not skipNoSiteError:
+                    msg = "Error in DBSWriter.importDataset\n"
+                    msg += "Block has no locations defined: %s" % block
+                    raise DBSWriterError(msg)
+                msg = "Block has no locations defined: %s" % block
+                logging.info(msg)
             for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                                                                                 
