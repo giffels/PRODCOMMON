@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.123 2009/07/22 08:05:23 gcodispo Exp $"
-__version__ = "$Revision: 1.123 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.125 2009/08/03 09:56:16 farinafa Exp $"
+__version__ = "$Revision: 1.125 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -179,7 +179,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
     basic class to handle glite jobs through wmproxy API
     """
 
-    delegationId = "bossproxy"
     SandboxDir = "SandboxDir"
     zippedISB  = "zippedISB.tar.gz"
 
@@ -201,11 +200,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.vo = args.get( "vo", "cms" )
         self.service = args.get( "service", "" )
         self.config = args.get( "config", "" )
+        self.delegationId = args.get( "proxyname", "bossproxy" )
 
         # rename output files with submission number
         self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
         self.renameOutputFiles = int( self.renameOutputFiles )
-
         # x509 string for cli commands
         self.proxyString = ''
         if self.cert != '':
