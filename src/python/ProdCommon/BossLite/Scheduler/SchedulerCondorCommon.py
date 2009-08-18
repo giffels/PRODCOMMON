@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.48 2009/06/25 15:27:10 ewv Exp $"
-__version__ = "$Revision: 1.48 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.49 2009/07/09 19:17:25 ewv Exp $"
+__version__ = "$Revision: 1.49 $"
 
 import os
 import popen2
@@ -39,6 +39,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
+        self.userRequirements = ''
+
 
     def submit( self, obj, requirements='', config ='', service='' ):
         """
@@ -63,8 +65,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         """
 
         # Make directory for Condor returned files
-
         seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
+        self.userRequirements = obj['commonRequirements']
 
         if os.path.isdir(self.condorTemp):
             pass

@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.16 2008/11/03 19:39:47 ewv Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.17 2009/01/20 18:49:45 gcodispo Exp $"
+__version__ = "$Revision: 1.17 $"
 
 import os
 
@@ -45,7 +45,6 @@ class SchedulerCondor(SchedulerCondorCommon) :
         """
         prepare file for submission
         """
-
         if type(obj) == RunningJob or type(obj) == Job :
             return self.singleApiJdl(obj, requirements)
         elif type(obj) == Task :
@@ -58,7 +57,6 @@ class SchedulerCondor(SchedulerCondorCommon) :
         """
         build a job jdl
         """
-
         rootName = os.path.splitext(job['standardError'])[0]
 
         jdl  = ''
@@ -83,6 +81,8 @@ class SchedulerCondor(SchedulerCondorCommon) :
         jdl += 'should_transfer_files   = YES\n'
         jdl += 'when_to_transfer_output = ON_EXIT\n'
         jdl += 'copy_to_spool           = false\n'
+        if self.userRequirements:
+            jdl += 'requirements = %s\n' % self.userRequirements
 
         # Things in the requirements/jobType field
         jdlLines = requirements.split(';')
