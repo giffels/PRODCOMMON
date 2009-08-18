@@ -252,6 +252,7 @@ class SchedulerARC(SchedulerInterface):
         self.vo = args.get("vo", "cms")
         self.giis_result = {}
         self.ce_result = {}
+        self.user_xrsl = args.get("user_xrsl", "")
 
 
     def jobDescription (self, obj, requirements='', config='', service = ''):
@@ -268,6 +269,7 @@ class SchedulerARC(SchedulerInterface):
 
         used by self.submit(), return xrsl code.
         """
+
         xrsl = '&'
         xrsl += '(executable="%s")' % job['executable']
 
@@ -295,6 +297,12 @@ class SchedulerARC(SchedulerInterface):
             xrsl += ')'
 
         xrsl += requirements
+
+        # User supplied thingies:
+        xrsl += self.user_xrsl
+        for s in task['jobType'].split('&&'):
+            if re.match('^ *\(.*=.*\) *$', s):
+                xrsl += s
 
         return xrsl
 
