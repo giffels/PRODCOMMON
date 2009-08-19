@@ -53,7 +53,7 @@ class PileupDataset(dict):
         logging.debug("Max PU Files: %s" % self.maxFilesPerJob)
         possibleFiles = []
         if len(sites) > 0:
-            logging.debug("Pileup Site Limit: %s" % sites)
+            logging.debug("Pileup Site Limit: %s" % srt(sites))
             #  //
             # // Site limit
             #//
