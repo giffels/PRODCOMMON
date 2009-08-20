@@ -2,6 +2,7 @@ import os,sys
 import commands
 import traceback
 from  time import *
+import logging
 
 from ProdCommon.BossLite.Common.System import executeCommand
 
