@@ -343,13 +343,15 @@ class DatasetJobFactory:
         if self.firstNodeCfg:
             # we are the n'th node in a chain job
             # process all events from previous step
+            # without skipping any event
             maxEvents = -1
+            skipEvents = None
         elif self.splitType == "file":
             maxEvents = -1
+            skipEvents = None
         else:
             maxEvents = self.currentJobDef.get("MaxEvents", None)
-
-        skipEvents = self.currentJobDef.get("SkipEvents", None)
+            skipEvents = self.currentJobDef.get("SkipEvents", None)
         
         args = {
             'fileNames' : self.currentJobDef['LFNS'],
