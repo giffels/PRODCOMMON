@@ -54,9 +54,15 @@ class Proxy:
         if ret != 0 :
             msg = "Error while checking proxy subject for %s"%proxy
             raise Exception(msg)
-        subject = out.split('\n')[0]
 
-        return subject.strip()
+        subjList = []
+        for s in out.split('/'):
+            if 'subject' in s: continue
+            if 'proxy' in s: continue
+            subjList.append(s) 
+
+        subject = '/' + '/'.join(subjList)
+        return subject
 
     def getUserName(self, proxy = None ):
         """
@@ -219,7 +225,7 @@ class Proxy:
 
         return
 
-    def checkMyProxy( self , proxy=None, Time=4 ):
+    def checkMyProxy( self , proxy=None, Time=4, checkRetrieverRenewer=False):
         """
         """
         if proxy == None: proxy=self.getUserProxy()
@@ -238,7 +244,7 @@ class Proxy:
             self.logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
             valid = False
         else:
-            ## minimum time: 5 days
+            ## minimum time: 4 days
             minTime = int(Time) * 24 * 3600
             ## regex to extract the right information
             myproxyRE = re.compile("timeleft: (?P<hours>[\\d]*):(?P<minutes>[\\d]*):(?P<seconds>[\\d]*)")
@@ -252,6 +258,19 @@ class Proxy:
                     if timeleft < minTime:
                         self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                         valid = False
+
+        if checkRetrieverRenewer == True:
+            retriever = re.compile("retrieval policy: (?P<DN>.*)").findall(out)
+            renewer = re.compile("renewal policy: (?P<DN>.*)").findall(out)
+            # check if the proxy stores the informations about the authorized retriever/renewer
+            if len(retriever) == 0 or len(renewer) == 0 :
+                self.logging.info('Your proxy lacks of retrieval and renewal policies. Renew it.')
+                valid = False
+            # check if the server DN in the same of the requested one
+            elif len( self.serverDN.strip() ) > 0 and (self.serverDN not in retriever or self.serverDN not in renewer):
+                self.logging.info('The current proxy refers to a different retriever/renewer. Renew it.')
+                valid = False
+ 
         return valid
 
     def ManualRenewMyProxy( self ):
@@ -260,7 +279,7 @@ class Proxy:
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
 
         if len( self.serverDN.strip() ) > 0:
-            cmd += ' -x -Z \'%s\' -R \'%s\''%(self.serverDN, self.serverDN)
+            cmd += ' -x -R \'%s\' -Z \'%s\' '%(self.serverDN, self.serverDN)
 
         out = os.system(cmd)
         self.logging.debug('MyProxy delegation:\n%s'%cmd)
@@ -268,15 +287,12 @@ class Proxy:
             raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
 
-    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None):
+    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None, renewalOnly=False):
         """
         """
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> --voms <attribs>
 
-        if not proxyFilename :
-            msg = "Error: proxy filename must be specified."
-            raise Exception(msg)
-
+        # compose the VO attriutes
         voAttr = vo
         if group:
             voAttr += ':/'+vo+'/'+group
@@ -284,13 +300,25 @@ class Proxy:
         else:
             if role: voAttr += ':/'+vo+'/Role='+role
 
-        cmd = 'myproxy-logon -d -n -s %s'%self.myproxyServer
-        cmd += '-o %s -l \'%s\' '%(proxyFilename, userDN)
-        cmd += '--voms %s'%(voAttr) 
+        # compose the delegation command or renewal command
+        cmd = 'myproxy-logon -d -n -s %s '%self.myproxyServer
+        if renewalOnly == False:
+            ## get a new delegated proxy
+            cmd += '-o %s -l \'%s\' '%(proxyFilename, userDN)
+        else:
+            ## refresh an existing proxy
+            cmd += '-a %s -o %s '%(proxyFilename, proxyFilename) 
+        cmd += '--voms %s'%(voAttr)
 
         out = os.system(cmd)
         self.logging.debug('MyProxy logon:\n%s'%cmd)
         if (out>0):
             raise Exception("Unable to retrieve delegated proxy for user DN %s !\n" % userDN )
         return
+
+    def renewalMyProxy(self, proxyFilename, vo='cms', group=None, role=None):
+        '''
+        '''
+        ## Just an auxiliary function to simplify templates
+        self.logonMyProxy(proxyFilename, '', vo, group, role, renewalOnly=True) 
 

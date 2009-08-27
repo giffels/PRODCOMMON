@@ -102,12 +102,12 @@ class CredentialAPI:
         
 
 ### Special stuff For Proxy
-    def checkMyProxy(self, credential=None, Time=4 ):
+    def checkMyProxy(self, credential=None, Time=4, checkRetrieverRenewer=False ):
         """   
         """   
         valid = None
         try:  
-            valid = self.credObj.checkMyProxy(credential,Time)
+            valid = self.credObj.checkMyProxy(credential,Time,checkRetrieverRenewer)
         except Exception, ex:
             raise Exception(str(ex))
          
@@ -139,5 +139,14 @@ class CredentialAPI:
         try:
             self.credObj.logonMyProxy(proxyFile, userDN, vo, group, role)
         except Exception, ex:
-            raise Exception( str(ex))
+            raise Exception( str(ex) )
+
+    def renewalMyProxy(self, proxyFile, vo='cms', group=None, role=None) :
+        """
+        """
+        try:
+            self.credObj.renewalMyProxy(proxyFile, vo, group, role)
+        except Exception, ex:
+            raise Exception( str(ex) )
+
 
