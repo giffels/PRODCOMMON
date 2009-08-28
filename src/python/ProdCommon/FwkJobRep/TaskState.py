@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.20 $"
-__revision__ = "$Id: TaskState.py,v 1.20 2009/08/04 11:10:20 swakef Exp $"
+__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: TaskState.py,v 1.21 2009/08/06 15:16:06 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -61,7 +61,7 @@ def getTaskState(taskName):
     except:
         return None
     query = "/RunResDB/%s/Directory[text()]" % taskName
-    result =  rrdb.query(query)
+    result = rrdb.query(query)
     if len(result) == 0:
         return None
     result = result[0]
@@ -296,7 +296,7 @@ class TaskState:
         the JobReport file
 
         """
-        self._JobReport.write(os.path.join(self.dir,"FrameworkJobReport.xml"))
+        self._JobReport.write(os.path.join(self.dir, "FrameworkJobReport.xml"))
         return
 
 
@@ -472,7 +472,7 @@ class TaskState:
                 print "No file is staged out, skipping Size Merge Check"
 
 
-        controlKeys = ["FixedLFN","DisableGUID"  ]
+        controlKeys = ["FixedLFN", "DisableGUID"  ]
         if datasetMap.has_key(outModLabel):
             datasetMatch = datasetMap[outModLabel]
             datasetForFile = fileInfo.newDataset()
@@ -546,10 +546,10 @@ class TaskState:
         # merged by size update
         if fileInfo['MergedBySize'] == "True":
             # the MergedLFNBase already has a / in it -- removing that first
-            mergeprefix=fileInfo['MergedLFNBase'] 
+            mergeprefix = fileInfo['MergedLFNBase']
             while mergeprefix.endswith("/"):
-               mergeprefix=mergeprefix[:-1]         
-            newLFN = "%s/%s" % ( mergeprefix,
+               mergeprefix = mergeprefix[:-1]
+            newLFN = "%s/%s" % (mergeprefix,
                                  os.path.basename(fileInfo['LFN']))
             fileInfo['LFN'] = newLFN
             msg = "File is merged by size, updating LFN: %s\n" % fileInfo['LFN']
@@ -564,7 +564,6 @@ class TaskState:
 
     def matchFileParents(self, fileInfo):
         """
-
         Set input files based on their membership of parent datasets, these
         will either be the original input files or in the case's where the
         parentage (actually parentDataset) is overriden (i.e. for HLTDEBUG)
@@ -584,13 +583,15 @@ class TaskState:
         parentageWiped = False
 
         for ds in fileInfo.dataset:
+
+            # get input files that belong to the parent dataset
             parentDataset = ds.get('ParentDataset', None)
-
-            if not parentDataset:
-                continue
-
-            parentFiles = [x for x in self._JobReport.files if \
+            if parentDataset:
+                parentFiles = [x for x in self._JobReport.files if \
                                                     dsSearch(x, parentDataset)]
+            else:
+                parentFiles = []
+
             if not parentFiles:
                 # Standard processing job - input files weren't made in the job
                 #  - Reset file parents to the job spec input list
@@ -598,14 +599,16 @@ class TaskState:
                 parentFiles = [x for x in fileInfo.inputFiles \
                                if x['LFN'] in self.inputSource()['InputFiles']]
 
-            if not parentageWiped:
+            if not parentageWiped: # only wipe once per file
                 fileInfo.inputFiles = []
                 parentageWiped = True
 
+            # Rebuild parentage list
             for parFile in parentFiles:
                 if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
                     continue
-                print "Add InputFile %s for %s" % (parFile['LFN'], fileInfo['LFN'])
+                print "Add InputFile %s for %s" % (parFile['LFN'],
+                                                   fileInfo['LFN'])
                 fileInfo.addInputFile(parFile['PFN'], parFile['LFN'])
         return
 
