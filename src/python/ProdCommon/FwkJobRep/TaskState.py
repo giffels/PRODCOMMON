@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.21 $"
-__revision__ = "$Id: TaskState.py,v 1.21 2009/08/06 15:16:06 swakef Exp $"
+__version__ = "$Revision: 1.22 $"
+__revision__ = "$Id: TaskState.py,v 1.22 2009/08/28 12:21:25 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -592,7 +592,7 @@ class TaskState:
             else:
                 parentFiles = []
 
-            if not parentFiles:
+            if not parentFiles and self.inputSource().get('InputFiles'):
                 # Standard processing job - input files weren't made in the job
                 #  - Reset file parents to the job spec input list
                 #    - This removes SecondarySource and MixingModule files
