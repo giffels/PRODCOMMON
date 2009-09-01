@@ -300,17 +300,32 @@ class Proxy:
         else:
             if role: voAttr += ':/'+vo+'/Role='+role
 
-        # compose the delegation command or renewal command
-        cmd = 'myproxy-logon -d -n -s %s '%self.myproxyServer
+        # compose the delegation or renewal commands with the regeneration of Voms extensions
+        cmdList = []
+        cmdList.append('export BKUP_X509_USER_CERT=$X509_USER_CERT')
+        cmdList.append('export BKUP_X509_USER_KEY=$X509_USER_KEY')       
+
         if renewalOnly == False:
             ## get a new delegated proxy
-            cmd += '-o %s -l \'%s\' '%(proxyFilename, userDN)
+            cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\' '%(self.myproxyServer, proxyFilename, userDN) )
         else:
             ## refresh an existing proxy
-            cmd += '-a %s -o %s '%(proxyFilename, proxyFilename) 
-        cmd += '--voms %s'%(voAttr)
+            cmdList.append( 'myproxy-logon -d -n -s %s -a %s -o %s '%(self.myproxyServer, proxyFilename, proxyFilename) )
 
-        out = os.system(cmd)
+        ## set environ and add voms extensions 
+        cmdList.append('export X509_USER_CERT=%s'%proxyFilename)
+        cmdList.append('export X509_USER_KEY=%s'%proxyFilename)
+        cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
+             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
+
+        cmdList.append('export X509_USER_CERT=$BKUP_X509_USER_CERT')
+        cmdList.append('export X509_USER_KEY=$BKUP_X509_USER_KEY')
+        cmdList.append('unset BKUP_X509_USER_CERT BKUP_X509_USER_KEY')
+
+        cmd = ' && '.join(cmdList) 
+        # out = os.system(cmd)
+        msg, out = self.ExecuteCommand(cmd)
+
         self.logging.debug('MyProxy logon:\n%s'%cmd)
         if (out>0):
             raise Exception("Unable to retrieve delegated proxy for user DN %s !\n" % userDN )
