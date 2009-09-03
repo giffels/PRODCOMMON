@@ -30,6 +30,9 @@ class ProtocolRfio(Protocol):
         for line in lines:
             if line.find("Network is unreachable") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("Stale NFS file handle") != -1 or \
+               line.lower().find("killed") != -1:
+                raise NFSException("", [line], outLines)
             elif line.find("Permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
                                               [line], outLines)

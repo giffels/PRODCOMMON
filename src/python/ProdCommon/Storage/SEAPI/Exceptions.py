@@ -81,3 +81,8 @@ class MissingCommand(ProtocolException):
     """
     pass
 
+class NFSException(ProtocolException):
+    """
+    'Stale NFS file handle'
+    """
+    pass
