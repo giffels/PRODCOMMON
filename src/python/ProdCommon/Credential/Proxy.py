@@ -302,25 +302,25 @@ class Proxy:
 
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
-        cmdList.append('export X509_USER_CERT=$HOME/.globus/hostcert.pem')
-        cmdList.append('export X509_USER_KEY=$HOME/.globus/hostkey.pem')
+        cmdList.append('env')
+        cmdList.append('X509_USER_CERT=$HOME/.globus/hostcert.pem')
+        cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         if renewalOnly == False:
             ## get a new delegated proxy
-            cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\' '%(self.myproxyServer, proxyFilename, userDN) )
+            cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\''%(self.myproxyServer, proxyFilename, userDN) )
         else:
             ## refresh an existing proxy
             cmdList.append( 'myproxy-logon -d -n -s %s -a %s -o %s '%(self.myproxyServer, proxyFilename, proxyFilename) )
 
         ## set environ and add voms extensions 
-        cmdList.append('export X509_USER_CERT=%s'%proxyFilename)
-        cmdList.append('export X509_USER_KEY=%s'%proxyFilename)
+        cmdList.append('&& env')
+        cmdList.append('X509_USER_CERT=%s'%proxyFilename)
+        cmdList.append('X509_USER_KEY=%s'%proxyFilename)
         cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
              (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
-        cmdList.append('unset X509_USER_CERT X509_USER_KEY')
-
-        cmd = ' && '.join(cmdList) 
+        cmd = ' '.join(cmdList) 
         # out = os.system(cmd)
         msg, out = self.ExecuteCommand(cmd)
 
