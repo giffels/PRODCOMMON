@@ -120,6 +120,7 @@ class CMSSWConfig:
         self.beamHaloPlusFiles = []
         self.beamHaloMinusFiles  = []
         self.cosmicPileupFiles = []
+        self.dataMixerFiles = []
 
         #  //
         # // conditions tag
@@ -649,6 +650,9 @@ class CMSSWConfig:
         if len(self.cosmicPileupFiles) > 0:
             cfg.setPileupFilesForSource("cosmics",
                                         *self.cosmicPileupFiles)
+        if len(self.dataMixerFiles) > 0:
+            cfg.setPileupFilesForSource("input",
+                                        *self.dataMixerFiles)
 
 
 

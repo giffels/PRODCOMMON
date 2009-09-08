@@ -109,6 +109,8 @@ class CfgInterface:
         for key, value in prodsAndFilters.items():
             if value.type_() == "MixingModule":
                 result.append(value)
+            if value.type_() == "DataMixingModule":
+                result.append(value)
 
         return result
 
