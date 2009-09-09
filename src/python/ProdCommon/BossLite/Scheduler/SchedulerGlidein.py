@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.11 2008/12/22 21:16:52 ewv Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.13 2009/07/09 19:17:25 ewv Exp $"
+__version__ = "$Revision: 1.13 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -60,3 +60,10 @@ class SchedulerGlidein(SchedulerCondorCommon) :
 
 
       return jdl, filelist, 'Unknown'
+
+  def delegateProxy(self):
+    """
+    fake    
+    """
+    return
+
