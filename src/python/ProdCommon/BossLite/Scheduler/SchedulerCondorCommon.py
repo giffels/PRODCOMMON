@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.50 2009/08/18 15:06:12 ewv Exp $"
-__version__ = "$Revision: 1.50 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.51 2009/09/09 20:13:03 ewv Exp $"
+__version__ = "$Revision: 1.51 $"
 
 import os
 import popen2
@@ -36,6 +36,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
         self.glexec     = args.get('glexec', None)
+        self.renewProxy    = args.get('renewProxy', None)
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
@@ -125,13 +126,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 command = 'cd %s; ' % self.condorTemp
                 if self.useGlexec:
-                    proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh' 
+                    #proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh'
                     os.environ['GLEXEC_TARGET_PROXY'] = '/tmp/x509_ugeneric_value'
                     diffTime = str(os.path.getmtime(obj['user_proxy']))
-                    proxycmd = "%s %s %s" %(self.glexec, proxyNew, diffTime) 
-                    stdout, stdin, stderr = popen2.popen3(proxycmd)
+                    proxycmd = "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
+                    #stdout, stdin, stderr = popen2.popen3(proxycmd)
+                    commands.getstatusoutput(proxycmd)
                     os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxytmp'
-                    command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir, 
+                    command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
                                              jdlFileName)
                 else:
                     command += 'condor_submit ' + submitOptions + jdlFileName
