@@ -285,12 +285,14 @@ class SchedulerARC(SchedulerInterface):
         if job['standardInput'] != '':
             xrsl += '(stdin="%s")' % job['standardInput']
 
+        inputfiles = ""
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
+            inputfiles += "\\ " + f.split('/')[-1]
         xrsl += ')'
 
-        outputfiles = job['standardOutput'] + "\\ " + job['standardError']
+        outputfiles = ""
         if len(job['outputFiles']) > 0:
             xrsl += '(outputFiles='
             for f in job['outputFiles']:
@@ -298,11 +300,11 @@ class SchedulerARC(SchedulerInterface):
                 outputfiles += "\\ " + f
             xrsl += ')'
 
-        # Provide a list of files that the user may want back through ARC
-        # in an environment variable. The '\:s' between the filenames are
+        # Provide a list of the in- and outputfiles in environment
+        # variables. The '\:s' between the filenames are
         # there to avoid confusing the the shell while interpreting the 
         # 'ngsub # -e <xrsl-code>' command
-        xrsl += "(environment=(ARC_OUTPUTFILES \"%s\"))" % outputfiles
+        xrsl += "(environment=(ARC_INPUTFILES \"%s\")(ARC_OUTPUTFILES \"%s\"))" % (inputfiles, outputfiles)
 
         xrsl += requirements
 
