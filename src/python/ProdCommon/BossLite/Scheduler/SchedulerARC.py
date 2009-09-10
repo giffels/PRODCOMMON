@@ -300,11 +300,14 @@ class SchedulerARC(SchedulerInterface):
                 outputfiles += "\\ " + f
             xrsl += ')'
 
+        xrsl += "(environment="
         # Provide a list of the in- and outputfiles in environment
         # variables. The '\:s' between the filenames are
         # there to avoid confusing the the shell while interpreting the 
         # 'ngsub # -e <xrsl-code>' command
-        xrsl += "(environment=(ARC_INPUTFILES \"%s\")(ARC_OUTPUTFILES \"%s\"))" % (inputfiles, outputfiles)
+        xrsl += "(ARC_INPUTFILES \"%s\")(ARC_OUTPUTFILES \"%s\")" % (inputfiles, outputfiles)
+        xrsl += "(ARC_STDOUT %s)(ARC_STDERR %s)" % (job['standardOutput'], job['standardError'])
+        xrsl += ')'
 
         xrsl += requirements
 
