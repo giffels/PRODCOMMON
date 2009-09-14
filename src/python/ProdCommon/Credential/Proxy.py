@@ -287,7 +287,7 @@ class Proxy:
             raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
 
-    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None, renewalOnly=False):
+    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None):
         """
         """
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> --voms <attribs>
@@ -306,12 +306,8 @@ class Proxy:
         cmdList.append('X509_USER_CERT=$HOME/.globus/hostcert.pem')
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
-        if renewalOnly == False:
-            ## get a new delegated proxy
-            cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\''%(self.myproxyServer, proxyFilename, userDN) )
-        else:
-            ## refresh an existing proxy
-            cmdList.append( 'myproxy-logon -d -n -s %s -a %s -o %s '%(self.myproxyServer, proxyFilename, proxyFilename) )
+        ## get a new delegated proxy
+        cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\''%(self.myproxyServer, proxyFilename, userDN) )
 
         ## set environ and add voms extensions 
         cmdList.append('&& env')
@@ -330,9 +326,42 @@ class Proxy:
             raise Exception("Unable to retrieve delegated proxy for user DN %s! Exit code:%s"%(userDN, out) )
         return
 
-    def renewalMyProxy(self, proxyFilename, vo='cms', group=None, role=None):
-        '''
-        '''
-        ## Just an auxiliary function to simplify templates
-        self.logonMyProxy(proxyFilename, '', vo, group, role, renewalOnly=True) 
+    def renewalMyProxy(self, proxyFilename, vo='cms'):
+        """
+        """
+
+        # get vo, group and role from the current certificate
+        # at least /cms/Role=NULL/Capability=NULL
+        cmd = 'export X509_USER_PROXY=%s; voms-proxy-info -fqan 2>/dev/null | head -1'%proxyFilename
+        att, ret = self.ExecuteCommand(cmd)
+        if ret != 0:
+            raise Exception("Unable to get FQAN for proxy %s! Exit code:%s"%(proxyFilename, ret) )
+        voAttr = vo + ':' + att
+
+        # renew the certificate
+        # compose the delegation or renewal commands with the regeneration of Voms extensions
+        cmdList = []
+        cmdList.append('env')
+        cmdList.append('X509_USER_CERT=$HOME/.globus/hostcert.pem')
+        cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
+
+        ## refresh an existing proxy
+        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s '%(self.myproxyServer, proxyFilename, proxyFilename) )
+
+        ## set environ and add voms extensions
+        cmdList.append('&& env')
+        cmdList.append('X509_USER_CERT=%s'%proxyFilename)
+        cmdList.append('X509_USER_KEY=%s'%proxyFilename)
+        cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
+             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
+
+        cmd = ' '.join(cmdList)
+        msg, out = self.ExecuteCommand(cmd)
+
+        self.logging.debug('MyProxy renewal:\n%s'%cmd)
+        if (out>0):
+            self.logging.debug('MyProxy renewal result:\n%s'%msg)
+            raise Exception("Unable to renew proxy %s! Exit code:%s"%(proxyFilename, out) )
+
+
 
