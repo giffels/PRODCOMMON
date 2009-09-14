@@ -35,6 +35,7 @@ class PileupDataset(dict):
         self.dataset = dataset 
         self.maxFilesPerJob = 100
         self.dbsUrl = dbsUrl
+        self.targetModule = None # Mixing, DataMixing?
 
 
         
@@ -130,7 +131,7 @@ def createPileupDatasets(workflowSpec):
     the pileup datasets in the workflowSpec.
 
     Return a dictionary mapping the payload node name to the
-    PileupDataset instance
+    list of PileupDataset instances
 
     """
     result = {}
@@ -139,12 +140,13 @@ def createPileupDatasets(workflowSpec):
     for puDataset in puDatasets:
         dbsUrl =  puDataset.get("DBSURL", wfdbsUrl)
         pudInstance = PileupDataset(puDataset.name(), dbsUrl)
-        
+        if puDataset.has_key("TargetModule"):
+            pudInstance.targetModule = puDataset['TargetModule']
         if puDataset.has_key("FilesPerJob"):
             pudInstance.maxFilesPerJob = int(puDataset['FilesPerJob'])
             pudInstance()
         
-        result[puDataset['NodeName']] = pudInstance
+        result.setdefault(puDataset['NodeName'], []).append(pudInstance)
 
     return result
 

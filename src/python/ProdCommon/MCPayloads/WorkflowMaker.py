@@ -89,12 +89,7 @@ class WorkflowMaker:
         #  //
         # // Pileup Dataset controls
         #//
-        self.pileupDataset = {}
-        self.pileupDataset['IsUsed'] = False
-        self.pileupDataset['Primary'] = None
-        self.pileupDataset['Processed'] = None
-        self.pileupDataset['DataTier'] = None
-        self.pileupDataset['FilesPerJob'] = 1
+        self.pileupDatasets = []
         
         #  //
         # // Initialise basic workflow
@@ -323,7 +318,8 @@ class WorkflowMaker:
         return
         
 
-    def addPileupDataset(self, datasetName, filesPerJob = 10):
+    def addPileupDataset(self, datasetName, filesPerJob = 10,
+            targetModule=None):
         """
         _addPileupDataset_
 
@@ -331,10 +327,17 @@ class WorkflowMaker:
         filesPerJob should be 1 in 99.9 % of cases
 
         """
+        pileupDataset = {}
+        pileupDataset['Primary'] = None
+        pileupDataset['Processed'] = None
+        pileupDataset['DataTier'] = None
         datasetBits = DatasetConventions.parseDatasetPath(datasetName)
-        self.pileupDataset.update(datasetBits)
-        self.pileupDataset['FilesPerJob'] = filesPerJob
-        self.pileupDataset['IsUsed'] = True
+        pileupDataset.update(datasetBits)
+        pileupDataset['FilesPerJob'] = filesPerJob
+        # Target module coould be 'MixingModule' or 'DataMixingModule' for
+        # the moment. If None, MixingModule will be used.
+        pileupDataset['TargetModule'] = targetModule
+        self.pileupDatasets.append(pileupDataset)
         return
 
     def addFinalDestination(self, *phedexNodeNames):
@@ -424,14 +427,16 @@ class WorkflowMaker:
                     
             
         #  //
-        # // Pileup Dataset?
+        # // Pileup Datasets?
         #//
-        if self.pileupDataset['IsUsed']:
+        for pileupDataset in self.pileupDatasets:
             puDataset = self.cmsRunNodes[0].addPileupDataset(
-                self.pileupDataset['Primary'],
-                self.pileupDataset['DataTier'],
-                self.pileupDataset['Processed'])
-            puDataset['FilesPerJob'] = self.pileupDataset['FilesPerJob']
+                pileupDataset['Primary'],
+                pileupDataset['DataTier'],
+                pileupDataset['Processed'])
+            puDataset['FilesPerJob'] = pileupDataset['FilesPerJob']
+            if pileupDataset['TargetModule'] is not None:
+                puDataset['TargetModule'] = pileupDataset['TargetModule']
             
         
         #  //

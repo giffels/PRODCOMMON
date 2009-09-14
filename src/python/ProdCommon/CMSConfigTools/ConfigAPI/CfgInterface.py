@@ -94,11 +94,11 @@ class CfgInterface:
             globalPSet, "globaltag", Utilities._CfgNoneType()).value()
 
 
-    def mixingModules(self):
+    def findMixingModulesByType(self, mixType):
         """
-        _mixingModules_
+        _findMixingModulesByType_
 
-        return refs to MixingModules if present.
+        return refs to MixingModules by Type if present.
         Otherwise return None.
 
         """
@@ -107,12 +107,40 @@ class CfgInterface:
         prodsAndFilters.update(self.data.producers)
         prodsAndFilters.update(self.data.filters)
         for key, value in prodsAndFilters.items():
-            if value.type_() == "MixingModule":
-                result.append(value)
-            if value.type_() == "DataMixingModule":
+            if value.type_() == mixType:
                 result.append(value)
 
         return result
+
+
+    def mixingModules(self):
+        """
+        _mixingModules_
+
+        return refs to MixingModules if present.
+        Otherwise return None.
+
+        """
+        return self.findMixingModulesByType("MixingModule")
+
+
+    def dataMixPileupFileList(self):
+        """
+        _datamixPileupFilesList_
+
+        return a list of pileup files from all datamixing modules
+
+        """
+        result = set()
+        for mixMod in self.findMixingModulesByType("DataMixingModule"):
+            secSource = getattr(mixMod, "secsource", None)
+            if secSource == None: continue
+            fileList = getattr(secSource, "fileNames",
+                               Utilities._CfgNoneType()).value()
+            if fileList == None: continue
+            for entry in fileList:
+                result.add(entry)
+        return list(result)
 
 
     def pileupFileList(self):
@@ -132,6 +160,7 @@ class CfgInterface:
             for entry in fileList:
                 result.add(entry)
         return list(result)
+
 
     def insertPileupFiles(self, *fileList):
         """
@@ -166,6 +195,7 @@ class CfgInterface:
 
         return
 
+
     def setPileupFilesForSource(self, sourceName, *fileList):
         """
         _setPileupFilesForSource
@@ -175,6 +205,7 @@ class CfgInterface:
 
         """
         for mixMod in self.mixingModules():
+            print "Processing MixingModule: %s " % mixMod
             secSource = getattr(mixMod, sourceName, None)
             if secSource == None:
                 msg = "==============WARNING================\n"
@@ -199,6 +230,38 @@ class CfgInterface:
         return
 
 
+    def setPileupFilesForModule(self, sourceName, targetModule, *fileList):
+        """
+        _setPileupFilesForSource
+
+        Insert the files provided into all target modules
+        for the secsource named sourceName
+
+        """
+        for mixMod in self.findMixingModulesByType(targetModule):
+            print "Processing %s: %s " % (targetModule, mixMod)
+            secSource = getattr(mixMod, sourceName, None)
+            if secSource == None:
+                msg = "==============WARNING================\n"
+                msg += "No Input PoolRASource found for mixing module:\n"
+                msg += mixMod.dumpConfig()
+                msg += "\n With secsource named %s\n" % sourceName
+                msg += " Cannot add Pileup Files...\n"
+                msg += "======================================\n"
+                print msg
+                continue
+            oldfileList = getattr(secSource, "fileNames", None)
+            if oldfileList == None:
+                print "No existing file list in secsource %s" % sourceName
+                continue
+            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+                CfgTypes.vstring()))
+
+            for fileName in fileList:
+                secSource.fileNames.append(str(fileName))
+                print "Adding %s PileupFile: %s " % (sourceName, str(fileName))
+
+        return
 
 
     def insertSeeds(self, *seeds):

@@ -291,6 +291,11 @@ class CMSSWConfig:
             [ cosmicFiles.addNode(IMProvNode("File", str(x)))
               for x in self.cosmicPileupFiles ]
             pileupNode.addNode(cosmicFiles)
+        if len(self.dataMixerFiles) > 0:
+            dataMixFiles = IMProvNode("DataMixerPileupFiles")
+            [ dataMixFiles.addNode(IMProvNode("File", str(x)))
+              for x in self.dataMixerFiles ]
+            pileupNode.addNode(dataMixFiles)
 
 
 
@@ -439,6 +444,10 @@ class CMSSWConfig:
         cosmicFileQ = IMProvQuery(
             "/CMSSWConfig/Pileup/CosmicPileupFiles/File[text()]")
         self.cosmicPileupFiles = cosmicFileQ(improvNode)
+
+        dataMixFileQ = IMProvQuery(
+            "/CMSSWConfig/Pileup/DataMixerPileupFiles/File[text()]")
+        self.dataMixerFiles = dataMixFileQ(improvNode)
 
         #  //
         # // conditions tag
@@ -651,7 +660,8 @@ class CMSSWConfig:
             cfg.setPileupFilesForSource("cosmics",
                                         *self.cosmicPileupFiles)
         if len(self.dataMixerFiles) > 0:
-            cfg.setPileupFilesForSource("input",
+            cfg.setPileupFilesForModule("input",
+                                        'DataMixingModule',
                                         *self.dataMixerFiles)
 
 
@@ -717,6 +727,11 @@ class CMSSWConfig:
         # // Pileup Files
         #//
         self.pileupFiles = cfgInterface.pileupFileList()
+
+        #  //
+        # // DataMix Pileup Files
+        #//
+        self.dataMixerFiles = cfgInterface.dataMixPileupFileList()
 
         return cfgInterface
 

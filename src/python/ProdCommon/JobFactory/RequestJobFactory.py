@@ -252,22 +252,42 @@ class RequestJobFactory:
         #//
         if self.firstNodeCfg: # n'th job in chain - use initial pileup settings
             jobCfg.pileupFiles = self.firstNodeCfg.pileupFiles
+            jobCfg.dataMixerFiles = self.firstNodeCfg.dataMixerFiles
         elif self.pileupDatasets.has_key(jobSpecNode.name):
-            puDataset = self.pileupDatasets[jobSpecNode.name]
-            logging.debug("Node: %s has a pileup dataset: %s" % (
-                jobSpecNode.name,  puDataset.dataset,
-                ))
-
-            #  //
-            # // In event of being no site whitelist, should we
-            #//  restrict the site whitelist to the list of sites
-            #  //containing the PU sample?
-            # //
-            #//
-            fileList = puDataset.getPileupFiles(*self.sites)
-            jobCfg.pileupFiles = fileList
-            logging.debug("Pileup Files Added: %s" % fileList)
-
+            for pileupDataset in self.pileupDatasets[jobSpecNode.name]:
+                #  //
+                # // DataMixer pileup
+                #//
+                if pileupDataset.targetModule == 'DataMixingModule':
+                    puDataset = pileupDataset
+                    logging.debug("Node: %s has a dataMix pileup dataset: %s" \
+                        % (jobSpecNode.name,  puDataset.dataset))
+                    #  //
+                    # // In event of being no site whitelist, should we
+                    #//  restrict the site whitelist to the list of sites
+                    #  //containing the PU sample?
+                    # //
+                    #//
+                    fileList = puDataset.getPileupFiles(*self.sites)
+                    jobCfg.dataMixerFiles = fileList
+                    logging.debug("DataMix pileup Files Added: %s" % fileList)
+                #  //
+                # // Regular pileup
+                #//
+                elif pileupDataset.targetModule in (None, 'MixingModule'):
+                    puDataset = pileupDataset
+                    logging.debug("Node: %s has a pileup dataset: %s" % (
+                        jobSpecNode.name,  puDataset.dataset
+                    ))
+                    #  //
+                    # // In event of being no site whitelist, should we
+                    #//  restrict the site whitelist to the list of sites
+                    #  //containing the PU sample?
+                    # //
+                    #//
+                    fileList = puDataset.getPileupFiles(*self.sites)
+                    jobCfg.pileupFiles = fileList
+                    logging.debug("Pileup Files Added: %s" % fileList)
 
         if not self.firstNodeCfg:
             self.firstNodeCfg = jobCfg
