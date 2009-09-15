@@ -85,7 +85,7 @@ class Proxy:
 
         return uName.strip()
 
-    def getTimeLeft(self, proxy ):
+    def getTimeLeft(self, proxy = None ):
         """
         """
         if proxy == None: proxy=self.getUserProxy()
