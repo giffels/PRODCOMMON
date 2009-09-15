@@ -108,23 +108,22 @@ class Proxy:
         if result > 0:
             ACTimeLeftLocal = self.getVomsLife(proxy)
             if ACTimeLeftLocal > 0:
-                result = self.checkLifeTimes(int(timeLeftLocal), ACTimeLeftLocal)
+                result = self.checkLifeTimes(int(timeLeftLocal), ACTimeLeftLocal, proxy)
             else:
                 result = 0
         return result
 
-    def checkLifeTimes(self, ProxyLife, VomsLife):
+    def checkLifeTimes(self, ProxyLife, VomsLife, proxy):
         """
         """
-        if abs(ProxyLife - VomsLife) > 30 :
+        if abs(ProxyLife - VomsLife) > 900 :
             h=int(ProxyLife)/3600
             m=(int(ProxyLife)-h*3600)/60
             proxyLife="%d:%02d" % (h,m)
             h=int(VomsLife)/3600
             m=(int(VomsLife)-h*3600)/60
             vomsLife="%d:%02d" % (h,m)
-            msg =  "proxy lifetime %s is different from voms extension "
-            msg += "lifetime%s for proxy %s\n CRAB will ask ask you create a new proxy" % (proxyLife, vomsLife, proxy)
+            msg =  "proxy lifetime %s is different from voms extension lifetime%s for proxy %s\n CRAB will ask ask you create a new proxy" % (proxyLife, vomsLife, proxy)
             self.logging.info(msg)
             result = 0
         else:
