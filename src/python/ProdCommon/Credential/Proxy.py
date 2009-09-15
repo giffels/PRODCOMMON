@@ -117,11 +117,11 @@ class Proxy:
         """
         """
         if abs(ProxyLife - VomsLife) > 30 :
-            h=intTimeLeftLocal/3600
-            m=(intTimeLeftLocal-h*3600)/60
+            h=int(ProxyLife)/3600
+            m=(int(ProxyLife)-h*3600)/60
             proxyLife="%d:%02d" % (h,m)
-            h=intACTimeLeftLocal/3600
-            m=(intACTimeLeftLocal-h*3600)/60
+            h=int(VomsLife)/3600
+            m=(int(VomsLife)-h*3600)/60
             vomsLife="%d:%02d" % (h,m)
             msg =  "proxy lifetime %s is different from voms extension "
             msg += "lifetime%s for proxy %s\n CRAB will ask ask you create a new proxy" % (proxyLife, vomsLife, proxy)
