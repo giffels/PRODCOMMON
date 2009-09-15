@@ -278,7 +278,9 @@ class Proxy:
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
 
         if len( self.serverDN.strip() ) > 0:
-            cmd += ' -x -R \'%s\' -Z \'%s\' '%(self.serverDN, self.serverDN)
+            import sha
+            credName = sha.new(self.serverDN).hexdigest()
+            cmd += ' -x -R \'%s\' -Z \'%s\' -k %s '%(self.serverDN, self.serverDN, credName)
 
         out = os.system(cmd)
         self.logging.debug('MyProxy delegation:\n%s'%cmd)
@@ -289,7 +291,7 @@ class Proxy:
     def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None):
         """
         """
-        # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> --voms <attribs>
+        # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> -k <credName>
 
         # compose the VO attriutes
         voAttr = vo
@@ -299,6 +301,10 @@ class Proxy:
         else:
             if role: voAttr += ':/'+vo+'/Role='+role
 
+        # get the credential name for this retriever
+        import sha
+        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest() 
+
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
         cmdList.append('env')
@@ -306,14 +312,15 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
-        cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\''%(self.myproxyServer, proxyFilename, userDN) )
+        cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
+            (self.myproxyServer, proxyFilename, userDN, credName) )
 
         ## set environ and add voms extensions 
         cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
         cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
-             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
+            (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
         cmd = ' '.join(cmdList) 
         # out = os.system(cmd)
@@ -337,6 +344,10 @@ class Proxy:
             raise Exception("Unable to get FQAN for proxy %s! Exit code:%s"%(proxyFilename, ret) )
         voAttr = vo + ':' + att
 
+        # get the credential name for this renewer
+        import sha
+        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
+
         # renew the certificate
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
@@ -345,7 +356,8 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## refresh an existing proxy
-        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s '%(self.myproxyServer, proxyFilename, proxyFilename) )
+        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s'%\
+            (self.myproxyServer, proxyFilename, proxyFilename, credName) )
 
         ## set environ and add voms extensions
         cmdList.append('&& env')
