@@ -5,6 +5,7 @@ import time
 import re
 import logging
 from ProdCommon.BossLite.Common.System import executeCommand
+import sha
 
 class Proxy:
     """
@@ -259,15 +260,12 @@ class Proxy:
                         valid = False
 
         if checkRetrieverRenewer == True:
-            retriever = re.compile("retrieval policy: (?P<DN>.*)").findall(out)
-            renewer = re.compile("renewal policy: (?P<DN>.*)").findall(out)
+            serverCredName = sha.new(self.serverDN).hexdigest()
+            credNameList = re.compile("name: (?P<CN>.*)").findall(out) 
             # check if the proxy stores the informations about the authorized retriever/renewer
-            if len(retriever) == 0 or len(renewer) == 0 :
-                self.logging.info('Your proxy lacks of retrieval and renewal policies. Renew it.')
-                valid = False
-            # check if the server DN in the same of the requested one
-            elif len( self.serverDN.strip() ) > 0 and (self.serverDN not in retriever or self.serverDN not in renewer):
-                self.logging.info('The current proxy refers to a different retriever/renewer. Renew it.')
+            if serverCredName not in credNameList :
+                self.logging.info('Your proxy lacks of retrieval and renewal policies for the requested server.')
+                self.logging.info('Renew your myproxy credentials.')
                 valid = False
  
         return valid
@@ -278,7 +276,6 @@ class Proxy:
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
 
         if len( self.serverDN.strip() ) > 0:
-            import sha
             credName = sha.new(self.serverDN).hexdigest()
             cmd += ' -x -R \'%s\' -Z \'%s\' -k %s '%(self.serverDN, self.serverDN, credName)
 
@@ -302,7 +299,6 @@ class Proxy:
             if role: voAttr += ':/'+vo+'/Role='+role
 
         # get the credential name for this retriever
-        import sha
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest() 
 
         # compose the delegation or renewal commands with the regeneration of Voms extensions
@@ -345,7 +341,6 @@ class Proxy:
         voAttr = vo + ':' + att
 
         # get the credential name for this renewer
-        import sha
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
 
         # renew the certificate
