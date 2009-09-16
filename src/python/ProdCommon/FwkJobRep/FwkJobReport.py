@@ -473,7 +473,33 @@ class FwkJobReport:
 
         return
 
+    def __to_json__(self, thunker):
+        """
+        __to_json__
 
+        Pull all the meta data out of this and stuff it into a dict.  Pass any
+        complex objects to the thunker so that they can be serialized.
+        """
+        fwkjrDict = {"name": self.name, "status": self.status,
+                     "jobSpecId": self.jobSpecId, "jobType": self.jobType,
+                     "workflowSpecId": self.workflowSpecId,
+                     "errors": self.errors, "skippedEvents": self.skippedEvents,
+                     "skippedFiles": self.skippedFiles,
+                     "psetHash": self.psetHash, "exitCode": self.exitCode,
+                     "siteDetails": self.siteDetails, "timing": self.timing,
+                     "generatorInfo": self.generatorInfo,
+                     "dashboardId": self.dashboardId,
+                     "removedFiles": self.removedFiles,
+                     "unremovedFiles": self.unremovedFiles,
+                     "logFiles": self.logFiles}
 
+        fwkjrDict["files"] = []
+        for file in self.files:
+            fwkjrDict["files"].append(thunker._thunk(file))
 
+        fwkjrDict["input_files"] = []
+        for file in self.inputFiles:
+            fwkjrDict["input_files"].append(thunker._thunk(file))            
 
+        fwkjrDict["performance"] = thunker._thunk(self.performance)
+        return fwkjrDict

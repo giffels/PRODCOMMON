@@ -209,4 +209,12 @@ class PerformanceReport:
 
         return
 
+    def __to_json__(self, thunker):
+        """
+        __to_json__
 
+        Pull all the meta data out of this and stuff it into a dict.
+        """
+        perfDict = {"cpus": self.cpus, "memory": self.memory,
+                    "modules": self.modules, "summaries": self.summaries}
+        return perfDict

@@ -354,8 +354,43 @@ class FileInfo(dict):
             runInfo.append(lumi)
         return
 
+    def __to_json__(self, thunker):
+        """
+        __to_json__
 
+        Pull all the meta data out of this and stuff it into a dict.  Pass
+        any other objects to the thunker so that they can be serialized.
+        """
+        fileInfoDict = {"Stream": self["Stream"], "LFN": self["LFN"],
+                        "PFN": self["PFN"], "GUID": self["GUID"],
+                        "Size": self["Size"], "DataType": self["DataType"],
+                        "BranchHash": self["BranchHash"],
+                        "TotalEvents": self["TotalEvents"],
+                        "EventsRead": self["EventsRead"],
+                        "SEName": self["SEName"],
+                        "ModuleLabel": self["ModuleLabel"],
+                        "Catalog": self["Catalog"],
+                        "OutputModuleClass": self["OutputModuleClass"],
+                        "Checksum": self["Checksum"],
+                        "MergedBySize": self["MergedBySize"],
+                        "FileType": self["FileType"],
+                        "StreamerIndexFile": self["StreamerIndexFile"],
+                        "Branches": self.branches,
+                        "Checksums": self.checksums}
 
+        fileInfoDict["inputFiles"] = []
+        for inputFile in self.inputFiles:
+            fileInfoDict["inputFile"].append(thunker._thunk(inputFile))
+            
+        fileInfoDict["runs"] = {}
+        for runNumber in self.runs.keys():
+            fileInfoDict["runs"][runNumber] = thunker._thunk(self.runs[runNumber])
+
+        fileInfoDict["datasets"] = []
+        for dataset in self.dataset:
+            fileInfoDict["datasets"].append(thunker._thunk(dataset))
+
+        return fileInfoDict
 
 class AnalysisFile(dict):
     """

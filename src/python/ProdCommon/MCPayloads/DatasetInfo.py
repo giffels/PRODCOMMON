@@ -6,8 +6,8 @@ Serialisable container for information about a dataset
 
 """
 
-__version__ = "$Revision: 1.4 $"
-__revision__ = "$Id: DatasetInfo.py,v 1.4 2007/03/23 16:15:33 evansde Exp $"
+__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: DatasetInfo.py,v 1.5 2008/11/21 21:02:00 evansde Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -113,12 +113,23 @@ class DatasetInfo(dict):
             self[key] = value
         return
 
+    def __to_json__(self, thunker):
+        """
+        __to_json__
 
-
-
-
-
-
-
-
-
+        Pull all the meta data out of this and stuff it into a dict.
+        """
+        datasetDict = {"PrimaryDataset": self["PrimaryDataset"],
+                       "ProcessedDataset": self["ProcessedDataset"],
+                       "AnalysisDataset": self["AnalysisDataset"],
+                       "ParentDataset": self["ParentDataset"],
+                       "ApplicationName": self["ApplicationName"],
+                       "ApplicationProject": self["ApplicationProject"],
+                       "ApplicationVersion": self["ApplicationVersion"],
+                       "ApplicationFamily": self["ApplicationFamily"],
+                       "DataTier": self["DataTier"],
+                       "Conditions": self["Conditions"],
+                       "PSetHash": self["PSetHash"],
+                       "InputModuleName": self["InputModuleName"],
+                       "OutputModuleName": self["OutputModuleName"]}
+        return datasetDict
