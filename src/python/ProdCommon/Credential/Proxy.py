@@ -63,7 +63,7 @@ class Proxy:
             subjList.append(s) 
 
         subject = '/' + '/'.join(subjList)
-        return subject
+        return subject.strip()
 
     def getUserName(self, proxy = None ):
         """
