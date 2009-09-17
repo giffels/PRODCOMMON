@@ -11,8 +11,8 @@ import os
 import logging
 import select, signal, fcntl
 
-__version__ = "$Id: System.py,v 1.9 2008/10/26 09:49:02 gcodispo Exp $"
-__revision__ = "$Revision: 1.9 $"
+__version__ = "$Id: System.py,v 1.11 2009/09/17 13:09:12 gcodispo Exp $"
+__revision__ = "$Revision: 1.11 $"
 
 
 def setPgid():
@@ -114,7 +114,9 @@ def evalCustomList( strList ) :
     it works for any well formed string representing a list
     """
     
-    strList = strList[ strList.find('[')+1 : strList.rfind(']') ].strip()
+    # strList = strList[ strList.find('[')+1 : strList.rfind(']') ].strip()
+    strList = strList.strip()
+    strList = strList.strip('[]')
 
     if strList == '':
         return []
