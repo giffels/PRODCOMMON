@@ -338,7 +338,13 @@ class Proxy:
         att, ret = self.ExecuteCommand(cmd)
         if ret != 0:
             raise Exception("Unable to get FQAN for proxy %s! Exit code:%s"%(proxyFilename, ret) )
-        voAttr = vo + ':' + att
+
+        # prepare the attributes
+        voAttr = vo
+        att = att.replace('\n','')
+        att = att.replace('/Role=NULL','')
+        att = att.replace('/Capability=NULL','')
+        voAttr += ':' + att
 
         # get the credential name for this renewer
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
