@@ -380,7 +380,7 @@ class FileInfo(dict):
 
         fileInfoDict["inputFiles"] = []
         for inputFile in self.inputFiles:
-            fileInfoDict["inputFile"].append(thunker._thunk(inputFile))
+            fileInfoDict["inputFiles"].append(thunker._thunk(inputFile))
             
         fileInfoDict["runs"] = {}
         for runNumber in self.runs.keys():
