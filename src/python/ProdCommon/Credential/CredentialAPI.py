@@ -141,11 +141,11 @@ class CredentialAPI:
         except Exception, ex:
             raise Exception( str(ex) )
 
-    def renewalMyProxy(self, proxyFile, vo='cms') :
+    def renewalMyProxy(self, proxyFile) :
         """
         """
         try:
-            self.credObj.renewalMyProxy(proxyFile, vo='cms')
+            self.credObj.renewalMyProxy(proxyFile)
         except Exception, ex:
             raise Exception( str(ex) )
 

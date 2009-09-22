@@ -309,7 +309,7 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
-        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -t 11:59 -o %s -l \'%s\' -k %s'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
         ## set environ and add voms extensions 
@@ -329,23 +329,29 @@ class Proxy:
             raise Exception("Unable to retrieve delegated proxy for user DN %s! Exit code:%s"%(userDN, out) )
         return
 
-    def renewalMyProxy(self, proxyFilename, vo='cms'):
+    def renewalMyProxy(self, proxyFilename):
         """
         """
 
         # get vo, group and role from the current certificate
+        cmd = 'env X509_USER_PROXY=%s voms-proxy-info -vo 2>/dev/null | head -1'%proxyFilename
+        att, ret = self.ExecuteCommand(cmd)
+        if ret != 0:
+            raise Exception("Unable to get VO for proxy %s! Exit code:%s"%(proxyFilename, ret) )
+        vo = att.replace('\n','')
+
         # at least /cms/Role=NULL/Capability=NULL
-        cmd = 'export X509_USER_PROXY=%s; voms-proxy-info -fqan 2>/dev/null | head -1'%proxyFilename
+        cmd = 'env X509_USER_PROXY=%s voms-proxy-info -fqan 2>/dev/null | head -1'%proxyFilename
         att, ret = self.ExecuteCommand(cmd)
         if ret != 0:
             raise Exception("Unable to get FQAN for proxy %s! Exit code:%s"%(proxyFilename, ret) )
 
         # prepare the attributes
-        voAttr = vo
-        att = att.replace('\n','')
+        att = att.split('\n')[0]
         att = att.replace('/Role=NULL','')
         att = att.replace('/Capability=NULL','')
-        voAttr += ':' + att
+
+        voAttr += vo + ':' + att
 
         # get the credential name for this renewer
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
@@ -359,7 +365,7 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## refresh an existing proxy
-        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -t 11:59 -a %s -o %s -k %s'%\
             (self.myproxyServer, proxyFilename, proxyFilename, credName) )
 
         ## set environ and add voms extensions
