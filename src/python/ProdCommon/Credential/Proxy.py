@@ -303,12 +303,13 @@ class Proxy:
 
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
-        cmdList.append('env')
+        cmdList.append('unset X509_USER_CERT X509_USER_KEY')
+        cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=$HOME/.globus/hostcert.pem')
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
-        cmdList.append( 'myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
         ## set environ and add voms extensions 
@@ -352,7 +353,8 @@ class Proxy:
         # renew the certificate
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
-        cmdList.append('env')
+        cmdList.append('unset X509_USER_CERT X509_USER_KEY')
+        cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=$HOME/.globus/hostcert.pem')
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
