@@ -874,7 +874,7 @@ class DBSWriter:
     
 
     def importDatasetWithoutParentage(self, sourceDBS, sourceDatasetPath, targetDBS,
-                      onlyClosed = True):
+                      onlyClosed = True, skipNoSiteError=False):
         """
         _importDataset_
                                                                                                                                       
@@ -886,6 +886,10 @@ class DBSWriter:
         - *sourceDatasetPath* : Dataset Path to be imported
 
         - *targetDBS* : URL for DBS to have dataset imported to
+
+        - *skipNoSiteError* : If this is True, then this method wont raise an
+                              Exception if a block has no site information in 
+                              sourceDBS.
 
         """
         reader = DBSReader(sourceDBS)
@@ -907,9 +911,13 @@ class DBSWriter:
                     locations = reader.listFileBlockLocation(block)
                     # only empty file blocks can have no location
                     if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                        msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
-                        msg += "Block has no locations defined: %s" % block
-                        raise DBSWriterError(msg)
+                        # we don't skip the error raising
+                        if not skipNoSiteError:
+                            msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                            msg += "Block has no locations defined: %s" % block
+                            raise DBSWriterError(msg)
+                        msg = "Block has no locations defined: %s" % block
+                        logging.info(msg)
                     logging.info("Update block locations to:")
                     for sename in locations:
                         self.dbs.addReplicaToBlock(block,sename)
@@ -929,9 +937,13 @@ class DBSWriter:
             locations = reader.listFileBlockLocation(block)
             # only empty file blocks can have no location
             if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
-                msg += "Block has no locations defined: %s" % block
-                raise DBSWriterError(msg)            
+                # we don't skip the error raising
+                if not skipNoSiteError:
+                    msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
+                    msg += "Block has no locations defined: %s" % block
+                    raise DBSWriterError(msg)
+                msg = "Block has no locations defined: %s" % block
+                logging.info(msg) 
             for sename in locations:
                 self.dbs.addReplicaToBlock(block,sename)
                 
