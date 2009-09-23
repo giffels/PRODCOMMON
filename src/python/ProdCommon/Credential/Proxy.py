@@ -351,7 +351,7 @@ class Proxy:
         att = att.replace('/Role=NULL','')
         att = att.replace('/Capability=NULL','')
 
-        voAttr += vo + ':' + att
+        voAttr = vo + ':' + att
 
         # get the credential name for this renewer
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
