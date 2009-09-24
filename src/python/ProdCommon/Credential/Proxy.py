@@ -277,7 +277,7 @@ class Proxy:
 
         if len( self.serverDN.strip() ) > 0:
             credName = sha.new(self.serverDN).hexdigest()
-            cmd += ' -x -R \'%s\' -Z \'%s\' -k %s '%(self.serverDN, self.serverDN, credName)
+            cmd += ' -x -R \'%s\' -Z \'%s\' -k %s -t 72:00 '%(self.serverDN, self.serverDN, credName)
 
         out = os.system(cmd)
         self.logging.debug('MyProxy delegation:\n%s'%cmd)
@@ -309,14 +309,14 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
-        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s -t 72:00'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
         ## set environ and add voms extensions 
         cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 11:59'%\
+        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 71:58'%\
             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
         cmd = ' '.join(cmdList) 
@@ -365,14 +365,14 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## refresh an existing proxy
-        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s -t 72:00'%\
             (self.myproxyServer, proxyFilename, proxyFilename, credName) )
 
         ## set environ and add voms extensions
         cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 11:59'%\
+        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 71:58'%\
              (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
         cmd = ' '.join(cmdList)
