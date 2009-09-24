@@ -356,6 +356,10 @@ class Proxy:
         # get the credential name for this renewer
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
 
+        # check if myproxy server is set otherwise assume myproxy.cern.ch as default
+        if not self.myproxyServer:
+            self.myproxyServer = 'myproxy.cern.ch'
+
         # renew the certificate
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
