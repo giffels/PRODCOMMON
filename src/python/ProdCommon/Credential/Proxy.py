@@ -309,14 +309,14 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
-        cmdList.append('myproxy-logon -d -n -s %s -t 11:59 -o %s -l \'%s\' -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
         ## set environ and add voms extensions 
         cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
+        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 11:59'%\
             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
         cmd = ' '.join(cmdList) 
@@ -356,10 +356,6 @@ class Proxy:
         # get the credential name for this renewer
         credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
 
-        # check if myproxy server is set otherwise assume myproxy.cern.ch as default
-        if not self.myproxyServer:
-            self.myproxyServer = 'myproxy.cern.ch'
-
         # renew the certificate
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
@@ -369,14 +365,14 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## refresh an existing proxy
-        cmdList.append('myproxy-logon -d -n -s %s -t 11:59 -a %s -o %s -k %s'%\
+        cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s'%\
             (self.myproxyServer, proxyFilename, proxyFilename, credName) )
 
         ## set environ and add voms extensions
         cmdList.append('&& env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -valid 11:59 -voms %s -cert %s -key %s -out %s -bits 1024'%\
+        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 11:59'%\
              (voAttr, proxyFilename, proxyFilename, proxyFilename) )
 
         cmd = ' '.join(cmdList)
