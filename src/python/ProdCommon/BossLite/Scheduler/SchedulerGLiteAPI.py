@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.125 2009/08/03 09:56:16 farinafa Exp $"
-__version__ = "$Revision: 1.125 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.126 2009/08/14 08:50:56 gcodispo Exp $"
+__version__ = "$Revision: 1.126 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1564,8 +1564,13 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         workdir = tempfile.mkdtemp( prefix = 'delegation', dir = os.getcwd() )
         config, endpoints = self.mergeJDL('[]', self.service, self.config)
 
+        seen = []
         for wms in self.wmsResolve( endpoints ) :
             try :
+                if  len( wms ) == 0 or wms[0] == '#' or wms in seen:
+                    continue
+                else :
+                    seen.append( wms)
                 wmproxy = self.wmproxyInit( wms )
                 self.delegateWmsProxy( wmproxy, workdir )
                 self.logging.debug('Delegated proxy to %s' % wms)
