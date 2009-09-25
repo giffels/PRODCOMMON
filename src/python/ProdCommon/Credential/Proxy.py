@@ -368,20 +368,44 @@ class Proxy:
         cmdList.append('myproxy-logon -d -n -s %s -a %s -o %s -k %s -t 72:00'%\
             (self.myproxyServer, proxyFilename, proxyFilename, credName) )
 
+        cmd = ' '.join(cmdList)
+        msg, out = self.ExecuteCommand(cmd)
+        self.logging.debug('MyProxy renewal - logon :\n%s'%cmd)
+        if (out>0):
+            self.logging.debug('MyProxy renewal - logon result:\n%s'%msg)
+            raise Exception("Unable to retrieve proxy for renewal: %s! Exit code:%s"%(proxyFilename, out) )
+
+        ## get validity time for retrieved flat proxy
+        cmd = 'voms-proxy-info -file '+proxyFilename+' -timeleft 2>/dev/null'
+        timeLeft,  ret = self.ExecuteCommand(cmd)
+        if ret != 0 and ret != 1:
+            raise Exception("Error while checking retrieved proxy timeleft for %s"%proxyFilename )
+        timeLeft = 60
+        try:
+            timeLeft = int(timeLeft) - 60
+        except Exception:
+            timeLeft = 0
+
+        if timeLeft <= 0:
+            # fake value, it would fail in any case
+            vomsValid = "12:00"
+        else: 
+            vomsValid = "%d:%02d"%( timeLeft/3600, (timeLeft-(timeLeft/3600)*3600)/60 )
+ 
         ## set environ and add voms extensions
-        cmdList.append('&& env')
+        cmdList = []
+        cmdList.append('env')
         cmdList.append('X509_USER_CERT=%s'%proxyFilename)
         cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 71:58'%\
-             (voAttr, proxyFilename, proxyFilename, proxyFilename) )
+        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid %s'%\
+             (voAttr, proxyFilename, proxyFilename, proxyFilename, vomsValid) )
 
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
-
-        self.logging.debug('MyProxy renewal:\n%s'%cmd)
+        self.logging.debug('MyProxy renewal - voms extension:\n%s'%cmd)
         if (out>0):
-            self.logging.debug('MyProxy renewal result:\n%s'%msg)
-            raise Exception("Unable to renew proxy %s! Exit code:%s"%(proxyFilename, out) )
+            self.logging.debug('MyProxy renewal - voms extension result:\n%s'%msg)
+            raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxyFilename, out) )
 
 
 
