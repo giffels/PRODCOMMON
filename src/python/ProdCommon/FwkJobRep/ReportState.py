@@ -28,6 +28,9 @@ def checkSuccess(jobReportFile):
         # exception indicates bad report file => Implies failure
         return False
 
+    if len(report) == 0:
+        return False
+
     for report in reports:
         if report.wasSuccess():
             continue
