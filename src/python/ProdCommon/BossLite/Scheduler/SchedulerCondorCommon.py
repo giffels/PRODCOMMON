@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.51 2009/09/09 20:13:03 ewv Exp $"
-__version__ = "$Revision: 1.51 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.52 2009/09/09 21:07:44 ewv Exp $"
+__version__ = "$Revision: 1.52 $"
 
 import os
 import popen2
@@ -329,12 +329,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 (inputFile, outputFp) = os.popen4(cmd)
 
-            # Throw away first three lines. Junk
-            outputFp.readline()
-            outputFp.readline()
-            outputFp.readline()
+            try:
+                xmlLine = ''
+                while xmlLine.find('<?xml') == -1: # Throw away junk lines from condor < 7.3
+                    xmlLine = outputFp.readline()  # Remove when obsolete
 
-            outputFile = cStringIO.StringIO(outputFp.read())
+                outputFile = cStringIO.StringIO()
+                outputFile.write(xmlLine)
+                outputFile.write(outputFp.read())
+            except:
+                raise SchedulerError('Problem parsing output of command', cmd)
+            # outputFile = cStringIO.StringIO(outputFp.read()) # Condor 7.3 version
 
             # If the command succeeded, close returns None
             # Otherwise, close returns the exit code
