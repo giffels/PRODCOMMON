@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.53 2009/10/02 18:27:07 ewv Exp $"
-__version__ = "$Revision: 1.53 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.54 2009/10/02 19:09:57 ewv Exp $"
+__version__ = "$Revision: 1.54 $"
 
 import os
 import popen2
@@ -282,6 +282,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobIds = {}
         bossIds = {}
 
+        # FUTURE: look at -attributes to condor_q to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         statusCodes = {'0':'RE', '1':'S', '2':'R',
                        '3':'K',  '4':'D', '5':'A'}
