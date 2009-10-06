@@ -5,6 +5,7 @@ Class interfacing with gsiftp end point
 
 from Protocol import Protocol
 from Exceptions import *
+import os
 
 class ProtocolGsiFtp(Protocol):
     """
@@ -18,10 +19,12 @@ class ProtocolGsiFtp(Protocol):
         """
         parse line by line the outLines text lookng for Exceptions
         """
+        
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No entries for host") != -1:
+            if line.find("No entries for host") != -1 or \
+               line.find("No route to host") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
             elif line.find("No such file or directory") != -1 or \
                line.find("error") != -1:
@@ -29,11 +32,13 @@ class ProtocolGsiFtp(Protocol):
                 if cacheP not in problems:
                     problems.append(cacheP)
             elif line.find("Unknown option") != -1 or \
-                 line.find("unrecognized option") != -1:
+                 line.find("unrecognized option") != -1 or \
+                 line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
             elif line.find("Command not found") != -1 or \
-                 line.find("command not found") != -1:
+                 line.find("command not found") != -1 or \
+                 line.find("Unknown command") != -1:
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
@@ -41,17 +46,22 @@ class ProtocolGsiFtp(Protocol):
 
     def createDir(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-mkdir
+        Uberftp -> mkdir
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-mkdir " + opt + " "+ fullSource
+        cmd = precmd + "uberftp %s \"mkdir %s\" " % (source.hostname, os.path.join("/", source.workon))
+ 
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
+ 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error creating remote dir " + \
@@ -61,6 +71,8 @@ class ProtocolGsiFtp(Protocol):
         """
         lcg-cp
         """
+
+        
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
@@ -72,6 +84,7 @@ class ProtocolGsiFtp(Protocol):
         cmd = setProxy + " lcg-cp " + opt + " --vo cms " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
+        
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -121,15 +134,18 @@ class ProtocolGsiFtp(Protocol):
 
     def listFile(self, source, proxy = None, opt = ""):
         """
-        list of dir [edg-gridftp-ls]
+        Uberftp -> ls
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = precmd + "uberftp %s \"ls %s\" " % (source.hostname, os.path.join("/", source.workon))
         exitcode, outputs = self.executeCommand(cmd)
 
         if exitcode != 0: 
@@ -165,15 +181,17 @@ class ProtocolGsiFtp(Protocol):
 
     def delete(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-rm/dir
+        Uberftp -> rm
         """
+
         fullSource = source.getLynk()
+        precmd = ""
 
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rm " + opt + " " + fullSource
+        cmd = precmd + "uberftp %s \"rm %s\" " % (source.hostname, os.path.join("/", source.workon))
 
         exitcode, outputs = self.executeCommand(cmd)
 
@@ -188,19 +206,23 @@ class ProtocolGsiFtp(Protocol):
         
     def deleteDir(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-rmdir
+        Uberftp -> rmdir
         """
+
+        
         fullSource = source.getLynk()
+        precmd = ""
 
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rmdir " + opt + " " + fullSource
+        cmd = precmd + "uberftp %s \"rmdir %s\" " % (source.hostname, os.path.join("/", source.workon))
 
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
+
         problems = self.simpleOutputCheck(outputs)
 
         if exitcode != 0 or len(problems) > 0:
@@ -209,14 +231,18 @@ class ProtocolGsiFtp(Protocol):
 
     def checkExists(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-ls
+        Uberftp -> ls
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = precmd + "uberftp %s \"ls %s\" " % \
+              (source.hostname, os.path.join("/", source.workon))
         exitcode, outputs = self.executeCommand(cmd)
  
         ### simple output parsing ###
@@ -252,15 +278,18 @@ class ProtocolGsiFtp(Protocol):
 
     def checkPermission(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-ls
+        Uberftp -> ls
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $1}'"
+        cmd = precmd + "uberftp %s \"ls %s\" | awk '{print $1}' " % (source.hostname, os.path.join("/", source.workon))
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -272,15 +301,19 @@ class ProtocolGsiFtp(Protocol):
 
     def getFileSize(self, source, proxy = None, opt = ""):
         """
-        edg-gridftp-ls
+        Uberftp -> ls
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $5}'"
+        cmd = precmd + "uberftp %s \"ls %s\" | awk '{print $5}' " % (source.hostname, os.path.join("/", source.workon))
+        
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -298,14 +331,17 @@ class ProtocolGsiFtp(Protocol):
 
     def listPath(self, source, proxy = None, opt = ""):
         """
-        list of dir [edg-gridftp-ls]
+        list of dir [uberftp -> ls]
         """
+
+        precmd = ""
+
         fullSource = source.getLynk()
         if proxy is not None:
-            opt += " --proxy=%s " % str(proxy)
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = precmd + "uberftp %s \"ls %s\" " % (source.hostname, os.path.join("/", source.workon))
         exitcode, outputs = self.executeCommand(cmd)
         
         if exitcode != 0:
