@@ -51,7 +51,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
@@ -69,20 +68,15 @@ class ProtocolUberFtp(Protocol):
 
     def copy(self, source, dest, proxy = None, opt = ""):
         """
-        lcg-cp
+        Uberftp --> lcg-cp
         """
-
         
-        fullSource = source.getLynk()
-        fullDest = dest.getLynk()
-
-        setProxy = ''  
+        precmd = ''  
         if proxy is not None:
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
-            setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
  
-        cmd = setProxy + " lcg-cp " + opt + " --vo cms " + \
-                           fullSource + " " + fullDest
+        cmd = precmd + " uberftp %s %s " % ( source.getLynk(), dest.getLynk() )
         exitcode, outputs = self.executeCommand(cmd)
         
         ### simple output parsing ###
@@ -139,7 +133,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
@@ -184,7 +177,6 @@ class ProtocolUberFtp(Protocol):
         Uberftp -> rm
         """
 
-        fullSource = source.getLynk()
         precmd = ""
 
         if proxy is not None:
@@ -209,8 +201,6 @@ class ProtocolUberFtp(Protocol):
         Uberftp -> rmdir
         """
 
-        
-        fullSource = source.getLynk()
         precmd = ""
 
         if proxy is not None:
@@ -236,7 +226,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
@@ -283,7 +272,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
@@ -306,7 +294,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         opt += " --verbose "
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
@@ -336,7 +323,6 @@ class ProtocolUberFtp(Protocol):
 
         precmd = ""
 
-        fullSource = source.getLynk()
         if proxy is not None:
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
