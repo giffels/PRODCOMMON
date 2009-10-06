@@ -255,12 +255,18 @@ class SchedulerARC(SchedulerInterface):
         self.user_xrsl = args.get("user_xrsl", "")
 
 
-    def jobDescription (self, obj, requirements='', config='', service = ''):
+    def jobDescription(self, obj, requirements='', config='', service = ''):
         """
         retrieve scheduler specific job description
         return it as a string
         """
-        raise NotImplementedError
+        assert type(obj) == Task
+
+        xrsl = "+"
+        for job in obj.getJobs():
+            xrsl += '(' +  self.decode(job, obj, requirements) + ')'
+        return xrsl
+
 
         
     def decode(self, job, task, requirements=''):
