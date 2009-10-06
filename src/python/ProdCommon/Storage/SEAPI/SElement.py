@@ -7,6 +7,7 @@ from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
+from ProtocolUberFtp import ProtocolUberFtp
 from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 
@@ -17,7 +18,7 @@ class SElement(object):
     """
 
     _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", \
-                  "srm-lcg", "gsiftp-lcg"]
+                  "srm-lcg", "gsiftp-lcg", "uberftp"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -44,7 +45,7 @@ class SElement(object):
         """
         if protocol in ["srmv1", "srmv2", "srm-lcg"]:
             return "8443"
-        elif protocol in ["local", "gridftp", "rfio", "gsiftp-lcg"]:
+        elif protocol in ["local", "gridftp", "rfio", "gsiftp-lcg", "uberftp"]:
             return ""
         else:
             raise ProtocolUnknown()
@@ -65,6 +66,8 @@ class SElement(object):
             return ProtocolRfio()
         elif protocol in ["srm-lcg", "gsiftp-lcg"]:
             return ProtocolLcgUtils()
+	elif protocol == "uberftp":
+            return ProtocolUberFtp()
         else:
             raise ProtocolUnknown()
 
@@ -89,7 +92,7 @@ class SElement(object):
             if self.workon[0] != '/':
                 self.workon = join("/", self.workon) 
             return ("file://" + self.workon)
-        elif self.protocol in ["gridftp", "gsiftp-lcg"]:
+        elif self.protocol in ["gridftp", "gsiftp-lcg", "uberftp"]:
             return ("gsiftp://" + self.hostname + join("/", self.workon) )
         elif self.protocol == "rfio":
             return (self.hostname + ":" + self.workon)

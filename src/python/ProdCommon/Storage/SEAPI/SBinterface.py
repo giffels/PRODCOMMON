@@ -7,6 +7,7 @@ from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
+from ProtocolUberFtp import ProtocolUberFtp
 from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 from SElement import SElement
@@ -203,7 +204,7 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2', 'rfio']:
+        if self.storage1.protocol in ['gridftp', 'uberftp', 'srmv1', 'srmv2', 'rfio']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
@@ -224,7 +225,7 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol == 'gridftp':
+        elif self.storage1.protocol in ['gridftp', 'uberftp']:
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""

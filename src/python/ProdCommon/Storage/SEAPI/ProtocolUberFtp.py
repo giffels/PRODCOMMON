@@ -1,5 +1,5 @@
 """
-Class interfacing with gsiftp end point
+Class interfacing with UberFtp end point
 (not using only lcg-utils)
 """
 
@@ -7,13 +7,13 @@ from Protocol import Protocol
 from Exceptions import *
 import os
 
-class ProtocolGsiFtp(Protocol):
+class ProtocolUberFtp(Protocol):
     """
     implementing the GsiFtp protocol
     """
 
     def __init__(self):
-        super(ProtocolGsiFtp, self).__init__()
+        super(ProtocolUberFtp, self).__init__()
 
     def simpleOutputCheck(self, outLines):
         """
