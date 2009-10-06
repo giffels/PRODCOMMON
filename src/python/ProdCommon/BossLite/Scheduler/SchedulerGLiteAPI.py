@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.126 2009/08/14 08:50:56 gcodispo Exp $"
-__version__ = "$Revision: 1.126 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.127 2009/09/25 08:59:12 gcodispo Exp $"
+__version__ = "$Revision: 1.127 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -1575,17 +1575,17 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 self.delegateWmsProxy( wmproxy, workdir )
                 self.logging.debug('Delegated proxy to %s' % wms)
             except BaseException, err:
-                self.logging.error( 'failed to delegate proxy to ' + wms + \
+                self.logging.error( 'BossLite BaseException: failed to delegate proxy to ' + wms + \
                                     ' : ' + formatWmpError( err ) )
                 continue
 
             except Exception, err:
-                self.logging.error( 'failed to delegate proxy to ' + wms + \
+                self.logging.error( 'BossLite Exception: failed to delegate proxy to ' + wms + \
                                ' : ' + str( err ) )
                 continue
 
             except :
-                self.logging.error( 'failed to delegate proxy to ' + wms )
+                self.logging.error( 'BossLite generic exception: failed to delegate proxy to ' + wms )
                 continue
 
         os.system("rm -rf " + workdir)
