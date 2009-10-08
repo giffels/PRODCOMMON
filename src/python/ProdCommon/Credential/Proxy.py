@@ -312,21 +312,16 @@ class Proxy:
         cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s -t 168:00'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
-        ## set environ and add voms extensions 
-        cmdList.append('&& env')
-        cmdList.append('X509_USER_CERT=%s'%proxyFilename)
-        cmdList.append('X509_USER_KEY=%s'%proxyFilename)
-        cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid 167:58'%\
-            (voAttr, proxyFilename, proxyFilename, proxyFilename) )
-
         cmd = ' '.join(cmdList) 
-        # out = os.system(cmd)
         msg, out = self.ExecuteCommand(cmd)
 
-        self.logging.debug('MyProxy logon:\n%s'%cmd)
+        self.logging.debug('MyProxy logon - retrieval:\n%s'%cmd)
         if (out>0):
-            self.logging.debug('MyProxy result:\n%s'%msg)
+            self.logging.debug('MyProxy result - retrieval :\n%s'%msg)
             raise Exception("Unable to retrieve delegated proxy for user DN %s! Exit code:%s"%(userDN, out) )
+
+        self.vomsExtensionRenewal(proxyFilename, voAttr)
+
         return
 
     def renewalMyProxy(self, proxyFilename):
@@ -375,37 +370,47 @@ class Proxy:
             self.logging.debug('MyProxy renewal - logon result:\n%s'%msg)
             raise Exception("Unable to retrieve proxy for renewal: %s! Exit code:%s"%(proxyFilename, out) )
 
+        self.vomsExtensionRenewal(proxyFilename, voAttr)
+
+        return
+
+    def vomsExtensionRenewal(self, proxy, voAttr='cms'):
         ## get validity time for retrieved flat proxy
-        cmd = 'voms-proxy-info -file '+proxyFilename+' -timeleft 2>/dev/null'
+        cmd = 'grid-proxy-info -file '+proxy+' -timeleft 2>/dev/null'
+
         timeLeft,  ret = self.ExecuteCommand(cmd)
         if ret != 0 and ret != 1:
-            raise Exception("Error while checking retrieved proxy timeleft for %s"%proxyFilename )
-        timeLeft = 60
+            raise Exception("Error while checking retrieved proxy timeleft for %s"%proxy )
+
         try:
             timeLeft = int(timeLeft) - 60
         except Exception:
             timeLeft = 0
+        
+        self.logging.debug( 'Timeleft for retrieved proxy: (exit code %s) %s'%(ret, timeLeft) )
 
         if timeLeft <= 0:
             # fake value, it would fail in any case
             vomsValid = "12:00"
-        else: 
+        else:
             vomsValid = "%d:%02d"%( timeLeft/3600, (timeLeft-(timeLeft/3600)*3600)/60 )
- 
+
+        self.logging.debug( 'Requested voms validity: %s'%vomsValid )
+
         ## set environ and add voms extensions
         cmdList = []
         cmdList.append('env')
-        cmdList.append('X509_USER_CERT=%s'%proxyFilename)
-        cmdList.append('X509_USER_KEY=%s'%proxyFilename)
+        cmdList.append('X509_USER_CERT=%s'%proxy)
+        cmdList.append('X509_USER_KEY=%s'%proxy)
         cmdList.append('voms-proxy-init -noregen -voms %s -cert %s -key %s -out %s -bits 1024 -valid %s'%\
-             (voAttr, proxyFilename, proxyFilename, proxyFilename, vomsValid) )
+             (voAttr, proxy, proxy, proxy, vomsValid) )
 
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
-        self.logging.debug('MyProxy renewal - voms extension:\n%s'%cmd)
+        self.logging.debug('Voms extension:\n%s'%cmd)
         if (out>0):
-            self.logging.debug('MyProxy renewal - voms extension result:\n%s'%msg)
-            raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxyFilename, out) )
+            self.logging.debug('Voms extension result:\n%s'%msg)
+            raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxy, out) )
 
-
+        return
 
