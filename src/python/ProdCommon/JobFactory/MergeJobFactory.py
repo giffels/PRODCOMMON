@@ -8,8 +8,8 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: MergeJobFactory.py,v 1.4 2009/03/27 18:54:42 ewv Exp $"
-__version__  = "$Revision: 1.4 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.5 2009/07/15 14:10:52 ewv Exp $"
+__version__  = "$Revision: 1.5 $"
 __author__   = "ewv@fnal.gov"
 
 
@@ -197,21 +197,24 @@ class MergeJobFactory:
             splitter = SplitterFactory()
             jobfactory = splitter(subs)
 
-            jobs = jobfactory(
+            jobGroups = jobfactory(
                 merge_size=self.mergeSize,                # min in Bytes
                 all_files=True                            # merge all files
                 )
-            logging.debug("Jobs are %s" % jobs)
-            if not jobs:
+            if not jobGroups:
                 raise(SyntaxError)
-            for job in jobs:
-                jobDef = JobDefinition()
-                jobDef['LFNS'].extend(job.getFiles(type='lfn'))
-                jobDef['SkipEvents'] = 0
-                jobDef['MaxEvents'] = -1
-                [ jobDef['SENames'].extend(list(x['locations']))
-                    for x in job.getFiles() ]
-                jobDefs.append(jobDef)
+            for jobGroup in jobGroups:
+                for job in jobGroup.getJobs():
+#                 import inspect
+#                 import pprint
+#                 logging.info("Job is %s" % pprint.pformat(inspect.getmembers(job)))
+                    jobDef = JobDefinition()
+                    jobDef['LFNS'].extend(job.getFiles(type='lfn'))
+                    jobDef['SkipEvents'] = 0
+                    jobDef['MaxEvents'] = -1
+                    [ jobDef['SENames'].extend(list(x['locations']))
+                        for x in job.getFiles() ]
+                    jobDefs.append(jobDef)
 
         return jobDefs
 
