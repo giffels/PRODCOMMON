@@ -192,7 +192,7 @@ class ProtocolLcgUtils(Protocol):
             exitcode, outputs = self.executeCommand(cmd)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
-                if str(problems).find("No such file or directory") != -1 or \
+                if str(problems).find("such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
                    (str(problems).find("not found") != -1 and \
                     str(problems).find("CacheException") != -1):
