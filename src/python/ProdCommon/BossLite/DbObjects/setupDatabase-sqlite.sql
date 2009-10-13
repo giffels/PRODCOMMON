@@ -22,6 +22,7 @@ CREATE TABLE bl_job
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INT NOT NULL,
     job_id INT NOT NULL,
+    wmbsJob_id INT ,
     name VARCHAR(255),
     executable TEXT,
     events INT,
