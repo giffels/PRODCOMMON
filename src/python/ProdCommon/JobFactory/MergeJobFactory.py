@@ -8,8 +8,8 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: MergeJobFactory.py,v 1.5 2009/07/15 14:10:52 ewv Exp $"
-__version__  = "$Revision: 1.5 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.6 2009/10/09 20:22:53 ewv Exp $"
+__version__  = "$Revision: 1.6 $"
 __author__   = "ewv@fnal.gov"
 
 
@@ -178,6 +178,8 @@ class MergeJobFactory:
             logging.debug("Getting files for block %s" % blockName)
             locations = reader.listFileBlockLocation(blockName)
             fileList  = reader.dbs.listFiles(blockName = blockName)
+            if not fileList: # Skip empty blocks
+                continue
 
             for f in fileList:
                 f['Block']['StorageElementList'].extend(locations)
