@@ -133,13 +133,15 @@ class CredentialAPI:
         except Exception, ex:
             raise Exception( str(ex))
 
-    def logonMyProxy(self, proxyFile, userDN, vo='cms', group=None, role=None) :
+    def logonMyProxy(self, proxyCache, userDN, vo='cms', group=None, role=None) :
         """
         """
+        CredentialFileName = None
         try:
-            self.credObj.logonMyProxy(proxyFile, userDN, vo, group, role)
+            CredentialFileName = self.credObj.logonMyProxy(proxyCache, userDN, vo, group, role)
         except Exception, ex:
             raise Exception( str(ex) )
+        return CredentialFileName 
 
     def renewalMyProxy(self, proxyFile) :
         """

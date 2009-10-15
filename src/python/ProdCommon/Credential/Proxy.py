@@ -285,9 +285,11 @@ class Proxy:
             raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
         return
 
-    def logonMyProxy( self, proxyFilename, userDN, vo='cms', group=None, role=None):
+    def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
         """
         """
+        proxyFileName= os.path.join(proxyCache, sha.new(userDN).hexdigest() )
+
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> -k <credName>
 
         # compose the VO attriutes
@@ -322,7 +324,7 @@ class Proxy:
 
         self.vomsExtensionRenewal(proxyFilename, voAttr)
 
-        return
+        return proxyFilename
 
     def renewalMyProxy(self, proxyFilename):
         """

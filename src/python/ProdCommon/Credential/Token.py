@@ -144,3 +144,10 @@ class Token:
         except:
             msg = "Unable to create a valid Token!\n"
             raise Exception(msg)
+
+    def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
+        """
+        """
+        proxyFilename = os.path.join(proxyCache,"KRB5_%s"%userDN)
+
+        return proxyFilename
