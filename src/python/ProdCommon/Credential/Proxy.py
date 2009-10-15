@@ -288,7 +288,7 @@ class Proxy:
     def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
         """
         """
-        proxyFileName= os.path.join(proxyCache, sha.new(userDN).hexdigest() )
+        proxyFilename= os.path.join(proxyCache, sha.new(userDN).hexdigest() )
 
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> -k <credName>
 
