@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.127 2009/09/25 08:59:12 gcodispo Exp $"
-__version__ = "$Revision: 1.127 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.128 2009/10/06 13:53:42 farinafa Exp $"
+__version__ = "$Revision: 1.128 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -401,7 +401,9 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         # retrieve nodes id
         returnMap = {}
         for job in task.getChildren():
-            returnMap[ str( job.getNodeName() ) ] = str( job.getJobId() )
+            returnMap[ 
+                str( job.getNodeName() ).replace( 'NodeName_', '', 1 ) 
+                ] = str( job.getJobId() )
 
         if returnMap == {} :
             raise SchedulerError( "wmproxy.getChildren",
@@ -1377,7 +1379,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         jdl += "Nodes = {\n"
         for job in task.jobs :
             jdl += '[\n'
-            jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
+            jdl += 'NodeName   = "NodeName_%s";\n' % job[ 'name' ]
             jdl += 'Executable = "%s";\n' % job[ 'executable' ]
             jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
             if job[ 'standardInput' ] != '':
