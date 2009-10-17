@@ -330,7 +330,10 @@ class ProtocolRfio(Protocol):
         import tempfile
         import os
 
-        userName, token = token.split('::')#will be removed with next api version
+        if token.find('::')> 1:
+            userName, token = token.split('::')#will be removed with next api version
+        else:  
+            userName = token.split('_')[1]#will be removed with next api version
         BaseCmd = self.ksuCmd +'/usr/kerberos/bin/ksu %s -k -c FILE:%s < '%(userName,token)
         exit, out = None, None
         fname = None
