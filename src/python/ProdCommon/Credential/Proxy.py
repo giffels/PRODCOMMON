@@ -216,7 +216,7 @@ class Proxy:
         if proxy == None:
             msg = "Error no valid proxy to remove "
             raise Exception(msg)
-        cmd = 'rm %s'%proxy
+        cmd = '[ -e %s ] && rm %s'%(proxy, proxy)
 
         out, ret = self.ExecuteCommand(cmd)
         if ret != 0 :
