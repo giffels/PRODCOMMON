@@ -8,8 +8,8 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: MergeJobFactory.py,v 1.6 2009/10/09 20:22:53 ewv Exp $"
-__version__  = "$Revision: 1.6 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.7 2009/10/14 15:27:57 ewv Exp $"
+__version__  = "$Revision: 1.7 $"
 __author__   = "ewv@fnal.gov"
 
 
@@ -166,7 +166,6 @@ class MergeJobFactory:
         #//
         logging.debug("MergeSize = %s" % self.mergeSize)
         logging.debug("AllowedSites = %s" % self.allowedSites)
-        thefiles = Fileset(name='FilesToSplit')
         logging.debug("Connection to DBS at: %s" % self.dbsUrl)
 
         reader = DBSReader(self.dbsUrl)
@@ -181,6 +180,7 @@ class MergeJobFactory:
             if not fileList: # Skip empty blocks
                 continue
 
+            thefiles = Fileset(name='FilesToSplit')
             for f in fileList:
                 f['Block']['StorageElementList'].extend(locations)
                 wmbsFile = File(f['LogicalFileName'])
