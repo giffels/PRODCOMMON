@@ -8,8 +8,8 @@ job specs for it.
 
 """
 
-__revision__ = "$Id: MergeJobFactory.py,v 1.7 2009/10/14 15:27:57 ewv Exp $"
-__version__  = "$Revision: 1.7 $"
+__revision__ = "$Id: MergeJobFactory.py,v 1.8 2009/10/19 14:44:13 ewv Exp $"
+__version__  = "$Revision: 1.8 $"
 __author__   = "ewv@fnal.gov"
 
 
@@ -59,19 +59,13 @@ class GeneratorMaker(dict):
             return
 
         if payloadNode.configuration in ("", None):
-            #  //
-            # // Isnt a config file
-            #//
-            return
+            return      # Is not a config file
         try:
             generator = CfgGenerator(payloadNode.configuration, True,
                                          payloadNode.applicationControls)
             self[payloadNode.name] = generator
         except StandardError, ex:
-            #  //
-            # // Cant read config file => not a config file
-            #//
-            return
+            return      # Can't read config file => not a config file
 
 
 
@@ -207,9 +201,6 @@ class MergeJobFactory:
                 raise(SyntaxError)
             for jobGroup in jobGroups:
                 for job in jobGroup.getJobs():
-#                 import inspect
-#                 import pprint
-#                 logging.info("Job is %s" % pprint.pformat(inspect.getmembers(job)))
                     jobDef = JobDefinition()
                     jobDef['LFNS'].extend(job.getFiles(type='lfn'))
                     jobDef['SkipEvents'] = 0
