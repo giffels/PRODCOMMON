@@ -68,7 +68,7 @@ class ProtocolUberFtp(Protocol):
 
     def copy(self, source, dest, proxy = None, opt = ""):
         """
-        Uberftp --> lcg-cp
+        Uberftp + globus-url-copy --> lcg-cp
         """
         
         precmd = ''  
@@ -76,14 +76,52 @@ class ProtocolUberFtp(Protocol):
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
  
-        cmd = precmd + " uberftp %s %s " % ( source.getLynk(), dest.getLynk() )
-        exitcode, outputs = self.executeCommand(cmd)
+        if type(source) is not list:
+            #fix uberftp local file references
+            srcPath, destPath =  (source.getLynk(), dest.getLynk() )
+            srcPath = srcPath.replace('file://', 'file:')
+            destPath = destPath.replace('file://', 'file:')
+
+            cmd = precmd + " uberftp %s %s " % ( srcPath, destPath )
+            exitcode, outputs = self.executeCommand(cmd)
+        else:
+            # list tranfer with globus-url-copy
+            exitcode, outputs = self.copyList(source, dest, proxy, opt)
         
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
+
+    def copyList(self, source, dest, proxy = None, opt = ""):
+        """
+        globus-url-copy
+        """
+
+        import tempfile, os
+
+        exitcode, outputs = "", ""
+        sourcesList = [ source.getOneLynk(onesource) for onesource in source.workon ]
+        destsList   = [ dest.getOneLynk(onedest) for onedest in dest.workon ]
+        toCopy = "\n".join([t[0] + " " + t[1] for t in map(None, sourcesList, destsList)]) + "\n"
+        
+        try:
+            # make a temporary file to contain the list of source, destination pairs
+            tmp, fname = tempfile.mkstemp( "", "seapi_", os.getcwd() )
+            os.close( tmp )
+            file(fname, 'w').write( toCopy )
+
+            cmd =  "env X509_USER_PROXY=%s globus-url-copy -stripe -fast -cd -f %s"%(str(proxy), fname)
+            exitcode, outputs = self.executeCommand(cmd)
+
+            super(ProtocolGlobusUtils, self).__logout__(cmd, exitcode, outputs)
+        finally:
+            # remove the temp file
+            os.unlink( fname )
+
+        return (exitcode, outputs) 
+
 
     def move(self, source, dest, proxy = None, opt = ""):
         """
