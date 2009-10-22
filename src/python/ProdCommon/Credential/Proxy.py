@@ -244,29 +244,48 @@ class Proxy:
             self.logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
             valid = False
         else:
+
             ## minimum time: 4 days
             minTime = int(Time) * 24 * 3600
             ## regex to extract the right information
-            myproxyRE = re.compile("timeleft: (?P<hours>[\\d]*):(?P<minutes>[\\d]*):(?P<seconds>[\\d]*)")
-            for row in out.split("\n"):
-                g = myproxyRE.search(row)
-                if g:
-                    hours = g.group("hours")
-                    minutes = g.group("minutes")
-                    seconds = g.group("seconds")
+            timeleftList = re.compile("timeleft: (?P<hours>[\\d]*):(?P<minutes>[\\d]*):(?P<seconds>[\\d]*)").findall(out)
+
+            ## the first time refers to the flat user proxy, the other ones are related to the server credential name
+            try: 
+                hours, minutes, seconds = timeleftList[0]            
+                timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
+                if timeleft < minTime:
+
+                    self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
+                    valid = False
+            except Exception, e:
+                self.logging.info('Error extracting timeleft from proxy')
+                self.logging.debug( str(e) ) 
+                valid = False 
+
+            # check the timeleft for the required server
+            if checkRetrieverRenewer and len(self.serverDN.strip()) > 0:
+                serverCredName = sha.new(self.serverDN).hexdigest()
+                credNameList = re.compile(" name: (?P<CN>.*)").findall(out)
+                credTimeleftList = timeleftList[1:]
+
+                # check if the server credential exists 
+                if serverCredName not in credNameList :
+                    self.logging.info('Your proxy lacks of retrieval and renewal policies for the requested server.')
+                    self.logging.info('Renew your myproxy credentials.')
+                    valid = False
+                    return valid
+
+                try:
+                    hours, minutes, seconds = credTimeleftList[ credNameList.index(serverCredName) ]
                     timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
                     if timeleft < minTime:
-                        self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
-                        valid = False
-
-        if checkRetrieverRenewer == True:
-            serverCredName = sha.new(self.serverDN).hexdigest()
-            credNameList = re.compile("name: (?P<CN>.*)").findall(out) 
-            # check if the proxy stores the informations about the authorized retriever/renewer
-            if serverCredName not in credNameList :
-                self.logging.info('Your proxy lacks of retrieval and renewal policies for the requested server.')
-                self.logging.info('Renew your myproxy credentials.')
-                valid = False
+                        self.logging.info('Your server credential will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
+                    valid = False
+                except Exception, e:
+                    self.logging.info('Error extracting timeleft from credential name')
+                    self.logging.debug( str(e) )
+                    valid = False
  
         return valid
 
