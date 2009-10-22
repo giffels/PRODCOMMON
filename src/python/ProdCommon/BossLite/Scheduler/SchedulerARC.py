@@ -13,7 +13,6 @@ _SchedulerARC_
 """
 
 
-
 import sys  # Needed for anything else than debugging?
 
 import os, time
@@ -253,6 +252,7 @@ class SchedulerARC(SchedulerInterface):
         self.giis_result = {}
         self.ce_result = {}
         self.user_xrsl = args.get("user_xrsl", "")
+        self.scheduler = "ARC"
 
 
     def jobDescription(self, obj, requirements='', config='', service = ''):
@@ -343,9 +343,9 @@ class SchedulerARC(SchedulerInterface):
         elif type(obj) == Task:
             map = {}
             for job in obj.getJobs():
-                m, builkId, blah = self.submitJob(obj, job, requirements)
+                m, bulkId = self.submitJob(obj, job, requirements)
                 map.update(m)
-            return map, builkId, blah 
+            return map, bulkId, service 
 
 
     def submitJob(self, task, job, requirements):
@@ -366,13 +366,13 @@ class SchedulerARC(SchedulerInterface):
         match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
         if not match:
             raise SchedulerError('Error in submit', output, command)
-        jobId = match.group(1)
-        m={job['name'] : jobId}
 
-        job.runningJob['schedulerId'] = jobId 
-        self.logging.info("Submitted job with id %s" % jobId)
+        arcId = match.group(1)
+        m = {job['name']: arcId}  # arcId will end up in job.runningJob['schedulerId']
 
-        return m, job['taskId'], ""
+        self.logging.info("Submitted job with id %s" % arcId)
+
+        return m, job['taskId']
 
 
     def query(self, obj, service='', objType='node'):
@@ -401,8 +401,10 @@ class SchedulerARC(SchedulerInterface):
                 self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
                 continue
             
-            jobid = str(job.runningJob['schedulerId']).strip()
-            cmd = 'ngstat ' + jobid
+            arcId = job.runningJob['schedulerId']
+            self.logging.debug('Querying job %s with arcId %s' % (job['name'], arcId))
+
+            cmd = 'ngstat ' + arcId
             output, stat = self.ExecuteCommand(cmd)
 
             if stat != 0:
@@ -495,7 +497,8 @@ class SchedulerARC(SchedulerInterface):
         
         assert outdir != ''
 
-        jobId = str(job.runningJob['schedulerId']).strip()
+        arcId = job.runningJob['schedulerId']
+        self.logging.debug('Getting job %s with arcId %s' % (job['name'], arcId))
 
         if outdir[-1] != '/': outdir += '/'
 
@@ -503,12 +506,12 @@ class SchedulerARC(SchedulerInterface):
         # puts the files under /somewhere/<NUMERICAL ID>, with the result
         # that we would have to move them afterwards. I feel this is more
         # elegant.
-        cmd = 'ngcp %s/ %s' % (jobId, outdir)
+        cmd = 'ngcp %s/ %s' % (arcId, outdir)
         output, stat = self.ExecuteCommand(cmd)
         if stat != 0:
             raise SchedulerError('ngcp returned %i' % stat, output, cmd)
 
-        cmd = 'ngclean %s' % jobId
+        cmd = 'ngclean %s' % arcId
         output, stat = self.ExecuteCommand(cmd)
         if stat != 0:
             raise SchedulerError('ngclean returned %i' % stat, output, cmd)
@@ -528,21 +531,24 @@ class SchedulerARC(SchedulerInterface):
         for job in jobList:
             if not self.valid(job.runningJob):
                 raise SchedulerError('invalid object', str(job.runningJob))
+            
+            arcId = job.runningJob['schedulerId']
+            self.logging.debug('Killing job %s with arcId %s' % (job['name'], arcId))
 
-            jobId = str(job.runningJob['schedulerId']).strip()
-            cmd = "ngkill " + jobId
+            cmd = "ngkill " + arcId
             output, stat = self.ExecuteCommand(cmd)
 
             if stat != 0:
                 raise SchedulerError('ngkill returned %i' % stat, output, cmd)
 
 
-    def postMortem (self, jobId, outfile, service):
+    def postMortem (self, arcId, outfile, service):
         """
         execute any post mortem command such as logging-info
         and write it in outfile
         """
-        cmd = "ngcat -l " + jobId + " > " + outfile
+        self.logging.debug('postMortem for job %s' % arcId)
+        cmd = "ngcat -l " + arcId + " > " + outfile
         return self.ExecuteCommand(cmd)[0]
 
 
