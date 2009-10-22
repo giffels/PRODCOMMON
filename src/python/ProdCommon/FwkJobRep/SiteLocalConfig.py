@@ -36,7 +36,7 @@ def loadSiteLocalConfig():
         msg = "Unable to find site local config file:\n"
         msg += "CMS_PATH variable is not defined."
         raise SiteConfigError, msg
-    
+
     if not os.path.exists(actualPath):
         msg = "Unable to find site local config file:\n"
         msg += actualPath
@@ -44,7 +44,7 @@ def loadSiteLocalConfig():
 
     config = SiteLocalConfig(actualPath)
     return config
-    
+
 
 class SiteLocalConfig:
     """
@@ -83,7 +83,7 @@ class SiteLocalConfig:
             msg += "URL = %s\n" % tfcUrl
             raise SiteConfigError, msg
         return tfcInstance
-            
+
 
     def localStageOutCommand(self):
         """
@@ -110,7 +110,7 @@ class SiteLocalConfig:
 
         """
         return self.localStageOut['se-name']
-    
+
 
     def read(self):
         """
@@ -140,7 +140,7 @@ class SiteLocalConfig:
         #  //
         # // event data (Read Trivial Catalog location)
         #//
-        
+
         catalogQ = IMProvQuery("/site-local-config/site/event-data/catalog")
         catNodes = catalogQ(node)
         if len(catNodes) == 0:
@@ -149,6 +149,13 @@ class SiteLocalConfig:
             raise SiteConfigError, msg
 
         self.eventData['catalog'] = str(catNodes[0].attrs.get("url"))
+
+        rfioTypeQ = IMProvQuery("/site-local-config/site/event-data/rfiotype")
+        rfioTypeNodes = rfioTypeQ(node)
+        if rfioTypeNodes:
+            rfioType = rfioTypeNodes[0].attrs.get("value")
+            if rfioType:
+                self.eventData['rfioType'] = rfioType
 
         #  //
         # // local stage out information
@@ -168,7 +175,7 @@ class SiteLocalConfig:
             #//  Extract details from it:
             localSO = stageOutNodes[0]
             self.localStageOut = self.readLocalStageOut(localSO)
-            
+
         #  //
         # // remote stage out information
         #//  Assume that there are N of them, in order of preference
@@ -179,13 +186,13 @@ class SiteLocalConfig:
         for fallbackNode in fallbackNodes:
             nodeContent = self.readFallbackStageOut(fallbackNode)
             self.fallbackStageOut.append(nodeContent)
-            
+
         #  //
         # // calib data
         #//
-        
+
         calibQ = IMProvQuery("/site-local-config/site/calib-data/*")
-        
+
         calibNodes = calibQ(node)
         if len(calibNodes) == 0:
             msg = "Unable to find calib data entry in:\n"
@@ -225,7 +232,7 @@ class SiteLocalConfig:
             if child.name == "option":
                 result['option'] = str(child.attrs['value'])
                 continue
-            
+
         return result
 
     def readFallbackStageOut(self, node):
@@ -253,6 +260,5 @@ class SiteLocalConfig:
             if child.name == "option":
                 result['option'] = str(child.attrs['value'])
                 continue
-            
+
         return result
-    
