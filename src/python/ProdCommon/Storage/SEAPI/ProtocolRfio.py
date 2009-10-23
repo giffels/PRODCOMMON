@@ -347,6 +347,14 @@ class ProtocolRfio(Protocol):
             exit, out = super(ProtocolRfio, self).executeCommand(command)
             self.__logout__("Executing through ksu:\t" + str(cmd) + "\n",exit,out)
             #out, exit = executeCommand(command)
+
+            tries = 0
+            while (exit != 0 and tries < 5):
+                exit, out = super(ProtocolRfio, self).executeCommand(command)
+                self.__logout__("Executing through ksu:\t" + str(cmd) + \
+                      ": try number " + tries + "\n", exit, out)
+                tries += 1
+
         finally:
             os.unlink( fname )
 
