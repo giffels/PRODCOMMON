@@ -3,10 +3,10 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.26 2009/06/09 13:41:36 gcodispo Exp $"
-__version__ = "$Revision: 1.26 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.27 2009/10/23 18:00:00 riahi Exp $"
+__version__ = "$Revision: 1.27 $"
 
-import re, os, time
+import re, os
 import tempfile
 
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -113,11 +113,11 @@ class SchedulerLsf (SchedulerInterface) :
             # execute bsub in the directory where files have be returned
             chDir += " cd %s ;"% task['outputDirectory'] 
             command = '%s %s'%(chDir,command)
-        out, ret = self.ExecuteCommand( command )
+        out, ret = self.executeCommandWrapper( command )
+
         if self.ksuCmd: os.unlink( fname )
         if ret != 0 :
             raise SchedulerError('Error in submit', out, command )
-
         r = re.compile("Job <(\d+)> is submitted.*<(\w+)>")
 
         m= r.search(out)
@@ -138,6 +138,19 @@ class SchedulerLsf (SchedulerInterface) :
         map={ job['name'] : jobId }
         return map, taskId, queue
 
+
+    def executeCommandWrapper(self, command ):
+        """
+        try to execute ksu command 
+        """ 
+        out, ret = self.ExecuteCommand( command )
+
+        tries = 0
+        while (ret != 0 and tries < 5):
+            out, ret = self.ExecuteCommand( command )            
+            tries += 1
+        return out, ret
+  
 
     def decode (self, job, task=None, requirements='' , config ='', service='' ):
         """
@@ -209,7 +222,8 @@ class SchedulerLsf (SchedulerInterface) :
                 cmd = '%s\n'%command
                 command,fname = self.createCommand(cmd, obj)
 
-            out, ret = self.ExecuteCommand( command )
+            out, ret = self.executeCommandWrapper( command )
+
             if self.ksuCmd: os.unlink( fname )
             if ret != 0 :
                 raise SchedulerError('Error in status query', out,command )
@@ -271,7 +285,8 @@ class SchedulerLsf (SchedulerInterface) :
                 cmd = '%s\n'%command
                 command,fname = self.createCommand(cmd, obj)
 
-            out, ret = self.ExecuteCommand( command )
+            out, ret = self.executeCommandWrapper( command )
+
             if self.ksuCmd: os.unlink( fname )
             mFailed= rFinished.search(out)
             if mFailed:
