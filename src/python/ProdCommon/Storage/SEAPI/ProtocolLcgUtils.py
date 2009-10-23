@@ -23,30 +23,30 @@ class ProtocolLcgUtils(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No entries for host") != -1 or\
+            line = line.lower()
+            if line.find("no entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
             elif line.find("user has no permission") != -1 or\
-                 line.find("Permission denied") != -1:
+                 line.find("permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
                                               [line], outLines)
-            elif line.find("File exists") != -1:
+            elif line.find("file exists") != -1:
                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
-            elif line.find("No such file or directory") != -1 or \
+            elif line.find("no such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
-               line.find("CacheException") != -1 or \
+               line.find("cacheexception") != -1 or \
                line.find("does not exist") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
-            elif line.find("Unknown option") != -1 or \
+            elif line.find("unknown option") != -1 or \
                  line.find("unrecognized option") != -1 or \
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                   [line], outLines)
-            elif line.find("Command not found") != -1 or \
-                 line.find("command not found") != -1: 
+            elif line.find("command not found") != -1:
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
@@ -129,11 +129,10 @@ class ProtocolLcgUtils(Protocol):
             exitcode, outputs = self.executeCommand(cmd)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
-                if str(problems).find("No such file or directory") != -1 or \
-                   str(problems).find("no such file or directory") != -1 or \
+                if str(problems).find("no such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
                    (str(problems).find("not found") != -1 and \
-                    str(problems).find("CacheException") != -1):
+                    str(problems).find("cacheexception") != -1):
                     return False
                 raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )
@@ -195,7 +194,7 @@ class ProtocolLcgUtils(Protocol):
                 if str(problems).find("such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
                    (str(problems).find("not found") != -1 and \
-                    str(problems).find("CacheException") != -1):
+                    str(problems).find("cacheexception") != -1):
                     return False
                 raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )

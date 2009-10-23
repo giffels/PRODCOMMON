@@ -28,18 +28,19 @@ class ProtocolRfio(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("Network is unreachable") != -1:
+            line = line.lower()
+            if line.find("network is unreachable") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("Stale NFS file handle") != -1 or \
+            elif line.find("stale nfs file handle") != -1 or \
                line.lower().find("killed") != -1:
                 raise NFSException("", [line], outLines)
-            elif line.find("Permission denied") != -1:
+            elif line.find("permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
                                               [line], outLines)
-            elif line.find("File exists") != -1:
+            elif line.find("file exists") != -1:
                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
-            elif line.find("No such file or directory") != -1 or \
+            elif line.find("no such file or directory") != -1 or \
                line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
@@ -47,8 +48,7 @@ class ProtocolRfio(Protocol):
             elif line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
-            elif line.find("Command not found") != -1 or \
-                 line.find("command not found") != -1:
+            elif line.find("command not found") != -1:
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
@@ -291,7 +291,7 @@ class ProtocolRfio(Protocol):
             exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
         for problema in problems:
-            if "No such file or directory" in problema:
+            if "no such file or directory" in problema:
                 return False
         if exitcode == 0:
             return True
