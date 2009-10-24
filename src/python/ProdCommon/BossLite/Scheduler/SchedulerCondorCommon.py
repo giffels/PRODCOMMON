@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.49 2009/07/09 19:17:25 ewv Exp $"
-__version__ = "$Revision: 1.49 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55 2009/10/02 19:32:59 ewv Exp $"
+__version__ = "$Revision: 1.55 $"
 
 import os
 import popen2
@@ -36,6 +36,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.jobDir     = args.get('jobDir', None)
         self.useGlexec  = args.get('useGlexec', False)
         self.glexec     = args.get('glexec', None)
+        self.renewProxy    = args.get('renewProxy', None)
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.batchSize  = 20 # Number of jobs to submit before changing CEs
@@ -125,7 +126,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 command = 'cd %s; ' % self.condorTemp
                 if self.useGlexec:
-                    command += "%s %s %s" % (self.glexec, self.glexecWrapper,
+                    #proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh'
+                    os.environ['GLEXEC_TARGET_PROXY'] = '/tmp/x509_ugeneric_value'
+                    diffTime = str(os.path.getmtime(obj['user_proxy']))
+                    proxycmd = "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
+                    #stdout, stdin, stderr = popen2.popen3(proxycmd)
+                    commands.getstatusoutput(proxycmd)
+                    os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxytmp'
+                    command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
                                              jdlFileName)
                 else:
                     command += 'condor_submit ' + submitOptions + jdlFileName
@@ -274,6 +282,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobIds = {}
         bossIds = {}
 
+        # FUTURE: look at -attributes to condor_q to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         statusCodes = {'0':'RE', '1':'S', '2':'R',
                        '3':'K',  '4':'D', '5':'A'}
@@ -321,12 +330,15 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 (inputFile, outputFp) = os.popen4(cmd)
 
-            # Throw away first three lines. Junk
-            outputFp.readline()
-            outputFp.readline()
-            outputFp.readline()
+            try:
+                xmlLine = ''
+                while xmlLine.find('<?xml') == -1: # Throw away junk lines from condor < 7.3
+                    xmlLine = outputFp.readline()  # Remove when obsolete
 
-            outputFile = cStringIO.StringIO(outputFp.read())
+                outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
+                # outputFile = cStringIO.StringIO(outputFp.read()) # Condor 7.3 version
+            except:
+                raise SchedulerError('Problem reading output of command', cmd)
 
             # If the command succeeded, close returns None
             # Otherwise, close returns the exit code
