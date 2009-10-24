@@ -21,14 +21,15 @@ class ProtocolSrmv1(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("UnknownHostException") != -1 or \
-               line.find("No entries for host") != -1 or \
+            line = line.lower()
+            if line.find("unknownhostexception") != -1 or \
+               line.find("no entries for host") != -1 or \
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
             elif line.find("already exists") != -1 or \
-               line.find("SRM_DUPLICATION_ERROR") != -1:
+               line.find("srm_duplication_error") != -1:
                 raise AlreadyExistsException("File already exists!", [line], outLines)
-            elif line.find("Exception") != -1:
+            elif line.find("exception") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)

@@ -21,19 +21,19 @@ class ProtocolGsiFtp(Protocol):
         problems = []
         lines = outLines.split("\n")
         for line in lines:
-            if line.find("No entries for host") != -1:
+            line = line.lower()
+            if line.find("no entries for host") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("No such file or directory") != -1 or \
+            elif line.find("no such file or directory") != -1 or \
                line.find("error") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
-            elif line.find("Unknown option") != -1 or \
+            elif line.find("unknown option") != -1 or \
                  line.find("unrecognized option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                    [], outLines)
-            elif line.find("Command not found") != -1 or \
-                 line.find("command not found") != -1:
+            elif line.find("command not found") != -1:
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
