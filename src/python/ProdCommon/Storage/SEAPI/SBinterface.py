@@ -204,7 +204,7 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp', 'uberftp', 'srmv1', 'srmv2', 'rfio']:
+        if self.storage1.protocol in ['gridftp', 'uberftp', 'srmv1', 'srmv2', 'rfio', 'globus']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
@@ -225,7 +225,7 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol in ['gridftp', 'uberftp']:
+        elif self.storage1.protocol in ['gridftp', 'uberftp', 'globus']:
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
