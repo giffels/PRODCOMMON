@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.54 2009/10/02 19:09:57 ewv Exp $"
-__version__ = "$Revision: 1.54 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55 2009/10/02 19:32:59 ewv Exp $"
+__version__ = "$Revision: 1.55 $"
 
 import os
 import popen2
@@ -29,6 +29,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
     def __init__( self, **args ):
         # call super class init method
+        print "in constructor"
         super(SchedulerCondorCommon, self).__init__(**args)
         self.hostname   = getfqdn()
         self.condorTemp = args.get('tmpDir', None)
@@ -64,6 +65,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         id of the unique entry of the map
 
         """
+        print "in submit"
 
         # Make directory for Condor returned files
         seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
@@ -91,14 +93,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
         ret_map = {}
 
         jobRegExp = re.compile("\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
-
         if type(obj) == RunningJob or type(obj) == Job :
             raise NotImplementedError
         elif type(obj) == Task :
             taskId = obj['name']
-            jobCount = 1
+            jobCount = 0
+            jdl = ''
             for job in obj.getJobs():
                 submitOptions = ''
+                #FIXME: Can we remove this. I think Frank asked for it
+                # won't workas intended with bulk submission
+
                 if scheddList:
                     schedd = scheddList[jobCount % nSchedd]
                     submitOptions += '-name %s ' % schedd
@@ -110,56 +115,66 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     jobRequirements += "transfer_input_files = " + filelist + '\n'
 
                 # Build JDL file
-                jdl, sandboxFileList, ce = self.decode(job, jobRequirements)
-                if self.useGlexec:
-                    jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
-                else:
-                    jdl += 'Executable = %s/%s\n' % (self.jobDir, job['executable'])
-                jdl += '+BLTaskID = "' + taskId + '"\n'
+                if not jobCount:
+                    jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
+                    if self.useGlexec:
+                        jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
+                    else:
+                        jdl += 'Executable = %s/%s\n' % (self.jobDir, job['executable'])
+                    jdl += '+BLTaskID = "' + taskId + '"\n'
+                    print "Common JDL\n",jdl
+                jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
-
-                # Write and submit JDL
-                jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
-                jdlFile = open(jdlFileName, 'w')
-                jdlFile.write(jdl)
-                jdlFile.close()
-
-                command = 'cd %s; ' % self.condorTemp
-                if self.useGlexec:
-                    #proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh'
-                    os.environ['GLEXEC_TARGET_PROXY'] = '/tmp/x509_ugeneric_value'
-                    diffTime = str(os.path.getmtime(obj['user_proxy']))
-                    proxycmd = "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
-                    #stdout, stdin, stderr = popen2.popen3(proxycmd)
-                    commands.getstatusoutput(proxycmd)
-                    os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxytmp'
-                    command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
-                                             jdlFileName)
-                else:
-                    command += 'condor_submit ' + submitOptions + jdlFileName
-                (status,output) = commands.getstatusoutput(command)
-
-                # Parse output, build numbers
-                if not status:
-                    for line in output.split('\n'):
-                        matchObj = jobRegExp.match(line)
-                        if matchObj:
-                            ret_map[job['name']] = self.hostname + "//" \
-                                + matchObj.group(2) + ".0"
-                            job.runningJob['schedulerId'] = ret_map[job['name']]
-                try:
-                    jobName = ret_map[ job['name']  ]
-                except KeyError:
-                    job.runningJob.errors.append('Job not submitted:\n%s' \
-                                                 % output )
-                    self.logging.error("Job not submitted:")
-                    self.logging.error(output)
                 jobCount += 1
+            # End of loop over jobs to produce JDL
 
-                if ce:
-                    job.runningJob['destination'] = ce.split(':')[0]
-                else:
-                    job.runningJob['destination'] = execHost
+            # Write and submit JDL
+            print "Final JDL\n",jdl
+            jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
+            jdlFile = open(jdlFileName, 'w')
+            jdlFile.write(jdl)
+            jdlFile.close()
+
+            command = 'cd %s; ' % self.condorTemp
+            if self.useGlexec:
+                #proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh'
+                os.environ['GLEXEC_TARGET_PROXY'] = '/tmp/x509_ugeneric_value'
+                diffTime = str(os.path.getmtime(obj['user_proxy']))
+                proxycmd = "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
+                #stdout, stdin, stderr = popen2.popen3(proxycmd)
+                commands.getstatusoutput(proxycmd)
+                os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxytmp'
+                command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
+                                            jdlFileName)
+            else:
+                command += 'condor_submit ' + submitOptions + jdlFileName
+            (status,output) = commands.getstatusoutput(command)
+
+            # Parse output, build numbers
+            jobsSubmitted = False
+            if not status:
+                for line in output.split('\n'):
+                    matchObj = jobRegExp.match(line)
+                    if matchObj:
+                        jobsSubmitted = True
+                        jobCount = 0
+                        for job in obj.getJobs():
+                            if ce:
+                                job.runningJob['destination'] = ce.split(':')[0]
+                            else:
+                                job.runningJob['destination'] = execHost
+
+                            condorID = self.hostname + "//" \
+                               + matchObj.group(2) + "." + str(jobCount)
+                            ret_map[job['name']] = condorID
+                            print "CondorID",condorID
+                            job.runningJob['schedulerId'] = condorID
+                            jobCount += 1
+            if not jobsSubmitted:
+                job.runningJob.errors.append('Job not submitted:\n%s' \
+                                                % output )
+                self.logging.error("Job not submitted:")
+                self.logging.error(output)
 
         success = self.hostname
 
@@ -201,19 +216,48 @@ class SchedulerCondorCommon(SchedulerInterface) :
         return filelist[:-1] # Strip off last ","
 
 
-    def decode  ( self, obj, requirements='' ):
+#     def decode  ( self, obj, requirements='' ):
+#         """
+#         prepare file for submission
+#         """
+#
+#         if type(obj) == RunningJob or type(obj) == Job:
+#             return self.singleApiJdl(obj, requirements)
+#         elif type(obj) == Task:
+#             raise NotImplementedError
+#             #return self.collectionApiJdl(obj, requirements)
+
+    def commonJdl(self, job, requirements=''):
         """
-        prepare file for submission
+        Bulk mode, common things for all jobs
         """
+        jdl  = self.specificBulkJdl(job, requirements='')
+        jdl += 'stream_output = false\n'
+        jdl += 'stream_error  = false\n'
+        jdl += 'notification  = never\n'
+        jdl += 'should_transfer_files   = YES\n'
+        jdl += 'when_to_transfer_output = ON_EXIT\n'
+        jdl += 'copy_to_spool           = false\n'
 
-        if type(obj) == RunningJob or type(obj) == Job:
-            return self.singleApiJdl(obj, requirements)
-        elif type(obj) == Task:
-            raise NotImplementedError
-            #return self.collectionApiJdl(obj, requirements)
+        # Things in the requirements/jobType field
+        jdlLines = requirements.split(';')
+        ce = None
+        for line in jdlLines:
+            [key, value] = line.split('=', 1)
+            if key.strip() == "schedulerList":
+                CEs = value.split(',')
+                ceSlot = (jobId-1) // self.batchSize
+                ceNum = ceSlot % len(CEs)
+                ce = CEs[ceNum]
+                jdl += "globusscheduler = " + ce + '\n'
+            else:
+                jdl += line.strip() + '\n'
+        filelist = ''
+        return jdl, filelist, ce
 
 
-    def singleApiJdl( self, job, requirements='' ):
+
+    def singleApiJdl(self, job, requirements=''):
         """
         build a job jdl
         """
@@ -236,12 +280,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jdl += 'error   = %s\n' % job['standardError']
         # Make logfile with same root filename
         jdl += 'log     = %s.log\n' % os.path.splitext(job['standardError'])[0]
-        jdl += 'stream_output = false\n'
-        jdl += 'stream_error  = false\n'
-        jdl += 'notification  = never\n'
-        jdl += 'should_transfer_files   = YES\n'
-        jdl += 'when_to_transfer_output = ON_EXIT\n'
-        jdl += 'copy_to_spool           = false\n'
 
         # HACK: Figure out where the request for .BrokerInfo comes from
         outputFiles = []
@@ -251,23 +289,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         if outputFiles:
             jdl += 'transfer_output_files   = ' + ','.join(outputFiles) + '\n'
 
-        # Things in the requirements/jobType field
-        jdlLines = requirements.split(';')
-        ce = None
-        for line in jdlLines:
-            [key, value] = line.split('=', 1)
-            if key.strip() == "schedulerList":
-                CEs = value.split(',')
-                ceSlot = (jobId-1) // self.batchSize
-                ceNum = ceSlot % len(CEs)
-                ce = CEs[ceNum]
-                jdl += "globusscheduler = " + ce + '\n'
-            else:
-                jdl += line.strip() + '\n'
 
-        filelist = ''
-
-        return jdl, filelist, ce
+        return jdl
 
 
     def query(self, obj, service='', objType='node'):
@@ -314,6 +337,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         else:
             raise SchedulerError('Wrong argument type or object type',
                                   str(type(obj)) + ' ' + str(objType))
+        print "Looking for IDS",jobIds
 
         for schedd in jobIds.keys() :
             if self.condorQCacheDir:
