@@ -7,13 +7,15 @@ from ProtocolSrmv1 import ProtocolSrmv1
 from ProtocolSrmv2 import ProtocolSrmv2
 from ProtocolLocal import ProtocolLocal
 from ProtocolGsiFtp import ProtocolGsiFtp
-from ProtocolUberFtp import ProtocolUberFtp
 from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
+from ProtocolGlobusUtils import ProtocolGlobusUtils
+from ProtocolUberFtp import ProtocolUberFtp
 from SElement import SElement
 from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
                        ProtocolMismatch
 
+from ProtocolGlobusUtils import ProtocolGlobusUtils
 
 class SBinterface:
     """
@@ -53,22 +55,60 @@ class SBinterface:
         else:
             self.storage1.workon = source
             self.storage2.workon = dest
+	    resvalList = None
+	    sizeCheckList = []
+    
             ## check if the source file has size Zero
-            if self.storage1.action.getFileSize (self.storage1, proxy) == 0:
+            if type(self.storage1.workon) is list:
+                for item in source:
+                    self.storage1.workon = unicode(item)
+                    try:
+                        if self.storage1.action.getFileSize (self.storage1, proxy) == 0:
+                            sizeCheckList.append(-2)
+                        else:
+                            sizeCheckList.append(0)
+                    except Exception, ex:
+                        sizeCheckList.append(-3)
+                # put this back to how it was
+                self.storage1.workon = source
+
+            elif self.storage1.action.getFileSize (self.storage1, proxy) == 0:
                 raise SizeZeroException("Source file has size zero")
+                #sizeCheckList.append("Source file has size zero: " + source)
+
             ## if proxy needed => executes standard command to copy
             if self.useProxy:
-                self.storage1.action.copy(self.storage1, self.storage2, \
+                result = self.storage1.action.copy(self.storage1, self.storage2, \
                                           proxy, opt)
+                resvalList = result	      
+
             ## if proxy not needed => if proto2 is not local => use proxy cmd
             elif self.storage2.protocol != 'local':
-                self.storage2.action.copy(self.storage1, self.storage2, \
+                result = self.storage2.action.copy(self.storage1, self.storage2, \
                                           proxy, opt)
+                resvalList = result
+
             ## if copy using local-local
             else:
-                self.storage1.action.copy(self.storage1, self.storage2, opt)
+                result = self.storage1.action.copy(self.storage1, self.storage2, opt)
+                resvalList = result
+
+            # need now to join the errors from the copy method
+            # with the errors from the size check
+            resultList = []
+            if resvalList is not None:
+                for t in map(None, resvalList, sizeCheckList):
+                    if t[1] != 0:
+                        msg_size = "Source file has size zero"
+                        resultList.append( (t[1], msg_size) )
+                    else:
+                        resultList.append(t[0])
+
             self.storage1.workon = ""
             self.storage2.workon = ""
+
+            return resultList
+
 
     def move( self, source = "", dest = "", proxy = None, opt = "" ):
         """
@@ -94,29 +134,49 @@ class SBinterface:
         """
         _checkExists_
         """
-        self.storage1.workon = source
-        resval = False
-        if self.useProxy:
-            resval = self.storage1.action.checkExists(self.storage1, proxy, opt)
+        if type(source) is list:
+            resvalList = []
+            for item in source:
+                self.storage1.workon = unicode(item)
+                if self.useProxy:
+                    resvalList.append(self.storage1.action.checkExists(self.storage1, proxy, opt))
+                else:
+                    resvalList.append(self.storage1.action.checkExists(self.storage1, opt = opt))
+            return resvalList
         else:
-            resval = self.storage1.action.checkExists(self.storage1, opt = opt)
-        self.storage1.workon = ""
-        return resval
+            self.storage1.workon = source
+            resval = False
+            if self.useProxy:
+                resval = self.storage1.action.checkExists(self.storage1, proxy, opt)
+            else:
+                resval = self.storage1.action.checkExists(self.storage1, opt = opt)
+            self.storage1.workon = ""
+            return resval
 
     def getPermission( self, source = "", proxy = None, opt = "" ):
         """
         _getPermission_
         """
-        self.storage1.workon = source
-        resval = None
-        if self.useProxy:
-            resval = self.storage1.action.checkPermission \
-                                              (self.storage1, proxy, opt)
+        if type(source) is list:
+            resvalList = []
+            for item in source:
+                self.storage1.workon = unicode(item)
+                if self.useProxy:
+                    resvalList.append(self.storage1.action.checkPermission(self.storage1, proxy, opt))
+                else:
+                    resvalList.append(self.storage1.action.checkPermission(self.storage1, opt = opt))
+            return resvalList
         else:
-            resval = self.storage1.action.checkPermission \
-                                              (self.storage1, opt = opt)
-        self.storage1.workon = ""
-        return resval
+            self.storage1.workon = source
+            resval = None
+            if self.useProxy:
+                resval = self.storage1.action.checkPermission \
+                                                  (self.storage1, proxy, opt)
+            else:
+                resval = self.storage1.action.checkPermission \
+                                                  (self.storage1, opt = opt)
+            self.storage1.workon = ""
+            return resval
 
     def setGrant( self, source = "", values = "640", proxy = None, opt = "" ):
         """
@@ -168,12 +228,24 @@ class SBinterface:
         """
         _getSize_
         """
-        self.storage1.workon = source
-        if self.useProxy:
-            size = self.storage1.action.getFileSize(self.storage1, proxy, opt)
-        else:
-            size = self.storage1.action.getFileSize(self.storage1, opt = opt)
-        self.storage1.workon = ""
+
+        if type(source) is list:
+	    sizeList = []
+            for item in source:
+		self.storage1.workon = unicode(item)
+                if self.useProxy:
+                    sizeList.append(self.storage1.action.getFileSize(self.storage1, proxy, opt))
+                else:
+                    sizeList.append(self.storage1.action.getFileSize(self.storage1, opt = opt))
+            return sizeList
+
+	else:
+            self.storage1.workon = source
+            if self.useProxy:
+                size = self.storage1.action.getFileSize(self.storage1, proxy, opt)
+            else:
+                size = self.storage1.action.getFileSize(self.storage1, opt = opt)
+            self.storage1.workon = ""
         return size
 
     def getDirSpace( self, source = "" ):
@@ -204,7 +276,7 @@ class SBinterface:
         """
         _createDir_
         """
-        if self.storage1.protocol in ['gridftp', 'uberftp', 'srmv1', 'srmv2', 'rfio', 'globus']:
+        if self.storage1.protocol in ['gridftp', 'srmv1', 'srmv2', 'rfio', 'globus', 'uberftp']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, proxy, opt)
             self.storage1.workon = ""
@@ -225,7 +297,7 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol in ['gridftp', 'uberftp', 'globus']:
+        elif self.storage1.protocol in ['gridftp', 'globus', 'uberftp']:
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
