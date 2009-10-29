@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55 2009/10/02 19:32:59 ewv Exp $"
-__version__ = "$Revision: 1.55 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.1 2009/10/27 15:28:44 ewv Exp $"
+__version__ = "$Revision: 1.55.2.1 $"
 
 import os
 import popen2
@@ -29,7 +29,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
     """
     def __init__( self, **args ):
         # call super class init method
-        print "in constructor"
         super(SchedulerCondorCommon, self).__init__(**args)
         self.hostname   = getfqdn()
         self.condorTemp = args.get('tmpDir', None)
@@ -65,7 +64,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         id of the unique entry of the map
 
         """
-        print "in submit"
 
         # Make directory for Condor returned files
         seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
@@ -246,8 +244,10 @@ class SchedulerCondorCommon(SchedulerInterface) :
             [key, value] = line.split('=', 1)
             if key.strip() == "schedulerList":
                 CEs = value.split(',')
-                ceSlot = (jobId-1) // self.batchSize
-                ceNum = ceSlot % len(CEs)
+#                 ceSlot = (jobId-1) // self.batchSize
+#                 ceNum = ceSlot % len(CEs)
+                #FIXME: Can we do round robin again?
+                ceNum = 0
                 ce = CEs[ceNum]
                 jdl += "globusscheduler = " + ce + '\n'
             else:
@@ -297,7 +297,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         """
         query status of jobs
         """
-
+        # FIXME: Make a singleton and cache XML output
         from xml.sax import make_parser
         from CondorHandler import CondorHandler
         from xml.sax.handler import feature_external_ges
@@ -305,6 +305,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobIds = {}
         bossIds = {}
 
+        # FUTURE: Remove Condor < 7.3 when OK
         # FUTURE: look at -attributes to condor_q to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         statusCodes = {'0':'RE', '1':'S', '2':'R',
@@ -340,19 +341,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
         print "Looking for IDS",jobIds
 
         for schedd in jobIds.keys() :
-            if self.condorQCacheDir:
-                try:
-                    xmlFile = self.condorQCacheDir + "/condorq_" + schedd + ".xml"
-                    outputFp = open(xmlFile, 'r')
-                except:
-                    raise SchedulerError("Could not open file %s" % xmlFile)
-            else:
-                cmd = 'condor_q -xml '
-                if schedd != self.hostname:
-                    cmd += '-name ' + schedd + ' '
-                cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
+            cmd = 'condor_q -xml '
+            if schedd != self.hostname:
+                cmd += '-name ' + schedd + ' '
+            cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
 
-                (inputFile, outputFp) = os.popen4(cmd)
+            (inputFile, outputFp) = os.popen4(cmd)
 
             try:
                 xmlLine = ''

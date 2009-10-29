@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.18 2009/08/18 15:06:12 ewv Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.18.4.1 2009/10/27 15:28:44 ewv Exp $"
+__version__ = "$Revision: 1.18.4.1 $"
 
 import os
 
@@ -20,7 +20,6 @@ class SchedulerCondor(SchedulerCondorCommon) :
     """
     def __init__( self, **args ):
         # call super class init method
-        print "In condor"
         super(SchedulerCondor, self).__init__(**args)
 
 
@@ -42,15 +41,15 @@ class SchedulerCondor(SchedulerCondorCommon) :
         return self.hostname
 
 
-    def decode  ( self, obj, requirements='' ):
-        """
-        prepare file for submission
-        """
-        if type(obj) == RunningJob or type(obj) == Job :
-            return self.singleApiJdl(obj, requirements)
-        elif type(obj) == Task :
-            return self.collectionApiJdl(obj, requirements)
-
+#     def decode  ( self, obj, requirements='' ):
+#         """
+#         prepare file for submission
+#         """
+#         if type(obj) == RunningJob or type(obj) == Job :
+#             return self.singleApiJdl(obj, requirements)
+#         elif type(obj) == Task :
+#             return self.collectionApiJdl(obj, requirements)
+#
 
     def specificBulkJdl(self, job, requirements=''):
         # FIXME: This is very similar to SchedulerCondorCommon's version,
