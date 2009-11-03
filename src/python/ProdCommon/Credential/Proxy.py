@@ -241,7 +241,7 @@ class Proxy:
             raise Exception(msg)
 
         if not out:
-            self.logging.info('No credential delegated to myproxy server %s will do now'%self.myproxyServer)
+            self.logging.info('No credential delegated to myproxy server %s .'%self.myproxyServer)
             valid = False
         else:
 
@@ -254,14 +254,13 @@ class Proxy:
             try: 
                 hours, minutes, seconds = timeleftList[0]            
                 timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
-                if timeleft < minTime:
-
-                    self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
-                    valid = False
             except Exception, e:
                 self.logging.info('Error extracting timeleft from proxy')
                 self.logging.debug( str(e) ) 
                 valid = False 
+            if timeleft < minTime:
+                self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
+                valid = False
 
             # check the timeleft for the required server
             if checkRetrieverRenewer and len(self.serverDN.strip()) > 0:
@@ -279,12 +278,12 @@ class Proxy:
                 try:
                     hours, minutes, seconds = credTimeleftList[ credNameList.index(serverCredName) ]
                     timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
-                    if timeleft < minTime:
-                        self.logging.info('Your server credential will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
-                    valid = False
                 except Exception, e:
                     self.logging.info('Error extracting timeleft from credential name')
                     self.logging.debug( str(e) )
+                    valid = False
+                if timeleft < minTime:
+                    self.logging.info('Your server credential will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                     valid = False
  
         return valid
