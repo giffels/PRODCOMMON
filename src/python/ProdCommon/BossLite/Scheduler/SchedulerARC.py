@@ -35,8 +35,8 @@ import re, signal
 # https://twiki.cern.ch/twiki/bin/view/CMS/BossLiteJob
 #
 
-StatusCodes = {
-    "ACCEPTING": "SU ",
+Arc2Status = {
+    "ACCEPTING": "SU",
     "ACCEPTED":  "SU",
     "PREPARING": "SW",
     "PREPARED":  "SW",
@@ -59,7 +59,31 @@ StatusCodes = {
     "WTF?":        "UN"
 }
 
-StatusReason = {
+Arc2StatusScheduler = {
+    "ACCEPTING": "Submitted",
+    "ACCEPTED":  "Submitted",
+    "PREPARING": "Waiting",
+    "PREPARED":  "Waiting",
+    "SUBMITTING":"Ready",
+    "INLRMS:Q":  "Scheduled",
+    "INLRMS:R":  "Running",
+    "INLRMS:S":  "Running",
+    "INLRMS:E":  "Running",
+    "INLRMS:O":  "Running",
+    "EXECUTED":  "Running",
+    "FINISHING": "Running",
+    "KILLING":   "Killed/Cancelled",
+    "KILLED":    "Killed/Cancelled",
+    "DELETED":   "Aborted",
+    "FAILED":    "Done (failed)",
+    "FINISHED":  "Done (success)",
+
+    # In addition, let's define a few of our own
+    "UNKNOWN":     "Undefined/Unknown",
+    "WTF?":        "Undefined/Unknown"
+}
+
+Arc2StatusReason = {
     "ACCEPTING": "Job has reaced the CE",
     "ACCEPTED":  "Job submitted but not yet processed",
     "PREPARING": "Input files are being transferred",
@@ -395,7 +419,7 @@ class SchedulerARC(SchedulerInterface):
 
             if not self.valid(job.runningJob):
                 if not job.runningJob['schedulerId']:
-                    self.logging.warning("job %s has no schedulerId!" % job['name'])
+                    self.logging.debug("job %s has no schedulerId!" % job['name'])
                 self.logging.debug("job invalid: schedulerId = %s"%str(job.runningJob['schedulerId']))
                 self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
                 self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
@@ -457,9 +481,9 @@ class SchedulerARC(SchedulerInterface):
                         continue
 
             if arcStat:
-                job.runningJob['statusScheduler'] = arcStat
-                job.runningJob['status'] = StatusCodes[arcStat]
-                job.runningJob['statusReason'] = StatusReason[arcStat]
+                job.runningJob['statusScheduler'] = Arc2StatusScheduler[arcStat]
+                job.runningJob['status'] = Arc2Status[arcStat]
+                job.runningJob['statusReason'] = Arc2StatusReason[arcStat]
             if host:
                 job.runningJob['destination'] = host
             if jobExitCode:
