@@ -53,79 +53,33 @@ class ProtocolGlobusUtils(Protocol):
                 
         return problems
 
-    def lessSimpleOutputCheck(self, outLines, sources):
+
+    def lessSimpleOutputCheck(self, outLines, errors, sources, dests):
         """
         parse line by line the outLines text looking for Exceptions
         """ 
 
         errcodeList = ["0"]*len(sources)
-        problems = [] 
         problemsList = [""]*len(sources)
         sourceIndex = 0
 
         lines = outLines.split("\n")
         for line in lines:
             line = line.lower()
-             # determine which source in the list the output
-             # is going to be for.  Errors for that source will be 
-             # added into the correct element in the problems list
+            # determine which source in the list the output
+            # is going to be for.  Errors for that source will be 
+            # added into the correct element in the problems list
             if line.find("source") != -1:
+                problemsList[sourceIndex], errcodeList[sourceIndex] = self.findError(errors, sources[sourceIndex], dests[sourceIndex])
                 sourceIndex += 1
-
-
-            if line.find("no entries for host") != -1 or\
-               line.find("srm client error") != -1:
-                #raise MissingDestination("Host not found!", [line], outLines)
-                problemsList[sourceIndex] += "Host not found! \n" + line
-                errcodeList[sourceIndex] = 1
-
-            elif line.find("user has no permission") != -1 or\
-                 line.find("permission denied") != -1:
-                #raise AuthorizationException("Permission denied!", \
-                #                              [line], outLines)
-                problemsList[sourceIndex] += "Permission denied! \n" + line
-                errcodeList[sourceIndex] = 2
-
-            elif line.find("file exists") != -1:
-                #raise AlreadyExistsException("File already exists!", \
-                #                              [line], outLines)
-                problemsList[sourceIndex] += "File already exists! \n" + line
-                errcodeList[sourceIndex] = 3
-
-            elif line.find("no such file or directory") != -1 or \
-               line.find("error") != -1 or line.find("failed") != -1 or \
-               line.find("cacheexception") != -1 or \
-               line.find("does not exist") != -1:
-                cacheP = line.split(":")[-1]
-                if cacheP not in problems:
-                    problems.append(cacheP)
-                    problemsList[sourceIndex] += cacheP
-                    errcodeList[sourceIndex] = 4
-
-            elif line.find("unknown option") != -1 or \
-                 line.find("unrecognized option") != -1 or \
-                 line.find("invalid option") != -1:
-                #raise WrongOption("Wrong option passed to the command", \
-                #                  [line], outLines)
-                problemsList[sourceIndex] += "Wrong option passed to the command\n" + line
-                errcodeList[sourceIndex] = 5
-
-            elif line.find("command not found") != -1:
-                #raise MissingCommand("Command not found: client not " \
-                #                     "installed or wrong environment", \
-                #                     [line], outLines)
-                problemsList[sourceIndex] += "Command not found: client not installed or wrong environment\n" + line
-                errcodeList[sourceIndex] = 6
-
         # errors are printed before the word "Source" comes up, so
         # the sourceIndex is actually the number of sources that were
         # encountered.  So it maps directly to index starting from zero.
-
-        if sourceIndex < (len(sources)):
-            while sourceIndex < (len(sources)):
-                problemsList[sourceIndex] += "copy not attempted"
-                errcodeList[sourceIndex] = -1
-                sourceIndex += 1
+        #sourceIndex += 1
+        while sourceIndex < (len(sources)):
+             problemsList[sourceIndex] += "copy not attempted"
+             errcodeList[sourceIndex] = -1
+             sourceIndex += 1
 
         problemsTuple = []
         for t in map(None, errcodeList, problemsList):
@@ -133,6 +87,41 @@ class ProtocolGlobusUtils(Protocol):
 
         return problemsTuple
 
+    def findError(self, errors, source, dest):
+        if errors.find("500 End.") == -1:
+            if errors.find(source) != -1 or errors.find(dest) != -1:
+                return "Unknown error, please report it: " +str(errors), 99
+        else:
+            for lines in errors.split("500 End."):
+                if lines.find(source) != -1 or lines.find(dest) != -1:
+                    for line in lines.split('\n'):
+                        line = line.lower()
+                        if line.find("no entries for host") != -1 or\
+                           line.find("srm client error") != -1:
+                            return "Host not found! \n" + line, 1
+
+                        elif line.find("user has no permission") != -1 or\
+                             line.find("permission denied") != -1:
+                            return "Permission denied! \n" + line, 2
+
+                        elif line.find("file exists") != -1:
+                            return "File already exists! \n" + line, 3
+
+                        elif line.find("no such file or directory") != -1 or \
+                             line.find("error") != -1 or line.find("failed") != -1 or \
+                             line.find("cacheexception") != -1 or \
+                             line.find("does not exist") != -1:
+                            cacheP = line.split(":")[-1]
+                            return cacheP, 4
+
+                        elif line.find("unknown option") != -1 or \
+                             line.find("unrecognized option") != -1 or \
+                             line.find("invalid option") != -1:
+                            return "Wrong option passed to the command\n" + line, 5
+
+                        elif line.find("command not found") != -1:
+                            return "Command not found: client not installed or wrong environment\n" + line, 6
+        return '', 0
 
     def createDir(self, source, proxy = None, opt = ""):
         """
@@ -209,18 +198,11 @@ class ProtocolGlobusUtils(Protocol):
             # construct the copy command with the tempfile as the argument
             cmd = setProxy + " globus-url-copy -vb -cd -f " + fname
             # do the copy and log the output
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs, errors = self.runCommand(cmd) # executeCommand(cmd)
         finally:
             # remove the temp file
             os.unlink( fname )
- 
-        ### simple output parsing ###
-        #problems = self.simpleOutputCheck(outputs)
-        resvalList = self.lessSimpleOutputCheck(outputs, sourcesList)
-
-        #if exitcode != 0 or len(problems) > 0:
-        #if exitcode != 0 or oneOrMoreProblems:
-            #raise TransferException("Error copying " + toCopy, resvalList, outputs )
+        resvalList = self.lessSimpleOutputCheck(outputs, errors, source.workon, dest.workon)
 
         return resvalList
 
