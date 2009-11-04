@@ -55,8 +55,8 @@ class SBinterface:
         else:
             self.storage1.workon = source
             self.storage2.workon = dest
-	    resvalList = None
-	    sizeCheckList = []
+            resvalList = None
+            sizeCheckList = []
     
             ## check if the source file has size Zero
             if type(self.storage1.workon) is list:
@@ -71,6 +71,7 @@ class SBinterface:
                         else:
                             sizeCheckList.append(0)
                     except Exception, ex:
+                        ## source of problem: will be raised at copying time
                         sizeCheckList.append(-3)
                 # put this back to how it was
                 self.storage1.workon = source
@@ -79,29 +80,19 @@ class SBinterface:
                 raise SizeZeroException("Source file has size zero")
                 #sizeCheckList.append("Source file has size zero: " + source)
 
-            ## if proxy needed => executes standard command to copy
-            if self.useProxy:
-                result = self.storage1.action.copy(self.storage1, self.storage2, \
-                                          proxy, opt)
-                resvalList = result	      
-
-            ## if proxy not needed => if proto2 is not local => use proxy cmd
-            elif self.storage2.protocol != 'local':
-                result = self.storage2.action.copy(self.storage1, self.storage2, \
-                                          proxy, opt)
-                resvalList = result
-
-            ## if copy using local-local
-            else:
-                result = self.storage1.action.copy(self.storage1, self.storage2, opt)
-                resvalList = result
+            resvalList = self.__perform_copy(proxy, opt)
 
             # need now to join the errors from the copy method
             # with the errors from the size check
             resultList = []
+            untryed_code = -1
             if resvalList is not None:
+                result_temp = []
+                if self.__eval_list(resvalList, untryed_code) != 0:  #input_list, untryed_code) != 0:
+                    result_temp = self.__iter_list_copy(resvalList, source, dest, untryed_code, proxy, opt)  #input_list, source, dest, untryed_code, proxy, opt)
+                resvalList = result_temp
                 for t in map(None, resvalList, sizeCheckList):
-                    if t[1] != 0:
+                    if t[1] == -2:
                         msg_size = "Source file has size zero"
                         resultList.append( (t[1], msg_size) )
                     else:
@@ -111,6 +102,100 @@ class SBinterface:
             self.storage2.workon = ""
 
             return resultList
+
+    def __build_exitcode_list(self, tuples):
+        """
+        return just the list of first elements from list of touples
+        """
+        result = []
+        for item in tuples:
+            result.append(int(item[0]))
+        return result
+
+    def __eval_list(self, lista, code = -1):
+        """
+        return the index of first exit_code found equal to code
+        """
+        value_index = 0
+        try:
+            value_index = self.__build_exitcode_list(lista).index(code)
+        except ValueError:
+            value_index = len(lista)
+        return value_index
+
+    def __perform_copy(self, proxy, opt):
+        """
+        perform copy
+        """
+        ## if proxy needed => executes standard command to copy
+        if self.useProxy:
+            result = self.storage1.action.copy(self.storage1, self.storage2, \
+                                               proxy, opt)
+            resvalList = result
+
+        ## if proxy not needed => if proto2 is not local => use proxy cmd
+        elif self.storage2.protocol != 'local':
+            result = self.storage2.action.copy(self.storage1, self.storage2, \
+                                               proxy, opt)
+            resvalList = result
+
+        ## if copy using local-local
+        else:
+            result = self.storage1.action.copy(self.storage1, self.storage2, opt)
+            resvalList = result
+        return resvalList
+
+
+    def __iter_list_copy(self, lista, source, dest, code, proxy, opt, cicle = 0):
+        """
+        __iter_list_copy
+        
+        iterating over not copied files, copying if possible
+
+        IN:
+           source files : list of string
+           dest files   : list of string
+           copy result  : list of couples
+           exit to try  : int
+           proxy
+           opt
+           cicle        : count n cicle
+        RES:
+           copy result  : list of couples
+        """
+        if len(lista) > 0:
+            lista_res = lista
+            index = self.__eval_list(lista, code)
+            if index < len(lista):
+                da_copiare = lista[index:]
+                lista_res = self.__copy_list(source, dest, da_copiare, code, proxy, opt)
+                to_return = lista[:index]
+                half = self.__iter_list_copy(lista_res, source, dest, code, proxy, opt, cicle + 1)
+                to_return += half
+                return to_return
+            return lista_res
+        return lista
+
+
+    def __copy_list(self, source, dest, lista, code, proxy, opt):
+        """
+        check and perpare copy of files
+        """
+        if len(lista) > 0:
+            fail_index = self.__eval_list(lista, code)
+            counter = 0
+            for elem in lista:
+                if fail_index >= counter:
+                    source_drop = source[-len(lista):]
+                    dest_drop = dest[-len(lista):]
+                    self.storage1.workon = source_drop
+                    self.storage2.workon = dest_drop
+                    lista = self.__perform_copy(proxy, opt)
+                    self.storage1.workon = ""
+                    self.storage2.workon = ""
+                counter += 1
+            return lista
+        return lista
 
 
     def move( self, source = "", dest = "", proxy = None, opt = "" ):
@@ -233,16 +318,16 @@ class SBinterface:
         """
 
         if type(source) is list:
-	    sizeList = []
+            sizeList = []
             for item in source:
-		self.storage1.workon = unicode(item)
+                self.storage1.workon = unicode(item)
                 if self.useProxy:
                     sizeList.append(self.storage1.action.getFileSize(self.storage1, proxy, opt))
                 else:
                     sizeList.append(self.storage1.action.getFileSize(self.storage1, opt = opt))
             return sizeList
 
-	else:
+        else:
             self.storage1.workon = source
             if self.useProxy:
                 size = self.storage1.action.getFileSize(self.storage1, proxy, opt)
@@ -300,7 +385,7 @@ class SBinterface:
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
             return val
-        elif self.storage1.protocol in ['gridftp', 'globus', 'uberftp']:
+        elif self.storage1.protocol in ['gridftp', 'uberftp', 'globus']:
             self.storage1.workon = source
             val = self.storage1.action.getTurl(self.storage1, proxy, opt)
             self.storage1.workon = ""
