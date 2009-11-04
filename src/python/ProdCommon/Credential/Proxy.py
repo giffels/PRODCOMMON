@@ -35,12 +35,12 @@ class Proxy:
     def getUserProxy(self):
         """
         """
-        try:
-            proxy = os.path.expandvars('$X509_USER_PROXY')
-        except Exception,ex:
-            msg = ('Error %s in getUserProxy search\n' %str(ex))
-            if self.debug : msg += traceback.format_exc()
-            raise Exception(msg)
+        proxy = None
+        if os.environ.has_key('X509_USER_PROXY'):
+            proxy = os.environ['X509_USER_PROXY']
+        else:
+            proxy = '/tmp/x509up_u'+str(os.getuid())
+
         return proxy.strip()
 
     def getSubject(self, proxy = None):
@@ -60,7 +60,7 @@ class Proxy:
         for s in out.split('/'):
             if 'subject' in s: continue
             if 'proxy' in s: continue
-            subjList.append(s) 
+            subjList.append(s)
 
         subject = '/' + '/'.join(subjList)
         return subject.strip()
@@ -251,13 +251,13 @@ class Proxy:
             timeleftList = re.compile("timeleft: (?P<hours>[\\d]*):(?P<minutes>[\\d]*):(?P<seconds>[\\d]*)").findall(out)
 
             ## the first time refers to the flat user proxy, the other ones are related to the server credential name
-            try: 
-                hours, minutes, seconds = timeleftList[0]            
+            try:
+                hours, minutes, seconds = timeleftList[0]
                 timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
             except Exception, e:
                 self.logging.info('Error extracting timeleft from proxy')
-                self.logging.debug( str(e) ) 
-                valid = False 
+                self.logging.debug( str(e) )
+                valid = False
             if timeleft < minTime:
                 self.logging.info('Your proxy will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                 valid = False
@@ -268,7 +268,7 @@ class Proxy:
                 credNameList = re.compile(" name: (?P<CN>.*)").findall(out)
                 credTimeleftList = timeleftList[1:]
 
-                # check if the server credential exists 
+                # check if the server credential exists
                 if serverCredName not in credNameList :
                     self.logging.info('Your proxy lacks of retrieval and renewal policies for the requested server.')
                     self.logging.info('Renew your myproxy credentials.')
@@ -285,7 +285,7 @@ class Proxy:
                 if timeleft < minTime:
                     self.logging.info('Your server credential will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
                     valid = False
- 
+
         return valid
 
     def ManualRenewMyProxy( self ):
@@ -319,7 +319,7 @@ class Proxy:
             if role: voAttr += ':/'+vo+'/Role='+role
 
         # get the credential name for this retriever
-        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest() 
+        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
 
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
@@ -332,7 +332,7 @@ class Proxy:
         cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s -t 168:00'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
-        cmd = ' '.join(cmdList) 
+        cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
 
         self.logging.debug('MyProxy logon - retrieval:\n%s'%cmd)
@@ -406,7 +406,7 @@ class Proxy:
             timeLeft = int(timeLeft) - 60
         except Exception:
             timeLeft = 0
-        
+
         self.logging.debug( 'Timeleft for retrieved proxy: (exit code %s) %s'%(ret, timeLeft) )
 
         if timeLeft <= 0:
