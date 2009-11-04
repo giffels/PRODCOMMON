@@ -13,7 +13,7 @@ from ProtocolGlobusUtils import ProtocolGlobusUtils
 from ProtocolUberFtp import ProtocolUberFtp
 from SElement import SElement
 from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
-                       ProtocolMismatch
+                       ProtocolMismatch, OperationException
 
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 
@@ -60,6 +60,9 @@ class SBinterface:
     
             ## check if the source file has size Zero
             if type(self.storage1.workon) is list:
+                if len(source) != len(dest):
+                    raise OperationException \
+                        ('Number of source files differs from number of destination files')
                 for item in source:
                     self.storage1.workon = unicode(item)
                     try:
