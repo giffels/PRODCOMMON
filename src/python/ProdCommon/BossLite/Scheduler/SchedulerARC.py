@@ -584,32 +584,24 @@ class SchedulerARC(SchedulerInterface):
         raise NotImplementedError
 
 
-    def query_giis(self, giises):
+    def query_giis(self, giis):
         """
-        Return CEs and sub-GIISes from the first GIIS in
-        'giises'-list that replies.
+        Return CEs and sub-GIISes from giis.
         """
 
         attr = [ 'giisregistrationstatus' ]
 
-        for giis in giises:
-            # Use cached result if we have it:
-            if giis['host'] in self.giis_result.keys():
-                ldap_result = self.giis_result[giis['host']]
-                break
-
+        # Use cached result if we have it:
+        if giis['host'] in self.giis_result.keys():
+            ldap_result = self.giis_result[giis['host']]
+        else:
             try:
-                self.logging.info("Using GIIS %s, %s" % (giis['host'], giis['base']))
                 ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, self.logging, scope=ldap.SCOPE_BASE, retries=0)
             except ldap.LDAPError:
-                self.logging.warning("No reply from GIIS %s, trying another" % giis['host'])
-                pass
+                self.logging.warning("No reply from GIIS %s" % giis['host'])
+                ldap_result = []
             else:
                 self.giis_result[giis['host']] = ldap_result
-                break
-        else:
-            self.logging.error("No more GIISes to try!  All GIISes down? Please wait for a while and try again")
-            raise SchedulerError("No reply from GIISes", "")
 
         CEs = []
         giises = []
@@ -678,13 +670,14 @@ class SchedulerARC(SchedulerInterface):
         return accepted_CEs
 
 
-    def pick_CEs_from_giis_trees(self, roots, tags, vos, seList, blacklist, whitelist, full):
+    def pick_CEs_from_giis_trees(self, root, tags, vos, seList, blacklist, whitelist, full):
         """
-        Recursively traverse the GIIS tree, starting from the first 'root' that replies;
+        Recursively traverse the GIIS tree, starting from 'root',
         return CEs fullfilling requirements.
         """
 
-        CEs, giises = self.query_giis(roots)
+        self.logging.info("Trying GIIS %s, %s" % (root['host'], root['base']))
+        CEs, giises = self.query_giis(root)
         accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
 
         if len(accepted_CEs) > 0 and not full:
@@ -693,7 +686,7 @@ class SchedulerARC(SchedulerInterface):
         for g in giises:
             host = 'ldap://' + g['name'] + ':' + g['port']
             root = {'host':host, 'base': g['base']}
-            accepted_CEs += self.pick_CEs_from_giis_trees([root], tags, vos, seList, blacklist, whitelist, full)
+            accepted_CEs += self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
             if len(accepted_CEs) > 0 and not full:
                 break
 
@@ -723,7 +716,15 @@ class SchedulerARC(SchedulerInterface):
             host, base = parseGiisUrl(g)
             tolevel_giises.append({'host': host, 'base': base})
 
-        accepted_CEs = self.pick_CEs_from_giis_trees(tolevel_giises, tags, vos, seList, blacklist, whitelist, full)
+        for root in tolevel_giises:
+            accepted_CEs = self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
+            if accepted_CEs:
+                break;
+            else:
+                self.logging.warning("No suitable CE:s found using toplevel GIIS %s, %s" % (root['host'], root['base']))
+        else:
+            self.logging.error("No more toplevel GIISes to try!  All GIISes down? Please wait for a while and try again")
+            raise SchedulerError("No reply from GIISes", "")
 
         return accepted_CEs
 
