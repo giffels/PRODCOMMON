@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.13 2009/07/09 19:17:25 ewv Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.14 2009/09/09 20:13:03 ewv Exp $"
+__version__ = "$Revision: 1.14 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -18,16 +18,18 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       # call super class init method
       super(SchedulerGlidein, self).__init__(**args)
 
-  def singleApiJdl( self, job, requirements='' ):
+  def specificBulkJdl(self, job, requirements=''):
       """
       build a job jdl easy to be handled by the wmproxy API interface
       and gives back the list of input files for a better handling
       """
 
-      jdl = 'Universe = vanilla\n'
-      superJdl, filelist, ce \
-          = super(SchedulerGlidein, self).singleApiJdl(job, requirements)
-      jdl += superJdl
+      jdl  = ''
+      jdl += 'Universe  = vanilla\n'
+#      jdl = 'Universe = vanilla\n'
+      #superJdl, filelist, ce \
+          #= super(SchedulerGlidein, self).singleApiJdl(job, requirements)
+      #jdl += superJdl
 
       x509 = None
       x509tmp = '/tmp/x509up_u'+str(os.getuid())
@@ -59,11 +61,12 @@ class SchedulerGlidein(SchedulerCondorCommon) :
       jdl += '(JobStatus==5 && $(since)>691200) || (JobStatus==1 && $(since)>691200)\n'
 
 
-      return jdl, filelist, 'Unknown'
+      return jdl
+      #return jdl, filelist, 'Unknown'
 
   def delegateProxy(self):
     """
-    fake    
+    fake
     """
     return
 

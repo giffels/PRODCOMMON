@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.1 2009/10/27 15:28:44 ewv Exp $"
-__version__ = "$Revision: 1.55.2.1 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.2 2009/10/29 16:49:46 ewv Exp $"
+__version__ = "$Revision: 1.55.2.2 $"
 
 import os
 import popen2
@@ -246,7 +246,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 CEs = value.split(',')
 #                 ceSlot = (jobId-1) // self.batchSize
 #                 ceNum = ceSlot % len(CEs)
-                #FIXME: Can we do round robin again?
+                # FIXME: Can we do round robin again?
                 ceNum = 0
                 ce = CEs[ceNum]
                 jdl += "globusscheduler = " + ce + '\n'
@@ -266,7 +266,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jobId = int(job['jobId'])
         # Make arguments condor friendly (space delimited w/o backslashes)
         jobArgs = job['arguments']
-        # Server args already correct, probably revisit for CondorG+Server
+        # Server args already correct
         if not self.useGlexec:
             jobArgs = jobArgs.replace(',',' ')
             jobArgs = jobArgs.replace('\\ ',',')
