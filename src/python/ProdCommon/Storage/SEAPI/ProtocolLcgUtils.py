@@ -131,8 +131,8 @@ class ProtocolLcgUtils(Protocol):
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("no such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
-                   (str(problems).find("not found") != -1 and \
-                    str(problems).find("cacheexception") != -1):
+                   str(problems).find("not found") != -1: # and \
+                   #str(problems).find("cacheexception") != -1):
                     return False
                 raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )
