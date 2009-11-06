@@ -37,7 +37,9 @@ class ProtocolLcgUtils(Protocol):
             elif line.find("no such file or directory") != -1 or \
                line.find("error") != -1 or line.find("Failed") != -1 or \
                line.find("cacheexception") != -1 or \
-               line.find("does not exist") != -1:
+               line.find("does not exist") != -1 or \
+               line.find("not found") != -1 or \
+               line.find("could not get storage info by path") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -50,7 +52,6 @@ class ProtocolLcgUtils(Protocol):
                 raise MissingCommand("Command not found: client not " \
                                      "installed or wrong environment", \
                                      [line], outLines)
-                
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
@@ -131,8 +132,8 @@ class ProtocolLcgUtils(Protocol):
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("no such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
-                   (str(problems).find("not found") != -1 and \
-                    str(problems).find("cacheexception") != -1):
+                   str(problems).find("not found") != -1: # and \
+                   #str(problems).find("cacheexception") != -1):
                     return False
                 raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )
@@ -193,8 +194,7 @@ class ProtocolLcgUtils(Protocol):
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("such file or directory") != -1 or \
                    str(problems).find("does not exist") != -1 or \
-                   (str(problems).find("not found") != -1 and \
-                    str(problems).find("cacheexception") != -1):
+                   str(problems).find("not found") != -1:
                     return False
                 raise OperationException("Error checking ["+source.workon+"]", \
                                          problems, outputs )
