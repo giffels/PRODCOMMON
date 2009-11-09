@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.129 2009/10/16 15:54:15 direyes Exp $"
-__version__ = "$Revision: 1.129 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.130 2009/11/09 09:08:31 gcodispo Exp $"
+__version__ = "$Revision: 1.130 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -16,7 +16,15 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 #
 # Import gLite specific modules
+
+# new UI requires WMPConfig
 try:
+    from wmproxymethods import WMPConfig
+except StandardError, stde:
+    pass
+#
+try:
+    from wmproxymethods import WMPConfig
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
     from wmproxymethods import WMPException
@@ -161,13 +169,25 @@ def processClassAdBlock( classAd ):
     return cladDict, endpoints, configfile
 
 
-def formatWmpError( wmpError ) :
+def formatWmpError( wmpError, isNewUi ) :
     """
     format wmproxy BaseException
     """
 
-    error = wmpError.toString() + '\n'
 
+    if isNewUi :
+        error = ''
+        if wmpError.errType:
+            error += wmpError.errType
+        if wmpError.origin:
+            error += " raised by " + wmpError.origin
+        if wmpError.methodName:
+            error += " (method " + wmpError.methodName+") "
+        if wmpError.description:
+            error += "\n" + wmpError.description
+
+    else:
+        error = wmpError.toString() + '\n'
 
     for key in list( wmpError ):
         if type( key ) == int:
@@ -357,7 +377,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if self.isNewUi :
             # initialize wms connection
             wmpconfig = WMPConfig(wms)
-            self.skipWMSAuth = True
+
             if self.skipWMSAuth :
                 wmpconfig.setAuth(0)
             
@@ -512,12 +532,10 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             proxycert = wmproxy.getNewProxyReq(self.delegationId)
             os.environ["PROXY_REQ"] = proxycert
             result = wmproxy.signProxyReqEnv("PROXY_REQ")
-            wmproxy.putProxy(delegationId, result )
+            wmproxy.putProxy(self.delegationId, result )
             return
 
         ### slc4 UI 
-
-        ### # possible right now:
         ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=workdir)
         os.close( ofile )
         proxycert = wmproxy.getProxyReq(self.delegationId)
@@ -606,7 +624,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # typical exception
             except BaseException, err:
                 wmserr = 'failed to submit to %s : %s ;\n' % \
-                         ( wms,  formatWmpError( err ) )
+                         ( wms,  formatWmpError( err, self.isNewUi ) )
                 errors += wmserr
                 self.logging.debug( wmserr )
                 continue
@@ -753,7 +771,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # typical exception
             except BaseException, err:
-                output = formatWmpError( err )
+                output = formatWmpError( err, self.isNewUi )
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
@@ -947,7 +965,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # typical exception
             except BaseException, err:
-                output = formatWmpError( err )
+                output = formatWmpError( err, self.isNewUi )
 
                 # purged: probably already retrieved. Archive
                 if output.find( "Cancel has already been requested" ) != -1 :
@@ -1599,7 +1617,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 self.logging.debug('Delegated proxy to %s' % wms)
             except BaseException, err:
                 self.logging.error( 'BossLite BaseException: failed to delegate proxy to ' + wms + \
-                                    ' : ' + formatWmpError( err ) )
+                                    ' : ' + formatWmpError( err, self.isNewUi ) )
                 continue
 
             except Exception, err:
