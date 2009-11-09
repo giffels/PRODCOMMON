@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.128 2009/10/06 13:53:42 farinafa Exp $"
-__version__ = "$Revision: 1.128 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.129 2009/10/16 15:54:15 direyes Exp $"
+__version__ = "$Revision: 1.129 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -28,6 +28,11 @@ except StandardError, stde:
          """
     raise ImportError(warn + str(stde))
 
+# new UI requires WMPConfig
+try:
+    from wmproxymethods import WMPConfig
+except StandardError, stde:
+    pass
 
 ##########################################################################
 
@@ -210,6 +215,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         if self.cert != '':
             self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
 
+        # version check for new features
+        version, ret = self.ExecuteCommand( 'glite-version' )
+        version = version.strip()
+        self.isNewUi = ( version.find( '3.2' ) == 0 )
+
         ### # check which UI version we are in
         ### globusloc = os.environ['GLOBUS_LOCATION']
         ### globusv = re.compile('.*3.1.(\d*).*')
@@ -344,16 +354,30 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         initialize Wmproxy and perform everything needed
         """
 
-        # initialize wms connection
-        wmproxy = Wmproxy(wms, proxy=self.cert)
+        if self.isNewUi :
+            # initialize wms connection
+            wmpconfig = WMPConfig(wms)
+            self.skipWMSAuth = True
+            if self.skipWMSAuth :
+                wmpconfig.setAuth(0)
+            
+            if self.cert != '' :
+                wmpconfig.setProxyPath( self.cert )
 
-        if self.skipWMSAuth :
-            try :
-                wmproxy.setAuth(0)
-                # UI 3.1: missing method
-            except AttributeError:
-                pass
+            wmproxy = Wmproxy(wmpconfig)
 
+        else :
+            # initialize wms connection
+            wmproxy = Wmproxy(wms, proxy=self.cert)
+
+            if self.skipWMSAuth :
+                try :
+                    wmproxy.setAuth(0)
+                    # UI 3.1: missing method
+                except AttributeError:
+                    pass
+
+        ### init & return
         wmproxy.soapInit()
 
         return wmproxy
@@ -483,10 +507,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         delegate proxy to a wms
         """
 
-        ### # to use it asap:
-        ### proxycert = wmproxy.getProxyReq(self.delegationId)
-        ### result = wmproxy.signProxyReqStr(proxycert)
-        ### wmproxy.putProxy(delegationId,result )
+        # slc5 UI
+        if self.isNewUi :
+            proxycert = wmproxy.getNewProxyReq(self.delegationId)
+            os.environ["PROXY_REQ"] = proxycert
+            result = wmproxy.signProxyReqEnv("PROXY_REQ")
+            wmproxy.putProxy(delegationId, result )
+            return
+
+        ### slc4 UI 
 
         ### # possible right now:
         ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=workdir)
@@ -508,14 +537,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wmproxy.putProxy( self.delegationId, ''.join( proxyres.readlines() ) )
         proxyres.close()
         os.unlink( tmpfile )
-
-        ### command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
-        ###           + " --endpoint " + wms
-        ### 
-        ### msg, ret = self.ExecuteCommand( self.proxyString + command )
-        ### 
-        ### if msg.find("Error -") >= 0 :
-        ###     self.warnings.append( "Warning : " + str( msg ) )
 
 
     ##########################################################################
