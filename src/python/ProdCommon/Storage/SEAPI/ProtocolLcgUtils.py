@@ -8,7 +8,7 @@ from Exceptions import *
 
 class ProtocolLcgUtils(Protocol):
     """
-    implementing storage interaction with lcg-utils 
+    implementing storage interaction with lcg-utils
     """
 
     def __init__(self):
@@ -27,6 +27,10 @@ class ProtocolLcgUtils(Protocol):
             if line.find("no entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("command not found") != -1:
+                raise MissingCommand("Command not found: client not " \
+                                     "installed or wrong environment", \
+                                     [line], outLines)
             elif line.find("user has no permission") != -1 or\
                  line.find("permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
@@ -48,10 +52,6 @@ class ProtocolLcgUtils(Protocol):
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                   [line], outLines)
-            elif line.find("command not found") != -1:
-                raise MissingCommand("Command not found: client not " \
-                                     "installed or wrong environment", \
-                                     [line], outLines)
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
@@ -67,11 +67,11 @@ class ProtocolLcgUtils(Protocol):
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
-        setProxy = ''  
+        setProxy = ''
         if proxy is not None:
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
- 
+
         cmd = setProxy + " lcg-cp " + self.options + " " + opt + " " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
@@ -169,11 +169,11 @@ class ProtocolLcgUtils(Protocol):
         cmd += "lcg-gt " + opt + " " + str(fullSource) + " gsiftp"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
-        
+
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
-        return outputs.split('\n')[0] 
+        return outputs.split('\n')[0]
 
 
     def listPath(self, source, proxy = None, opt = ""):
