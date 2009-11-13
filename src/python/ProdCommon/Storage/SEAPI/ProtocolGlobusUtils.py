@@ -202,8 +202,18 @@ class ProtocolGlobusUtils(Protocol):
         finally:
             # remove the temp file
             os.unlink( fname )
+
         resvalList = self.lessSimpleOutputCheck(outputs, errors, source.workon, dest.workon)
 
+        if int(exitcode) != 0:
+            eec_flag = False
+            for elem in resvalList:
+                if int(elem[0]) != 0:
+                    eec_flag = True
+                    break
+            if eec_flag is False:
+                raise OperationException( "Error copying: \n " +source.workon+ " \nto: \n " +dest.workon,\
+                                          errors, outputs )
         return resvalList
 
     def move(self, source, dest, proxy = None, opt = ""):
