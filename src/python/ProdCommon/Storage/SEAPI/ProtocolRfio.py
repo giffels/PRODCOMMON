@@ -352,7 +352,7 @@ class ProtocolRfio(Protocol):
             while (exit != 0 and tries < 5):
                 exit, out = super(ProtocolRfio, self).executeCommand(command)
                 self.__logout__("Executing through ksu:\t" + str(cmd) + \
-                      ": try number " + tries + "\n", exit, out)
+                      ": try number " + str(tries) + "\n", exit, out)
                 tries += 1
 
         finally:
