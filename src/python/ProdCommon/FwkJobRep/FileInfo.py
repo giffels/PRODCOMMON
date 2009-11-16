@@ -40,6 +40,7 @@ class FileInfo(dict):
         self.setdefault("Catalog", None)
         self.setdefault("OutputModuleClass", None)
         self.setdefault("Checksum", None)
+        self.setdefault("Checksums", {})
         self.setdefault("MergedBySize", "False")
         self.setdefault("FileType", "EDM")
         self.setdefault("StreamerIndexFile", None)
@@ -127,6 +128,7 @@ class FileInfo(dict):
 
         """
         self.checksums[algorithm] = value
+        self['Checksums'] = self.checksums
         return
 
     def addRunAndLumi(self, runNumber, *lumis):
