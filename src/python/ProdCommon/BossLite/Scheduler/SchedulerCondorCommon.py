@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.2 2009/10/29 16:49:46 ewv Exp $"
-__version__ = "$Revision: 1.55.2.2 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.3 2009/11/05 22:19:26 ewv Exp $"
+__version__ = "$Revision: 1.55.2.3 $"
 
 import os
 import popen2
@@ -30,6 +30,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
     def __init__( self, **args ):
         # call super class init method
         super(SchedulerCondorCommon, self).__init__(**args)
+        os.environ['_CONDOR_GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE'] = '20'
         self.hostname   = getfqdn()
         self.condorTemp = args.get('tmpDir', None)
         self.outputDir  = args.get('outputDirectory', None)
@@ -244,11 +245,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             [key, value] = line.split('=', 1)
             if key.strip() == "schedulerList":
                 CEs = value.split(',')
-#                 ceSlot = (jobId-1) // self.batchSize
-#                 ceNum = ceSlot % len(CEs)
-                # FIXME: Can we do round robin again?
-                ceNum = 0
-                ce = CEs[ceNum]
+                ce = CEs[0]
                 jdl += "globusscheduler = " + ce + '\n'
             else:
                 jdl += line.strip() + '\n'
@@ -497,3 +494,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
         """
 
         return "Check jdl files in " + self.condorTemp + " after submit\n"
+
+
+    def x509Proxy(self):
+        x509 = None
+        x509tmp = '/tmp/x509up_u' + str(os.getuid())
+        if 'X509_USER_PROXY' in os.environ:
+            x509 = os.environ['X509_USER_PROXY']
+        elif os.path.isfile(x509tmp):
+            x509 = x509tmp
+        return x509
