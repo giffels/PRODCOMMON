@@ -367,8 +367,11 @@ class SchedulerARC(SchedulerInterface):
         elif type(obj) == Task:
             map = {}
             for job in obj.getJobs():
-                m, bulkId = self.submitJob(obj, job, requirements)
-                map.update(m)
+                try:
+                    m, bulkId = self.submitJob(obj, job, requirements)
+                    map.update(m)
+                except SchedulerError, e:
+                    job.runningJob.errors.append("Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' ')))
             return map, bulkId, service 
 
 
@@ -384,12 +387,12 @@ class SchedulerARC(SchedulerInterface):
         self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
         if exitStat != 0:
-            raise SchedulerError('Error in submit', output, command)
+            raise SchedulerError('Error in submit:', output, command)
 
         # Parse output of submit command
         match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
         if not match:
-            raise SchedulerError('Error in submit', output, command)
+            raise SchedulerError('Error in submit:', output, command)
 
         arcId = match.group(1)
         m = {job['name']: arcId}  # arcId will end up in job.runningJob['schedulerId']
