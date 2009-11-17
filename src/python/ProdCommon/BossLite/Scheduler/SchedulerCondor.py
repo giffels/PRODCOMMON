@@ -4,8 +4,8 @@ _SchedulerCondor_
 Scheduler class for vanilla Condor scheduler
 """
 
-__revision__ = "$Id: SchedulerCondor.py,v 1.18.4.2 2009/10/29 16:49:46 ewv Exp $"
-__version__ = "$Revision: 1.18.4.2 $"
+__revision__ = "$Id: SchedulerCondor.py,v 1.18.4.3 2009/11/17 17:29:25 ewv Exp $"
+__version__ = "$Revision: 1.18.4.3 $"
 
 import os
 
@@ -21,13 +21,6 @@ class SchedulerCondor(SchedulerCondorCommon) :
     def __init__( self, **args ):
         # call super class init method
         super(SchedulerCondor, self).__init__(**args)
-
-
-    def checkUserProxy( self, cert='' ):
-        """
-        Dummy function for non-grid scheduler
-        """
-        return
 
 
     def jobDescription ( self, obj, requirements='', config='', service = '' ):

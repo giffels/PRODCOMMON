@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.3 2009/11/05 22:19:26 ewv Exp $"
-__version__ = "$Revision: 1.55.2.3 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.4 2009/11/17 17:29:25 ewv Exp $"
+__version__ = "$Revision: 1.55.2.4 $"
 
 import os
 import popen2
@@ -121,14 +121,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     else:
                         jdl += 'Executable = %s/%s\n' % (self.jobDir, job['executable'])
                     jdl += '+BLTaskID = "' + taskId + '"\n'
-                    print "Common JDL\n",jdl
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
                 jobCount += 1
             # End of loop over jobs to produce JDL
 
             # Write and submit JDL
-            print "Final JDL\n",jdl
             jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
             jdlFile = open(jdlFileName, 'w')
             jdlFile.write(jdl)
@@ -166,7 +164,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
                             condorID = self.hostname + "//" \
                                + matchObj.group(2) + "." + str(jobCount)
                             ret_map[job['name']] = condorID
-                            print "CondorID",condorID
                             job.runningJob['schedulerId'] = condorID
                             jobCount += 1
             if not jobsSubmitted:
@@ -335,7 +332,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         else:
             raise SchedulerError('Wrong argument type or object type',
                                   str(type(obj)) + ' ' + str(objType))
-        print "Looking for IDS",jobIds
 
         for schedd in jobIds.keys() :
             cmd = 'condor_q -xml '
