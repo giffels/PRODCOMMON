@@ -4,33 +4,17 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.6 2009/06/09 13:41:36 gcodispo Exp $"
-__version__ = "$Revision: 1.6 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.7 2009/11/19 15:27:19 gcodispo Exp $"
+__version__ = "$Revision: 1.7 $"
 
-import sys
 import os
-import traceback
 import tempfile
-from BossLite.Scheduler.SchedulerInterface import SchedulerInterface
-from BossLite.Common.Exceptions import SchedulerError
-from BossLite.DbObjects.Job import Job
-from BossLite.DbObjects.Task import Task
-from BossLite.DbObjects.RunningJob import RunningJob
-#
-# Import gLite specific modules
-try:
-    from glite_wmsui_LbWrapper import Status
-    import Job
-    from BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
-         groupByWMS
-except:
-    err = \
-        """
-        missing glite environment.
-        Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
-        """
-    raise ImportError(err)
-#
+from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
+from ProdCommon.BossLite.DbObjects.Job import Job
+from ProdCommon.BossLite.DbObjects.Task import Task
+from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
+
 
 ##########################################################################
 class SchedulerGLite (SchedulerInterface) :
@@ -40,7 +24,7 @@ class SchedulerGLite (SchedulerInterface) :
     def __init__( self, **args):
 
         # call super class init method
-        super(SchedulerGLiteAPI, self).__init__(**args)
+        super(SchedulerGLite, self).__init__(**args)
 
         # some initializations
         self.proxyString = ''
@@ -130,10 +114,12 @@ class SchedulerGLite (SchedulerInterface) :
         jdl = self.decode( obj, requirements )
         
         # write a jdl tmpFile
-        tmp, fname = tempfile.mkstemp( "", "glite_bulk_", os.getcwd() )
+        workdir = tempfile.mkdtemp( prefix = obj['name'], dir = os.getcwd() )
+        tmp, fname = tempfile.mkstemp( workdir, "glite_bulk_", os.getcwd() )
         tmpFile = open( fname, 'w')
         tmpFile.write( jdl )
         tmpFile.close()
+        command = ''
         
         # delegate proxy
         if self.delegationId != "" :
@@ -158,8 +144,8 @@ class SchedulerGLite (SchedulerInterface) :
         except IndexError:
             raise SchedulerError( 'wrong parent id',  out )
         
-        logging.info( "Your job identifier is: %s" % taskId )
-        return getChildrens( taskId )
+        self.logging.info( "Your job identifier is: %s" % taskId )
+        os.unlink( fname )
 
 
     ##########################################################################
@@ -265,7 +251,7 @@ class SchedulerGLite (SchedulerInterface) :
         try:
             out = out.split("CEId")[1].strip()
         except IndexError:
-            raise ( 'IndexError', out )
+            raise SchedulerError( 'IndexError', out )
 
         return out.split()
         
@@ -437,7 +423,7 @@ class SchedulerGLite (SchedulerInterface) :
         return jdl
 
     ##########################################################################
-    def collectionApiJdl( self, task, requirements='' ):
+    def collectionJdlFile ( self, task, requirements='' ):
         """
         build a collection jdl easy to be handled by the wmproxy API interface
         and gives back the list of input files for a better handling
@@ -643,9 +629,3 @@ class SchedulerGLite (SchedulerInterface) :
                 break
         return celist
 
-
-    ##########################################################################
-    def delegateProxy( self ) :
-        """
-        _delegateProxy_
-        """
