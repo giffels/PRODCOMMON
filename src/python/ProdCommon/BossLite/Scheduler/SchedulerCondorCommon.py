@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.4 2009/11/17 17:29:25 ewv Exp $"
-__version__ = "$Revision: 1.55.2.4 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.5 2009/11/17 19:32:37 ewv Exp $"
+__version__ = "$Revision: 1.55.2.5 $"
 
 import os
 import popen2
@@ -75,18 +75,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
         else:
             os.mkdir(self.condorTemp)
 
-        if self.useGlexec:
-            # Set up the environment
-            os.environ['GLEXEC_CLIENT_CERT']  = obj['user_proxy']
-            os.environ['GLEXEC_SOURCE_PROXY'] = obj['user_proxy']
-            os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxy'
-            os.environ['X509_USER_PROXY']     = seDir + '/userProxy'
+        #FIXME: Can we remove this. I think Frank asked for it
+        # won't workas intended with bulk submission
         # Get list of schedd's
-        scheddList = None
-        nSchedd    = 0
-        if 'CMS_SCHEDD_LIST' in os.environ:
-            scheddList = os.environ['CMS_SCHEDD_LIST'].split(',')
-            nSchedd    = len(scheddList)
+#         scheddList = None
+#         nSchedd    = 0
+#         if 'CMS_SCHEDD_LIST' in os.environ:
+#             scheddList = os.environ['CMS_SCHEDD_LIST'].split(',')
+#             nSchedd    = len(scheddList)
 
         taskId = ''
         ret_map = {}
@@ -103,9 +99,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 #FIXME: Can we remove this. I think Frank asked for it
                 # won't workas intended with bulk submission
 
-                if scheddList:
-                    schedd = scheddList[jobCount % nSchedd]
-                    submitOptions += '-name %s ' % schedd
+#                 if scheddList:
+#                     schedd = scheddList[jobCount % nSchedd]
+#                     submitOptions += '-name %s ' % schedd
 
                 jobRequirements = requirements
                 execHost = self.findExecHost(jobRequirements)
@@ -133,19 +129,30 @@ class SchedulerCondorCommon(SchedulerInterface) :
             jdlFile.close()
 
             command = 'cd %s; ' % self.condorTemp
+            
             if self.useGlexec:
-                #proxyNew = '/home/hpi/CRABSERVER_Deployment/bin/proxy-renew.sh'
-                os.environ['GLEXEC_TARGET_PROXY'] = '/tmp/x509_ugeneric_value'
+                # Set up environment in thread safe manner
+                userProxy = obj['user_proxy']
+                seProxy   = seDir + '/userProxy'
+                commonEnv = 'export GLEXEC_CLIENT_CERT=%s; ' \
+                            'export GLEXEC_SOURCE_PROXY=%s; ' \
+                            'export X509_USER_PROXY=%s; ' % \
+                            (userProxy, userProxy, seProxy)
+                proxyEnv  = 'export GLEXEC_TARGET_PROXY=/tmp/x509_ugeneric; '
+                submitEnv = 'export GLEXEC_TARGET_PROXY=%s; ' % seProxy
+                
                 diffTime = str(os.path.getmtime(obj['user_proxy']))
-                proxycmd = "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
-                #stdout, stdin, stderr = popen2.popen3(proxycmd)
-                commands.getstatusoutput(proxycmd)
-                os.environ['GLEXEC_TARGET_PROXY'] = seDir + '/userProxytmp'
+                proxycmd = commonEnv + proxyEnv
+                proxycmd += "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
+                (status,output) = commands.getstatusoutput(proxycmd)
+                logging.debug("Result of %s\n%s\n%s" % (proxycmd,status,output))
+                command += commonEnv + submitEnv
                 command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
                                             jdlFileName)
             else:
                 command += 'condor_submit ' + submitOptions + jdlFileName
             (status,output) = commands.getstatusoutput(command)
+            logging.debug("Result of %s\n%s\n%s" % (command, status, output))
 
             # Parse output, build numbers
             jobsSubmitted = False
@@ -173,7 +180,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 self.logging.error(output)
 
         success = self.hostname
-
+        self.logging.debug("Returning %s\n%s\n%s" %(ret_map, taskId, success))
         return ret_map, taskId, success
 
 

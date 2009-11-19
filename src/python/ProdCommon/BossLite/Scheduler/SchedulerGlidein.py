@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.14.2.1 2009/11/05 22:19:27 ewv Exp $"
-__version__ = "$Revision: 1.14.2.1 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.14.2.2 2009/11/17 17:29:25 ewv Exp $"
+__version__ = "$Revision: 1.14.2.2 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -58,6 +58,8 @@ class SchedulerGlidein(SchedulerCondorCommon) :
         jdl += '(JobStatus==5 && $(since)>691200) || ' \
                '(JobStatus==1 && $(since)>691200)\n'
 
+        import logging
+        logging.info("Building specific jdl for glidein")
 
         return jdl
 
