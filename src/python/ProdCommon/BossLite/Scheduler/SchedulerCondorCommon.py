@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.5 2009/11/17 19:32:37 ewv Exp $"
-__version__ = "$Revision: 1.55.2.5 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.6 2009/11/19 20:28:03 ewv Exp $"
+__version__ = "$Revision: 1.55.2.6 $"
 
 import os
 import popen2
@@ -145,14 +145,15 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 proxycmd = commonEnv + proxyEnv
                 proxycmd += "%s %s %s" %(self.glexec, self.renewProxy, diffTime)
                 (status,output) = commands.getstatusoutput(proxycmd)
-                logging.debug("Result of %s\n%s\n%s" % (proxycmd,status,output))
+                self.logging.debug("Result of %s\n%s\n%s" % 
+                                    (proxycmd,status,output))
                 command += commonEnv + submitEnv
-                command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, seDir,
-                                            jdlFileName)
+                command += "%s %s %s %s" % (self.glexec, self.glexecWrapper, 
+                                            seDir, jdlFileName)
             else:
                 command += 'condor_submit ' + submitOptions + jdlFileName
             (status,output) = commands.getstatusoutput(command)
-            logging.debug("Result of %s\n%s\n%s" % (command, status, output))
+            self.logging.debug("Result of %s\n%s\n%s" % (command, status, output))
 
             # Parse output, build numbers
             jobsSubmitted = False
@@ -218,17 +219,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 filelist += filename + ','
         return filelist[:-1] # Strip off last ","
 
-
-#     def decode  ( self, obj, requirements='' ):
-#         """
-#         prepare file for submission
-#         """
-#
-#         if type(obj) == RunningJob or type(obj) == Job:
-#             return self.singleApiJdl(obj, requirements)
-#         elif type(obj) == Task:
-#             raise NotImplementedError
-#             #return self.collectionApiJdl(obj, requirements)
 
     def commonJdl(self, job, requirements=''):
         """
