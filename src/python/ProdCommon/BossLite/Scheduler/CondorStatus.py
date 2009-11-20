@@ -4,22 +4,23 @@ _CondorStatus_
 Single, blocking, caching condor_q
 """
 
-__revision__ = "$Id: CondorStatus.py,v 1.1.2.2 2009/11/20 14:15:22 ewv Exp $"
-__version__ = "$Revision: 1.1.2.2 $"
+__revision__ = "$Id: CondorStatus.py,v 1.1.2.3 2009/11/20 14:51:43 ewv Exp $"
+__version__ = "$Revision: 1.1.2.3 $"
 
 
 import cStringIO
-import os
 import logging
-import time
+import os
 import threading
+import time
 
 from socket import getfqdn
 from xml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
-from WMCore.Algorithms.Singleton import Singleton
 from CondorHandler import CondorHandler
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
+from WMCore.Algorithms.Singleton import Singleton
 
 # If seenJobs doesn't work because of race condition, could also try
 # leave_in_queue = True
@@ -96,12 +97,12 @@ class CondorStatus(Singleton):
                 xmlLine = outputFp.readline()
             outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
         except:
-            raise RuntimeError('Problem reading output of command', cmd)
+            raise SchedulerError('Problem reading output of command', cmd)
 
         # If the command succeeded, close returns None
         # Otherwise, close returns the exit code
         if outputFp.close():
-            raise RuntimeError("condor_q command or cache file failed.")
+            raise SchedulerError("condor_q command or cache file failed.")
 
         handler = CondorHandler('GlobalJobId',
                     ['JobStatus', 'GridJobId','ProcId','ClusterId',
@@ -112,7 +113,7 @@ class CondorStatus(Singleton):
             parser.setFeature(feature_external_ges, False)
             parser.parse(outputFile)
         except:
-            raise RuntimeError('Problem parsing output of command', cmd)
+            raise SchedulerError('Problem parsing output of command', cmd)
 
         logging.debug("Jobs before update:\n%s", self.seenJobList())
         self.jobDicts.update(handler.getJobInfo())
