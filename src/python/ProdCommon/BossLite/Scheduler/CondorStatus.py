@@ -4,8 +4,8 @@ _CondorStatus_
 Single, blocking, caching condor_q
 """
 
-__revision__ = "$Id: CondorStatus.py,v 1.1.2.3 2009/11/20 14:51:43 ewv Exp $"
-__version__ = "$Revision: 1.1.2.3 $"
+__revision__ = "$Id: CondorStatus.py,v 1.1.2.4 2009/11/20 14:55:13 ewv Exp $"
+__version__ = "$Revision: 1.1.2.4 $"
 
 
 import cStringIO
@@ -43,7 +43,6 @@ class CondorStatus(Singleton):
             self.condorqMutex = threading.Lock()
             self.jobDicts = {}
             self.seenJobs = set([])
-            self.query()
 
 
     def seenJobList(self):
@@ -68,13 +67,12 @@ class CondorStatus(Singleton):
             schedCmd = ' -name ' + schedd
         else:
             schedd = self.hostname
-
+        logging.debug("Querying for %s on %s" % (taskId,schedd))
         if force or (self.times.has_key(schedd) and
                      time.time()-self.times[schedd] < self.cacheTime):
             logging.debug("Cache for %s exists, returning" % schedd)
             self.condorqMutex.release()
             return self.jobDicts
-
         self.times[schedd] = time.time()
         cmd = 'condor_q -xml' + schedCmd
 

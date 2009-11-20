@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.8 2009/11/19 20:55:04 ewv Exp $"
-__version__ = "$Revision: 1.55.2.8 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.9 2009/11/20 15:28:02 ewv Exp $"
+__version__ = "$Revision: 1.55.2.9 $"
 
 import commands
 import os
@@ -312,6 +312,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         if type(obj) == Task:
             taskId = obj['name']
+            if self.useGlexec:
+                queryTaskId = None
+            else:
+                queryTaskId = taskId
+
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
@@ -332,7 +337,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                                   str(type(obj)) + ' ' + str(objType))
 
         for schedd in jobIds.keys():
-            jobDicts = condorStatus.query(schedd)
+            jobDicts = condorStatus.query(taskId = queryTaskId, schedd = schedd)
             for globalJobId in jobDicts.keys():
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
