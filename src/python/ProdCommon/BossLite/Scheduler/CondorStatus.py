@@ -4,20 +4,15 @@ _CondorStatus_
 Single, blocking, caching condor_q
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.8 2009/11/19 20:55:04 ewv Exp $"
-__version__ = "$Revision: 1.55.2.8 $"
+__revision__ = "$Id: CondorStatus.py,v 1.1.2.1 2009/11/19 23:30:10 ewv Exp $"
+__version__ = "$Revision: 1.1.2.1 $"
 
 
-import commands
 import cStringIO
 import os
 import logging
-import popen2
-import re
-import shutil
 import time
 import threading
-# from set import Set
 
 from socket import getfqdn
 from xml.sax import make_parser
@@ -26,7 +21,7 @@ from xml.sax.handler import feature_external_ges
 from WMCore.Algorithms.Singleton import Singleton
 from CondorHandler import CondorHandler
 
-# If this doesn't work, could also try
+# If seenJobs doesn't work because of race condition, could also try
 # leave_in_queue = True
 # periodic_remove = (JobStatus == 4) && ((CurrentTime - EnteredCurrentStatus) > (3600))
 
@@ -34,9 +29,12 @@ from CondorHandler import CondorHandler
 # when executing query, should remove jobs from that schedd from jobDicts
 
 class CondorStatus(Singleton):
+    """
+    A thread safe, multiple schedd, caching condor status object.
+    Re-aquires status of jobs requested if over time out
+    """
 
-
-    def __init__(self, cacheTime = 15):
+    def __init__(self, cacheTime = 60):
         super(CondorStatus, self).__init__()
         try:
             self.times
@@ -50,7 +48,7 @@ class CondorStatus(Singleton):
             self.query()
 
 
-    def query(self, taskId = None, schedd = None):
+    def query(self, taskId = None, schedd = None, force = False):
 
         jobIds = {}
         bossIds = {}
@@ -58,15 +56,15 @@ class CondorStatus(Singleton):
         # FUTURE: Remove code for Condor < 7.3 when OK
         # FUTURE: look at -attributes to condor_q to limit the XML size. Faster on both ends
         self.condorqMutex.acquire()
-        print "Starting query",self.times
         schedCmd = ''
         if schedd and schedd != self.hostname:
             schedCmd = ' -name ' + schedd
         else:
             schedd = self.hostname
 
-        if self.times.has_key(schedd) and time.time()-self.times[schedd] < self.cacheTime  :
-            print "Cache for %s Already exists, bailing" % schedd, time.time()
+        if force or (self.times.has_key(schedd) and
+                     time.time()-self.times[schedd] < self.cacheTime):
+            logging.debug("Cache for %s exists, returning" % schedd)
             self.condorqMutex.release()
             return self.jobDicts
 
@@ -114,40 +112,30 @@ class CondorStatus(Singleton):
         self.jobDicts.update(handler.getJobInfo())
         print  "After update",self.jobDicts.keys()
         [self.seenJobs.add(x) for x in self.jobDicts.keys()]
-        time.sleep(10)
         self.condorqMutex.release()
         return self.jobDicts
 
-def makeNew():
+if __name__ == '__main__' :
+    logging.basicConfig(level=logging.DEBUG)
+
+    def makeNew():
+        s = CondorStatus()
+        print s.query()
+
+    # Check threading. Thread 2 should cache, thread 3 re-rerun condor_q
+
+    print "Thread 1"
+    threading.Thread(target = makeNew).start()
+    print "Thread 2"
+    threading.Thread(target = makeNew).start()
+    time.sleep(70)
+    print "Thread 3"
+    threading.Thread(target = makeNew).start()
+
+    # Check caching. 2nd invocation should re-run, third use cache
+
     s = CondorStatus()
-    s.query()
-#
+    s.query(schedd='cmslpc05.fnal.gov')
+    s.query(schedd='cmslpc06.fnal.gov')
+    s.query(schedd='cmslpc05.fnal.gov')
 
-#
-print "Thread 1"
-t1 = threading.Thread(target = makeNew).start()
-print "Thread 2"
-t2 = threading.Thread(target = makeNew).start()
-time.sleep(20)
-print "Thread 3"
-t2 = threading.Thread(target = makeNew).start()
-
-s = CondorStatus()
-s.query(schedd='cmslpc05.fnal.gov')
-s.query(schedd='cmslpc06.fnal.gov')
-s.query(schedd='cmslpc05.fnal.gov')
-
-# s1 = CondorStatus()
-# # print id(s1), s1.internalId()
-#
-# s2 = CondorStatus()
-# # print id(s2), s2.internalId()
-#
-# statusDict = s2.query()
-# print statusDict
-# print statusDict.keys()
-# print statusDict.keys()[0]
-
-# for i in xrange(100):
-#     statusDict = s1.query()
-#     print statusDict[statusDict.keys()[0]]
