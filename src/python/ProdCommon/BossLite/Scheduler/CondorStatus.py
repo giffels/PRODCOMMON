@@ -4,8 +4,8 @@ _CondorStatus_
 Single, blocking, caching condor_q
 """
 
-__revision__ = "$Id: CondorStatus.py,v 1.1.2.1 2009/11/19 23:30:10 ewv Exp $"
-__version__ = "$Revision: 1.1.2.1 $"
+__revision__ = "$Id: CondorStatus.py,v 1.1.2.2 2009/11/20 14:15:22 ewv Exp $"
+__version__ = "$Revision: 1.1.2.2 $"
 
 
 import cStringIO
@@ -25,9 +25,6 @@ from CondorHandler import CondorHandler
 # leave_in_queue = True
 # periodic_remove = (JobStatus == 4) && ((CurrentTime - EnteredCurrentStatus) > (3600))
 
-# Not seen a job should trigger query
-# when executing query, should remove jobs from that schedd from jobDicts
-
 class CondorStatus(Singleton):
     """
     A thread safe, multiple schedd, caching condor status object.
@@ -37,24 +34,33 @@ class CondorStatus(Singleton):
     def __init__(self, cacheTime = 60):
         super(CondorStatus, self).__init__()
         try:
-            self.times
+            test = self.times
         except AttributeError:
             self.times = {}
             self.cacheTime = cacheTime
             self.hostname   = getfqdn()
             self.condorqMutex = threading.Lock()
             self.jobDicts = {}
-            self.seenJobs = set()
+            self.seenJobs = set([])
             self.query()
 
 
-    def query(self, taskId = None, schedd = None, force = False):
+    def seenJobList(self):
+        """
+        Get the list of all jobs ever seen. May be useful for
+        determining the difference between "Done" and not seen yet.
+        """
+        return list(self.seenJobs)
 
-        jobIds = {}
-        bossIds = {}
+
+    def query(self, taskId = None, schedd = None, force = False):
+        """
+        Determine if we need more info from condor_q, get it
+        """
 
         # FUTURE: Remove code for Condor < 7.3 when OK
-        # FUTURE: look at -attributes to condor_q to limit the XML size. Faster on both ends
+        # FUTURE: look at -attributes to condor_q to limit the XML size.
+        #         Faster on both ends
         self.condorqMutex.acquire()
         schedCmd = ''
         if schedd and schedd != self.hostname:
@@ -69,33 +75,33 @@ class CondorStatus(Singleton):
             return self.jobDicts
 
         self.times[schedd] = time.time()
-        print "time is",self.times[schedd]
         cmd = 'condor_q -xml' + schedCmd
 
         if taskId:
             cmd += """ -constraint 'BLTaskID=?="%s"'""" % taskId
-        print "Command is",cmd
+        logging.debug("Executing %s" % cmd)
 
+        # Delete info from the schedd we are about to query
         for jobId in self.jobDicts.keys():
-            print "Checking %s agains %s",schedd,jobId
             if jobId.find(schedd) == 0:
                 del self.jobDicts[jobId]
+
         (inputFile, outputFp) = os.popen4(cmd)
 
+        # Throw away junk lines from condor < 7.3, remove when obsolete
+        # outputFile = cStringIO.StringIO(outputFp.read()) # Condor 7.3 version
         try:
             xmlLine = ''
-            while xmlLine.find('<?xml') == -1: # Throw away junk lines from condor < 7.3
-                xmlLine = outputFp.readline()  # Remove when obsolete
-
+            while xmlLine.find('<?xml') == -1:
+                xmlLine = outputFp.readline()
             outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
-            # outputFile = cStringIO.StringIO(outputFp.read()) # Condor 7.3 version
         except:
-            raise SchedulerError('Problem reading output of command', cmd)
+            raise RuntimeError('Problem reading output of command', cmd)
 
         # If the command succeeded, close returns None
         # Otherwise, close returns the exit code
         if outputFp.close():
-            raise SchedulerError("condor_q command or cache file failed.")
+            raise RuntimeError("condor_q command or cache file failed.")
 
         handler = CondorHandler('GlobalJobId',
                     ['JobStatus', 'GridJobId','ProcId','ClusterId',
@@ -106,21 +112,28 @@ class CondorStatus(Singleton):
             parser.setFeature(feature_external_ges, False)
             parser.parse(outputFile)
         except:
-            raise SchedulerError('Problem parsing output of command', cmd)
+            raise RuntimeError('Problem parsing output of command', cmd)
 
-        print  "Before update",self.jobDicts.keys()
+        logging.debug("Jobs before update:\n%s", self.seenJobList())
         self.jobDicts.update(handler.getJobInfo())
-        print  "After update",self.jobDicts.keys()
-        [self.seenJobs.add(x) for x in self.jobDicts.keys()]
+        for jobId in self.jobDicts.keys():
+            self.seenJobs.add(jobId)
+        logging.debug("Jobs after update:\n%s", self.seenJobList())
         self.condorqMutex.release()
         return self.jobDicts
 
 if __name__ == '__main__' :
+    # Check threading and caching behavior. Use debug statements
+
     logging.basicConfig(level=logging.DEBUG)
 
     def makeNew():
-        s = CondorStatus()
-        print s.query()
+        """
+        Make called in thread mode to make new CondorStatus, print output
+        """
+
+        cs = CondorStatus()
+        cs.query()
 
     # Check threading. Thread 2 should cache, thread 3 re-rerun condor_q
 
@@ -134,8 +147,8 @@ if __name__ == '__main__' :
 
     # Check caching. 2nd invocation should re-run, third use cache
 
-    s = CondorStatus()
-    s.query(schedd='cmslpc05.fnal.gov')
-    s.query(schedd='cmslpc06.fnal.gov')
-    s.query(schedd='cmslpc05.fnal.gov')
+    CS = CondorStatus()
+    CS.query(schedd='cmslpc05.fnal.gov')
+    CS.query(schedd='cmslpc06.fnal.gov')
+    CS.query(schedd='cmslpc05.fnal.gov')
 
