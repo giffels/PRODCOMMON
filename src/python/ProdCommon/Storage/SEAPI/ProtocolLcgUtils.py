@@ -205,7 +205,20 @@ class ProtocolLcgUtils(Protocol):
         _getFileList_
         """
         filesres = []
+        startpath_list=self.removeSlash(startpath)
         for line in parsingout.split("\n"):
-            if line.find(startpath) != -1:
+            line_list=self.removeSlash(line)
+            if ''.join(line_list).find(''.join(startpath_list)) != -1:
                 filesres.append(line)
         return filesres
+
+    def removeSlash(self,longstring):
+        """ 
+        remove all slashes from the given string 
+        and retourn a list without empty element.      
+        """    
+        listEl=longstring.split('/')  
+        n_empty=listEl.count('')
+        for i in range(n_empty): 
+            listEl.remove('')    
+        return listEl
