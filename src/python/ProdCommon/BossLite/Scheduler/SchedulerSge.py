@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.7 2009/04/07 08:05:28 spiga Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.8 2009/06/09 13:41:36 gcodispo Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import re, os
 
@@ -27,6 +27,7 @@ class SchedulerSge (SchedulerInterface) :
             'E':'DA',
             'h':'R',
             'r':'R',
+            'hr':'R',
             'R':'R',
             's':'R',
             'S':'R',
