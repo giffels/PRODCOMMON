@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.22 $"
-__revision__ = "$Id: TaskState.py,v 1.22 2009/08/28 12:21:25 swakef Exp $"
+__version__ = "$Revision: 1.23 $"
+__revision__ = "$Id: TaskState.py,v 1.23 2009/08/28 12:21:51 swakef Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -398,14 +398,22 @@ class TaskState:
         ModuleLabel for the File entry
 
         """
-
         datasets = self.outputDatasets()
         datasetMap = {}
         for dataset in datasets:
             datasetMap[dataset['OutputModuleName']] = dataset
 
+        # count files per output module
+        fileCountPerOutMod = {}
         for fileInfo in self._JobReport.files:
-            self.matchDataset(fileInfo, datasetMap)
+            outModLabel = fileInfo.get("ModuleLabel", None)
+            if fileCountPerOutMod.has_key(outModLabel):
+                fileCountPerOutMod[outModLabel] += 1
+            else:
+                fileCountPerOutMod[outModLabel] = 1
+
+        for fileInfo in self._JobReport.files:
+            self.matchDataset(fileInfo, datasetMap, fileCountPerOutMod)
 
         for fileInfo in self._JobReport.files:
             self.updateFileLFN(fileInfo)
@@ -431,7 +439,7 @@ class TaskState:
         return
 
 
-    def matchDataset(self, fileInfo, datasetMap):
+    def matchDataset(self, fileInfo, datasetMap, fileCountPerOutMod):
         """
         _matchDataset_
 
@@ -444,28 +452,31 @@ class TaskState:
         if outModLabel == None:
             return
 
-
         if self.taskAttrs['DoSizeMerge']:
             print "Doing Size Merge Check"
             unmergedDs = datasetMap.get(outModLabel, None)
             if unmergedDs is not None:
                 if unmergedDs['MergedLFNBase'] != None:
-                    if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
-                        #  //
-                        # // File bigger than threshold
-                        #//
-                        mergeModLabel = "%s-Merged" % outModLabel
-                        ds = datasetMap.get(mergeModLabel, None)
+                    if fileCountPerOutMod.has_key(outModLabel) and \
+                       fileCountPerOutMod[outModLabel] == 1:
+                        if fileInfo['Size'] >= self.taskAttrs['MinMergeFileSize']:
+                            #  //
+                            # // File bigger than threshold
+                            #//
+                            mergeModLabel = "%s-Merged" % outModLabel
+                            ds = datasetMap.get(mergeModLabel, None)
 
-                        if ds != None:
-                            outModLabel = mergeModLabel
-                            fileInfo['MergedBySize'] = "True"
-                            fileInfo['MergedLFNBase'] = unmergedDs['MergedLFNBase']
-                            msg = "File Associated to Merge Output based on size:\n"
-                            msg += " %s\n Size = %s\n" % (fileInfo['LFN'], fileInfo['Size'])
-                            print msg
+                            if ds != None:
+                                outModLabel = mergeModLabel
+                                fileInfo['MergedBySize'] = "True"
+                                fileInfo['MergedLFNBase'] = unmergedDs['MergedLFNBase']
+                                msg = "File Associated to Merge Output based on size:\n"
+                                msg += " %s\n Size = %s\n" % (fileInfo['LFN'], fileInfo['Size'])
+                                print msg
+                        else:
+                            print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
                     else:
-                        print "File is smaller than %s" % self.taskAttrs['MinMergeFileSize']
+                        print "Multiple files per output module, skipping Size Merge Check"
                 else:
                     print "No MergedLFNBase defined, skipping Size Merge Check"
             else:
