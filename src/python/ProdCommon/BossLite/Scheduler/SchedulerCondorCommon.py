@@ -4,13 +4,14 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.9 2009/11/20 15:28:02 ewv Exp $"
-__version__ = "$Revision: 1.55.2.9 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.10 2009/11/20 16:13:36 ewv Exp $"
+__version__ = "$Revision: 1.55.2.10 $"
 
 import commands
 import os
 import re
 import shutil
+import time
 
 from socket import getfqdn
 
@@ -309,9 +310,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
         }
         jobIds = {}
         bossIds = {}
-
+        
+        forceQuery = False
         if type(obj) == Task:
+            import logging
             taskId = obj['name']
+            logging.info("Checking on %s" %  taskId )  
             if self.useGlexec:
                 queryTaskId = None
             else:
@@ -320,8 +324,16 @@ class SchedulerCondorCommon(SchedulerInterface) :
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
-                schedulerId = job.runningJob['schedulerId']
+                runJob =  job.runningJob
+                schedulerId = runJob['schedulerId']
 
+                submitTime = time.strptime(runJob['submissionTime'], 
+                                           '%Y-%m-%d %H:%M:%S')
+                                           
+                delay = time.mktime(time.gmtime()) - time.mktime(submitTime)
+                if delay < 60:
+                    forceQuery = True
+                    
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
                 schedd = schedulerId.split('//')[0]
@@ -337,7 +349,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
                                   str(type(obj)) + ' ' + str(objType))
 
         for schedd in jobIds.keys():
-            jobDicts = condorStatus.query(taskId = queryTaskId, schedd = schedd)
+            jobDicts = condorStatus.query(taskId=queryTaskId, schedd=schedd, 
+                                          force=forceQuery)
             for globalJobId in jobDicts.keys():
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
