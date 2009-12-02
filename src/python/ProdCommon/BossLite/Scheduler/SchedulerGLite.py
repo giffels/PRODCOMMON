@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.7 2009/11/19 15:27:19 gcodispo Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.8 2009/11/19 15:38:54 gcodispo Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import os
 import tempfile
@@ -114,8 +114,7 @@ class SchedulerGLite (SchedulerInterface) :
         jdl = self.decode( obj, requirements )
         
         # write a jdl tmpFile
-        workdir = tempfile.mkdtemp( prefix = obj['name'], dir = os.getcwd() )
-        tmp, fname = tempfile.mkstemp( workdir, "glite_bulk_", os.getcwd() )
+        tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'], dir = os.getcwd() )
         tmpFile = open( fname, 'w')
         tmpFile.write( jdl )
         tmpFile.close()
