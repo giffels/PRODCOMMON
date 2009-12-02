@@ -47,7 +47,8 @@ class Token:
         try: 
             kerbFile = os.path.expandvars('$KRB5CCNAME').split('FILE:')[1]
         except Exception,ex:
-            msg = ('Error %s in getUserKereros search\n' %str(ex))
+            msg = ('Error %s in getUserKerberos search\n' %str(ex))
+            msg += ('\tPlease check if $KRB5CCNAME is correctly defined.')
             if self.debug : msg += traceback.format_exc()
             raise Exception(msg)
         return kerbFile
