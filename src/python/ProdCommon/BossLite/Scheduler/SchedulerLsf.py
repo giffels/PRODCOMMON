@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.27 2009/10/23 18:00:00 riahi Exp $"
-__version__ = "$Revision: 1.27 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.29 2009/11/10 18:54:41 spiga Exp $"
+__version__ = "$Revision: 1.29 $"
 
 import re, os
 import tempfile
@@ -156,8 +156,9 @@ class SchedulerLsf (SchedulerInterface) :
         """
         prepare file for submission
         """
-
-        txt = "'"
+       # Added for slc4 slc5 compatibility    
+        txt = "' export  RFIO_PORT=5001 ; "
+      #  txt = "'"
         # Need to copy InputSandBox to WN
         if task:
             #subDir=task[ 'startDirectory' ]

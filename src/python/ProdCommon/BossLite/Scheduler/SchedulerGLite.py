@@ -4,89 +4,100 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.5 2008/09/08 10:21:45 gcodispo Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.9 2009/12/02 13:07:42 gcodispo Exp $"
+__version__ = "$Revision: 1.9 $"
 
-import sys
 import os
-import traceback
 import tempfile
-from BossLite.Scheduler.SchedulerInterface import SchedulerInterface
-from BossLite.Common.Exceptions import SchedulerError
-from BossLite.DbObjects.Job import Job
-from BossLite.DbObjects.Task import Task
-from BossLite.DbObjects.RunningJob import RunningJob
-#
-# Import gLite specific modules
-try:
-    from glite_wmsui_LbWrapper import Status
-    import Job
-    from BossLite.Scheduler.GLiteLBQuery import checkJobs, checkJobsBulk, \
-         groupByWMS
-except:
-    err = \
-        """
-        missing glite environment.
-        Try export PYTHONPATH=$PYTHONPATH:$GLITE_LOCATION/lib
-        """
-    raise ImportError(err)
-#
-#
-def getChildrens( taskId ) :
-    """
-    function to retrieve job,gridid asssociation
-    """
-    
-    error = ""
-    ret_map = {}
-    status = Status()
-    jobStatus = Job.JobStatus (status)
-    states = jobStatus.states_names
-    status.getStatus(taskId, 0)
-    err, apiMsg = status.get_error()
-    if err:
-        raise SchedulerError( err, apiMsg )
-    jobidInfo = status.loadStatus(0)
-    VECT_OFFSET = jobStatus.ATTR_MAX
-    intervals = int ( len(jobidInfo) / VECT_OFFSET )
-    wms = jobidInfo[ states.index( 'Network server' ) ]
-    id_index = states.index( 'User tags' )
-    gid_index = states.index( 'Jobid' )
-    if jobidInfo[ VECT_OFFSET + id_index ] == '' :
-        raise SchedulerError( "Error", "Wait a bit" )
-    for off in range ( 1, intervals ):
-        offset = off * VECT_OFFSET
-        bossid = jobidInfo[ offset + id_index ]
-        bossid = bossid[ bossid.find('=')+1: bossid.find(';') ]
-        ret_map[ bossid ] = jobidInfo[ offset + gid_index ]
-        
-    return taskId, wms, ret_map
+from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
+from ProdCommon.BossLite.Common.Exceptions import SchedulerError
+from ProdCommon.BossLite.DbObjects.Job import Job
+from ProdCommon.BossLite.DbObjects.Task import Task
+from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
 
+##########################################################################
 class SchedulerGLite (SchedulerInterface) :
     """
     basic class to handle glite jobs
     """
     def __init__( self, **args):
 
-
         # call super class init method
         super(SchedulerGLite, self).__init__(**args)
 
-    delegationId = ""
+        # some initializations
+        self.proxyString = ''
+        self.envProxy = os.environ.get("X509_USER_PROXY",'')
+        self.warnings = []
+
+        # # skipWMSAuth
+        # self.skipWMSAuth = args.get("skipWMSAuth", 0)
+        # self.skipWMSAuth = int( self.skipWMSAuth )
+
+        # typical options
+        self.vo = args.get( "vo", "cms" )
+        self.service = args.get( "service", "" )
+        self.config = args.get( "config", "" )
+        self.delegationId = args.get( "proxyname", "bossproxy" )
+
+        # rename output files with submission number
+        self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
+        self.renameOutputFiles = int( self.renameOutputFiles )
+        # x509 string for cli commands
+        self.proxyString = ''
+        if self.cert != '':
+            self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
+
+        # version check for new features
+        version, ret = self.ExecuteCommand( 'glite-version' )
+        version = version.strip()
+        self.isNewUi = ( version.find( '3.2' ) == 0 )
+
+        
+    ##########################################################################
+    def hackEnv( self, restore = False ) :
+        """
+        a trick to reset X509_USER_PROXY when glite is not able to handle
+        explicit proxy
+        """
+
+        # skip if the env proxy is correct
+        if self.cert == '' or self.cert == self.envProxy :
+            return
+
+        # apply the X509_USER_PROXY hack
+        if restore :
+            os.environ["X509_USER_PROXY"] = self.envProxy
+        else :
+            os.environ["X509_USER_PROXY"] = self.cert
+
+        return
 
     ##########################################################################
 
-    def delegateProxy( self, wms ):
+    def delegateWMSProxy( self, wms ):
         """
         delegate proxy to a wms
         """
-        
-        msg, ret = self.ExecuteCommand(
-            "export X509_USER_PROXY=" + self.cert \
-            + "; glite-wms-job-delegate-proxy -d " +  self.delegationId \
-            + " --endpoint " + wms
-            )
+
+        command = ";glite-wms-job-delegate-proxy -d " + self.delegationId \
+                  + " --endpoint " + wms
+        msg, ret = self.ExecuteCommand( self.proxyString + command )
+
+        if ret != 0 or msg.find("Error -") >= 0 :
+            self.logging.warning( "Warning : %s" % msg )
+
+    ##########################################################################
+
+    def delegateProxy( self ):
+        """
+        delegate proxy to _all_ wms
+        """
+
+        command = ";glite-wms-job-delegate-proxy -d " + self.delegationId
+
+        msg, ret = self.ExecuteCommand( self.proxyString + command )
 
         if ret != 0 or msg.find("Error -") >= 0 :
             self.logging.warning( "Warning : %s" % msg )
@@ -103,11 +114,11 @@ class SchedulerGLite (SchedulerInterface) :
         jdl = self.decode( obj, requirements )
         
         # write a jdl tmpFile
-        tmp, fname = tempfile.mkstemp( "", "glite_bulk_", os.getcwd() )
+        tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'], dir = os.getcwd() )
         tmpFile = open( fname, 'w')
         tmpFile.write( jdl )
         tmpFile.close()
-        command = "export X509_USER_PROXY=" + self.cert + '; '
+        command = ''
         
         # delegate proxy
         if self.delegationId != "" :
@@ -119,20 +130,21 @@ class SchedulerGLite (SchedulerInterface) :
         if len(config) != 0 :
             command += " -c " + config
 
+        ###
         if service != '' :
             command += ' -e ' + service
 
-        out, ret = self.ExecuteCommand(
-            command + ' ' + fname, userProxy = self.cert
-            )
+        command += ' ' + fname
+        out, ret = self.ExecuteCommand( self.proxyString + command )
+        
         try:
             c = out.split("Your job identifier is:")[1].strip()
             taskId = c.split("=")[0].strip()
         except IndexError:
             raise SchedulerError( 'wrong parent id',  out )
         
-        logging.info( "Your job identifier is: %s" % taskId )
-        return getChildrens( taskId )
+        self.logging.info( "Your job identifier is: %s" % taskId )
+        os.unlink( fname )
 
 
     ##########################################################################
@@ -160,14 +172,24 @@ class SchedulerGLite (SchedulerInterface) :
                     str( job.runningJob['schedulerId'] ).strip() )
 
         for jobId in schedIdList: 
-            command = "export X509_USER_PROXY=" + self.cert \
-                      + "; glite-wms-job-output --noint --dir " \
+            command = "glite-wms-job-output --noint --dir " \
                       + outdir + " " + jobId
-            out, ret = self.ExecuteCommand( command )
+            out, ret = self.ExecuteCommand( self.proxyString + command )
             if out.find("have been successfully retrieved") == -1 :
                 raise SchedulerError( 'retrieved', out )
 
+    ##########################################################################
+    def purgeService( self, obj ):
+        """
+        Purge job (even bulk) from wms
+        """
 
+        ### TO DO
+        ## Implement as getoutput where the "No output files ..."
+        # is not an error condition but the expected status
+
+        raise NotImplementedError
+        
     ##########################################################################
 
     def kill( self, obj ):
@@ -190,9 +212,8 @@ class SchedulerGLite (SchedulerInterface) :
                 schedIdList += " " + \
                                str( job.runningJob['schedulerId'] ).strip()
 
-        command = "export X509_USER_PROXY=" + self.cert \
-                  + "; glite-wms-job-cancel --noint " + schedIdList
-        out, ret = self.ExecuteCommand( command )
+        command = "glite-wms-job-cancel --noint " + schedIdList
+        out, ret = self.ExecuteCommand( self.proxyString + command )
         if out.find("glite-wms-job-cancel Success") == -1 :
             raise SchedulerError( 'error', out )
 
@@ -209,7 +230,6 @@ class SchedulerGLite (SchedulerInterface) :
         jdl = self.decode( obj, requirements='' )
         tmpFile.write( jdl )
         tmpFile.close()
-        command = "export X509_USER_PROXY=" + self.cert + '; '
     
         # delegate proxy
         if self.delegationId == "" :
@@ -225,13 +245,12 @@ class SchedulerGLite (SchedulerInterface) :
             command += ' -e ' + service
 
 
-        out, ret = self.ExecuteCommand(
-            command + ' ' + fname, userProxy = self.cert
-            )
+        out, ret = self.ExecuteCommand( self.proxyString + command )
+
         try:
             out = out.split("CEId")[1].strip()
         except IndexError:
-            raise ( 'IndexError', out )
+            raise SchedulerError( 'IndexError', out )
 
         return out.split()
         
@@ -244,13 +263,12 @@ class SchedulerGLite (SchedulerInterface) :
         
         """
 
-        command = "glite-wms-job-logging-info -v 2 " + schedulerId + \
-                  " > " + outfile + "/gliteLoggingInfo.log"
+        command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
+                  " > " + outfile
 
-        return self.ExecuteCommand( command, userProxy = self.cert )[0]
+        return self.ExecuteCommand( self.proxyString + command )[0]
 
     ##########################################################################
-
     def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
@@ -268,7 +286,7 @@ class SchedulerGLite (SchedulerInterface) :
             if objType == 'node' :
 
                 self.hackEnv() ### TEMP FIX
-                lbInstance.checkJobs( obj )
+                lbInstance.checkJobs( obj, self.invalidList )
                 self.hackEnv( restore = True ) ### TEMP FIX
 
             # query performed through a bulk id
@@ -372,89 +390,147 @@ class SchedulerGLite (SchedulerInterface) :
         if len( infiles ) != 0 :
             jdl += 'InputSandbox = {%s};\n'% infiles[:-1]
 
-        # job output files handling
+        # output bypass WMS?
+        #if task['outputDirectory'] is not None and \
+        #       task['outputDirectory'].find('gsiftp://') >= 0 :
+        #    jdl += 'OutputSandboxBaseDestURI = "%s";\n' % \
+        #           task['outputDirectory']
+
+        # output files handling
         outfiles = ''
-        for outfile in job['fullPathOutputFiles'] :
-            if outfile != '' :
-                outfiles += '"' + outfile + '",'
+        for filePath in job['outputFiles'] :
+            if filePath == '' :
+                continue
+            if self.renameOutputFiles :
+                outfiles += '"' + filePath + '_' + \
+                            str(job.runningJob[ 'submission' ]) + '",'
+            else :
+                outfiles += '"' + filePath + '",'
+
         if len( outfiles ) != 0 :
-            jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
- 
+            jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
+
         # extra job attributes
         if job.runningJob is not None \
                and job.runningJob[ 'schedulerAttributes' ] is not None :
             jdl += job.runningJob[ 'schedulerAttributes' ]
 
         # blindly append user requirements
-        try :
-            requirements = requirements.strip()
-            while requirements[0] == '[':
-                requirements = requirements[1:-1].strip()
-            jdl += '\n' + requirements + '\n'
-        except :
-            pass
+        jdl += requirements + '\n]\n'
 
-        # return value
+        # return values
         return jdl
 
     ##########################################################################
+    def collectionJdlFile ( self, task, requirements='' ):
+        """
+        build a collection jdl easy to be handled by the wmproxy API interface
+        and gives back the list of input files for a better handling
+        """
 
-    def collectionJdlFile( self, task, requirements='' ):
-        """
-        build a collection jdl
-        """
-        
         # general part for task
         jdl = "[\n"
-        jdl += "Type = \"collection\";\n"
-        for key, val in task.attr_list.iteritems() :
-            jdl += "%s = %s;\n" % ( key, val )
-        infiles = ''
-        for files in task.sandbox :
-            if files == '' :
-                continue
-            infiles += '"file://' + task.fullPath( files ) + '",'
-        jdl += 'InputSandbox = {"%s"};\n' % infiles[:-1]
+        jdl += 'Type = "collection";\n'
+
+        # global task attributes :
+        # \\ the list of files for the JDL common part
+        globalSandbox = ''
+        # \\ the list of common files to be put in every single node
+        #  \\ in the form root.inputsandbox[ISBindex]
+        commonFiles = ''
+        ISBindex = 0
+
+        # task input files handling:
+        if task['startDirectory'] is None or task['startDirectory'][0] == '/':
+            # files are stored locally, compose with 'file://'
+            if task['globalSandbox'] is not None :
+                for ifile in task['globalSandbox'].split(','):
+                    if ifile.strip() == '' :
+                        continue
+                    filename = os.path.abspath( ifile )
+                    globalSandbox += '"file://' + filename + '",'
+                    commonFiles += "root.inputsandbox[%d]," % ISBindex
+                    ISBindex += 1
+        else :
+            # files are elsewhere, just add their composed path
+            if task['globalSandbox'] is not None :
+                jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
+                for ifile in task['globalSandbox'].split(','):
+                    if ifile.strip() == '' :
+                        continue
+                    if ifile.find( 'file:/' ) == 0:
+                        globalSandbox += '"' + ifile + '",'
+                        
+                        commonFiles += "root.inputsandbox[%d]," % ISBindex
+                        ISBindex += 1
+                        continue
+                    if ifile[0] == '/':
+                        ifile = ifile[1:]
+                    commonFiles += '"' + ifile + '",'
+
+        # output bypass WMS?
+        if task['outputDirectory'] is not None and \
+               task['outputDirectory'].find('gsiftp://') >= 0 :
+            jdl += 'OutputSandboxBaseDestURI = "%s";\n' % \
+                   task['outputDirectory']
 
         # single job definition
         jdl += "Nodes = {\n"
-        for job in task.getJobs() :
-            jdl += "[\n"
-            jdl += 'NodeName   = "%s";\n' % job[ 'name' ]
+        for job in task.jobs :
+            jdl += '[\n'
+            jdl += 'NodeName   = "NodeName_%s";\n' % job[ 'name' ]
             jdl += 'Executable = "%s";\n' % job[ 'executable' ]
             jdl += 'Arguments  = "%s";\n' % job[ 'arguments' ]
-            if job.attr[ 'standardInput' ] != '':
-                jdl += 'StdInput  = "%s";\n' % job[ 'standardInput' ]
+            if job[ 'standardInput' ] != '':
+                jdl += 'StdInput = "%s";\n' % job[ 'standardInput' ]
             jdl += 'StdOutput  = "%s";\n' % job[ 'standardOutput' ]
             jdl += 'StdError   = "%s";\n' % job[ 'standardError' ]
-            for key, val in job.attr_list.iteritems() :
-                jdl += '%s  = %s;\n' % ( key, val )
 
-            # job input files handling
-            infiles = ''
-            for infile in job['fullPathInputFiles'] :
-                if infile != '' :
-                    infiles += '"file://' + infile + '",'
-            if len( infiles ) != 0 :
-                jdl += 'InputSandbox = {%s};\n'% infiles[:-1]
+            # extra job attributes
+            if job.runningJob is not None \
+                   and job.runningJob[ 'schedulerAttributes' ] is not None :
+                jdl += job.runningJob[ 'schedulerAttributes' ]
 
             # job output files handling
             outfiles = ''
-            for outfile in job['fullPathOutputFiles'] :
-                if outfile != '' :
-                    outfiles += '"' + outfile + '",'
+            for filePath in job['outputFiles'] :
+                if filePath == '' :
+                    continue
+                if self.renameOutputFiles :
+                    outfiles += '"' + filePath + '_' + \
+                                str(job.runningJob[ 'submission' ]) + '",'
+                else :
+                    outfiles += '"' + filePath + '",'
 
-            # global sandbox definition
             if len( outfiles ) != 0 :
-                jdl += 'OutputSandbox = {%s};\n'% outfiles[:-1]
-            jdl += "],\n"
-        jdl = jdl[:-2] +"\n};\n"
+                jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
 
+            # job input files handling:
+            # add their name in the global sanbox and put a reference
+            localfiles = commonFiles
+            if task['startDirectory'] is None \
+                   or task['startDirectory'][0] == '/':
+                # files are stored locally, compose with 'file://'
+                for filePath in job['fullPathInputFiles']:
+                    if filePath != '' :
+                        localfiles += "root.inputsandbox[%d]," % ISBindex
+                    globalSandbox += '"file://' + filePath + '",'
+                    ISBindex += 1
+            else :
+                # files are elsewhere, just add their composed path
+                for filePath in job['fullPathInputFiles']:
+                    if filePath[0] == '/':
+                        filePath = filePath[1:]
+                    localfiles += '"' + filePath + '",'
 
-        # extra job attributes
-        if job.runningJob is not None \
-               and job.runningJob[ 'schedulerAttributes' ] is not None :
-            jdl += job.runningJob[ 'schedulerAttributes' ]
+            if localfiles != '' :
+                jdl += 'InputSandbox = {%s};\n'% localfiles[:-1]
+            jdl += '],\n'
+        jdl  = jdl[:-2] + "\n};\n"
+
+        # global sandbox definition
+        if globalSandbox != '' :
+            jdl += "InputSandbox = {%s};\n"% (globalSandbox[:-1])
 
         # blindly append user requirements
         try :
@@ -462,10 +538,93 @@ class SchedulerGLite (SchedulerInterface) :
             while requirements[0] == '[':
                 requirements = requirements[1:-1].strip()
             jdl += '\n' + requirements + '\n'
-        except :
+        except Exception:
             pass
-        
-        # return value
+
+        # close jdl
+        jdl += 'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
+        jdl += "\n]\n"
+
+        # return values
         return jdl
 
+    ##########################################################################
+    def lcgInfoVo(self, tags, fqan, seList=None, blacklist=None, whitelist=None, full=False):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+
+        celist = []
+
+        # set to None invalid entries
+        if seList == [''] or seList == []:
+            seList = None
+        # set to None invalid entries
+        if whitelist == [''] or whitelist == []:
+            whitelist = None
+        # set to [] invalid entries so that the lopp does't need checks
+        if blacklist == [''] or blacklist == None:
+            blacklist = []
+
+        if len( tags ) != 0 :
+            query =  ','.join( ["Tag=%s" % tag for tag in tags ] ) + \
+                    ',CEStatus=Production'
+        else :
+            query = 'CEStatus=Production'
+
+        if seList == None :
+            command = "lcg-info --vo " + fqan + " --list-ce --query " + \
+                       "\'" + query + "\' --sed"
+            self.logging.debug('issuing : %s' % command)
+
+            out, ret = self.ExecuteCommand( self.proxyString + command )
+            for ce in out.split() :
+                # blacklist
+                passblack = 1
+                if ce.find( "blah" ) == -1:
+                    for ceb in blacklist :
+                        if ce.find(ceb) >= 0:
+                            passblack = 0
+                # whitelist if surviving the blacklist selection
+                if passblack:
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
+                        celist.append( ce )
+                    else:
+                        for cew in whitelist:
+                            if ce.find(cew) != -1:
+                                celist.append( ce )
+            return celist
+
+        for se in seList :
+            singleComm = "lcg-info --vo " + fqan + \
+                         " --list-ce --query " + \
+                         "\'" + query + ",CloseSE="+ se + "\' --sed"
+            self.logging.debug('issuing : %s' % singleComm)
+
+            out, ret = self.ExecuteCommand( self.proxyString + singleComm )
+            for ce in out.split() :
+                # blacklist
+                passblack = 1
+                if ce.find( "blah" ) == -1:
+                    for ceb in blacklist :
+                        if ce.find(ceb) != -1:
+                            passblack = 0
+                # whitelist if surviving the blacklist selection
+                if passblack:
+                    if whitelist is None:
+                        celist.append( ce )
+                    elif len(whitelist) == 0:
+                        celist.append( ce )
+                    else:
+                        for cew in whitelist:
+                            if ce.find(cew) >= 0:
+                                celist.append( ce )
+
+            # a site matching is enough
+            if not full and celist != []:
+                break
+        return celist
 

@@ -35,8 +35,8 @@ import re, signal
 # https://twiki.cern.ch/twiki/bin/view/CMS/BossLiteJob
 #
 
-StatusCodes = {
-    "ACCEPTING": "SU ",
+Arc2Status = {
+    "ACCEPTING": "SU",
     "ACCEPTED":  "SU",
     "PREPARING": "SW",
     "PREPARED":  "SW",
@@ -59,7 +59,31 @@ StatusCodes = {
     "WTF?":        "UN"
 }
 
-StatusReason = {
+Arc2StatusScheduler = {
+    "ACCEPTING": "Submitted",
+    "ACCEPTED":  "Submitted",
+    "PREPARING": "Waiting",
+    "PREPARED":  "Waiting",
+    "SUBMITTING":"Ready",
+    "INLRMS:Q":  "Scheduled",
+    "INLRMS:R":  "Running",
+    "INLRMS:S":  "Running",
+    "INLRMS:E":  "Running",
+    "INLRMS:O":  "Running",
+    "EXECUTED":  "Running",
+    "FINISHING": "Running",
+    "KILLING":   "Killed/Cancelled",
+    "KILLED":    "Killed/Cancelled",
+    "DELETED":   "Aborted",
+    "FAILED":    "Done (failed)",
+    "FINISHED":  "Done (success)",
+
+    # In addition, let's define a few of our own
+    "UNKNOWN":     "Undefined/Unknown",
+    "WTF?":        "Undefined/Unknown"
+}
+
+Arc2StatusReason = {
     "ACCEPTING": "Job has reaced the CE",
     "ACCEPTED":  "Job submitted but not yet processed",
     "PREPARING": "Input files are being transferred",
@@ -343,8 +367,11 @@ class SchedulerARC(SchedulerInterface):
         elif type(obj) == Task:
             map = {}
             for job in obj.getJobs():
-                m, bulkId = self.submitJob(obj, job, requirements)
-                map.update(m)
+                try:
+                    m, bulkId = self.submitJob(obj, job, requirements)
+                    map.update(m)
+                except SchedulerError, e:
+                    job.runningJob.errors.append("Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' ')))
             return map, bulkId, service 
 
 
@@ -360,12 +387,12 @@ class SchedulerARC(SchedulerInterface):
         self.setTimeout(300)
         output, exitStat = self.ExecuteCommand(command)
         if exitStat != 0:
-            raise SchedulerError('Error in submit', output, command)
+            raise SchedulerError('Error in submit:', output, command)
 
         # Parse output of submit command
         match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
         if not match:
-            raise SchedulerError('Error in submit', output, command)
+            raise SchedulerError('Error in submit:', output, command)
 
         arcId = match.group(1)
         m = {job['name']: arcId}  # arcId will end up in job.runningJob['schedulerId']
@@ -395,7 +422,7 @@ class SchedulerARC(SchedulerInterface):
 
             if not self.valid(job.runningJob):
                 if not job.runningJob['schedulerId']:
-                    self.logging.warning("job %s has no schedulerId!" % job['name'])
+                    self.logging.debug("job %s has no schedulerId!" % job['name'])
                 self.logging.debug("job invalid: schedulerId = %s"%str(job.runningJob['schedulerId']))
                 self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
                 self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
@@ -457,9 +484,9 @@ class SchedulerARC(SchedulerInterface):
                         continue
 
             if arcStat:
-                job.runningJob['statusScheduler'] = arcStat
-                job.runningJob['status'] = StatusCodes[arcStat]
-                job.runningJob['statusReason'] = StatusReason[arcStat]
+                job.runningJob['statusScheduler'] = Arc2StatusScheduler[arcStat]
+                job.runningJob['status'] = Arc2Status[arcStat]
+                job.runningJob['statusReason'] = Arc2StatusReason[arcStat]
             if host:
                 job.runningJob['destination'] = host
             if jobExitCode:
@@ -560,32 +587,24 @@ class SchedulerARC(SchedulerInterface):
         raise NotImplementedError
 
 
-    def query_giis(self, giises):
+    def query_giis(self, giis):
         """
-        Return CEs and sub-GIISes from the first GIIS in
-        'giises'-list that replies.
+        Return CEs and sub-GIISes from giis.
         """
 
         attr = [ 'giisregistrationstatus' ]
 
-        for giis in giises:
-            # Use cached result if we have it:
-            if giis['host'] in self.giis_result.keys():
-                ldap_result = self.giis_result[giis['host']]
-                break
-
+        # Use cached result if we have it:
+        if giis['host'] in self.giis_result.keys():
+            ldap_result = self.giis_result[giis['host']]
+        else:
             try:
-                self.logging.info("Using GIIS %s, %s" % (giis['host'], giis['base']))
                 ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, self.logging, scope=ldap.SCOPE_BASE, retries=0)
             except ldap.LDAPError:
-                self.logging.warning("No reply from GIIS %s, trying another" % giis['host'])
-                pass
+                self.logging.warning("No reply from GIIS %s" % giis['host'])
+                ldap_result = []
             else:
                 self.giis_result[giis['host']] = ldap_result
-                break
-        else:
-            self.logging.error("No more GIISes to try!  All GIISes down? Please wait for a while and try again")
-            raise SchedulerError("No reply from GIISes", "")
 
         CEs = []
         giises = []
@@ -654,13 +673,14 @@ class SchedulerARC(SchedulerInterface):
         return accepted_CEs
 
 
-    def pick_CEs_from_giis_trees(self, roots, tags, vos, seList, blacklist, whitelist, full):
+    def pick_CEs_from_giis_trees(self, root, tags, vos, seList, blacklist, whitelist, full):
         """
-        Recursively traverse the GIIS tree, starting from the first 'root' that replies;
+        Recursively traverse the GIIS tree, starting from 'root',
         return CEs fullfilling requirements.
         """
 
-        CEs, giises = self.query_giis(roots)
+        self.logging.info("Trying GIIS %s, %s" % (root['host'], root['base']))
+        CEs, giises = self.query_giis(root)
         accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
 
         if len(accepted_CEs) > 0 and not full:
@@ -669,7 +689,7 @@ class SchedulerARC(SchedulerInterface):
         for g in giises:
             host = 'ldap://' + g['name'] + ':' + g['port']
             root = {'host':host, 'base': g['base']}
-            accepted_CEs += self.pick_CEs_from_giis_trees([root], tags, vos, seList, blacklist, whitelist, full)
+            accepted_CEs += self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
             if len(accepted_CEs) > 0 and not full:
                 break
 
@@ -699,7 +719,15 @@ class SchedulerARC(SchedulerInterface):
             host, base = parseGiisUrl(g)
             tolevel_giises.append({'host': host, 'base': base})
 
-        accepted_CEs = self.pick_CEs_from_giis_trees(tolevel_giises, tags, vos, seList, blacklist, whitelist, full)
+        for root in tolevel_giises:
+            accepted_CEs = self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
+            if accepted_CEs:
+                break;
+            else:
+                self.logging.warning("No suitable CE:s found using toplevel GIIS %s, %s" % (root['host'], root['base']))
+        else:
+            self.logging.error("No more toplevel GIISes to try!  All GIISes down? Please wait for a while and try again")
+            raise SchedulerError("No reply from GIISes", "")
 
         return accepted_CEs
 

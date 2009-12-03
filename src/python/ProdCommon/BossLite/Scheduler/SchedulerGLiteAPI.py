@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.128 2009/10/06 13:53:42 farinafa Exp $"
-__version__ = "$Revision: 1.128 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.132 2009/11/09 10:01:09 gcodispo Exp $"
+__version__ = "$Revision: 1.132 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
@@ -16,6 +16,13 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 #
 # Import gLite specific modules
+
+# new UI requires WMPConfig
+try:
+    from wmproxymethods import WMPConfig
+except StandardError, stde:
+    pass
+#
 try:
     from wmproxymethods import Wmproxy
     from wmproxymethods import BaseException
@@ -28,6 +35,11 @@ except StandardError, stde:
          """
     raise ImportError(warn + str(stde))
 
+# new UI requires WMPConfig
+try:
+    from wmproxymethods import WMPConfig
+except StandardError, stde:
+    pass
 
 ##########################################################################
 
@@ -156,13 +168,25 @@ def processClassAdBlock( classAd ):
     return cladDict, endpoints, configfile
 
 
-def formatWmpError( wmpError ) :
+def formatWmpError( wmpError, isNewUi ) :
     """
     format wmproxy BaseException
     """
 
-    error = wmpError.toString() + '\n'
 
+    if isNewUi :
+        error = ''
+        if wmpError.errType:
+            error += wmpError.errType
+        if wmpError.origin:
+            error += " raised by " + wmpError.origin
+        if wmpError.methodName:
+            error += " (method " + wmpError.methodName+") "
+        if wmpError.description:
+            error += "\n" + wmpError.description
+
+    else:
+        error = wmpError.toString() + '\n'
 
     for key in list( wmpError ):
         if type( key ) == int:
@@ -209,6 +233,11 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         self.proxyString = ''
         if self.cert != '':
             self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
+
+        # version check for new features
+        version, ret = self.ExecuteCommand( 'glite-version' )
+        version = version.strip()
+        self.isNewUi = ( version.find( '3.2' ) == 0 )
 
         ### # check which UI version we are in
         ### globusloc = os.environ['GLOBUS_LOCATION']
@@ -344,16 +373,30 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         initialize Wmproxy and perform everything needed
         """
 
-        # initialize wms connection
-        wmproxy = Wmproxy(wms, proxy=self.cert)
+        if self.isNewUi :
+            # initialize wms connection
+            wmpconfig = WMPConfig(wms)
 
-        if self.skipWMSAuth :
-            try :
-                wmproxy.setAuth(0)
-                # UI 3.1: missing method
-            except AttributeError:
-                pass
+            if self.skipWMSAuth :
+                wmpconfig.setAuth(0)
+            
+            if self.cert != '' :
+                wmpconfig.setProxyPath( self.cert )
 
+            wmproxy = Wmproxy(wmpconfig)
+
+        else :
+            # initialize wms connection
+            wmproxy = Wmproxy(wms, proxy=self.cert)
+
+            if self.skipWMSAuth :
+                try :
+                    wmproxy.setAuth(0)
+                    # UI 3.1: missing method
+                except AttributeError:
+                    pass
+
+        ### init & return
         wmproxy.soapInit()
 
         return wmproxy
@@ -483,12 +526,15 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         delegate proxy to a wms
         """
 
-        ### # to use it asap:
-        ### proxycert = wmproxy.getProxyReq(self.delegationId)
-        ### result = wmproxy.signProxyReqStr(proxycert)
-        ### wmproxy.putProxy(delegationId,result )
+        # slc5 UI
+        if self.isNewUi :
+            proxycert = wmproxy.getNewProxyReq(self.delegationId)
+            os.environ["PROXY_REQ"] = proxycert
+            result = wmproxy.signProxyReqEnv("PROXY_REQ")
+            wmproxy.putProxy(self.delegationId, result )
+            return
 
-        ### # possible right now:
+        ### slc4 UI 
         ofile, tmpfile = tempfile.mkstemp(prefix='proxy_del_', dir=workdir)
         os.close( ofile )
         proxycert = wmproxy.getProxyReq(self.delegationId)
@@ -508,14 +554,6 @@ class SchedulerGLiteAPI(SchedulerInterface) :
         wmproxy.putProxy( self.delegationId, ''.join( proxyres.readlines() ) )
         proxyres.close()
         os.unlink( tmpfile )
-
-        ### command = "glite-wms-job-delegate-proxy -d " +  self.delegationId \
-        ###           + " --endpoint " + wms
-        ### 
-        ### msg, ret = self.ExecuteCommand( self.proxyString + command )
-        ### 
-        ### if msg.find("Error -") >= 0 :
-        ###     self.warnings.append( "Warning : " + str( msg ) )
 
 
     ##########################################################################
@@ -585,7 +623,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
             # typical exception
             except BaseException, err:
                 wmserr = 'failed to submit to %s : %s ;\n' % \
-                         ( wms,  formatWmpError( err ) )
+                         ( wms,  formatWmpError( err, self.isNewUi ) )
                 errors += wmserr
                 self.logging.debug( wmserr )
                 continue
@@ -732,7 +770,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # typical exception
             except BaseException, err:
-                output = formatWmpError( err )
+                output = formatWmpError( err, self.isNewUi )
 
                 # proxy expired: skip!
                 if output.find( 'Error with credential' ) != -1 :
@@ -926,7 +964,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
 
             # typical exception
             except BaseException, err:
-                output = formatWmpError( err )
+                output = formatWmpError( err, self.isNewUi )
 
                 # purged: probably already retrieved. Archive
                 if output.find( "Cancel has already been requested" ) != -1 :
@@ -1578,7 +1616,7 @@ class SchedulerGLiteAPI(SchedulerInterface) :
                 self.logging.debug('Delegated proxy to %s' % wms)
             except BaseException, err:
                 self.logging.error( 'BossLite BaseException: failed to delegate proxy to ' + wms + \
-                                    ' : ' + formatWmpError( err ) )
+                                    ' : ' + formatWmpError( err, self.isNewUi ) )
                 continue
 
             except Exception, err:
