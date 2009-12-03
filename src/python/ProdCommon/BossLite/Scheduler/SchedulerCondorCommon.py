@@ -4,18 +4,17 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.10 2009/11/20 16:13:36 ewv Exp $"
-__version__ = "$Revision: 1.55.2.10 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.8 2009/11/19 20:55:04 ewv Exp $"
+__version__ = "$Revision: 1.55.2.8 $"
 
-import commands
 import os
+import commands
 import re
 import shutil
-import time
+import cStringIO
 
 from socket import getfqdn
 
-from ProdCommon.BossLite.Scheduler.CondorStatus import CondorStatus
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
@@ -30,16 +29,16 @@ class SchedulerCondorCommon(SchedulerInterface) :
         # call super class init method
         super(SchedulerCondorCommon, self).__init__(**args)
         os.environ['_CONDOR_GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE'] = '20'
-        self.hostname         = getfqdn()
-        self.condorTemp       = args.get('tmpDir', None)
-        self.outputDir        = args.get('outputDirectory', None)
-        self.jobDir           = args.get('jobDir', None)
-        self.useGlexec        = args.get('useGlexec', False)
-        self.glexec           = args.get('glexec', None)
-        self.renewProxy       = args.get('renewProxy', None)
-        self.glexecWrapper    = args.get('glexecWrapper', None)
-        self.condorQCacheDir  = args.get('CondorQCacheDir', None)
-#         self.batchSize        = 20 # Jobs to submit before changing CEs
+        self.hostname   = getfqdn()
+        self.condorTemp = args.get('tmpDir', None)
+        self.outputDir  = args.get('outputDirectory', None)
+        self.jobDir     = args.get('jobDir', None)
+        self.useGlexec  = args.get('useGlexec', False)
+        self.glexec     = args.get('glexec', None)
+        self.renewProxy    = args.get('renewProxy', None)
+        self.glexecWrapper = args.get('glexecWrapper', None)
+        self.condorQCacheDir     = args.get('CondorQCacheDir', None)
+        self.batchSize  = 20 # Number of jobs to submit before changing CEs
         self.userRequirements = ''
 
 
@@ -114,7 +113,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 # Build JDL file
                 if not jobCount:
                     jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
+#                     if self.useGlexec:
                     jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
+#                     else:
+#                         jdl += 'Executable = %s/%s\n' % \
+#                         (self.jobDir, job['executable'])
                     jdl += '+BLTaskID = "' + taskId + '"\n'
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
@@ -294,9 +297,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
         """
         query status of jobs
         """
+        # FIXME: Make a singleton and cache XML output
+        from xml.sax import make_parser
+        from CondorHandler import CondorHandler
+        from xml.sax.handler import feature_external_ges
 
-        condorStatus = CondorStatus()
+        jobIds = {}
+        bossIds = {}
 
+        # FUTURE:
+        #  Remove Condor < 7.3 when OK
+        #  Use condor_q -attributes to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         statusCodes = {'0':'RE', '1':'S', '2':'R',
                        '3':'K',  '4':'D', '5':'A'}
@@ -308,32 +319,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 '4':'Done',
                 '5':'Aborted'
         }
-        jobIds = {}
-        bossIds = {}
-        
-        forceQuery = False
         if type(obj) == Task:
-            import logging
             taskId = obj['name']
-            logging.info("Checking on %s" %  taskId )  
-            if self.useGlexec:
-                queryTaskId = None
-            else:
-                queryTaskId = taskId
-
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
-                runJob =  job.runningJob
-                schedulerId = runJob['schedulerId']
+                schedulerId = job.runningJob['schedulerId']
 
-                submitTime = time.strptime(runJob['submissionTime'], 
-                                           '%Y-%m-%d %H:%M:%S')
-                                           
-                delay = time.mktime(time.gmtime()) - time.mktime(submitTime)
-                if delay < 60:
-                    forceQuery = True
-                    
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
                 schedd = schedulerId.split('//')[0]
@@ -348,9 +340,42 @@ class SchedulerCondorCommon(SchedulerInterface) :
             raise SchedulerError('Wrong argument type or object type',
                                   str(type(obj)) + ' ' + str(objType))
 
-        for schedd in jobIds.keys():
-            jobDicts = condorStatus.query(taskId=queryTaskId, schedd=schedd, 
-                                          force=forceQuery)
+        for schedd in jobIds.keys() :
+            cmd = 'condor_q -xml '
+            if schedd != self.hostname:
+                cmd += '-name ' + schedd + ' '
+            cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
+
+            (inputFile, outputFp) = os.popen4(cmd)
+
+            try:
+                xmlLine = ''
+                while xmlLine.find('<?xml') == -1:
+                    # Throw away junk for condor < 7.3, remove when obsolete
+                    xmlLine = outputFp.readline()
+
+                outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
+                #outputFile = cStringIO.StringIO(outputFp.read()) # <7.3 vers.
+            except:
+                raise SchedulerError('Problem reading output of command', cmd)
+
+            # If the command succeeded, close returns None
+            # Otherwise, close returns the exit code
+            if outputFp.close():
+                raise SchedulerError("condor_q command or cache file failed.")
+
+            handler = CondorHandler('GlobalJobId',
+                       ['JobStatus', 'GridJobId','ProcId','ClusterId',
+                        'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
+            parser = make_parser()
+            try:
+                parser.setContentHandler(handler)
+                parser.setFeature(feature_external_ges, False)
+                parser.parse(outputFile)
+            except:
+                raise SchedulerError('Problem parsing output of command', cmd)
+
+            jobDicts = handler.getJobInfo()
             for globalJobId in jobDicts.keys():
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
@@ -398,7 +423,21 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
             submitHost, jobId  = schedulerId.split('//')
-            command = "condor_rm -name  %s %s " % (submitHost, jobId)
+            if self.glexec:
+                # Set up environment in thread safe manner
+                seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
+                userProxy = obj['user_proxy']
+                seProxy   = seDir + '/userProxy'
+                commonEnv = 'export GLEXEC_TARGET_PROXY=/tmp/x509_ugeneric; '\
+                            'export GLEXEC_CLIENT_CERT=%s; ' \
+                            'export GLEXEC_SOURCE_PROXY=%s; ' \
+                            'export X509_USER_PROXY=%s; ' % \
+                            (userProxy, userProxy, seProxy)
+                
+                command  = commonEnv + 'cd %s; ' % seDir
+                command += "%s `which condor_rm` -name %s %s" % (self.glexec, submitHost, jobId)
+            else:
+                command = "condor_rm -name %s %s" % (submitHost, jobId)
             (inputFile, outputFile) = os.popen4(command)
 
 
