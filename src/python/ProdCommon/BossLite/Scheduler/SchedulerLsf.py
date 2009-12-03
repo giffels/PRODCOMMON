@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.28 2009/10/23 15:56:59 riahi Exp $"
-__version__ = "$Revision: 1.28 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.29 2009/11/10 18:54:41 spiga Exp $"
+__version__ = "$Revision: 1.29 $"
 
 import re, os
 import tempfile

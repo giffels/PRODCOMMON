@@ -4,8 +4,8 @@ basic glite CLI interaction class
 """
 
 
-__revision__ = "$Id: SchedulerGLite.py,v 1.8 2009/11/19 15:38:54 gcodispo Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerGLite.py,v 1.9 2009/12/02 13:07:42 gcodispo Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import os
 import tempfile

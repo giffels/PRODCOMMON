@@ -3,8 +3,8 @@
 _SchedulerGLiteAPI_
 """
 
-__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.131 2009/11/09 09:52:07 gcodispo Exp $"
-__version__ = "$Revision: 1.131 $"
+__revision__ = "$Id: SchedulerGLiteAPI.py,v 1.132 2009/11/09 10:01:09 gcodispo Exp $"
+__version__ = "$Revision: 1.132 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import os
