@@ -25,7 +25,8 @@ class ProtocolSrmv2(Protocol):
             line = line.lower()
             if line.find("exception") != -1 or \
                line.find("does not exist") != -1 or \
-               line.find("srm client error") != -1:
+               line.find("srm client error") != -1 or \
+               line.find("failed in some way or another") != -1:
                 cacheP = line.split(":")[-1]
                 if cacheP not in problems:
                     problems.append(cacheP)
@@ -293,6 +294,7 @@ class ProtocolSrmv2(Protocol):
         if exitcode != 0 or len(problems) > 0:
             if str(problems).find("such file or directory") != -1 or \
                str(problems).find("does not exist") != -1 or \
+               str(problems).find("failed in some way or another") != -1 or \
                (str(problems).find("not found") != -1 and \
                str(problems).find("cacheexception") != -1):
                 return False
