@@ -3,24 +3,57 @@
 basic glite CLI interaction class
 """
 
-
-__revision__ = "$Id: SchedulerGLite.py,v 1.8 2009/11/19 15:38:54 gcodispo Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = ""
+__version__ = ""
+__author__ = "filippo.spiga@disco.unimib.it"
 
 import os
 import tempfile
+import re
+import simplejson as json
+
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
+class bossLiteJsonDecoder(json.JSONDecoder):
+    """
+    Override JSON decode
+    """
+    
+    def decode (self, jsonString):
+        """
+        basic class to decode json output
+        """
+        
+        jsonString = jsonString.replace( '\n' , ',' )
+        p = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
+        jsonString = p.sub(r'{ "\1', jsonString[:-1] )
+        p = re.compile(':[\s]([a-zA-Z_\-])')
+        jsonString = p.sub(r'":"\1', jsonString )
+        p = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
+        jsonString = p.sub(r'\1","\2"', jsonString )
+        p = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
+        jsonString = p.sub(r'\1","\2":', jsonString )
+        p = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
+        jsonString =  p.sub(r'}', jsonString)
+        p = re.compile('([a-zA-Z0-9_\-])}')
+        jsonString =  p.sub(r'\1"}', jsonString)
 
+        parsedJson = json.loads(jsonString)
+        
+        return parsedJson  
+    
+    
 ##########################################################################
-class SchedulerGLite (SchedulerInterface) :
+class SchedulerGLite(SchedulerInterface) :
     """
-    basic class to handle glite jobs
+    basic class to handle gLite jobs using CLI + JSON 
+    formatted output to interact with the WMS
     """
+    
     def __init__( self, **args):
 
         # call super class init method
@@ -31,10 +64,6 @@ class SchedulerGLite (SchedulerInterface) :
         self.envProxy = os.environ.get("X509_USER_PROXY",'')
         self.warnings = []
 
-        # # skipWMSAuth
-        # self.skipWMSAuth = args.get("skipWMSAuth", 0)
-        # self.skipWMSAuth = int( self.skipWMSAuth )
-
         # typical options
         self.vo = args.get( "vo", "cms" )
         self.service = args.get( "service", "" )
@@ -44,35 +73,34 @@ class SchedulerGLite (SchedulerInterface) :
         # rename output files with submission number
         self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
         self.renameOutputFiles = int( self.renameOutputFiles )
-        # x509 string for cli commands
-        self.proxyString = ''
+        
+        # x509 string for CLI commands
         if self.cert != '':
-            self.proxyString = "export X509_USER_PROXY=" + self.cert + ' ; '
+            self.proxyString = "env X509_USER_PROXY=" + self.cert + ' '
+        else :
+            self.proxyString = ''
+            
+        # this section requires an improvement....    
+        if os.environ.get('CRABPRODCOMMONPYTHON') :
+            self.commandQueryPath = os.environ.get('CRABPRODCOMMONPYTHON') + \
+                                            '/ProdCommon/BossLite/Scheduler/'
+        elif os.environ.get('PRODCOMMON_ROOT') :
+            self.commandQueryPath = os.environ.get('PRODCOMMON_ROOT') + \
+                                        '/lib/ProdCommon/BossLite/Scheduler/'
+        else :
+            # something went wrong... fake path (only for test purposes)
+            self.commandQueryPath = '/afs/cern.ch/user/s/spigafi/scratch0/workspace/PRODCOMMON/lib/ProdCommon/BossLite/Scheduler/'
+        
+        glite_location = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        glite_ui= '%s/etc/profile.d/grid-env.sh ' % glite_location
+        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ;export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; ' % glite_ui
 
-        # version check for new features
+        # Raise an error if UI is old than 3.2 ...
         version, ret = self.ExecuteCommand( 'glite-version' )
         version = version.strip()
-        self.isNewUi = ( version.find( '3.2' ) == 0 )
-
-        
-    ##########################################################################
-    def hackEnv( self, restore = False ) :
-        """
-        a trick to reset X509_USER_PROXY when glite is not able to handle
-        explicit proxy
-        """
-
-        # skip if the env proxy is correct
-        if self.cert == '' or self.cert == self.envProxy :
-            return
-
-        # apply the X509_USER_PROXY hack
-        if restore :
-            os.environ["X509_USER_PROXY"] = self.envProxy
-        else :
-            os.environ["X509_USER_PROXY"] = self.cert
-
-        return
+        if version.find( '3.2' ) != 0 :
+            raise SchedulerError( 'SchedulerGLite is allowed on UI >3.2' )
+            
 
     ##########################################################################
 
@@ -81,7 +109,7 @@ class SchedulerGLite (SchedulerInterface) :
         delegate proxy to a wms
         """
 
-        command = ";glite-wms-job-delegate-proxy -d " + self.delegationId \
+        command = "glite-wms-job-delegate-proxy -d " + self.delegationId \
                   + " --endpoint " + wms
         msg, ret = self.ExecuteCommand( self.proxyString + command )
 
@@ -95,7 +123,7 @@ class SchedulerGLite (SchedulerInterface) :
         delegate proxy to _all_ wms
         """
 
-        command = ";glite-wms-job-delegate-proxy -d " + self.delegationId
+        command = "glite-wms-job-delegate-proxy -d " + self.delegationId
 
         msg, ret = self.ExecuteCommand( self.proxyString + command )
 
@@ -114,39 +142,61 @@ class SchedulerGLite (SchedulerInterface) :
         jdl = self.decode( obj, requirements )
         
         # write a jdl tmpFile
-        tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'], dir = os.getcwd() )
+        tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'],
+                                       dir = os.getcwd() )
         tmpFile = open( fname, 'w')
         tmpFile.write( jdl )
         tmpFile.close()
-        command = ''
         
-        # delegate proxy
+        # delegate proxy?
         if self.delegationId != "" :
-            command += "glite-wms-job-submit -d " + self.delegationId
-            self.delegateProxy( service )
+            command = "glite-wms-job-submit --json -d " \
+                                                + self.delegationId
+            self.delegateProxy()
         else :
-            command += "glite-wms-job-submit -a "
+            command = "glite-wms-job-submit --json -a "
         
         if len(config) != 0 :
             command += " -c " + config
 
-        ###
         if service != '' :
             command += ' -e ' + service
 
         command += ' ' + fname
         out, ret = self.ExecuteCommand( self.proxyString + command )
         
-        try:
-            c = out.split("Your job identifier is:")[1].strip()
-            taskId = c.split("=")[0].strip()
-        except IndexError:
-            raise SchedulerError( 'wrong parent id',  out )
+        if ret != 0 :
+            raise SchedulerError('error executing glite-wms-job-submit', out)
         
-        self.logging.info( "Your job identifier is: %s" % taskId )
+        myJSONDecoder = bossLiteJsonDecoder()
+
+        try:
+            jOut = myJSONDecoder.decode(out)
+        except ValueError:
+            raise SchedulerError('error parsing JSON output',  out)
+             
         os.unlink( fname )
 
-
+        returnMap = {}
+        if type(obj) == Task:
+            self.logging.info("Your job identifier is: %s" % jOut['parent'])
+            
+            for child in jOut['children'].keys() :
+                returnMap[str(child.replace('NodeName_', '', 1))] = \
+                                                str(jOut['children'][child])
+            
+            return returnMap, str(jOut['parent']), str(jOut['endpoint']) 
+        elif type(obj) == Job:
+            # usually we submit collections.....
+            self.logging.info("Your job identifier is: %s" % jOut['jobid'])
+            
+            returnMap[str(child.replace('NodeName_', '', 1))] = \
+                                                str(jOut['children'][child])
+            
+            return returnMap, str(jOut['parent']), str(jOut['endpoint'])
+        else : 
+            raise SchedulerError( 'unexpected error',  type(obj) )
+        
     ##########################################################################
 
     def getOutput( self, obj, outdir='' ):
@@ -154,29 +204,69 @@ class SchedulerGLite (SchedulerInterface) :
         retrieve job output
         """
 
-        schedIdList = []
-
-        # the object passed is a job
         if type(obj) == Job and self.valid( obj.runningJob ):
+            # the object passed is a valid Job
+                
+            command = "glite-wms-job-output --json --noint --dir " + \
+                      outdir + " " + job.runningJob['schedulerId']
+            
+            out, ret = self.ExecuteCommand( self.proxyString + command )
+            
+            if ret == 1 : 
+                # One or more output files have not been retrieved
+                if out.find("No output files to be retrieved") != -1:
+                    obj.runningJob.warning.append("No output files")
+                
+                # Output files already retrieved
+                if out.find("Output files already retrieved") != -1 : 
+                    obj.runningJob.warning.append("Already retrieved")
+                
+                # Output not yet ready
+                if out.find("Output not yet Ready") != -1 :
+                    obj.runningJob.errors.append("Not yet Ready")
+            
+            # Excluding all the previous cases however something went wrong....
+            if ret == 0 and out.find("result: success") == -1 :
+                obj.runningJob.errors.append( out )   
+            
+            if obj.runningJob.errors is None or obj.runningJob.errors == [] :
+                self.logging.debug("Output of %s successfully retrieved" 
+                                        % str(job.runningJob['schedulerId']))
 
-            # check for the RunningJob integrity
-            schedIdList = [ str( obj.runningJob['schedulerId'] ).strip() ]
-
-        # the object passed is a Task
         elif type(obj) == Task :
-
+            # the object passed is a Task
+            
             for job in obj.jobs:
                 if not self.valid( job.runningJob ):
                     continue
-                schedIdList.append(
-                    str( job.runningJob['schedulerId'] ).strip() )
-
-        for jobId in schedIdList: 
-            command = "glite-wms-job-output --noint --dir " \
-                      + outdir + " " + jobId
-            out, ret = self.ExecuteCommand( self.proxyString + command )
-            if out.find("have been successfully retrieved") == -1 :
-                raise SchedulerError( 'retrieved', out )
+                
+                command = "glite-wms-job-output --json --noint --dir " + \
+                          outdir + " " + job.runningJob['schedulerId']
+                
+                out, ret = self.ExecuteCommand( self.proxyString + command )
+                
+                if ret == 1 : 
+                    # One or more output files have not been retrieved
+                    if out.find("No output files to be retrieved") != -1 :
+                        job.runningJob.warning.append("No output files")
+                    
+                    # Output files already retrieved
+                    if out.find("Output files already retrieved") != -1 : 
+                        job.runningJob.warning.append("Already retrieved")
+                    
+                    # Output not yet ready
+                    if out.find("Output not yet Ready") != -1 :
+                        job.runningJob.errors.append("Not yet Ready")
+                
+                # Excluding all the previous cases but something went wrong
+                if ret == 0 and out.find("result: success") == -1 :
+                    job.runningJob.errors.append(out)
+                
+                if job.runningJob.errors is None or job.runningJob.errors == [] :
+                    self.logging.debug("Output of %s successfully retrieved" 
+                                        % str(job.runningJob['schedulerId']))
+                    
+        
 
     ##########################################################################
     def purgeService( self, obj ):
@@ -184,11 +274,74 @@ class SchedulerGLite (SchedulerInterface) :
         Purge job (even bulk) from wms
         """
 
-        ### TO DO
-        ## Implement as getoutput where the "No output files ..."
+        # Implement as getOutput where the "No output files ..."
         # is not an error condition but the expected status
 
-        raise NotImplementedError
+        # REQUIRE MODIFICATION, not completely implemented yet
+        
+        if type(obj) == Job and self.valid( obj.runningJob ):
+            # the object passed is a valid Job
+                
+            command = "glite-wms-job-output --json --noint --dir " \
+                      + outdir + " " + job.runningJob['schedulerId']
+            
+            out, ret = self.ExecuteCommand( self.proxyString + command )
+            
+            if ret == 1 : 
+                # One or more output files have not been retrieved
+                if out.find("No output files to be retrieved") != -1 :
+                    obj.runningJob.warning.append("No output files")
+                
+                # Output files already retrieved
+                if out.find("Output files already retrieved") != -1 : 
+                    obj.runningJob.warning.append("Already retrieved")
+                
+                # Output not yet ready
+                if out.find("Output not yet Ready") != -1 :
+                    obj.runningJob.errors.append("Not yet Ready")
+            
+            # Excluding all the previous but however something went wrong
+            if ret == 0 and out.find("result: success") == -1 :
+                obj.runningJob.errors.append( out )   
+            
+            if obj.runningJob.errors is None or obj.runningJob.errors == [] :
+                self.logging.debug("Output of %s successfully retrieved" 
+                                    % str(job.runningJob['schedulerId']))
+
+        elif type(obj) == Task :
+            # the object passed is a Task
+            
+            for job in obj.jobs:
+                if not self.valid( job.runningJob ):
+                    continue
+                
+                command = "glite-wms-job-output --json --noint --dir " \
+                          + outdir + " " + job.runningJob['schedulerId']
+                
+                out, ret = self.ExecuteCommand( self.proxyString + command )
+                
+                if ret == 1 : 
+                    # One or more output files have not been retrieved
+                    if out.find("No output files to be retrieved") != -1 :
+                        job.runningJob.warning.append("No output files")
+                    
+                    # Output files already retrieved
+                    if out.find("Output files already retrieved") != -1 : 
+                        job.runningJob.warning.append("Already retrieved")
+                    
+                    # Output not yet ready
+                    if out.find("Output not yet Ready") != -1 :
+                        job.runningJob.errors.append("Not yet Ready")
+                
+                # Excluding all the previous cases but something went wrong
+                if ret == 0 and out.find("result: success") == -1 :
+                    job.runningJob.errors.append( out )
+                
+                if job.runningJob.errors is None or job.runningJob.errors == [] :
+                    self.logging.debug("Output of %s successfully retrieved" 
+                                        % str(job.runningJob['schedulerId']))
+       
+
         
     ##########################################################################
 
@@ -205,17 +358,22 @@ class SchedulerGLite (SchedulerInterface) :
 
         # the object passed is a Task
         elif type(obj) == Task :
-
+            
+            schedIdList = ""
             for job in obj.jobs:
                 if not self.valid( job.runningJob ):
                     continue
                 schedIdList += " " + \
                                str( job.runningJob['schedulerId'] ).strip()
-
-        command = "glite-wms-job-cancel --noint " + schedIdList
+        
+        command = "glite-wms-job-cancel --json --noint " + schedIdList
+        
         out, ret = self.ExecuteCommand( self.proxyString + command )
-        if out.find("glite-wms-job-cancel Success") == -1 :
-            raise SchedulerError( 'error', out )
+        
+        if ret != 0 :
+            raise SchedulerError('error executing glite-wms-job-cancel', out)
+        elif ret == 0 and out.find("result: success") == -1 :
+            raise SchedulerError('error', out)
 
     ##########################################################################
 
@@ -234,7 +392,7 @@ class SchedulerGLite (SchedulerInterface) :
         # delegate proxy
         if self.delegationId == "" :
             command = "glite-wms-job-list-match -d " + self.delegationId
-            self.delegateProxy( service )
+            self.delegateProxy()
         else :
             command = "glite-wms-job-list-match -a "
         
@@ -273,21 +431,19 @@ class SchedulerGLite (SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
-
+        
+        command = self.prefixCommandQuery + self.proxyString
+        
         # the object passed is a Task:
         #   check whether parent id are provided, make a list of ids
         #     and check the status
         if type(obj) == Task :
 
-            from ProdCommon.BossLite.Scheduler.GLiteLBQuery import GLiteLBQuery
-            lbInstance = GLiteLBQuery()
-
             # query performed through single job ids
             if objType == 'node' :
 
-                self.hackEnv() ### TEMP FIX
-                lbInstance.checkJobs( obj, self.invalidList )
-                self.hackEnv( restore = True ) ### TEMP FIX
+                # not implemented yet ...
+                raise NotImplementedError
 
             # query performed through a bulk id
             elif objType == 'parent' :
@@ -320,11 +476,56 @@ class SchedulerGLite (SchedulerInterface) :
 
                     count += 1
 
-                self.hackEnv() ### TEMP FIX
-                lbInstance.checkJobsBulk( obj, jobIds, parentIds )
-                self.hackEnv( restore = True ) ### TEMP FIX
-
-
+                formattedParentIds = ','.join(parentIds)
+                formattedJobIds = ','.join(jobIds)
+                
+                command = command + 'python ' + self.commandQueryPath \
+                    + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
+                        % (formattedParentIds, formattedJobIds)
+                    
+                outJson, ret = self.ExecuteCommand( command )
+                
+                # Check error
+                if ret !=0 :
+                    raise SchedulerError('error executing GLiteStatusQuery', outJson)
+                else : 
+                    # parse JSON output
+                    try:
+                        out = json.loads(outJson)
+                    except ValueError:
+                        raise SchedulerError('error', out )
+                    
+                    if out['errors']:
+                        raise  SchedulerError('Errors during states retrieving', out['errors'] )
+                
+                # Refill objects...
+                count = 0
+                newStates = out['statusQuery']
+                
+                for id in jobIds.values() : 
+                    
+                    # probably this check is useless...
+                    if self.valid( job.runningJob ) :
+                        obj.jobs[id].runningJob['status'] = \
+                                    newStates[count]['status']
+                        obj.jobs[id].runningJob['scheduledAtSite'] = \
+                                    newStates[count]['scheduledAtSite']
+                        obj.jobs[id].runningJob['startTime'] = \
+                                    newStates[count]['startTime']
+                        obj.jobs[id].runningJob['service'] = \
+                                    newStates[count]['service']
+                        obj.jobs[id].runningJob['statusScheduler'] = \
+                                    newStates[count]['statusScheduler']
+                        obj.jobs[id].runningJob['destination'] = \
+                                    newStates[count]['destination']
+                        obj.jobs[id].runningJob['statusReason'] = \
+                                    newStates[count]['statusReason']
+                        obj.jobs[id].runningJob['lbTimestamp'] = \
+                                    newStates[count]['lbTimestamp']
+                        obj.jobs[id].runningJob['stopTime'] = \
+                                    newStates[count]['stopTime']
+                    count += 1
+                
         # unknown object type
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
@@ -332,7 +533,7 @@ class SchedulerGLite (SchedulerInterface) :
 
     ##########################################################################
 
-    def jobDescription ( self, obj, requirements='', config='', service = '' ):
+    def jobDescription (self, obj, requirements='', config='', service = ''):
 
         """
         retrieve scheduler specific job description
@@ -345,25 +546,15 @@ class SchedulerGLite (SchedulerInterface) :
     ##########################################################################
 
     def decode  ( self, obj, requirements='' ) :
+        """
+        prepare file for submission
+        """
 
         if type(obj) == RunningJob or type(obj) == Job :
             return self.jdlFile ( obj, requirements ) 
         elif type(obj) == Task :
             return self.collectionJdlFile ( obj, requirements ) 
 
-
-    ##########################################################################
-
-    def fullPath( self, path, startdir ) :
-        """
-        should be in task/job to resolve input/output fullpaths
-        """
-        if path == '' :
-            return path
-        if startdir != '' :
-            return os.path.normpath( os.path.join(startdir, path) )
-        else :
-            return os.path.normpath( os.path.join(os.getcwd(), path) )
 
     ##########################################################################
 
