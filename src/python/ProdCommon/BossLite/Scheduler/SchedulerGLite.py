@@ -5,7 +5,6 @@ basic glite CLI interaction class
 
 __revision__ = ""
 __version__ = ""
-__author__ = "filippo.spiga@disco.unimib.it"
 
 import os
 import tempfile
@@ -60,8 +59,6 @@ class SchedulerGLite(SchedulerInterface) :
         super(SchedulerGLite, self).__init__(**args)
 
         # some initializations
-        self.proxyString = ''
-        self.envProxy = os.environ.get("X509_USER_PROXY",'')
         self.warnings = []
 
         # typical options
@@ -88,43 +85,36 @@ class SchedulerGLite(SchedulerInterface) :
             self.commandQueryPath = os.environ.get('PRODCOMMON_ROOT') + \
                                         '/lib/ProdCommon/BossLite/Scheduler/'
         else :
-            # something went wrong... fake path (only for test purposes)
-            self.commandQueryPath = '/afs/cern.ch/user/s/spigafi/scratch0/workspace/PRODCOMMON/lib/ProdCommon/BossLite/Scheduler/'
+            # Impossible to locate GLiteQueryStatus.py ...
+            raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')
         
         glite_location = os.environ.get('GLITE_LOCATION').split('glite')[0]
         glite_ui= '%s/etc/profile.d/grid-env.sh ' % glite_location
-        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ;export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; ' % glite_ui
+        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH;' + \
+            'export PATH=/usr/bin:/bin; source /etc/profile;' \
+            'source %s' % glite_ui + \
+            ';export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; '
 
         # Raise an error if UI is old than 3.2 ...
         version, ret = self.ExecuteCommand( 'glite-version' )
         version = version.strip()
         if version.find( '3.2' ) != 0 :
             raise SchedulerError( 'SchedulerGLite is allowed on UI >3.2' )
-            
-
+        
     ##########################################################################
 
-    def delegateWMSProxy( self, wms ):
+    def delegateProxy( self, wms = '' ):
         """
-        delegate proxy to a wms
-        """
-
-        command = "glite-wms-job-delegate-proxy -d " + self.delegationId \
-                  + " --endpoint " + wms
-        msg, ret = self.ExecuteCommand( self.proxyString + command )
-
-        if ret != 0 or msg.find("Error -") >= 0 :
-            self.logging.warning( "Warning : %s" % msg )
-
-    ##########################################################################
-
-    def delegateProxy( self ):
-        """
-        delegate proxy to _all_ wms
+        delegate proxy to _all_ wms or to specific one (if explicitly passed)
         """
 
         command = "glite-wms-job-delegate-proxy -d " + self.delegationId
 
+        # inherited from delegateWMSProxy() method ...
+        if wms :
+            command += " --endpoint " + wms
+        
+        
         msg, ret = self.ExecuteCommand( self.proxyString + command )
 
         if ret != 0 or msg.find("Error -") >= 0 :
@@ -213,6 +203,11 @@ class SchedulerGLite(SchedulerInterface) :
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
             if ret == 1 : 
+                
+                # Output not yet ready
+                if out.find("Output not yet Ready") != -1 :
+                    obj.runningJob.errors.append("Not yet Ready")
+                    
                 # One or more output files have not been retrieved
                 if out.find("No output files to be retrieved") != -1:
                     obj.runningJob.warning.append("No output files")
@@ -220,18 +215,14 @@ class SchedulerGLite(SchedulerInterface) :
                 # Output files already retrieved
                 if out.find("Output files already retrieved") != -1 : 
                     obj.runningJob.warning.append("Already retrieved")
-                
-                # Output not yet ready
-                if out.find("Output not yet Ready") != -1 :
-                    obj.runningJob.errors.append("Not yet Ready")
             
             # Excluding all the previous cases however something went wrong....
             if ret == 0 and out.find("result: success") == -1 :
-                obj.runningJob.errors.append( out )   
+                obj.runningJob.errors.append(out)   
             
             if obj.runningJob.errors is None or obj.runningJob.errors == [] :
                 self.logging.debug("Output of %s successfully retrieved" 
-                                        % str(job.runningJob['schedulerId']))
+                                        % str(obj.runningJob['schedulerId']))
 
         elif type(obj) == Task :
             # the object passed is a Task
@@ -246,6 +237,11 @@ class SchedulerGLite(SchedulerInterface) :
                 out, ret = self.ExecuteCommand( self.proxyString + command )
                 
                 if ret == 1 : 
+                    
+                    # Output not yet ready
+                    if out.find("Output not yet Ready") != -1 :
+                        job.runningJob.errors.append("Not yet Ready")
+                    
                     # One or more output files have not been retrieved
                     if out.find("No output files to be retrieved") != -1 :
                         job.runningJob.warning.append("No output files")
@@ -253,10 +249,6 @@ class SchedulerGLite(SchedulerInterface) :
                     # Output files already retrieved
                     if out.find("Output files already retrieved") != -1 : 
                         job.runningJob.warning.append("Already retrieved")
-                    
-                    # Output not yet ready
-                    if out.find("Output not yet Ready") != -1 :
-                        job.runningJob.errors.append("Not yet Ready")
                 
                 # Excluding all the previous cases but something went wrong
                 if ret == 0 and out.find("result: success") == -1 :
@@ -277,7 +269,7 @@ class SchedulerGLite(SchedulerInterface) :
         # Implement as getOutput where the "No output files ..."
         # is not an error condition but the expected status
 
-        # REQUIRE MODIFICATION, not completely implemented yet
+        # REQUIRE TESTING
         
         if type(obj) == Job and self.valid( obj.runningJob ):
             # the object passed is a valid Job
@@ -287,30 +279,19 @@ class SchedulerGLite(SchedulerInterface) :
             
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
-            if ret == 1 : 
-                # One or more output files have not been retrieved
-                if out.find("No output files to be retrieved") != -1 :
-                    obj.runningJob.warning.append("No output files")
+            if ret == 1 and \
+                ( out.find("No output files to be retrieved") != -1 or \
+                  out.find("Output files already retrieved") != -1 ) :
+                    # now this is the expected exit condition... 
+                    self.logging.debug("Purge of %s successfully" 
+                                    % str(obj.runningJob['schedulerId']))
+            else : 
+                obj.runningJob.errors.append(out)
                 
-                # Output files already retrieved
-                if out.find("Output files already retrieved") != -1 : 
-                    obj.runningJob.warning.append("Already retrieved")
-                
-                # Output not yet ready
-                if out.find("Output not yet Ready") != -1 :
-                    obj.runningJob.errors.append("Not yet Ready")
-            
-            # Excluding all the previous but however something went wrong
-            if ret == 0 and out.find("result: success") == -1 :
-                obj.runningJob.errors.append( out )   
-            
-            if obj.runningJob.errors is None or obj.runningJob.errors == [] :
-                self.logging.debug("Output of %s successfully retrieved" 
-                                    % str(job.runningJob['schedulerId']))
-
         elif type(obj) == Task :
-            # the object passed is a Task
             
+            # the object passed is a Task
+                
             for job in obj.jobs:
                 if not self.valid( job.runningJob ):
                     continue
@@ -320,28 +301,15 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
                 
-                if ret == 1 : 
-                    # One or more output files have not been retrieved
-                    if out.find("No output files to be retrieved") != -1 :
-                        job.runningJob.warning.append("No output files")
-                    
-                    # Output files already retrieved
-                    if out.find("Output files already retrieved") != -1 : 
-                        job.runningJob.warning.append("Already retrieved")
-                    
-                    # Output not yet ready
-                    if out.find("Output not yet Ready") != -1 :
-                        job.runningJob.errors.append("Not yet Ready")
-                
-                # Excluding all the previous cases but something went wrong
-                if ret == 0 and out.find("result: success") == -1 :
-                    job.runningJob.errors.append( out )
-                
-                if job.runningJob.errors is None or job.runningJob.errors == [] :
-                    self.logging.debug("Output of %s successfully retrieved" 
-                                        % str(job.runningJob['schedulerId']))
-       
-
+                if ret == 1 and \
+                    ( out.find("No output files to be retrieved") != -1 or \
+                      out.find("Output files already retrieved") != -1 ) :
+                        # now this is the expected exit condition... 
+                        self.logging.debug("Purge of %s successfully" 
+                                        % str(obj.runningJob['schedulerId']))
+                else : 
+                    obj.runningJob.errors.append(out)
+        
         
     ##########################################################################
 
@@ -431,101 +399,91 @@ class SchedulerGLite(SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
-        
-        command = self.prefixCommandQuery + self.proxyString
+        # Can the check on objType be deprecated? ... talk with Giuseppe
         
         # the object passed is a Task:
-        #   check whether parent id are provided, make a list of ids
-        #     and check the status
         if type(obj) == Task :
 
-            # query performed through single job ids
-            if objType == 'node' :
+            # jobId for remapping
+            jobIds = {}
 
-                # not implemented yet ...
-                raise NotImplementedError
+            # parent Ids for status query
+            parentIds = []
 
-            # query performed through a bulk id
-            elif objType == 'parent' :
+            # counter for job position in list
+            count = 0
 
-                # jobId for remapping
-                jobIds = {}
+            # loop!
+            for job in obj.jobs :
 
-                # parent Ids for status query
-                parentIds = []
+                # consider just valid jobs
+                if self.valid( job.runningJob ) :
 
-                # counter for job position in list
-                count = 0
+                    # append in joblist
+                    jobIds[ str(job.runningJob['schedulerId']) ] = count
 
-                # loop!
-                for job in obj.jobs :
+                    # update unique parent ids list
+                    if job.runningJob['schedulerParentId'] \
+                           not in parentIds:
 
-                    # consider just valid jobs
-                    if self.valid( job.runningJob ) :
+                        parentIds.append(
+                            str(job.runningJob['schedulerParentId'] )
+                            )
 
-                        # append in joblist
-                        jobIds[ str(job.runningJob['schedulerId']) ] = count
-
-                        # update unique parent ids list
-                        if job.runningJob['schedulerParentId'] \
-                               not in parentIds:
-
-                            parentIds.append(
-                                str(job.runningJob['schedulerParentId'] )
-                                )
-
-                    count += 1
-
-                formattedParentIds = ','.join(parentIds)
-                formattedJobIds = ','.join(jobIds)
+                count += 1
+            
+            formattedParentIds = ','.join(parentIds)
+            formattedJobIds = ','.join(jobIds)
+            
+            command = 'python ' + self.commandQueryPath \
+                + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
+                    % (formattedParentIds, formattedJobIds)
                 
-                command = command + 'python ' + self.commandQueryPath \
-                    + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
-                        % (formattedParentIds, formattedJobIds)
+            outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
+                                                self.proxyString + command )
+            
+            # parse JSON output
+            try:
+                out = json.loads(outJson)
+            except ValueError:
+                raise SchedulerError('error parsing JSON', out )
+                
+            # Check error
+            if ret !=0 or out['errors']:
+                # obj.errors doesn't exist for Task object...
+                obj.warnings.append( "Errors: " + str(out['errors']) )
+                # raise SchedulerError('error executing GLiteStatusQuery', \
+                #                         str(out['errors']))
+            
+            # Refill objects...
+            count = 0
+            newStates = out['statusQuery']
+            
+            for id in jobIds.values() : 
+                
+                # probably this check is useless...
+                if self.valid( job.runningJob ) :
+                    obj.jobs[id].runningJob['status'] = \
+                                newStates[count]['status']
+                    obj.jobs[id].runningJob['scheduledAtSite'] = \
+                                newStates[count]['scheduledAtSite']
+                    obj.jobs[id].runningJob['startTime'] = \
+                                newStates[count]['startTime']
+                    obj.jobs[id].runningJob['service'] = \
+                                newStates[count]['service']
+                    obj.jobs[id].runningJob['statusScheduler'] = \
+                                newStates[count]['statusScheduler']
+                    obj.jobs[id].runningJob['destination'] = \
+                                newStates[count]['destination']
+                    obj.jobs[id].runningJob['statusReason'] = \
+                                newStates[count]['statusReason']
+                    obj.jobs[id].runningJob['lbTimestamp'] = \
+                                newStates[count]['lbTimestamp']
+                    obj.jobs[id].runningJob['stopTime'] = \
+                                newStates[count]['stopTime']
                     
-                outJson, ret = self.ExecuteCommand( command )
-                
-                # Check error
-                if ret !=0 :
-                    raise SchedulerError('error executing GLiteStatusQuery', outJson)
-                else : 
-                    # parse JSON output
-                    try:
-                        out = json.loads(outJson)
-                    except ValueError:
-                        raise SchedulerError('error', out )
-                    
-                    if out['errors']:
-                        raise  SchedulerError('Errors during states retrieving', out['errors'] )
-                
-                # Refill objects...
-                count = 0
-                newStates = out['statusQuery']
-                
-                for id in jobIds.values() : 
-                    
-                    # probably this check is useless...
-                    if self.valid( job.runningJob ) :
-                        obj.jobs[id].runningJob['status'] = \
-                                    newStates[count]['status']
-                        obj.jobs[id].runningJob['scheduledAtSite'] = \
-                                    newStates[count]['scheduledAtSite']
-                        obj.jobs[id].runningJob['startTime'] = \
-                                    newStates[count]['startTime']
-                        obj.jobs[id].runningJob['service'] = \
-                                    newStates[count]['service']
-                        obj.jobs[id].runningJob['statusScheduler'] = \
-                                    newStates[count]['statusScheduler']
-                        obj.jobs[id].runningJob['destination'] = \
-                                    newStates[count]['destination']
-                        obj.jobs[id].runningJob['statusReason'] = \
-                                    newStates[count]['statusReason']
-                        obj.jobs[id].runningJob['lbTimestamp'] = \
-                                    newStates[count]['lbTimestamp']
-                        obj.jobs[id].runningJob['stopTime'] = \
-                                    newStates[count]['stopTime']
-                    count += 1
-                
+                count += 1
+                  
         # unknown object type
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
@@ -818,4 +776,25 @@ class SchedulerGLite(SchedulerInterface) :
             if not full and celist != []:
                 break
         return celist
+    
+    ##########################################################################
+    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
+        """
+        execute a resources discovery through bdii
+        returns a list of resulting sites
+        """
+
+        result = []
+        for fqan in vos :
+            res = self.lcgInfoVo( tags, fqan, seList,
+                                  blacklist, whitelist, full)
+            if not full and res != [] :
+                return res
+            else :
+                for value in res :
+                    if value in result :
+                        continue
+                    result.append( value )
+
+        return result
 
