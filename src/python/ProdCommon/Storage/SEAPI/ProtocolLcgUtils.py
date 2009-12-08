@@ -5,16 +5,26 @@ Protocol that makes usage of lcg-utils to make operation with
 
 from Protocol import Protocol
 from Exceptions import *
+import os
 
 class ProtocolLcgUtils(Protocol):
     """
-    implementing storage interaction with lcg-utils
+    implementing storage interaction with lcg-utils 
     """
 
     def __init__(self):
         super(ProtocolLcgUtils, self).__init__()
         self.options  = " --verbose "
         self.options += " --vo=cms "
+        try: 
+            search_glite = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        except Exception, ex:
+            raise MissingCommand("Missing glite environment.", \
+                                     [], str(ex))
+        glite_ui_env = '%s/etc/profile.d/grid-env.sh '%search_glite
+
+        self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
+
 
     def simpleOutputCheck(self, outLines):
         """
@@ -27,10 +37,6 @@ class ProtocolLcgUtils(Protocol):
             if line.find("no entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
-            elif line.find("command not found") != -1:
-                raise MissingCommand("Command not found: client not " \
-                                     "installed or wrong environment", \
-                                     [line], outLines)
             elif line.find("user has no permission") != -1 or\
                  line.find("permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
@@ -52,6 +58,10 @@ class ProtocolLcgUtils(Protocol):
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                   [line], outLines)
+            elif line.find("command not found") != -1:
+                raise MissingCommand("Command not found: client not " \
+                                     "installed or wrong environment", \
+                                     [line], outLines)
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
@@ -67,12 +77,12 @@ class ProtocolLcgUtils(Protocol):
         fullSource = source.getLynk()
         fullDest = dest.getLynk()
 
-        setProxy = ''
+        setProxy = ''  
         if proxy is not None:
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
-
-        cmd = setProxy + " lcg-cp " + self.options + " " + opt + " " + \
+ 
+        cmd = self.fresh_env + setProxy + " lcg-cp " + self.options + " " + opt + " " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
@@ -100,7 +110,7 @@ class ProtocolLcgUtils(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
 
-        cmd = setProxy + "lcg-del "+ self.options +" " + opt + " " + fullSource
+        cmd = self.fresh_env + setProxy + "lcg-del "+ self.options +" " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -123,6 +133,7 @@ class ProtocolLcgUtils(Protocol):
         else:
             fullSource = source.getLynk()
             cmd = ""
+            cmd += self.fresh_env
             if proxy is not None:
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
@@ -145,10 +156,11 @@ class ProtocolLcgUtils(Protocol):
         """
         fullSource = source.getLynk()
         cmd = ""
+        cmd += self.fresh_env
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
-        cmd = "lcg-ls -l " + opt + " "+ fullSource +" | awk '{print $5}'"
+        cmd += "lcg-ls -l " + opt + " "+ fullSource +" | awk '{print $5}'"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -163,17 +175,18 @@ class ProtocolLcgUtils(Protocol):
         """
         fullSource = source.getLynk()
         cmd = ""
+        cmd += self.fresh_env
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
         cmd += "lcg-gt " + opt + " " + str(fullSource) + " gsiftp"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
-
+        
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
                                       problems, outputs )
-        return outputs.split('\n')[0]
+        return outputs.split('\n')[0] 
 
 
     def listPath(self, source, proxy = None, opt = ""):
@@ -185,6 +198,7 @@ class ProtocolLcgUtils(Protocol):
         else:
             fullSource = source.getLynk()
             cmd = ""
+            cmd += self.fresh_env
             if proxy is not None:
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
