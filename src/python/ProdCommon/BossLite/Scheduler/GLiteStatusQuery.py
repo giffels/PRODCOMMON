@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteLBQuery.py,v 1.23 2009/05/14 16:54:13 gcodispo Exp $"
-__version__ = "$Revision: 1.23 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.1 2009/12/07 20:31:32 spigafi Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import sys
 from socket import getfqdn
@@ -124,7 +124,7 @@ class GLiteStatusQuery(object):
             if lst[0] != '0':
                 try:
                     runningJob["scheduledAtSite"] = lst[0]
-                except JobError, err:
+                except JobError :
                     pass
             if lst[1] != '0':
                 runningJob["startTime"] = lst[1]
@@ -132,24 +132,6 @@ class GLiteStatusQuery(object):
                 runningJob["stopTime"] = lst[2]
             if lst[3] != '0':
                 runningJob["lbTimestamp"] = lst[3]
-
-
-            ###     pos = timestamp.find(runningJob['statusScheduler'])
-            ###     runningJob["lbTimestamp"] = timestamp[
-            ###         timestamp.find('=', pos)+1:timestamp.find(' ', pos)
-            ###         ]
-            ###     pos = timestamp.find('Scheduled')
-            ###     Scheduled = timestamp[
-            ###         timestamp.find('=', pos)+1:timestamp.find(' ', pos)
-            ###         ]
-            ###     if Scheduled  != '0':
-            ###         print Scheduled
-            ###     pos = timestamp.find('Running')
-            ###     Running = timestamp[
-            ###         timestamp.find('=', pos)+1:timestamp.find(' ', pos)
-            ###         ]
-            ###     if Running  != '0':
-            ###         print Running
 
         except StandardError :
             pass
@@ -174,10 +156,8 @@ class GLiteStatusQuery(object):
                                   'Problem loading jobStatus.ATTR_MAX' )
         self.st = 0
 
-
-
         # convert to string
-        lbJobs = wmsui_api.getJobIdfromList ( parentIds )
+        # lbJobs = wmsui_api.getJobIdfromList ( parentIds )
 
         for bulkId in parentIds:
             
@@ -196,8 +176,9 @@ class GLiteStatusQuery(object):
                 # Retrieve the list of attributes for each logged event
                 for statusNumber in range(statesNumber):
 
-                    #Retrieve the list of attributes for the current event
-                    statusAttribute = wrapStatus.getStatusAttributes(statusNumber)
+                    # Retrieve the list of attributes for the current event
+                    statusAttribute = \
+                        wrapStatus.getStatusAttributes(statusNumber)
                     
                     # Check for Errors
                     err , apiMsg = wrapStatus.get_error ()
@@ -208,7 +189,7 @@ class GLiteStatusQuery(object):
                 bulkInfo = statusAttribute
                 
                 # how many jobs in the bulk?
-                intervals = int ( len(statusAttribute) / self.attrNumber )
+                intervals = int ( len(bulkInfo) / self.attrNumber )
 
                 # look if the parent is aborted
                 if str(bulkInfo[self.status]) == 'Aborted' :
@@ -248,17 +229,20 @@ class GLiteStatusQuery(object):
 
 
 def usage():
-   usage_str = ''' 
-   python GLiteStatusQuery.py [-p <parentId> -j <jobId1,jobId2,...,jobIdN>][-f <infile>] [-o <outfile>] [-h]
-   Options:
-   -h|--help        print this summary
-   -f|--file=       input file in json format
-   -o|--output=     redirect output to file location 
-   -p|--parentId=   id for the collection 
-   -j|--jobId=      list of job ids (comma separated)
-   '''
-
-   return usage_str 
+    """
+    print out help
+    """
+    usage_str = ''' 
+    python GLiteStatusQuery.py [-p <parentId> -j <jobId1,jobId2,...,jobIdN>][-f <infile>] [-o <outfile>] [-h]
+    Options:
+    -h|--help        print this summary
+    -f|--file=       input file in json format
+    -o|--output=     redirect output to file location 
+    -p|--parentId=   id for the collection 
+    -j|--jobId=      list of job ids (comma separated)
+    '''
+        
+    return usage_str 
 
 def main():
     """
@@ -267,9 +251,12 @@ def main():
 
     # parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["help", "file=", "output=", "parentId=", "jobId="])
+        opts, args = getopt.getopt(sys.argv[1:], 
+                                   "", ["help", "file=", "output=", 
+                                        "parentId=", "jobId="])
     except getopt.GetoptError, err:
-        print json.dumps( {'statusQuery': [], 'errors' : [ str(err)+" "+usage() ]} )
+        print json.dumps({'statusQuery': [], 
+                           'errors' : [ str(err)+" "+usage() ]})
         sys.exit(2)
 
     inputFile = None 
@@ -280,7 +267,8 @@ def main():
     for o, a in opts:
         
         if o in ("-h", "--help"):
-            print json.dumps( {'statusQuery': [], 'errors' : [ usage() ]} )
+            print usage()
+            # print json.dumps( {'statusQuery': [], 'errors' : [ usage() ]} )
             sys.exit()
         elif o in ("-f", "--file"):
             inputFile = a
@@ -291,7 +279,8 @@ def main():
         elif o in ("-j", "--jobId"):
             jobList = a.split(',')
         else:
-            print json.dumps( {'statusQuery': [], 'errors' : [ "Unknown parameter.\n"+usage() ]} )
+            print json.dumps({'statusQuery': [], 
+                               'errors' : [ "Unknown parameter."]})
             sys.exit(2)
 
     if inputFile:
@@ -302,16 +291,19 @@ def main():
             jobList = inputDict['jobIdList']
             fp.close()
         except Exception, ex:
-            print json.dumps( {'statusQuery': [], 'errors' : [ "inputFile in unexpected format. "+str(ex) ]} )
+            print json.dumps({'statusQuery': [], 
+                               'errors' : [ "inputFile in unexpected format." ]})
             sys.exit(2)
     elif len(parent)==0:
-            print json.dumps( {'statusQuery': [], 'errors' : [ "Missing parentId.\n"+usage() ]} )
+            print json.dumps({'statusQuery': [], 
+                               'errors' : [ "Missing parentId." ]})
             sys.exit(2)
     elif len(jobList)==0:
-            print json.dumps( {'statusQuery': [], 'errors' : [ "At least one jobId is needed.\n"+usage() ]} )
+            print json.dumps({'statusQuery': [], 
+                               'errors' : [ "At least one jobId is needed." ]})
             sys.exit(2)
 
-    # LB data strucutures 
+    # LB data structures 
     template = { 'id' : None,
                  'jobId' : None,
                  'taskId' : None,
@@ -327,7 +319,7 @@ def main():
                  'stopTime' : None
                }
 
-    # jobId for remapping
+    # jobId for re-mapping
     jobIds = {}
 
     # parent Ids for status query
@@ -343,7 +335,7 @@ def main():
         rJob['schedulerId'] = job
         rJob['schedulerParentId'] = parent
 
-        # append in joblist
+        # append in job list
         jobIds[ job ] = rJob
 
         # update unique parent ids list
@@ -357,7 +349,7 @@ def main():
     lbInstance = GLiteStatusQuery(parentIds[0])
     lbInstance.checkJobsBulk( jobIds, parentIds, errors )
 
-    # printout json formatted list of status records with errors
+    # printout JSON formatted list of status records with errors
     out_dict = {
         'statusQuery': jobIds.values(), 
         'errors' : errors,   
