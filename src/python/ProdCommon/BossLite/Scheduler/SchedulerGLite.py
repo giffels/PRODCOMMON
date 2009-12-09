@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-basic glite CLI interaction class
+gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = ""
-__version__ = ""
+__revision__ = "$Id: "
+__version__ = "$Revision: "
 
 import os
 import tempfile
@@ -78,9 +78,9 @@ class SchedulerGLite(SchedulerInterface) :
             self.proxyString = ''
             
         # this section requires an improvement....    
-        if os.environ.get('CRABPRODCOMMONPYTHON') :
-            self.commandQueryPath = os.environ.get('CRABPRODCOMMONPYTHON') + \
-                                            '/ProdCommon/BossLite/Scheduler/'
+        if os.environ.get('CRABDIR') :
+            self.commandQueryPath = os.environ.get('CRABDIR') + \
+                                    '/external/ProdCommon/BossLite/Scheduler/'
         elif os.environ.get('PRODCOMMON_ROOT') :
             self.commandQueryPath = os.environ.get('PRODCOMMON_ROOT') + \
                                         '/lib/ProdCommon/BossLite/Scheduler/'
@@ -198,7 +198,7 @@ class SchedulerGLite(SchedulerInterface) :
             # the object passed is a valid Job
                 
             command = "glite-wms-job-output --json --noint --dir " + \
-                      outdir + " " + job.runningJob['schedulerId']
+                      outdir + " " + obj.runningJob['schedulerId']
             
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
@@ -268,14 +268,13 @@ class SchedulerGLite(SchedulerInterface) :
 
         # Implement as getOutput where the "No output files ..."
         # is not an error condition but the expected status
-
-        # REQUIRE TESTING
-        
+      
         if type(obj) == Job and self.valid( obj.runningJob ):
+            
             # the object passed is a valid Job
                 
-            command = "glite-wms-job-output --json --noint --dir " \
-                      + outdir + " " + job.runningJob['schedulerId']
+            command = "glite-wms-job-output --json --noint --dir /tmp/ " \
+                      + obj.runningJob['schedulerId']
             
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
@@ -288,16 +287,19 @@ class SchedulerGLite(SchedulerInterface) :
             else : 
                 obj.runningJob.errors.append(out)
                 
+            os.system( 'rm -rf /tmp/' + obj.runningJob['schedulerId'] )
+                                           
         elif type(obj) == Task :
             
             # the object passed is a Task
                 
             for job in obj.jobs:
+                
                 if not self.valid( job.runningJob ):
                     continue
                 
-                command = "glite-wms-job-output --json --noint --dir " \
-                          + outdir + " " + job.runningJob['schedulerId']
+                command = "glite-wms-job-output --json --noint --dir /tmp/ " \
+                          + job.runningJob['schedulerId']
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
                 
@@ -309,6 +311,8 @@ class SchedulerGLite(SchedulerInterface) :
                                         % str(obj.runningJob['schedulerId']))
                 else : 
                     obj.runningJob.errors.append(out)
+                    
+                os.system( 'rm -rf /tmp/' + job.runningJob['schedulerId'] )
         
         
     ##########################################################################
@@ -438,7 +442,7 @@ class SchedulerGLite(SchedulerInterface) :
             command = 'python ' + self.commandQueryPath \
                 + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
                     % (formattedParentIds, formattedJobIds)
-                
+            
             outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
                                                 self.proxyString + command )
             
@@ -449,7 +453,7 @@ class SchedulerGLite(SchedulerInterface) :
                 raise SchedulerError('error parsing JSON', out )
                 
             # Check error
-            if ret !=0 or out['errors']:
+            if ret != 0 or out['errors']:
                 # obj.errors doesn't exist for Task object...
                 obj.warnings.append( "Errors: " + str(out['errors']) )
                 # raise SchedulerError('error executing GLiteStatusQuery', \
@@ -459,28 +463,26 @@ class SchedulerGLite(SchedulerInterface) :
             count = 0
             newStates = out['statusQuery']
             
-            for id in jobIds.values() : 
+            for jobId in jobIds.values() : 
                 
-                # probably this check is useless...
-                if self.valid( job.runningJob ) :
-                    obj.jobs[id].runningJob['status'] = \
-                                newStates[count]['status']
-                    obj.jobs[id].runningJob['scheduledAtSite'] = \
-                                newStates[count]['scheduledAtSite']
-                    obj.jobs[id].runningJob['startTime'] = \
-                                newStates[count]['startTime']
-                    obj.jobs[id].runningJob['service'] = \
-                                newStates[count]['service']
-                    obj.jobs[id].runningJob['statusScheduler'] = \
-                                newStates[count]['statusScheduler']
-                    obj.jobs[id].runningJob['destination'] = \
-                                newStates[count]['destination']
-                    obj.jobs[id].runningJob['statusReason'] = \
-                                newStates[count]['statusReason']
-                    obj.jobs[id].runningJob['lbTimestamp'] = \
-                                newStates[count]['lbTimestamp']
-                    obj.jobs[id].runningJob['stopTime'] = \
-                                newStates[count]['stopTime']
+                obj.jobs[jobId].runningJob['status'] = \
+                            newStates[count]['status']
+                obj.jobs[jobId].runningJob['scheduledAtSite'] = \
+                            newStates[count]['scheduledAtSite']
+                obj.jobs[jobId].runningJob['startTime'] = \
+                            newStates[count]['startTime']
+                obj.jobs[jobId].runningJob['service'] = \
+                            newStates[count]['service']
+                obj.jobs[jobId].runningJob['statusScheduler'] = \
+                            newStates[count]['statusScheduler']
+                obj.jobs[jobId].runningJob['destination'] = \
+                            newStates[count]['destination']
+                obj.jobs[jobId].runningJob['statusReason'] = \
+                            newStates[count]['statusReason']
+                obj.jobs[jobId].runningJob['lbTimestamp'] = \
+                            newStates[count]['lbTimestamp']
+                obj.jobs[jobId].runningJob['stopTime'] = \
+                            newStates[count]['stopTime']
                     
                 count += 1
                   
