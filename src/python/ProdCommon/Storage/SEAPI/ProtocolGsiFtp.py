@@ -5,6 +5,7 @@ Class interfacing with gsiftp end point
 
 from Protocol import Protocol
 from Exceptions import *
+import os
 
 class ProtocolGsiFtp(Protocol):
     """
@@ -13,6 +14,15 @@ class ProtocolGsiFtp(Protocol):
 
     def __init__(self):
         super(ProtocolGsiFtp, self).__init__()
+        try:
+            search_glite = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        except Exception, ex:
+            raise MissingCommand("Missing glite environment.", \
+                                     [], str(ex))
+        glite_ui_env = '%s/etc/profile.d/grid-env.sh '%search_glite
+
+        self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
+
 
     def simpleOutputCheck(self, outLines):
         """
@@ -48,7 +58,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-mkdir " + opt + " "+ fullSource
+        cmd = self.fresh_env + "edg-gridftp-mkdir " + opt + " "+ fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -69,7 +79,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + ";"
  
-        cmd = setProxy + " lcg-cp " + opt + " --vo cms " + \
+        cmd = self.fresh_env + setProxy + " lcg-cp " + opt + " --vo cms " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
@@ -129,7 +139,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         if exitcode != 0: 
@@ -173,7 +183,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rm " + opt + " " + fullSource
+        cmd = self.fresh_env + "edg-gridftp-rm " + opt + " " + fullSource
 
         exitcode, outputs = self.executeCommand(cmd)
 
@@ -196,7 +206,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-rmdir " + opt + " " + fullSource
+        cmd = self.fresh_env + "edg-gridftp-rmdir " + opt + " " + fullSource
 
         exitcode, outputs = self.executeCommand(cmd)
 
@@ -216,7 +226,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
  
         ### simple output parsing ###
@@ -260,7 +270,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $1}'"
+        cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $1}'"
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -280,7 +290,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $5}'"
+        cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $5}'"
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -305,7 +315,7 @@ class ProtocolGsiFtp(Protocol):
             opt += " --proxy=%s " % str(proxy)
             self.checkUserProxy(proxy)
 
-        cmd = "edg-gridftp-ls " + opt + " " + fullSource
+        cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
         
         if exitcode != 0:

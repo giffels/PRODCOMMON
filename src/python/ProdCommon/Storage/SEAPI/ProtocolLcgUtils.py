@@ -5,6 +5,7 @@ Protocol that makes usage of lcg-utils to make operation with
 
 from Protocol import Protocol
 from Exceptions import *
+import os
 
 class ProtocolLcgUtils(Protocol):
     """
@@ -15,6 +16,15 @@ class ProtocolLcgUtils(Protocol):
         super(ProtocolLcgUtils, self).__init__()
         self.options  = " --verbose "
         self.options += " --vo=cms "
+        try: 
+            search_glite = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        except Exception, ex:
+            raise MissingCommand("Missing glite environment.", \
+                                     [], str(ex))
+        glite_ui_env = '%s/etc/profile.d/grid-env.sh '%search_glite
+
+        self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
+
 
     def simpleOutputCheck(self, outLines):
         """
@@ -71,8 +81,8 @@ class ProtocolLcgUtils(Protocol):
         if proxy is not None:
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
-
-        cmd = setProxy + " lcg-cp " + self.options + " " + opt + " " + \
+ 
+        cmd = self.fresh_env + setProxy + " lcg-cp " + self.options + " " + opt + " " + \
                            fullSource + " " + fullDest
         exitcode, outputs = self.executeCommand(cmd)
         ### simple output parsing ###
@@ -100,7 +110,7 @@ class ProtocolLcgUtils(Protocol):
             self.checkUserProxy(proxy)
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
 
-        cmd = setProxy + "lcg-del "+ self.options +" " + opt + " " + fullSource
+        cmd = self.fresh_env + setProxy + "lcg-del "+ self.options +" " + opt + " " + fullSource
         exitcode, outputs = self.executeCommand(cmd)
 
         ### simple output parsing ###
@@ -123,6 +133,7 @@ class ProtocolLcgUtils(Protocol):
         else:
             fullSource = source.getLynk()
             cmd = ""
+            cmd += self.fresh_env
             if proxy is not None:
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
@@ -145,10 +156,11 @@ class ProtocolLcgUtils(Protocol):
         """
         fullSource = source.getLynk()
         cmd = ""
+        cmd += self.fresh_env
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
-        cmd = "lcg-ls -l " + opt + " "+ fullSource +" | awk '{print $5}'"
+        cmd += "lcg-ls -l " + opt + " "+ fullSource +" | awk '{print $5}'"
         exitcode, outputs = self.executeCommand(cmd)
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -163,6 +175,7 @@ class ProtocolLcgUtils(Protocol):
         """
         fullSource = source.getLynk()
         cmd = ""
+        cmd += self.fresh_env
         if proxy is not None:
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
@@ -185,6 +198,7 @@ class ProtocolLcgUtils(Protocol):
         else:
             fullSource = source.getLynk()
             cmd = ""
+            cmd += self.fresh_env
             if proxy is not None:
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
