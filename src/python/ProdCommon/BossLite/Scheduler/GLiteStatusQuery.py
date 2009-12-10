@@ -78,7 +78,6 @@ class GLiteStatusQuery(object):
         import re
         self.ft = re.compile("(\d+)Undefined=(\d+) Submitted=(\d+) Waiting=(\d+) Ready=(\d+) Scheduled=(\d+) Running=(\d+) Done=(\d+) Cleared=(\d+) Aborted=(\d+) Cancelled=(\d+) Unknown=(\d+) Purged=(\d+)")
 
-
     ##########################################################################
     def getJobInfo( self, jobInfo, runningJob, forceAborted=False ):
         """
@@ -124,12 +123,15 @@ class GLiteStatusQuery(object):
             if lst[0] != '0':
                 try:
                     runningJob["scheduledAtSite"] = lst[0]
-                except JobError :
+                except KeyError :
                     pass
+                
             if lst[1] != '0':
                 runningJob["startTime"] = lst[1]
+                
             if lst[2] != '0':
                 runningJob["stopTime"] = lst[2]
+                
             if lst[3] != '0':
                 runningJob["lbTimestamp"] = lst[3]
 
@@ -152,8 +154,9 @@ class GLiteStatusQuery(object):
         """
 
         if self.attrNumber == 0 :
-            raise SchedulerError( 'Failed query', \
-                                  'Problem loading jobStatus.ATTR_MAX' )
+            # raise an exception here? What kind of exception?
+            raise 
+        
         self.st = 0
 
         # convert to string
@@ -232,7 +235,7 @@ def usage():
     """
     print out help
     """
-    usage_str = ''' 
+    usageStr = ''' 
     python GLiteStatusQuery.py [-p <parentId> -j <jobId1,jobId2,...,jobIdN>][-f <infile>] [-o <outfile>] [-h]
     Options:
     -h|--help        print this summary
@@ -242,7 +245,7 @@ def usage():
     -j|--jobId=      list of job ids (comma separated)
     '''
         
-    return usage_str 
+    return usageStr 
 
 def main():
     """
@@ -291,17 +294,17 @@ def main():
             jobList = inputDict['jobIdList']
             fp.close()
         except Exception, ex:
-            print json.dumps({'statusQuery': [], 
-                               'errors' : [ "inputFile in unexpected format." ]})
+            print json.dumps({'statusQuery': [],
+                              'errors' : [ "inputFile in unexpected format." ]})
             sys.exit(2)
     elif len(parent)==0:
-            print json.dumps({'statusQuery': [], 
-                               'errors' : [ "Missing parentId." ]})
-            sys.exit(2)
+        print json.dumps({'statusQuery': [],
+                          'errors' : [ "Missing parentId." ]})
+        sys.exit(2)
     elif len(jobList)==0:
-            print json.dumps({'statusQuery': [], 
-                               'errors' : [ "At least one jobId is needed." ]})
-            sys.exit(2)
+        print json.dumps({'statusQuery': [],
+                          'errors' : [ "At least one jobId is needed." ]})
+        sys.exit(2)
 
     # LB data structures 
     template = { 'id' : None,
@@ -350,7 +353,7 @@ def main():
     lbInstance.checkJobsBulk( jobIds, parentIds, errors )
 
     # printout JSON formatted list of status records with errors
-    out_dict = {
+    outDict = {
         'statusQuery': jobIds.values(), 
         'errors' : errors,   
     }
@@ -358,13 +361,13 @@ def main():
     if outputFile:
         try:
             fp = open(outputFile, 'w')
-            json.dump(out_dict, fp)
+            json.dump(outDict, fp)
             fp.close()
         except Exception, ex:
             print json.dumps( {'statusQuery': [], 'errors' : [ str(ex) ]} )
             sys.exit(2)
     else:
-        print json.dumps(out_dict)
+        print json.dumps(outDict)
 
 
 ########## END MAIN ##########
