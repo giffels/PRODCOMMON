@@ -3,8 +3,9 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: "
-__version__ = "$Revision: "
+__revision__ = "$Id$"
+__version__ = "$Revision$"
+__author__ = "filippo.spiga@cern.ch"
 
 import os
 import tempfile
@@ -17,31 +18,35 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
-class bossLiteJsonDecoder(json.JSONDecoder):
+from json.decoder import JSONDecoder
+
+class BossliteJsonDecoder(JSONDecoder):
     """
     Override JSON decode
     """
     
-    def decode (self, jsonString):
+    def decode(self, jsonString):
         """
-        basic class to decode json output
+        basic class to decode JSON output
         """
         
-        jsonString = jsonString.replace( '\n' , ',' )
-        p = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
-        jsonString = p.sub(r'{ "\1', jsonString[:-1] )
-        p = re.compile(':[\s]([a-zA-Z_\-])')
-        jsonString = p.sub(r'":"\1', jsonString )
-        p = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
-        jsonString = p.sub(r'\1","\2"', jsonString )
-        p = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
-        jsonString = p.sub(r'\1","\2":', jsonString )
-        p = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
-        jsonString =  p.sub(r'}', jsonString)
-        p = re.compile('([a-zA-Z0-9_\-])}')
-        jsonString =  p.sub(r'\1"}', jsonString)
+        toParse = jsonString
+        
+        toParse = jsonString.replace( '\n' , ',' )
+        pattern = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
+        toParse = pattern.sub(r'{ "\1', toParse[:-1] )
+        pattern = re.compile(':[\s]([a-zA-Z_\-])')
+        toParse = pattern.sub(r'":"\1', toParse )
+        pattern = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
+        toParse = pattern.sub(r'\1","\2"', toParse )
+        pattern = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
+        toParse = pattern.sub(r'\1","\2":', toParse )
+        pattern = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
+        toParse =  pattern.sub(r'}', toParse)
+        pattern = re.compile('([a-zA-Z0-9_\-])}')
+        toParse =  pattern.sub(r'\1"}', toParse)
 
-        parsedJson = json.loads(jsonString)
+        parsedJson = json.loads(toParse)
         
         return parsedJson  
     
@@ -88,11 +93,11 @@ class SchedulerGLite(SchedulerInterface) :
             # Impossible to locate GLiteQueryStatus.py ...
             raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')
         
-        glite_location = os.environ.get('GLITE_LOCATION').split('glite')[0]
-        glite_ui= '%s/etc/profile.d/grid-env.sh ' % glite_location
+        gliteLocation = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        gliteUi = '%s/etc/profile.d/grid-env.sh ' % gliteLocation
         self.prefixCommandQuery = 'unset LD_LIBRARY_PATH;' + \
             'export PATH=/usr/bin:/bin; source /etc/profile;' \
-            'source %s' % glite_ui + \
+            'source %s' % gliteUi + \
             ';export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; '
 
         # Raise an error if UI is old than 3.2 ...
@@ -158,10 +163,12 @@ class SchedulerGLite(SchedulerInterface) :
         if ret != 0 :
             raise SchedulerError('error executing glite-wms-job-submit', out)
         
-        myJSONDecoder = bossLiteJsonDecoder()
+        myJSONDecoder = BossliteJsonDecoder()
 
         try:
+            
             jOut = myJSONDecoder.decode(out)
+            
         except ValueError:
             raise SchedulerError('error parsing JSON output',  out)
              
@@ -204,30 +211,57 @@ class SchedulerGLite(SchedulerInterface) :
             
             if ret == 1 : 
                 
+                # Proxy missing
+                if out.find("Proxy File Not Found") != -1 :
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                                          ' proxy not found' )
+                    # adapting the error string with JobOutput requirements
+                    obj.runningJob.errors.append("Proxy Missing")
+                    
+                # Proxy expired
+                if out.find("authorization failed") != -1 :
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                                          ' authorization failed' )
+                    # adapting the error string as JobOutput.py requires
+                    obj.runningJob.errors.append("Proxy Expired")
+                        
                 # Output not yet ready
                 if out.find("Output not yet Ready") != -1 :
-                    obj.runningJob.errors.append("Not yet Ready")
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                      ' output not yet ready' )
+                    # adapting the error string with JobOutput requirements
+                    obj.runningJob.errors.append("Job current status doesn")
                     
                 # One or more output files have not been retrieved
                 if out.find("No output files to be retrieved") != -1:
-                    obj.runningJob.warning.append("No output files")
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                      ' no output files.' )
+                    obj.runningJob.errors.append("No output files")
                 
-                # Output files already retrieved
+                # Output files already retrieved --> Archive!
                 if out.find("Output files already retrieved") != -1 : 
-                    obj.runningJob.warning.append("Already retrieved")
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                      ' output already retrieved.' )
+                    obj.runningJob.warnings.append("Already retrieved")
             
-            # Excluding all the previous cases however something went wrong....
+            # Excluding all the previous cases however something went wrong
             if ret == 0 and out.find("result: success") == -1 :
+                self.logging.warning( obj.runningJob['schedulerId'] + \
+                      ' problems during getOutput operation.' )
                 obj.runningJob.errors.append(out)   
             
-            if obj.runningJob.errors is None or obj.runningJob.errors == [] :
+            if obj.runningJob.errors is None or obj.runningJob.errors == []:
                 self.logging.debug("Output of %s successfully retrieved" 
                                         % str(obj.runningJob['schedulerId']))
-
+            else :
+                raise SchedulerError( str(obj.runningJob.errors))
+            
         elif type(obj) == Task :
+            
             # the object passed is a Task
             
             for job in obj.jobs:
+                
                 if not self.valid( job.runningJob ):
                     continue
                 
@@ -238,23 +272,46 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 if ret == 1 : 
                     
+                    # Proxy missing
+                    if out.find("Proxy File Not Found") != -1 :
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                                              ' proxy not found' )
+                        # adapting the error string with JobOutput requirements
+                        job.runningJob.errors.append("Proxy Missing")
+                        
+                    # Proxy expired
+                    if out.find("authorization failed") != -1 :
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                                              ' authorization failed' )
+                        # adapting the error string as JobOutput.py requires
+                        job.runningJob.errors.append("Proxy Expired")
+                    
                     # Output not yet ready
                     if out.find("Output not yet Ready") != -1 :
-                        job.runningJob.errors.append("Not yet Ready")
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                                              ' output not yet ready' )
+                        # adapting the error string with JobOutput requirements
+                        job.runningJob.errors.append("Job current status doesn")
                     
                     # One or more output files have not been retrieved
                     if out.find("No output files to be retrieved") != -1 :
-                        job.runningJob.warning.append("No output files")
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                                              ' no output files.' )
+                        job.runningJob.errors.append("No output files")
                     
-                    # Output files already retrieved
+                    # Output files already retrieved                  
                     if out.find("Output files already retrieved") != -1 : 
-                        job.runningJob.warning.append("Already retrieved")
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                                              ' output already retrieved.' )
+                        job.runningJob.warnings.append("Already retrieved")
                 
                 # Excluding all the previous cases but something went wrong
                 if ret == 0 and out.find("result: success") == -1 :
+                    self.logging.warning( job.runningJob['schedulerId'] + \
+                                    ' problems during getOutput operation.' )
                     job.runningJob.errors.append(out)
                 
-                if job.runningJob.errors is None or job.runningJob.errors == [] :
+                if job.runningJob.errors is None or job.runningJob.errors == []:
                     self.logging.debug("Output of %s successfully retrieved" 
                                         % str(job.runningJob['schedulerId']))
                     
@@ -281,18 +338,18 @@ class SchedulerGLite(SchedulerInterface) :
             if ret == 1 and \
                 ( out.find("No output files to be retrieved") != -1 or \
                   out.find("Output files already retrieved") != -1 ) :
-                    # now this is the expected exit condition... 
-                    self.logging.debug("Purge of %s successfully" 
-                                    % str(obj.runningJob['schedulerId']))
+                # now this is the expected exit condition... 
+                self.logging.debug("Purge of %s successfully" 
+                                   % str(obj.runningJob['schedulerId']))
             else : 
                 obj.runningJob.errors.append(out)
-                
+            
             os.system( 'rm -rf /tmp/' + obj.runningJob['schedulerId'] )
-                                           
+                            
         elif type(obj) == Task :
             
             # the object passed is a Task
-                
+            
             for job in obj.jobs:
                 
                 if not self.valid( job.runningJob ):
@@ -306,15 +363,14 @@ class SchedulerGLite(SchedulerInterface) :
                 if ret == 1 and \
                     ( out.find("No output files to be retrieved") != -1 or \
                       out.find("Output files already retrieved") != -1 ) :
-                        # now this is the expected exit condition... 
-                        self.logging.debug("Purge of %s successfully" 
-                                        % str(obj.runningJob['schedulerId']))
+                    # now this is the expected exit condition... 
+                    self.logging.debug("Purge of %s successfully" 
+                                       % str(obj.runningJob['schedulerId']))
                 else : 
                     obj.runningJob.errors.append(out)
-                    
+                
                 os.system( 'rm -rf /tmp/' + job.runningJob['schedulerId'] )
-        
-        
+
     ##########################################################################
 
     def kill( self, obj ):
@@ -589,7 +645,7 @@ class SchedulerGLite(SchedulerInterface) :
         # \\ the list of common files to be put in every single node
         #  \\ in the form root.inputsandbox[ISBindex]
         commonFiles = ''
-        ISBindex = 0
+        isbIndex = 0
 
         # task input files handling:
         if task['startDirectory'] is None or task['startDirectory'][0] == '/':
@@ -600,8 +656,8 @@ class SchedulerGLite(SchedulerInterface) :
                         continue
                     filename = os.path.abspath( ifile )
                     globalSandbox += '"file://' + filename + '",'
-                    commonFiles += "root.inputsandbox[%d]," % ISBindex
-                    ISBindex += 1
+                    commonFiles += "root.inputsandbox[%d]," % isbIndex
+                    isbIndex += 1
         else :
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
@@ -612,8 +668,8 @@ class SchedulerGLite(SchedulerInterface) :
                     if ifile.find( 'file:/' ) == 0:
                         globalSandbox += '"' + ifile + '",'
                         
-                        commonFiles += "root.inputsandbox[%d]," % ISBindex
-                        ISBindex += 1
+                        commonFiles += "root.inputsandbox[%d]," % isbIndex
+                        isbIndex += 1
                         continue
                     if ifile[0] == '/':
                         ifile = ifile[1:]
@@ -657,16 +713,16 @@ class SchedulerGLite(SchedulerInterface) :
                 jdl += 'OutputSandbox = {%s};\n' % outfiles[:-1]
 
             # job input files handling:
-            # add their name in the global sanbox and put a reference
+            # add their name in the global sandbox and put a reference
             localfiles = commonFiles
             if task['startDirectory'] is None \
                    or task['startDirectory'][0] == '/':
                 # files are stored locally, compose with 'file://'
                 for filePath in job['fullPathInputFiles']:
                     if filePath != '' :
-                        localfiles += "root.inputsandbox[%d]," % ISBindex
+                        localfiles += "root.inputsandbox[%d]," % isbIndex
                     globalSandbox += '"file://' + filePath + '",'
-                    ISBindex += 1
+                    isbIndex += 1
             else :
                 # files are elsewhere, just add their composed path
                 for filePath in job['fullPathInputFiles']:
@@ -689,7 +745,8 @@ class SchedulerGLite(SchedulerInterface) :
             while requirements[0] == '[':
                 requirements = requirements[1:-1].strip()
             jdl += '\n' + requirements + '\n'
-        except Exception:
+        except:
+            # catch a generic exception (?)
             pass
 
         # close jdl
@@ -700,7 +757,8 @@ class SchedulerGLite(SchedulerInterface) :
         return jdl
 
     ##########################################################################
-    def lcgInfoVo(self, tags, fqan, seList=None, blacklist=None, whitelist=None, full=False):
+    def lcgInfoVo (self, tags, fqan, seList=None, blacklist=None,  
+                  whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
@@ -780,7 +838,8 @@ class SchedulerGLite(SchedulerInterface) :
         return celist
     
     ##########################################################################
-    def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
+    def lcgInfo (self, tags, vos, seList=None, blacklist=None, 
+                whitelist=None, full=False):
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
