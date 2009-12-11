@@ -14,6 +14,19 @@ class ProtocolSrmv2(Protocol):
     def __init__(self):
         super(ProtocolSrmv2, self).__init__()
         self._options = " -2 -debug=true -protocols=gsiftp,http " 
+        # check for java version
+        cmd = "java -version"
+        try: 
+            exitcode, outputs = self.executeCommand(cmd)
+        except Exception, ex:
+            raise MissingCommand("Missing java command.", \
+                                     [] , outputs)
+        for line in outputs.split("\n"):
+            line = line.lower()
+            if line.find("version") != -1 and line.find("1.4") != -1:
+                #msg= ('%s is to old for srm needs. Please update it.\n\tFor further infos see: %s '%(str(line),'LINK'))
+                msg= ('%s is to old for srm needs. Please update it.'%(str(line)))
+                raise Exception(msg)
 
     def simpleOutputCheck(self, outLines):
         """
