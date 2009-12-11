@@ -21,11 +21,11 @@ class ProtocolSrmv2(Protocol):
         except Exception, ex:
             raise MissingCommand("Missing java command.", \
                                      [] , outputs)
+        javaLink='https://twiki.cern.ch/twiki/bin/view/CMS/CheckUserJava'
         for line in outputs.split("\n"):
             line = line.lower()
             if line.find("version") != -1 and line.find("1.4") != -1:
-                #msg= ('%s is to old for srm needs. Please update it.\n\tFor further infos see: %s '%(str(line),'LINK'))
-                msg= ('%s is to old for srm needs. Please update it.'%(str(line)))
+                msg= ('%s is to old for srm needs. Please update it.\n\tFor further infos see: %s '%(str(line),javaLink))
                 raise Exception(msg)
 
     def simpleOutputCheck(self, outLines):
