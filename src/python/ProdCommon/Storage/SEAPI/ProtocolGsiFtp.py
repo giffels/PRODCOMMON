@@ -21,12 +21,12 @@ class ProtocolGsiFtp(Protocol):
             #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
             # temporary hack
             glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-            if not os.path.isfile(glite_ui_env):
-                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
-        if not os.path.isfile(glite_ui_env):
+            if not os.path.isfile(str(glite_ui_env).strip()):
+                glite_ui_env = '%setc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
+        if not os.path.isfile(str(glite_ui_env).strip()):
             if os.environ.get('OSG_GRID'):
                 glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID')
-                if not os.path.isfile(glite_ui_env):
+                if not os.path.isfile(str(glite_ui_env).strip()):
                     raise Exception("Missing glite environment.")
             else:  
                 raise Exception("Missing glite environment.")
