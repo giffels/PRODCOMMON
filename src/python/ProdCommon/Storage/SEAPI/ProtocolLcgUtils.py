@@ -17,12 +17,21 @@ class ProtocolLcgUtils(Protocol):
         self.options  = " --verbose "
         self.options += " --vo=cms "
          
+        glite_ui_env='' 
         if os.environ.get('GLITE_WMS_LOCATION'):
-            glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION') 
-        elif os.environ.get('OSG_GRID')
-            glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID') 
-        else:
-            raise Exception("Missing glite environment.")
+            # that should be enough
+            #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+            # temporary hack
+            glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+            if not os.path.isfile(glite_ui_env):
+                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
+        if not os.path.isfile(glite_ui_env):
+            if os.environ.get('OSG_GRID'):
+                glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID')
+                if not os.path.isfile(glite_ui_env):
+                    raise Exception("Missing glite environment.")
+            else:
+                raise Exception("Missing glite environment.")
 
         self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
 
