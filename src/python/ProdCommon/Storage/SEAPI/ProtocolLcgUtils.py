@@ -50,6 +50,10 @@ class ProtocolLcgUtils(Protocol):
             if line.find("no entries for host") != -1 or\
                line.find("srm client error") != -1:
                 raise MissingDestination("Host not found!", [line], outLines)
+            elif line.find("command not found") != -1:
+                raise MissingCommand("Command not found: client not " \
+                                     "installed or wrong environment", \
+                                     [line], outLines)
             elif line.find("user has no permission") != -1 or\
                  line.find("permission denied") != -1:
                 raise AuthorizationException("Permission denied!", \
@@ -71,10 +75,6 @@ class ProtocolLcgUtils(Protocol):
                  line.find("invalid option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
                                   [line], outLines)
-            elif line.find("command not found") != -1:
-                raise MissingCommand("Command not found: client not " \
-                                     "installed or wrong environment", \
-                                     [line], outLines)
         return problems
 
     def createDir(self, source, proxy = None, opt = ""):
