@@ -5,7 +5,6 @@ import time
 import re
 import logging
 from ProdCommon.BossLite.Common.System import executeCommand
-import sha
 
 class Proxy:
     """
@@ -264,7 +263,7 @@ class Proxy:
 
             # check the timeleft for the required server
             if checkRetrieverRenewer and len(self.serverDN.strip()) > 0:
-                serverCredName = sha.new(self.serverDN).hexdigest()
+                serverCredName = self.hashlib_wrap(self.serverDN)
                 credNameList = re.compile(" name: (?P<CN>.*)").findall(out)
                 credTimeleftList = timeleftList[1:]
 
@@ -294,7 +293,7 @@ class Proxy:
         cmd = 'myproxy-init -d -n -s %s'%self.myproxyServer
 
         if len( self.serverDN.strip() ) > 0:
-            credName = sha.new(self.serverDN).hexdigest()
+            credName = self.hashlib_wrap(self.serverDN)
             cmd += ' -x -R \'%s\' -Z \'%s\' -k %s -t 168:00 '%(self.serverDN, self.serverDN, credName)
 
         out = os.system(cmd)
@@ -306,7 +305,7 @@ class Proxy:
     def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
         """
         """
-        proxyFilename= os.path.join(proxyCache, sha.new(userDN).hexdigest() )
+        proxyFilename= os.path.join(proxyCache, self.hashlib_wrap(userDN) )
 
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> -k <credName>
 
@@ -319,7 +318,7 @@ class Proxy:
             if role: voAttr += ':/'+vo+'/Role='+role
 
         # get the credential name for this retriever
-        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
+        credName = self.hashlib_wrap( self.getSubject('$HOME/.globus/hostcert.pem') )
 
         # compose the delegation or renewal commands with the regeneration of Voms extensions
         cmdList = []
@@ -369,7 +368,7 @@ class Proxy:
         voAttr = vo + ':' + att
 
         # get the credential name for this renewer
-        credName = sha.new( self.getSubject('$HOME/.globus/hostcert.pem') ).hexdigest()
+        credName = self.hashlib_wrap( self.getSubject('$HOME/.globus/hostcert.pem') )
 
         # renew the certificate
         # compose the delegation or renewal commands with the regeneration of Voms extensions
@@ -433,4 +432,16 @@ class Proxy:
             raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxy, out) )
 
         return
+    def hashlib_wrap( string ):
+        '''
+        enable python2.4 / python2.6 compatibility
+        '''
+        try:
+            from hashlib import sha1
+            h=sha1(string)
+        except:
+            from sha import sha
+            h=sha.new(string)
+ 
+        return h.hexdigest()
 
