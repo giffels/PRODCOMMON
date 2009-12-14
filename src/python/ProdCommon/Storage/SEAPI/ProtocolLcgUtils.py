@@ -18,13 +18,16 @@ class ProtocolLcgUtils(Protocol):
         self.options += " --vo=cms "
          
         glite_ui_env='' 
-        if os.environ.get('GLITE_WMS_LOCATION'):
-            # that should be enough
-            #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-            # temporary hack
-            glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-            if not os.path.isfile(str(glite_ui_env).strip()):
-                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
+        if os.environ.get('RUNTIME_AREA'):
+            glite_ui_env= '%s/CacheEnv.sh'%os.environ.get('RUNTIME_AREA')
+        if not os.path.isfile(str(glite_ui_env).strip()):
+            if os.environ.get('GLITE_WMS_LOCATION'):
+                # that should be enough
+                #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+                # temporary hack
+                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+                if not os.path.isfile(str(glite_ui_env).strip()):
+                    glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
         if not os.path.isfile(str(glite_ui_env).strip()):
             if os.environ.get('OSG_GRID'):
                 glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID')
