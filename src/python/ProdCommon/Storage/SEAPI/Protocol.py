@@ -133,57 +133,6 @@ class Protocol(object):
         except AttributeError:
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.FNDELAY)
 
-    def runCommand(self, cmd, printout=0, timeout=-1):
-        """
-        _runCommand_
-
-        executes a command returning separated std.out std.err
-        """
-        import popen2, select, os, string
-
-        child = popen2.Popen3(cmd, 1) # capture stdout and stderr from command
-        child.tochild.close()             # don't need to talk to child
-        outfile = child.fromchild
-        outfd = outfile.fileno()
-        errfile = child.childerr
-        errfd = errfile.fileno()
-        self.makeNonBlocking(outfd)            # don't deadlock!
-        self.makeNonBlocking(errfd)
-        outdata = []
-        errdata = []
-        outeof = erreof = 0
-
-        if timeout > 0 :
-            maxwaittime = time.time() + timeout
-
-        err = -1
-        while (timeout == -1 or time.time() < maxwaittime):
-            ready = select.select([outfd,errfd],[],[]) # wait for input
-            if outfd in ready[0]:
-                outchunk = outfile.read()
-                if outchunk == '': outeof = 1
-                outdata.append(outchunk)
-            if errfd in ready[0]:
-                errchunk = errfile.read()
-                if errchunk == '': erreof = 1
-                errdata.append(errchunk)
-            if outeof and erreof:
-                err = child.wait()
-                break
-            select.select([],[],[],.01) # give a little time for buffers to fill
-        if err == -1:
-            # kill the pid
-            os.kill (child.pid, 9)
-            err = child.wait()
-
-        cmd_out = string.join(outdata,"")
-        cmd_err = string.join(errdata,"")
-
-        self.__logout__(str(cmd), str(err), str(cmd_out + "\n" + cmd_err))
-
-        return err, cmd_out, cmd_err
-
-
     def executeCommand(self, command):
         """
         common method to execute commands
