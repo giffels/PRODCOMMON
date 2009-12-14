@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id$"
-__version__ = "$Revision$"
+__revision__ = "$Id: SchedulerGLite.py,v 2.3 2009/12/10 19:06:57 spigafi Exp $"
+__version__ = "$Revision: 2.3 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -176,7 +176,7 @@ class SchedulerGLite(SchedulerInterface) :
 
         returnMap = {}
         if type(obj) == Task:
-            self.logging.info("Your job identifier is: %s" % jOut['parent'])
+            self.logging.debug("Your job identifier is: %s" % jOut['parent'])
             
             for child in jOut['children'].keys() :
                 returnMap[str(child.replace('NodeName_', '', 1))] = \
@@ -185,7 +185,7 @@ class SchedulerGLite(SchedulerInterface) :
             return returnMap, str(jOut['parent']), str(jOut['endpoint']) 
         elif type(obj) == Job:
             # usually we submit collections.....
-            self.logging.info("Your job identifier is: %s" % jOut['jobid'])
+            self.logging.debug("Your job identifier is: %s" % jOut['jobid'])
             
             returnMap[str(child.replace('NodeName_', '', 1))] = \
                                                 str(jOut['children'][child])
