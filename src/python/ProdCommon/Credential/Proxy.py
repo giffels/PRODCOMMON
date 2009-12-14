@@ -432,7 +432,7 @@ class Proxy:
             raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxy, out) )
 
         return
-    def hashlib_wrap( string ):
+    def hashlib_wrap( self, string ):
         '''
         enable python2.4 / python2.6 compatibility
         '''
