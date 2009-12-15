@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.8 2009/11/19 20:55:04 ewv Exp $"
-__version__ = "$Revision: 1.55.2.8 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.12 2009/12/03 17:51:54 ewv Exp $"
+__version__ = "$Revision: 1.55.2.12 $"
 
 import os
 import commands
@@ -319,12 +319,15 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 '4':'Done',
                 '5':'Aborted'
         }
+
         if type(obj) == Task:
             taskId = obj['name']
+
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
                 schedulerId = job.runningJob['schedulerId']
+
 
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
@@ -376,6 +379,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 raise SchedulerError('Problem parsing output of command', cmd)
 
             jobDicts = handler.getJobInfo()
+
             for globalJobId in jobDicts.keys():
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
