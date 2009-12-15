@@ -3,8 +3,8 @@
 _SchedulerCondorG_
 """
 
-__revision__ = "$Id: SchedulerCondorG.py,v 1.3 2008/09/09 14:55:49 ewv Exp $"
-__version__  = "$Revision: 1.3 $"
+__revision__ = "$Id: SchedulerCondorG.py,v 1.4.4.3 2009/12/03 13:45:46 spiga Exp $"
+__version__  = "$Revision: 1.4.4.3 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
