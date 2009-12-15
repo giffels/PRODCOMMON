@@ -210,7 +210,13 @@ class Protocol(object):
         if stderr == True:
             return returncode,''.join(outc),''.join(errc)
 
-        return returncode,''.join(outc)
+        logging.debug(command)
+        logging.debug(returncode)
+        logging.debug(''.join(outc))
+        logging.debug(''.join(errc))
+        ## we could remove this.... and only use logging... 
+        self.__logout__(str(command), str(returncode), str(''.join(outc)+''.join(errc)))
+        return returncode,''.join(outc)+''.join(errc)
         
 
     #def executeCommand(self, command):
