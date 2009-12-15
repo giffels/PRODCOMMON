@@ -3,9 +3,10 @@
 _SchedulerCondorG_
 """
 
-__revision__ = "$Id: SchedulerCondorG.py,v 1.4.4.3 2009/12/03 13:45:46 spiga Exp $"
-__version__  = "$Revision: 1.4.4.3 $"
+__revision__ = "$Id: SchedulerCondorG.py,v 1.5 2009/12/15 14:51:36 ewv Exp $"
+__version__  = "$Revision: 1.5 $"
 
+import os
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 
 class SchedulerCondorG(SchedulerCondorCommon) :
@@ -18,14 +19,17 @@ class SchedulerCondorG(SchedulerCondorCommon) :
         super(SchedulerCondorG, self).__init__(**args)
 
 
-    def singleApiJdl( self, job, requirements='' ):
+    def specificBulkJdl(self, job, requirements=''):
+        # FIXME: This is very similar to SchedulerCondorCommon's version,
+        # should be consolidated.
         """
-        build a job jdl easy to be handled by the wmproxy API interface
-        and gives back the list of input files for a better handling
+        build a job jdl
         """
+        rootName = os.path.splitext(job['standardError'])[0]
 
-        jdl = 'Universe   = grid\n'
-        superJdl, filelist, ce \
-            = super(SchedulerCondorG, self).singleApiJdl(job, requirements)
-        jdl += superJdl
-        return jdl, filelist, ce
+        jdl  = 'Universe   = grid\n'
+        jdl += 'log     = %s.log\n' % rootName # Same root as stderr
+        if self.userRequirements:
+            jdl += 'requirements = %s\n' % self.userRequirements
+
+        return jdl
