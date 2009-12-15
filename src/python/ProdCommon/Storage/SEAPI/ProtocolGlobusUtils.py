@@ -198,11 +198,10 @@ class ProtocolGlobusUtils(Protocol):
             # construct the copy command with the tempfile as the argument
             cmd = setProxy + " globus-url-copy -vb -cd -f " + fname
             # do the copy and log the output
-            exitcode, outputs, errors = self.runCommand(cmd) # executeCommand(cmd)
+            exitcode, outputs, errors = self.executeCommand(cmd,stderr=True)
         finally:
             # remove the temp file
             os.unlink( fname )
-
         resvalList = self.lessSimpleOutputCheck(outputs, errors, source.workon, dest.workon)
 
         if int(exitcode) != 0:
