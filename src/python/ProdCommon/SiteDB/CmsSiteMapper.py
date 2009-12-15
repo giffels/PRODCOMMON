@@ -7,7 +7,6 @@ Elaborate caching mechanisms are employed to keep the load off SiteDB and
 improve response time.
 """
 
-import sets
 import types
 import fnmatch
 
@@ -143,7 +142,7 @@ class CmsResourceMap(dict):
 		results.extend(self._map[i])
 	    else:
 		results.append(i)
-	return list(sets.Set(results))
+	return list(set(results))
 
 
 
