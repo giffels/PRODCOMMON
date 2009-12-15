@@ -1,5 +1,7 @@
 from Exceptions import OperationException
-import logging
+import logging, os, time, fcntl, select
+from subprocess import Popen, PIPE, STDOUT
+
 
 class Protocol(object):
     '''Represents any Protocol'''
@@ -133,16 +135,94 @@ class Protocol(object):
         except AttributeError:
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.FNDELAY)
 
-    def executeCommand(self, command):
+    def setPgid( self ):
         """
-        common method to execute commands
+        preexec_fn for Popen to set subprocess pgid
+        
+        """
+
+        os.setpgid( os.getpid(), 0 )
+
+    def executeCommand(self, command, timeout=None , stderr=False):
+        """
+        _executeCommand_
  
-        return exit_code, cmd_out
+        Util it execute the command provided in a popen object with a timeout
         """
-        import commands
-        status, output = commands.getstatusoutput( command )
-        self.__logout__(str(command), str(status), str(output))
-        return status, output
+ 
+        start = time.time()
+        p = Popen( command, shell=True, \
+                   stdin=PIPE, stdout=PIPE, stderr=PIPE, \
+                   close_fds=True, preexec_fn=self.setPgid() )
+ 
+        # playing with fd
+        fd = p.stdout.fileno()
+        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+ 
+        # return values
+        timedOut = False
+        outc = []
+        errc = []
+ 
+        while 1:
+            (r, w, e) = select.select([fd], [], [], timeout)
+ 
+            if fd not in r :
+                timedOut = True
+                break
+            read = p.stdout.read()
+            readerr = p.stderr.read()
+            if read != '' or readerr != '' :
+                outc.append( read )
+                errc.append( readerr )
+            else :
+                break
+ 
+        if timedOut :
+            stop = time.time()
+            try:
+                os.killpg( os.getpgid(p.pid), signal.SIGTERM)
+                os.kill( p.pid, signal.SIGKILL)
+                p.wait()
+                p.stdout.close()
+                p.stderr.close()
+            except OSError, err :
+                logging.warning(
+                    'Warning: an error occurred killing subprocess [%s]' \
+                    % str(err) )
+ 
+            raise TimeOut( command, ''.join(outc)+ ''.join(errc), timeout, start, stop )
+ 
+        try:
+            p.wait()
+            p.stdout.close()
+            p.stderr.close()
+        except OSError, err:
+            logging.warning( 'Warning: an error occurred closing subprocess [%s] %s  %s' \
+                             % (str(err), ''.join(outc)+''.join(errc), p.returncode ))
+ 
+        returncode = p.returncode
+        
+        if returncode is None :
+            returncode = -666666
+        
+        if stderr == True:
+            return returncode,''.join(outc),''.join(errc)
+
+        return returncode,''.join(outc)
+        
+
+    #def executeCommand(self, command):
+    #    """
+    #    common method to execute commands
+    #
+    #    return exit_code, cmd_out
+    #    """
+    #    import commands
+    #    status, output = commands.getstatusoutput( command )
+    #    self.__logout__(str(command), str(status), str(output))
+    #    return status, output
 
     def __logout__(self, command, status, output):
         """
