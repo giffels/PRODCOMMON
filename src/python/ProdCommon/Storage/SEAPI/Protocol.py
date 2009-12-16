@@ -135,13 +135,6 @@ class Protocol(object):
         except AttributeError:
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.FNDELAY)
 
-    def setPgid( self ):
-        """
-        preexec_fn for Popen to set subprocess pgid
-        
-        """
-
-        os.setpgid( os.getpid(), 0 )
 
     def executeCommand(self, command, timeout=None , stderr=False):
         """
@@ -153,7 +146,7 @@ class Protocol(object):
         start = time.time()
         p = Popen( command, shell=True, \
                    stdin=PIPE, stdout=PIPE, stderr=PIPE, \
-                   close_fds=True, preexec_fn=self.setPgid() )
+                   close_fds=True, preexec_fn=setPgid )
  
         # playing with fd
         fd = p.stdout.fileno()
@@ -245,3 +238,9 @@ class Protocol(object):
             self.logger.debug("ExitCode:\t%s"%status)
             self.logger.debug("Output:\t%s"%output)
 
+def setPgid( ):
+    """
+    preexec_fn for Popen to set subprocess pgid
+    
+    """
+    os.setpgid( os.getpid(), 0 )
