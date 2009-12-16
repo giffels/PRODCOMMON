@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.4 2009/12/14 18:11:35 spiga Exp $"
-__version__ = "$Revision: 2.4 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.5 2009/12/16 02:16:50 spigafi Exp $"
+__version__ = "$Revision: 2.5 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -20,53 +20,50 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
 from json.decoder import JSONDecoder
 
+##########################################################################
+
 class BossliteJsonDecoder(JSONDecoder):
     """
     Override JSON decode
     """
-    
-    """
-    ## EXPERIMENTAL ##
-        def __init__(self):
-            
-            # cache pattern to optimize reg-exp substitution
-            
-            self.pattern1 = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
-            self.pattern2 = re.compile(':[\s]([a-zA-Z_\-])')
-            self.pattern3 = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
-            self.pattern4 = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
-            self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
-            self.pattern6 = re.compile('([a-zA-Z0-9_\-])}')
-       
-    """
-    
-    def decode(self, jsonString):
-        """
-        basic class to decode JSON output
-        """
-        
-        toParse = jsonString
-        
-        toParse = jsonString.replace( '\n' , ',' )
-        pattern = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
-        toParse = pattern.sub(r'{ "\1', toParse[:-1] )
-        pattern = re.compile(':[\s]([a-zA-Z_\-])')
-        toParse = pattern.sub(r'":"\1', toParse )
-        pattern = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
-        toParse = pattern.sub(r'\1","\2"', toParse )
-        pattern = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
-        toParse = pattern.sub(r'\1","\2":', toParse )
-        pattern = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
-        toParse =  pattern.sub(r'}', toParse)
-        pattern = re.compile('([a-zA-Z0-9_\-])}')
-        toParse =  pattern.sub(r'\1"}', toParse)
 
-        parsedJson = json.loads(toParse)
+    def __init__(self):
+        
+        # call super
+        super(BossliteJsonDecoder, self).__init__()
+        
+        # cache pattern to optimize reg-exp substitution
+        self.pattern1 = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
+        self.pattern2 = re.compile(':[\s]([a-zA-Z_\-])')
+        self.pattern3 = re.compile(
+                    '[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
+        self.pattern4 = re.compile(
+                    '[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
+        self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
+        self.pattern6 = re.compile('([a-zA-Z0-9_\-])}')
+
+    
+    def decodeSubmit(self, jsonString):
+        """
+        specialized method to decode JSON output of glite-wms-job-submit
+        """
+        
+        # pre-processing the string before decoding        
+        toParse = jsonString.replace( '\n' , ',' )
+        toParse = self.pattern1.sub(r'{ "\1', toParse[:-1] )
+        toParse = self.pattern2.sub(r'":"\1', toParse )
+        toParse = self.pattern3.sub(r'\1","\2"', toParse )
+        toParse = self.pattern4.sub(r'\1","\2":', toParse )
+        toParse = self.pattern5.sub(r'}', toParse)
+        toParse = self.pattern6.sub(r'\1"}', toParse)
+        
+        parsedJson = self.decode(toParse)
         
         return parsedJson  
-    
+
     
 ##########################################################################
+
 class SchedulerGLite(SchedulerInterface) :
     """
     basic class to handle gLite jobs using CLI + JSON 
@@ -117,6 +114,9 @@ class SchedulerGLite(SchedulerInterface) :
 
         # cache pattern to optimize reg-exp substitution
         self.pathPattern = re.compile('location:([\S]*)$', re.M)
+        
+        # init BossliteJsonDecoder specialized class
+        self.myJSONDecoder = BossliteJsonDecoder()
 
         # Raise an error if UI is old than 3.2 ...
         version, ret = self.ExecuteCommand( 'glite-version' )
@@ -145,6 +145,7 @@ class SchedulerGLite(SchedulerInterface) :
 
 
     ##########################################################################
+    
     def submit( self, obj, requirements='', config ='', service='' ):
         """
         submit a jdl to glite
@@ -181,11 +182,9 @@ class SchedulerGLite(SchedulerInterface) :
         if ret != 0 :
             raise SchedulerError('error executing glite-wms-job-submit', out)
         
-        myJSONDecoder = BossliteJsonDecoder()
-
         try:
             
-            jOut = myJSONDecoder.decode(out)
+            jOut = self.myJSONDecoder.decodeSubmit(out)
             
         except ValueError:
             raise SchedulerError('error parsing JSON output',  out)
@@ -194,7 +193,7 @@ class SchedulerGLite(SchedulerInterface) :
 
         returnMap = {}
         if type(obj) == Task:
-            self.logging.info("Your job identifier is: %s" % jOut['parent'])
+            self.logging.debug("Your job identifier is: %s" % jOut['parent'])
             
             for child in jOut['children'].keys() :
                 returnMap[str(child.replace('NodeName_', '', 1))] = \
@@ -203,7 +202,7 @@ class SchedulerGLite(SchedulerInterface) :
             return returnMap, str(jOut['parent']), str(jOut['endpoint']) 
         elif type(obj) == Job:
             # usually we submit collections.....
-            self.logging.info("Your job identifier is: %s" % jOut['jobid'])
+            self.logging.debug("Your job identifier is: %s" % jOut['jobid'])
             
             returnMap[str(child.replace('NodeName_', '', 1))] = \
                                                 str(jOut['children'][child])
@@ -219,8 +218,13 @@ class SchedulerGLite(SchedulerInterface) :
         retrieve job output
         """
 
-        if type(obj) == Job and self.valid( obj.runningJob ):
-            # the object passed is a valid Job
+        if type(obj) == Job :
+            
+            # check for the RunningJob integrity
+            if not self.valid( obj.runningJob ):
+                raise SchedulerError('invalid object', str( obj.runningJob ))
+            
+            # the object passed is a valid Job, let's go on ...
                 
             command = "glite-wms-job-output --json --noint " \
                                 + obj.runningJob['schedulerId']
@@ -230,22 +234,13 @@ class SchedulerGLite(SchedulerInterface) :
             if ret == 1 :
                 if out.find("Proxy File Not Found") != -1 :
                     # Proxy missing
-                    self.logging.warning( obj.runningJob['schedulerId'] + \
-                                          ' proxy not found' )
-                    # adapting the error string with JobOutput requirements
+                    # # adapting the error string for JobOutput requirements
                     obj.runningJob.errors.append("Proxy Missing")
-                elif out.find("authorization failed") != -1 :
-                    # Proxy expired 
-                    # (necessary?)
-                    self.logging.warning( obj.runningJob['schedulerId'] + \
-                                          ' authorization failed' )
-                    # adapting the error string as JobOutput.py requires
-                    obj.runningJob.errors.append("Proxy Expired")
                 elif out.find("Output files already retrieved") != -1 : 
                     # Output files already retrieved --> Archive!
                     self.logging.warning( obj.runningJob['schedulerId'] + \
                       ' output already retrieved.' )
-                    obj.runningJob.warning.append("Job has been purged, " + \
+                    obj.runningJob.warnings.append("Job has been purged, " + \
                                                         "recovering status")
                 elif out.find("Output not yet Ready") != -1 :
                     # Output not yet ready
@@ -253,31 +248,20 @@ class SchedulerGLite(SchedulerInterface) :
                       ' output not yet ready' )
                     # adapting the error string with JobOutput requirements
                     obj.runningJob.errors.append("Job current status doesn")
-                elif out.find("No output files to be retrieved") != -1:
-                    # One or more output files have not been retrieved
-                    # (necessary?)
-                    self.logging.warning( obj.runningJob['schedulerId'] + \
-                      ' no output files.' )
-                    obj.runningJob.error.append("No output files")
-                
-                if obj.runningJob.isError() :
-                    raise SchedulerError( obj.runningJob.errors[0][0], \
-                                           obj.runningJob.errors[0][1] )
+                else : 
+                    self.logging.error( out )
+                    obj.runningJob.errors.append( out )
                                            
             elif ret == 0 and out.find("result: success") == -1 :
                 # Excluding all the previous cases however something went wrong
                 self.logging.error( obj.runningJob['schedulerId'] + \
                       ' problems during getOutput operation.' )
-                obj.runningJob.errors.append(out)   
-                
-                if obj.runningJob.isError() :
-                    raise SchedulerError( obj.runningJob.errors[0][0], \
-                                           obj.runningJob.errors[0][1] )   
+                obj.runningJob.errors.append(out)     
             
             else :
                 # Output successfully retrieved without problems
                 
-                # -> Temporary work-around gor gLite UI 3.2 
+                # -> workaround for gLite UI 3.2 
                 #    glite-wms-job-output CLI behaviour
                 tmp = re.search(self.pathPattern, out)
                 uniqueString = str(os.path.basename(tmp.group(1)))
@@ -292,68 +276,64 @@ class SchedulerGLite(SchedulerInterface) :
                 self.logging.debug("Output of %s successfully retrieved" 
                                         % str(obj.runningJob['schedulerId'])) 
             
+            if obj.runningJob.isError() :
+                raise SchedulerError( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] )
+                    
         elif type(obj) == Task :
             
             # the object passed is a Task
             
-            for job in obj.jobs:
+            for selJob in obj.jobs:
                 
-                if not self.valid( job.runningJob ):
+                if not self.valid( selJob.runningJob ):
                     continue
                 
                 command = "glite-wms-job-output --json --noint " + \
-                          job.runningJob['schedulerId']
+                          selJob.runningJob['schedulerId']
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
 
                 if ret == 1 :
                     if out.find("Proxy File Not Found") != -1 :
                         # Proxy missing
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                                              ' proxy not found' )
-                        # adapting the error string with JobOutput requirements
-                        job.runningJob.errors.append("Proxy Missing")
-                    elif out.find("authorization failed") != -1 :
-                        # Proxy expired 
-                        # (necessary?)
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                                              ' authorization failed' )
-                        # adapting the error string as JobOutput.py requires
-                        job.runningJob.errors.append("Proxy Expired")
+                        # adapting the error string for JobOutput requirements
+                        selJob.runningJob.errors.append("Proxy Missing")
                     elif out.find("Output files already retrieved") != -1 : 
                         # Output files already retrieved --> Archive!
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                          ' output already retrieved.' )
-                        job.runningJob.warning.append("Job has been purged, " + \
-                                                        "recovering status")
+                        self.logging.warning( 
+                                    selJob.runningJob['schedulerId'] + \
+                                                ' output already retrieved.' )
+                        selJob.runningJob.warnings.append(
+                                    "Job has been purged, recovering status")
                     elif out.find("Output not yet Ready") != -1 :
                         # Output not yet ready
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                          ' output not yet ready' )
+                        self.logging.warning( 
+                                    selJob.runningJob['schedulerId'] + \
+                                                    ' output not yet ready' )
                         # adapting the error string with JobOutput requirements
-                        job.runningJob.errors.append("Job current status doesn")
-                    elif out.find("No output files to be retrieved") != -1:
-                        # One or more output files have not been retrieved
-                        # (necessary?)
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                          ' no output files.' )
-                        job.runningJob.error.append("No output files")
+                        selJob.runningJob.errors.append(
+                                            "Job current status doesn")
+                    else : 
+                        self.logging.error( out )
+                        selJob.runningJob.errors.append( out )
                                                
                 elif ret == 0 and out.find("result: success") == -1 :
-                    # Excluding all the previous cases however something went wrong
-                    self.logging.error( job.runningJob['schedulerId'] + \
+                    # Excluding all previous cases however something went wrong
+                    self.logging.error( selJob.runningJob['schedulerId'] + \
                           ' problems during getOutput operation.' )
-                    job.runningJob.errors.append(out)   
+                    selJob.runningJob.errors.append(out)   
                 
                 else :
                     # Output successfully retrieved without problems
                     
-                    # -> Temporary work-around gor gLite UI 3.2 
+                    # -> workaround for gLite UI 3.2 
                     #    glite-wms-job-output CLI behaviour
                     tmp = re.search(self.pathPattern, out)
                     uniqueString = str(os.path.basename(tmp.group(1)))
                     
-                    command = "cp -R /tmp/" + uniqueString + "/* " + outdir + "/"
+                    command = "cp -R /tmp/" + uniqueString + \
+                                                "/* " + outdir + "/"
                     os.system( command )
                     
                     command = "rm -rf /tmp/" + uniqueString
@@ -361,9 +341,14 @@ class SchedulerGLite(SchedulerInterface) :
                     # 
                     
                     self.logging.debug("Output of %s successfully retrieved" 
-                                            % str(job.runningJob['schedulerId']))        
+                                % str(selJob.runningJob['schedulerId']))
+        
+        else:
+             # unknown object type
+            raise SchedulerError('wrong argument type', str( type(obj) ))      
 
     ##########################################################################
+    
     def purgeService( self, obj ):
         """
         Purge job (even bulk) from wms
@@ -503,6 +488,7 @@ class SchedulerGLite(SchedulerInterface) :
         return self.ExecuteCommand( self.proxyString + command )[0]
 
     ##########################################################################
+    
     def query(self, obj, service='', objType='node') :
         """
         query status and eventually other scheduler related information
@@ -526,18 +512,16 @@ class SchedulerGLite(SchedulerInterface) :
 
                 # consider just valid jobs
                 if self.valid( job.runningJob ) :
-
+                    
                     # append in joblist
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
-
+                    
                     # update unique parent ids list
-                    if job.runningJob['schedulerParentId'] \
-                           not in parentIds:
-
-                        parentIds.append(
-                            str(job.runningJob['schedulerParentId'] )
-                            )
-
+                    # if job.runningJob['schedulerParentId'] \
+                    #       not in parentIds:
+                    
+                    parentIds.append( str(job.runningJob['schedulerParentId']))
+                    
                 count += 1
             
             formattedParentIds = ','.join(parentIds)
@@ -549,10 +533,11 @@ class SchedulerGLite(SchedulerInterface) :
             
             outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
                                                 self.proxyString + command )
-            
+             
             # parse JSON output
             try:
                 out = json.loads(outJson)
+                # DEBUG # print json.dumps( out,  indent=4 )
             except ValueError:
                 raise SchedulerError('error parsing JSON', out )
                 
@@ -560,13 +545,13 @@ class SchedulerGLite(SchedulerInterface) :
             if ret != 0 or out['errors']:
                 # obj.errors doesn't exist for Task object...
                 obj.warnings.append( "Errors: " + str(out['errors']) )
-                # raise SchedulerError('error executing GLiteStatusQuery', \
-                #                         str(out['errors']))
+                raise SchedulerError('error executing GLiteStatusQuery', \
+                                         str(out['errors']))
             
             # Refill objects...
             count = 0
             newStates = out['statusQuery']
-            
+        
             for jobId in jobIds.values() : 
                 
                 obj.jobs[jobId].runningJob['status'] = \
@@ -677,6 +662,7 @@ class SchedulerGLite(SchedulerInterface) :
         return jdl
 
     ##########################################################################
+    
     def collectionJdlFile ( self, task, requirements='' ):
         """
         build a collection jdl easy to be handled by the wmproxy API interface
@@ -793,7 +779,7 @@ class SchedulerGLite(SchedulerInterface) :
             while requirements[0] == '[':
                 requirements = requirements[1:-1].strip()
             jdl += '\n' + requirements + '\n'
-        except:
+        except :
             # catch a generic exception (?)
             pass
 
@@ -805,6 +791,7 @@ class SchedulerGLite(SchedulerInterface) :
         return jdl
 
     ##########################################################################
+    
     def lcgInfoVo (self, tags, fqan, seList=None, blacklist=None,  
                   whitelist=None, full=False):
         """
@@ -886,6 +873,7 @@ class SchedulerGLite(SchedulerInterface) :
         return celist
     
     ##########################################################################
+    
     def lcgInfo (self, tags, vos, seList=None, blacklist=None, 
                 whitelist=None, full=False):
         """
@@ -906,4 +894,3 @@ class SchedulerGLite(SchedulerInterface) :
                     result.append( value )
 
         return result
-
