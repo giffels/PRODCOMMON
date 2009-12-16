@@ -264,7 +264,7 @@ def main():
 
     inputFile = None 
     outputFile = None
-    parent = ""
+    parent = []
     jobList = []
 
     for o, a in opts:
@@ -278,7 +278,7 @@ def main():
         elif o in ("-o", "--output"):
             outputFile = a
         elif o in ("-p", "--parentId"):
-            parent = a
+            parent = a.split(',')
         elif o in ("-j", "--jobId"):
             jobList = a.split(',')
         else:
@@ -332,11 +332,12 @@ def main():
     errors = []
 
     # loop!
+    count = 0
     for job in jobList :
 
         rJob = deepcopy(template)
         rJob['schedulerId'] = job
-        rJob['schedulerParentId'] = parent
+        rJob['schedulerParentId'] = parent[count]
 
         # append in job list
         jobIds[ job ] = rJob
@@ -344,12 +345,11 @@ def main():
         # update unique parent ids list
         if rJob['schedulerParentId'] \
                not in parentIds:
+            parentIds.append( str(rJob['schedulerParentId'] ) )
 
-            parentIds.append(
-                str(rJob['schedulerParentId'] )
-                )
+        count += 1
 
-    lbInstance = GLiteStatusQuery(parentIds[0])
+    lbInstance = GLiteStatusQuery(parentIds)
     lbInstance.checkJobsBulk( jobIds, parentIds, errors )
 
     # printout JSON formatted list of status records with errors
