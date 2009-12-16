@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.3 2009/12/10 19:06:57 spigafi Exp $"
-__version__ = "$Revision: 2.3 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.4 2009/12/14 18:11:35 spiga Exp $"
+__version__ = "$Revision: 2.4 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -23,6 +23,21 @@ from json.decoder import JSONDecoder
 class BossliteJsonDecoder(JSONDecoder):
     """
     Override JSON decode
+    """
+    
+    """
+    ## EXPERIMENTAL ##
+        def __init__(self):
+            
+            # cache pattern to optimize reg-exp substitution
+            
+            self.pattern1 = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
+            self.pattern2 = re.compile(':[\s]([a-zA-Z_\-])')
+            self.pattern3 = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
+            self.pattern4 = re.compile('[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
+            self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
+            self.pattern6 = re.compile('([a-zA-Z0-9_\-])}')
+       
     """
     
     def decode(self, jsonString):
@@ -100,6 +115,9 @@ class SchedulerGLite(SchedulerInterface) :
             'source %s' % gliteUi + \
             ';export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; '
 
+        # cache pattern to optimize reg-exp substitution
+        self.pathPattern = re.compile('location:([\S]*)$', re.M)
+
         # Raise an error if UI is old than 3.2 ...
         version, ret = self.ExecuteCommand( 'glite-version' )
         version = version.strip()
@@ -176,7 +194,7 @@ class SchedulerGLite(SchedulerInterface) :
 
         returnMap = {}
         if type(obj) == Task:
-            self.logging.debug("Your job identifier is: %s" % jOut['parent'])
+            self.logging.info("Your job identifier is: %s" % jOut['parent'])
             
             for child in jOut['children'].keys() :
                 returnMap[str(child.replace('NodeName_', '', 1))] = \
@@ -185,7 +203,7 @@ class SchedulerGLite(SchedulerInterface) :
             return returnMap, str(jOut['parent']), str(jOut['endpoint']) 
         elif type(obj) == Job:
             # usually we submit collections.....
-            self.logging.debug("Your job identifier is: %s" % jOut['jobid'])
+            self.logging.info("Your job identifier is: %s" % jOut['jobid'])
             
             returnMap[str(child.replace('NodeName_', '', 1))] = \
                                                 str(jOut['children'][child])
@@ -204,57 +222,75 @@ class SchedulerGLite(SchedulerInterface) :
         if type(obj) == Job and self.valid( obj.runningJob ):
             # the object passed is a valid Job
                 
-            command = "glite-wms-job-output --json --noint --dir " + \
-                      outdir + " " + obj.runningJob['schedulerId']
+            command = "glite-wms-job-output --json --noint " \
+                                + obj.runningJob['schedulerId']
             
-            out, ret = self.ExecuteCommand( self.proxyString + command )
-            
-            if ret == 1 : 
+            out, ret = self.ExecuteCommand( self.proxyString + command ) 
                 
-                # Proxy missing
+            if ret == 1 :
                 if out.find("Proxy File Not Found") != -1 :
+                    # Proxy missing
                     self.logging.warning( obj.runningJob['schedulerId'] + \
                                           ' proxy not found' )
                     # adapting the error string with JobOutput requirements
                     obj.runningJob.errors.append("Proxy Missing")
-                    
-                # Proxy expired
-                if out.find("authorization failed") != -1 :
+                elif out.find("authorization failed") != -1 :
+                    # Proxy expired 
+                    # (necessary?)
                     self.logging.warning( obj.runningJob['schedulerId'] + \
                                           ' authorization failed' )
                     # adapting the error string as JobOutput.py requires
                     obj.runningJob.errors.append("Proxy Expired")
-                        
-                # Output not yet ready
-                if out.find("Output not yet Ready") != -1 :
+                elif out.find("Output files already retrieved") != -1 : 
+                    # Output files already retrieved --> Archive!
+                    self.logging.warning( obj.runningJob['schedulerId'] + \
+                      ' output already retrieved.' )
+                    obj.runningJob.warning.append("Job has been purged, " + \
+                                                        "recovering status")
+                elif out.find("Output not yet Ready") != -1 :
+                    # Output not yet ready
                     self.logging.warning( obj.runningJob['schedulerId'] + \
                       ' output not yet ready' )
                     # adapting the error string with JobOutput requirements
                     obj.runningJob.errors.append("Job current status doesn")
-                    
-                # One or more output files have not been retrieved
-                if out.find("No output files to be retrieved") != -1:
+                elif out.find("No output files to be retrieved") != -1:
+                    # One or more output files have not been retrieved
+                    # (necessary?)
                     self.logging.warning( obj.runningJob['schedulerId'] + \
                       ' no output files.' )
-                    obj.runningJob.errors.append("No output files")
+                    obj.runningJob.error.append("No output files")
                 
-                # Output files already retrieved --> Archive!
-                if out.find("Output files already retrieved") != -1 : 
-                    self.logging.warning( obj.runningJob['schedulerId'] + \
-                      ' output already retrieved.' )
-                    obj.runningJob.warnings.append("Already retrieved")
-            
-            # Excluding all the previous cases however something went wrong
-            if ret == 0 and out.find("result: success") == -1 :
-                self.logging.warning( obj.runningJob['schedulerId'] + \
+                if obj.runningJob.isError() :
+                    raise SchedulerError( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] )
+                                           
+            elif ret == 0 and out.find("result: success") == -1 :
+                # Excluding all the previous cases however something went wrong
+                self.logging.error( obj.runningJob['schedulerId'] + \
                       ' problems during getOutput operation.' )
                 obj.runningJob.errors.append(out)   
+                
+                if obj.runningJob.isError() :
+                    raise SchedulerError( obj.runningJob.errors[0][0], \
+                                           obj.runningJob.errors[0][1] )   
             
-            if obj.runningJob.errors is None or obj.runningJob.errors == []:
-                self.logging.debug("Output of %s successfully retrieved" 
-                                        % str(obj.runningJob['schedulerId']))
             else :
-                raise SchedulerError( str(obj.runningJob.errors))
+                # Output successfully retrieved without problems
+                
+                # -> Temporary work-around gor gLite UI 3.2 
+                #    glite-wms-job-output CLI behaviour
+                tmp = re.search(self.pathPattern, out)
+                uniqueString = str(os.path.basename(tmp.group(1)))
+                
+                command = "cp -R /tmp/" + uniqueString + "/* " + outdir + "/"
+                os.system( command )
+                
+                command = "rm -rf /tmp/" + uniqueString
+                os.system( command )
+                # 
+                
+                self.logging.debug("Output of %s successfully retrieved" 
+                                        % str(obj.runningJob['schedulerId'])) 
             
         elif type(obj) == Task :
             
@@ -265,57 +301,67 @@ class SchedulerGLite(SchedulerInterface) :
                 if not self.valid( job.runningJob ):
                     continue
                 
-                command = "glite-wms-job-output --json --noint --dir " + \
-                          outdir + " " + job.runningJob['schedulerId']
+                command = "glite-wms-job-output --json --noint " + \
+                          job.runningJob['schedulerId']
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
-                
-                if ret == 1 : 
-                    
-                    # Proxy missing
+
+                if ret == 1 :
                     if out.find("Proxy File Not Found") != -1 :
+                        # Proxy missing
                         self.logging.warning( job.runningJob['schedulerId'] + \
                                               ' proxy not found' )
                         # adapting the error string with JobOutput requirements
                         job.runningJob.errors.append("Proxy Missing")
-                        
-                    # Proxy expired
-                    if out.find("authorization failed") != -1 :
+                    elif out.find("authorization failed") != -1 :
+                        # Proxy expired 
+                        # (necessary?)
                         self.logging.warning( job.runningJob['schedulerId'] + \
                                               ' authorization failed' )
                         # adapting the error string as JobOutput.py requires
                         job.runningJob.errors.append("Proxy Expired")
-                    
-                    # Output not yet ready
-                    if out.find("Output not yet Ready") != -1 :
+                    elif out.find("Output files already retrieved") != -1 : 
+                        # Output files already retrieved --> Archive!
                         self.logging.warning( job.runningJob['schedulerId'] + \
-                                              ' output not yet ready' )
+                          ' output already retrieved.' )
+                        job.runningJob.warning.append("Job has been purged, " + \
+                                                        "recovering status")
+                    elif out.find("Output not yet Ready") != -1 :
+                        # Output not yet ready
+                        self.logging.warning( job.runningJob['schedulerId'] + \
+                          ' output not yet ready' )
                         # adapting the error string with JobOutput requirements
                         job.runningJob.errors.append("Job current status doesn")
-                    
-                    # One or more output files have not been retrieved
-                    if out.find("No output files to be retrieved") != -1 :
+                    elif out.find("No output files to be retrieved") != -1:
+                        # One or more output files have not been retrieved
+                        # (necessary?)
                         self.logging.warning( job.runningJob['schedulerId'] + \
-                                              ' no output files.' )
-                        job.runningJob.errors.append("No output files")
+                          ' no output files.' )
+                        job.runningJob.error.append("No output files")
+                                               
+                elif ret == 0 and out.find("result: success") == -1 :
+                    # Excluding all the previous cases however something went wrong
+                    self.logging.error( job.runningJob['schedulerId'] + \
+                          ' problems during getOutput operation.' )
+                    job.runningJob.errors.append(out)   
+                
+                else :
+                    # Output successfully retrieved without problems
                     
-                    # Output files already retrieved                  
-                    if out.find("Output files already retrieved") != -1 : 
-                        self.logging.warning( job.runningJob['schedulerId'] + \
-                                              ' output already retrieved.' )
-                        job.runningJob.warnings.append("Already retrieved")
-                
-                # Excluding all the previous cases but something went wrong
-                if ret == 0 and out.find("result: success") == -1 :
-                    self.logging.warning( job.runningJob['schedulerId'] + \
-                                    ' problems during getOutput operation.' )
-                    job.runningJob.errors.append(out)
-                
-                if job.runningJob.errors is None or job.runningJob.errors == []:
+                    # -> Temporary work-around gor gLite UI 3.2 
+                    #    glite-wms-job-output CLI behaviour
+                    tmp = re.search(self.pathPattern, out)
+                    uniqueString = str(os.path.basename(tmp.group(1)))
+                    
+                    command = "cp -R /tmp/" + uniqueString + "/* " + outdir + "/"
+                    os.system( command )
+                    
+                    command = "rm -rf /tmp/" + uniqueString
+                    os.system( command )
+                    # 
+                    
                     self.logging.debug("Output of %s successfully retrieved" 
-                                        % str(job.runningJob['schedulerId']))
-                    
-        
+                                            % str(job.runningJob['schedulerId']))        
 
     ##########################################################################
     def purgeService( self, obj ):
@@ -343,8 +389,9 @@ class SchedulerGLite(SchedulerInterface) :
                                    % str(obj.runningJob['schedulerId']))
             else : 
                 obj.runningJob.errors.append(out)
-            
-            os.system( 'rm -rf /tmp/' + obj.runningJob['schedulerId'] )
+                
+            tmp = re.search(self.pathPattern, out)
+            os.system( 'rm -rf ' + tmp.group(1) )
                             
         elif type(obj) == Task :
             
@@ -369,7 +416,8 @@ class SchedulerGLite(SchedulerInterface) :
                 else : 
                     obj.runningJob.errors.append(out)
                 
-                os.system( 'rm -rf /tmp/' + job.runningJob['schedulerId'] )
+                tmp = re.search(self.pathPattern, out)
+                os.system( 'rm -rf ' + tmp.group(1) )
 
     ##########################################################################
 
