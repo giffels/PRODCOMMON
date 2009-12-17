@@ -187,7 +187,7 @@ class ProtocolRfio(Protocol):
                                       problems, outputs )
         
         if token is not None: 
-            outputs = outputs.split("\n",3)[-1]
+            outputs = outputs.split("\n",3)[0]
         
  
         outt = []
