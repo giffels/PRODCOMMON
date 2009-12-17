@@ -493,8 +493,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
-        # Can the check on objType be deprecated? ... talk with Giuseppe
-        
+
         # the object passed is a Task:
         if type(obj) == Task :
 
@@ -511,7 +510,7 @@ class SchedulerGLite(SchedulerInterface) :
             for job in obj.jobs :
 
                 # consider just valid jobs
-                if self.valid( job.runningJob ) :
+                if self.valid( job.runningJob ) or objType == 'node':
                     
                     # append in joblist
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
