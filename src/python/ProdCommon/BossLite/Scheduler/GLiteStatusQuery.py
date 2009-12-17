@@ -337,20 +337,14 @@ def main():
 
         rJob = deepcopy(template)
         rJob['schedulerId'] = job
-        rJob['schedulerParentId'] = parent[count]
 
         # append in job list
         jobIds[ job ] = rJob
 
-        # update unique parent ids list
-        if rJob['schedulerParentId'] \
-               not in parentIds:
-            parentIds.append( str(rJob['schedulerParentId'] ) )
-
         count += 1
 
     lbInstance = GLiteStatusQuery(parentIds)
-    lbInstance.checkJobsBulk( jobIds, parentIds, errors )
+    lbInstance.checkJobsBulk( jobIds, parent, errors )
 
     # printout JSON formatted list of status records with errors
     outDict = {

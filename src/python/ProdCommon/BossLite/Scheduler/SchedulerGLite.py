@@ -517,10 +517,9 @@ class SchedulerGLite(SchedulerInterface) :
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
                     
                     # update unique parent ids list
-                    # if job.runningJob['schedulerParentId'] \
-                    #       not in parentIds:
-                    
-                    parentIds.append( str(job.runningJob['schedulerParentId']))
+                    if job.runningJob['schedulerParentId'] \
+                            not in parentIds:
+                        parentIds.append( str(job.runningJob['schedulerParentId']))
                     
                 count += 1
             
