@@ -107,6 +107,7 @@ class DatasetJobFactory:
 
         self.allowedBlocks = []
         self.allowedSites = []
+        self.pileupSites = [] # Sites where the Pileup files are 
 
         self.splitType = \
                 self.workflowSpec.parameters.get("SplitType", "file").lower()
@@ -318,8 +319,13 @@ class DatasetJobFactory:
         #  //
         # // Add site pref if set
         #//
-        for site in jobDef['SENames']:
+        if self.pileupSites:
+            whitelist = self.pileupSites
+        else:
+            whitelist = jobDef['SENames']
+        for site in whitelist:
             jobSpec.addWhitelistSite(site)
+        self.pileupSites = [] # Resetting for next jobSpec
             
         
         jobSpec.save(jobSpecFile)
@@ -382,9 +388,9 @@ class DatasetJobFactory:
                     # // In event of being no site whitelist, should we
                     #//  restrict the site whitelist to the list of sites
                     #  //containing the PU sample?
-                    # //
+                    # // Ans.: Yes. /diego
                     #//
-                    fileList = puDataset.getPileupFiles(
+                    fileList, self.pileupSites = puDataset.getPileupFiles(
                         *self.currentJobDef.get("SENames", [])
                         )
                     jobCfg.dataMixerFiles = fileList
@@ -401,9 +407,9 @@ class DatasetJobFactory:
                     # // In event of being no site whitelist, should we
                     #//  restrict the site whitelist to the list of sites
                     #  //containing the PU sample?
-                    # //
+                    # // Ans.: Yes. /diego
                     #//
-                    fileList = puDataset.getPileupFiles(
+                    fileList, self.pileupSites = puDataset.getPileupFiles(
                         *self.currentJobDef.get("SENames", [])
                         )
                     jobCfg.pileupFiles = fileList

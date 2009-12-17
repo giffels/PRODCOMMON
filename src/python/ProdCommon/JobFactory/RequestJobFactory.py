@@ -88,6 +88,7 @@ class RequestJobFactory:
         self.firstNodeCfg = None #Chain job: cfg options needed in next steps
 
         self.sites = args.get("Sites", [] )
+        self.pileupSites = [] # Sites where the Pileup files are
         self.generators = GeneratorMaker()
         self.workflowSpec.payload.operate(self.generators)
 
@@ -201,8 +202,13 @@ class RequestJobFactory:
         #  //
         # // Add site pref if set
         #//
-        [ jobSpec.addWhitelistSite(x) for x in self.sites ]
+        if self.pileupSites:
+            whitelist = self.pileupSites
+        else:
+            whitelist = self.sites
+        [jobSpec.addWhitelistSite(x) for x in whitelist]
 
+        self.pileupSites = [] # Resetting for next jobSpec
         jobSpec.save(jobSpecFile)
         return jobSpecFile
 
@@ -266,9 +272,10 @@ class RequestJobFactory:
                     # // In event of being no site whitelist, should we
                     #//  restrict the site whitelist to the list of sites
                     #  //containing the PU sample?
-                    # //
+                    # // Ans. Yes. /diego
                     #//
-                    fileList = puDataset.getPileupFiles(*self.sites)
+                    fileList, self.pileupSites = \
+                        puDataset.getPileupFiles(*self.sites)
                     jobCfg.dataMixerFiles = fileList
                     logging.debug("DataMix pileup Files Added: %s" % fileList)
                 #  //
@@ -283,9 +290,10 @@ class RequestJobFactory:
                     # // In event of being no site whitelist, should we
                     #//  restrict the site whitelist to the list of sites
                     #  //containing the PU sample?
-                    # //
+                    # // Ans.: Yes. /diego
                     #//
-                    fileList = puDataset.getPileupFiles(*self.sites)
+                    fileList, self.pileupSites = \
+                        puDataset.getPileupFiles(*self.sites)
                     jobCfg.pileupFiles = fileList
                     logging.debug("Pileup Files Added: %s" % fileList)
 

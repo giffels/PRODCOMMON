@@ -32,6 +32,7 @@ class PileupDataset(dict):
     def __init__(self, dataset, dbsUrl):
         dict.__init__(self) # map of Blockname: list of files 
         self.sites = {}     # map of SE: blocknames
+        self.blockSites = {} # map of Blockname: list of sites
         self.dataset = dataset 
         self.maxFilesPerJob = 100
         self.dbsUrl = dbsUrl
@@ -53,38 +54,41 @@ class PileupDataset(dict):
         """
         logging.debug("Max PU Files: %s" % self.maxFilesPerJob)
         possibleFiles = []
+        matchedBlocks = {}
+        #  //
+        # // Selecting possible blocks
+        #//
         if len(sites) > 0:
             logging.debug("Pileup Site Limit: %s" % str(sites))
             #  //
             # // Site limit
             #//
-            matchedBlocks = set()
-            for site in sites:
-                if self.sites.has_key(site):
-                    [ matchedBlocks.add(x) for x in self.sites[site] ]
-            logging.debug("Matched Pileup Block: %s" % list(matchedBlocks))
-            
-            for block in matchedBlocks:
-                logging.debug("Pileup Available: %s" % block)
-                possibleFiles.extend(self[block])
+            filterSites = lambda x: x in sites
+            for block in self.blockSites:
+                filteredSites = filter(filterSites, self.blockSites[block])
+                if filteredSites:
+                    matchedBlocks[block] = filteredSites
+            logging.debug("Matched Pileup Block: %s" % matchedBlocks.keys())
         else:
             #  //
             # // no site limit => all files
             #//
             logging.debug("No Site Limit on Pileup")
-            for block in self.keys():
-                possibleFiles.extend(self[block])
-            
+            matchedBlocks = self.blockSites
 
         #  //
         # // Select the files to return, start with something really simple.
         #//
-        random.shuffle(possibleFiles)
-        
-        if len(possibleFiles) < self.maxFilesPerJob:
-            return possibleFiles
+        shuffleBlocks = matchedBlocks.keys()
+        random.shuffle(shuffleBlocks)
+        selectedBlock = shuffleBlocks[0] # Select one block randomly
+        possibleFiles = self[selectedBlock]
+        targetSites = matchedBlocks[selectedBlock]
 
-        return possibleFiles[0:self.maxFilesPerJob]
+        if len(possibleFiles) < self.maxFilesPerJob:
+            return possibleFiles, targetSites
+
+        return possibleFiles[0:self.maxFilesPerJob], targetSites
         
 
 
@@ -106,6 +110,8 @@ class PileupDataset(dict):
             # // Populate locations
             #//
             locations = reader.listFileBlockLocation(block)
+            if locations:
+                self.blockSites[block] = locations
             for location in locations:
                 if not self.sites.has_key(location):
                     self.sites[location] = set()
