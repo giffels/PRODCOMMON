@@ -6,12 +6,12 @@ dave.newbold@cern.ch, June 09
 
 You will need libtorque.so in your LD_LIBRARY_PATH
 
-Uses a wrapper script which assumes an env var WORKDIR points to the local execution area
+Uses a wrapper script which assumes an env var PBS_JOBCOOKIE points to the local execution area
 
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.26 2009/06/09 13:41:36 gcodispo Exp $"
-__version__ = "$Revision: 1.26 $"
+__revision__ = "$Id: SchedulerPbs.py,v 1.1 2009/10/08 15:09:20 mcinquil Exp $"
+__version__ = "$Revision: 1.1 $"
 
 import re, os, time
 import tempfile
@@ -119,21 +119,21 @@ class SchedulerPbs (SchedulerInterface) :
         """ Need to copy the inputsandbox to WN before submitting a job"""
 
         # Write a temporary submit script
-        # NB: we assume an env var WORKDIR points to the exec dir on the batch host
+        # NB: we assume an env var PBS_JOBCOOKIE points to the exec dir on the batch host
 
         ifiles=task['globalSandbox'].split(',')
 
         f=tempfile.NamedTemporaryFile()
         s=[]
         s.append('#!/bin/sh');
-        s.append('if [ ! -d $WORKDIR ] ; then mkdir -p $WORKDIR ; fi')
-        s.append('cd $WORKDIR')
+        s.append('if [ ! -d $PBS_JOBCOOKIE ] ; then mkdir -p $PBS_JOBCOOKIE ; fi')
+        s.append('cd $PBS_JOBCOOKIE')
         for ifile in task['globalSandbox'].split(','):
             s.append('cp '+ifile+' .')
         s.append(self.jobScriptDir + job['executable']+' '+ job['arguments'] +\
                  ' >' + job['standardOutput'] + ' 2>' + job['standardError'])
         s.append('cd $PBS_O_WORKDIR')
-        s.append('rm -fr $WORKDIR')
+        s.append('rm -fr $PBS_JOBCOOKIE')
         f.write('\n'.join(s))
         f.flush()
 
@@ -156,6 +156,7 @@ class SchedulerPbs (SchedulerInterface) :
             i_attr+=1
 
         jobid = pbs.pbs_submit(conn, attropl, f.name, self.queue, 'NULL')
+        #raise Exception (str(s))
         f.close()
 
         if not jobid:
