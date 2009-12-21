@@ -319,7 +319,14 @@ class SchedulerARC(SchedulerInterface):
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
-            inputfiles += "\\ " + f.split('/')[-1]
+            if inputfiles == "'":
+                inputfiles += f.split('/')[-1]
+            else:
+                inputfiles += "\\ " + f.split('/')[-1]
+                # FIXME: The '\\' above is required with older versions of ARC
+                # (0.6.*) -- otherwise everything after the first space is
+                # lost -- but will cause problems for newer versions
+                # (0.8.*).
         xrsl += ')'
 
         outputfiles = ""
@@ -327,7 +334,14 @@ class SchedulerARC(SchedulerInterface):
             xrsl += '(outputFiles='
             for f in job['outputFiles']:
                 xrsl += '(%s "")' % f
-                outputfiles += "\\ " + f
+                if outputfiles == "'":
+                    outputfiles += f
+                else:
+                    outputfiles += "\\ " + f
+                    # FIXME: The '\\' above is required with older versions of ARC
+                    # (0.6.*) -- otherwise everything after the first space is
+                    # lost -- but will cause problems for newer versions
+                    # (0.8.*).
             xrsl += ')'
 
         xrsl += "(environment="
@@ -366,6 +380,7 @@ class SchedulerARC(SchedulerInterface):
             raise NotImplementedError
         elif type(obj) == Task:
             map = {}
+            bulkId = None
             for job in obj.getJobs():
                 try:
                     m, bulkId = self.submitJob(obj, job, requirements)
