@@ -83,6 +83,7 @@ class PileupDataset(dict):
         random.shuffle(shuffleBlocks)
         selectedBlock = shuffleBlocks[0] # Select one block randomly
         possibleFiles = self[selectedBlock]
+        random.shuffle(possibleFiles)
         targetSites = matchedBlocks[selectedBlock]
 
         if len(possibleFiles) < self.maxFilesPerJob:
