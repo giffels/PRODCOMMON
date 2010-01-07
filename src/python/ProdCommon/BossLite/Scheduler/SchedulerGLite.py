@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.5 2009/12/16 02:16:50 spigafi Exp $"
-__version__ = "$Revision: 2.5 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.8 2009/12/17 23:23:17 spigafi Exp $"
+__version__ = "$Revision: 2.8 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -505,12 +505,12 @@ class SchedulerGLite(SchedulerInterface) :
 
             # counter for job position in list
             count = 0
-
+            
             # loop!
             for job in obj.jobs :
-
+                               
                 # consider just valid jobs
-                if self.valid( job.runningJob ) or objType == 'node':
+                if self.valid( job.runningJob ) :
                     
                     # append in joblist
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
@@ -521,57 +521,58 @@ class SchedulerGLite(SchedulerInterface) :
                         parentIds.append( str(job.runningJob['schedulerParentId']))
                     
                 count += 1
-            
-            formattedParentIds = ','.join(parentIds)
-            formattedJobIds = ','.join(jobIds)
-            
-            command = 'python ' + self.commandQueryPath \
-                + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
-                    % (formattedParentIds, formattedJobIds)
-            
-            outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
-                                                self.proxyString + command )
-             
-            # parse JSON output
-            try:
-                out = json.loads(outJson)
-                # DEBUG # print json.dumps( out,  indent=4 )
-            except ValueError:
-                raise SchedulerError('error parsing JSON', out )
-                
-            # Check error
-            if ret != 0 or out['errors']:
-                # obj.errors doesn't exist for Task object...
-                obj.warnings.append( "Errors: " + str(out['errors']) )
-                raise SchedulerError('error executing GLiteStatusQuery', \
-                                         str(out['errors']))
-            
-            # Refill objects...
-            count = 0
-            newStates = out['statusQuery']
         
-            for jobId in jobIds.values() : 
+            if jobIds :
+                formattedParentIds = ','.join(parentIds)
+                formattedJobIds = ','.join(jobIds)
                 
-                obj.jobs[jobId].runningJob['status'] = \
-                            newStates[count]['status']
-                obj.jobs[jobId].runningJob['scheduledAtSite'] = \
-                            newStates[count]['scheduledAtSite']
-                obj.jobs[jobId].runningJob['startTime'] = \
-                            newStates[count]['startTime']
-                obj.jobs[jobId].runningJob['service'] = \
-                            newStates[count]['service']
-                obj.jobs[jobId].runningJob['statusScheduler'] = \
-                            newStates[count]['statusScheduler']
-                obj.jobs[jobId].runningJob['destination'] = \
-                            newStates[count]['destination']
-                obj.jobs[jobId].runningJob['statusReason'] = \
-                            newStates[count]['statusReason']
-                obj.jobs[jobId].runningJob['lbTimestamp'] = \
-                            newStates[count]['lbTimestamp']
-                obj.jobs[jobId].runningJob['stopTime'] = \
-                            newStates[count]['stopTime']
+                command = 'python ' + self.commandQueryPath \
+                    + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
+                        % (formattedParentIds, formattedJobIds)
+                
+                outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
+                                                    self.proxyString + command)
+                 
+                # parse JSON output
+                try:
+                    out = json.loads(outJson)
+                    # DEBUG # print json.dumps( out,  indent=4 )
+                except ValueError:
+                    raise SchedulerError('error parsing JSON', out )
                     
-                count += 1
+                # Check error
+                if ret != 0 or out['errors']:
+                    # obj.errors doesn't exist for Task object...
+                    obj.warnings.append( "Errors: " + str(out['errors']) )
+                    raise SchedulerError('error executing GLiteStatusQuery', \
+                                             str(out['errors']))
+                
+                # Refill objects...
+                count = 0
+                newStates = out['statusQuery']
+            
+                for jobId in jobIds.values() : 
+                    
+                    obj.jobs[jobId].runningJob['status'] = \
+                                newStates[count]['status']
+                    obj.jobs[jobId].runningJob['scheduledAtSite'] = \
+                                newStates[count]['scheduledAtSite']
+                    obj.jobs[jobId].runningJob['startTime'] = \
+                                newStates[count]['startTime']
+                    obj.jobs[jobId].runningJob['service'] = \
+                                newStates[count]['service']
+                    obj.jobs[jobId].runningJob['statusScheduler'] = \
+                                newStates[count]['statusScheduler']
+                    obj.jobs[jobId].runningJob['destination'] = \
+                                newStates[count]['destination']
+                    obj.jobs[jobId].runningJob['statusReason'] = \
+                                newStates[count]['statusReason']
+                    obj.jobs[jobId].runningJob['lbTimestamp'] = \
+                                newStates[count]['lbTimestamp']
+                    obj.jobs[jobId].runningJob['stopTime'] = \
+                                newStates[count]['stopTime']
+                        
+                    count += 1
                   
         # unknown object type
         else:
