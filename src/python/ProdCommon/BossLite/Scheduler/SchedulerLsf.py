@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.28 2009/10/23 15:56:59 riahi Exp $"
-__version__ = "$Revision: 1.28 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.29 2009/11/10 18:54:41 spiga Exp $"
+__version__ = "$Revision: 1.29 $"
 
 import re, os
 import tempfile
@@ -210,12 +210,14 @@ class SchedulerLsf (SchedulerInterface) :
         r = re.compile("(\d+)\s+\w+\s+(\w+).*")
         rfull = re.compile("(\d+)\s+\w+\s+(\w+)\s+(\w+)\s+\w+\s+(\w+).*")
         rnotfound = re.compile("Job <(\d+)> is not found")
+
         for job in obj.jobs :
 
             if not self.valid( job.runningJob ) :
                 continue
 
             jobid = str(job.runningJob['schedulerId']).strip()
+
             command='bjobs '+str(jobid)
             
             if self.ksuCmd :   
@@ -224,10 +226,12 @@ class SchedulerLsf (SchedulerInterface) :
                 command,fname = self.createCommand(cmd, obj)
 
             out, ret = self.executeCommandWrapper( command )
-
+  
             if self.ksuCmd: os.unlink( fname )
-            if ret != 0 :
+
+            if ret != 0 and jobid != "None":
                 raise SchedulerError('Error in status query', out,command )
+
             #print "<"+out+">"
             mnotfound= rnotfound.search(out)
             queue=None
