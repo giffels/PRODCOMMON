@@ -15,23 +15,28 @@ class ProtocolGsiFtp(Protocol):
     def __init__(self):
         super(ProtocolGsiFtp, self).__init__()
 
-        glite_ui_env=''
-        if os.environ.get('GLITE_WMS_LOCATION'):
-            # that should be enough
-            #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-            # temporary hack
-            glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-            if not os.path.isfile(str(glite_ui_env).strip()):
-                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
+        glite_ui_env='' 
+        if os.environ.get('RUNTIME_AREA'):
+            glite_ui_env= '%s/CacheEnv.sh'%os.environ.get('RUNTIME_AREA')
+            self.fresh_env = 'source %s ; '%glite_ui_env
+        if not os.path.isfile(str(glite_ui_env).strip()):
+            if os.environ.get('GLITE_WMS_LOCATION'):
+                # that should be enough
+                #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+                # temporary hack
+                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
+                if not os.path.isfile(str(glite_ui_env).strip()):
+                    glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
+                self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
         if not os.path.isfile(str(glite_ui_env).strip()):
             if os.environ.get('OSG_GRID'):
                 glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID')
+                self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
                 if not os.path.isfile(str(glite_ui_env).strip()):
                     raise Exception("Missing glite environment.")
             else:
                 raise Exception("Missing glite environment.")
 
-        self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
 
 
     def simpleOutputCheck(self, outLines):
