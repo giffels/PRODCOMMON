@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.1 2009/12/07 20:31:32 spigafi Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.5 2009/12/17 16:31:13 spigafi Exp $"
+__version__ = "$Revision: 1.5 $"
 
 import sys
 from socket import getfqdn
@@ -22,7 +22,6 @@ class GLiteStatusQuery(object):
     basic class to handle glite jobs status query
     """
 
-    
     statusMap = {
         'Undefined':'UN',
         'Submitted':'SU',
@@ -57,7 +56,7 @@ class GLiteStatusQuery(object):
 
     states = {}
 
-    def __init__( self, parent ):
+    def __init__( self ):
 
         # counter
         self.st = 0
@@ -146,8 +145,59 @@ class GLiteStatusQuery(object):
             pass
 
         runningJob['status'] = self.statusMap[runningJob['statusScheduler']]
-
+    
     ##########################################################################
+    
+    def checkJobs( self, jobIds, errors ):
+        """
+        check a list of provided job id
+        """
+        
+        for jobId in jobIds:
+
+            try:
+                
+                wrapStatus = Status(jobId, 0)
+                # Check for Errors
+                err , apiMsg = wrapStatus.get_error ()
+                if err:
+                    # Print the error and terminate
+                    raise Exception(apiMsg)
+
+                # Retrieve the number of status (in this case is always 1)
+                # statusNumber = wrapStatus.getStatusNumber()
+ 
+                # Retrieve the list of attributes for the current UNIQUE event
+                statusAttribute = wrapStatus.getStatusAttributes(0)
+                
+                # Check for Errors
+                err , apiMsg = wrapStatus.get_error ()
+                if err:
+                    # Print the error and terminate
+                    raise Exception(apiMsg)
+
+                jobInfo = statusAttribute
+
+                # retrieve scheduler Id
+                jobSchedId = str(jobInfo[self.jobId])
+
+                # update just loaded jobs
+                try:
+                    job = jobIds[jobSchedId]
+                except :
+                    continue
+                    
+                 # update runningJob
+                self.getJobInfo(jobInfo, job )
+                
+                jobIds[jobSchedId] = job
+                
+            except Exception, err :
+                errors.append(
+                    "skipping " + jobId + " : " +  str(err) )
+       
+    ##########################################################################
+    
     def checkJobsBulk( self, jobIds, parentIds, errors ):
         """
         check a list of provided job parent ids
@@ -297,10 +347,7 @@ def main():
             print json.dumps({'statusQuery': [],
                               'errors' : [ "inputFile in unexpected format." ]})
             sys.exit(2)
-    elif len(parent)==0:
-        print json.dumps({'statusQuery': [],
-                          'errors' : [ "Missing parentId." ]})
-        sys.exit(2)
+        
     elif len(jobList)==0:
         print json.dumps({'statusQuery': [],
                           'errors' : [ "At least one jobId is needed." ]})
@@ -325,14 +372,10 @@ def main():
     # jobId for re-mapping
     jobIds = {}
 
-    # parent Ids for status query
-    parentIds = []
-
     # errors list
     errors = []
 
     # loop!
-    count = 0
     for job in jobList :
 
         rJob = deepcopy(template)
@@ -341,11 +384,13 @@ def main():
         # append in job list
         jobIds[ job ] = rJob
 
-        count += 1
-
-    lbInstance = GLiteStatusQuery(parentIds)
-    lbInstance.checkJobsBulk( jobIds, parent, errors )
-
+    lbInstance = GLiteStatusQuery()
+    
+    if parent :
+        lbInstance.checkJobsBulk( jobIds, parent, errors )     
+    else :
+        lbInstance.checkJobs( jobIds, errors )
+    
     # printout JSON formatted list of status records with errors
     outDict = {
         'statusQuery': jobIds.values(), 

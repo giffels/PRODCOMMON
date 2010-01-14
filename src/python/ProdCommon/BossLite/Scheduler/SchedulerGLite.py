@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.9 2010/01/07 13:52:47 spigafi Exp $"
-__version__ = "$Revision: 2.9 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.10 2010/01/12 16:59:21 spigafi Exp $"
+__version__ = "$Revision: 2.10 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -647,7 +647,7 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile = open( fname, 'w')
         
         jdl = self.decode( obj, requirements='' )
-	jdl, endpoints = self.mergeJDL( jdl, service, config )
+        jdl, endpoints = self.mergeJDL( jdl, service, config )
         
         tmpFile.write( jdl )
         tmpFile.close()
@@ -696,60 +696,107 @@ class SchedulerGLite(SchedulerInterface) :
         """
         query status and eventually other scheduler related information
         """
+        
+        # jobId for remapping
+        jobIds = {}
 
+        # parent Ids for status query
+        parentIds = []
+
+        # counter for job position in list
+        count = 0
+                
         # the object passed is a Task:
         if type(obj) == Task :
 
-            # jobId for remapping
-            jobIds = {}
-
-            # parent Ids for status query
-            parentIds = []
-
-            # counter for job position in list
-            count = 0
-            
-            # loop!
-            for job in obj.jobs :
-                               
-                # consider just valid jobs
-                if self.valid( job.runningJob ) :
+            if objType == 'node' :
+                
+                # loop!
+                for job in obj.jobs :
+                                  
+                    if job.runningJob is None \
+                           or job.runningJob.active != True \
+                           or job.runningJob['schedulerId'] is None \
+                           or job.runningJob['closed'] == "Y" \
+                           or job.runningJob['status'] in self.invalidList :
+                        continue
                     
                     # append in joblist
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
+                        
+                    count += 1
                     
-                    # update unique parent ids list
-                    if job.runningJob['schedulerParentId'] \
-                            not in parentIds:
-                        parentIds.append( str(job.runningJob['schedulerParentId']))
+                if jobIds :
+                    formattedJobIds = ','.join(jobIds)
+                                   
+                    command = 'python ' + self.commandQueryPath \
+                        + 'GLiteStatusQuery.py --jobId=%s' % formattedJobIds
                     
-                count += 1
-        
+                    outJson, ret = self.ExecuteCommand( 
+                        self.prefixCommandQuery + self.proxyString + command )
+                                        
+                    # parse JSON output
+                    try:
+                        out = json.loads(outJson)
+                        # DEBUG # print json.dumps( out,  indent=4 )
+                    except ValueError:
+                        raise SchedulerError('error parsing JSON', out )
+                        
+                    # Check error
+                    if ret != 0 or out['errors']:
+                        # obj.errors doesn't exist for Task object...
+                        obj.warnings.append( "Errors: " + str(out['errors']) )
+                        raise SchedulerError('error executing GLiteStatusQuery', \
+                                                 str(out['errors']))
+                  
+            elif objType == 'parent' :
+                
+                # loop!
+                for job in obj.jobs :
+                                   
+                    # consider just valid jobs
+                    if self.valid( job.runningJob ) :
+                        
+                        # append in joblist
+                        jobIds[ str(job.runningJob['schedulerId']) ] = count
+                        
+                        # update unique parent ids list
+                        if job.runningJob['schedulerParentId'] \
+                                not in parentIds:
+                            parentIds.append( 
+                                str(job.runningJob['schedulerParentId']))
+                        
+                    count += 1
+            
+                if jobIds :
+                    formattedParentIds = ','.join(parentIds)
+                    formattedJobIds = ','.join(jobIds)
+                    
+                    command = 'python ' + self.commandQueryPath \
+                        + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
+                            % (formattedParentIds, formattedJobIds)
+                    
+                    outJson, ret = self.ExecuteCommand( 
+                        self.prefixCommandQuery + self.proxyString + command )
+                    
+                    print self.prefixCommandQuery + self.proxyString + command
+                    print outJson 
+                    
+                    # parse JSON output
+                    try:
+                        out = json.loads(outJson)
+                        # DEBUG # print json.dumps( out,  indent=4 )
+                    except ValueError:
+                        raise SchedulerError('error parsing JSON', out )
+                        
+                    # Check error
+                    if ret != 0 or out['errors']:
+                        # obj.errors doesn't exist for Task object...
+                        obj.warnings.append( "Errors: " + str(out['errors']) )
+                        raise SchedulerError('error executing GLiteStatusQuery', \
+                                                 str(out['errors']))
+            
             if jobIds :
-                formattedParentIds = ','.join(parentIds)
-                formattedJobIds = ','.join(jobIds)
-                
-                command = 'python ' + self.commandQueryPath \
-                    + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
-                        % (formattedParentIds, formattedJobIds)
-                
-                outJson, ret = self.ExecuteCommand( self.prefixCommandQuery + \
-                                                    self.proxyString + command)
-                 
-                # parse JSON output
-                try:
-                    out = json.loads(outJson)
-                    # DEBUG # print json.dumps( out,  indent=4 )
-                except ValueError:
-                    raise SchedulerError('error parsing JSON', out )
-                    
-                # Check error
-                if ret != 0 or out['errors']:
-                    # obj.errors doesn't exist for Task object...
-                    obj.warnings.append( "Errors: " + str(out['errors']) )
-                    raise SchedulerError('error executing GLiteStatusQuery', \
-                                             str(out['errors']))
-                
                 # Refill objects...
                 count = 0
                 newStates = out['statusQuery']
