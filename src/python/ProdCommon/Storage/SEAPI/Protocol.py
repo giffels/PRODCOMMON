@@ -201,6 +201,8 @@ class Protocol(object):
             returncode = -666666
         
         if stderr == True:
+            ## we could remove this.... and only use logging... 
+            self.__logout__(str(command), str(returncode), str(''.join(outc)+''.join(errc)))
             return returncode,''.join(outc),''.join(errc)
 
         logging.debug(command)
