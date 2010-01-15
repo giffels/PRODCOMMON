@@ -286,9 +286,30 @@ class Proxy:
                     self.logging.debug( str(e) )
                     valid = False
                 if timeleft < minTime:
-                    self.logging.info('Your server credential will expire in:\n\t%s hours %s minutes %s seconds\n'%(hours,minutes,seconds))
+                    logMsg  = 'Your credential for the required server will expire in:\n\t'
+                    logMsg += '%s hours %s minutes %s seconds\n'%(hours,minutes,seconds)
+                    self.logging.info(logMsg)
                     valid = False
 
+                # clean up expired credentials for other servers
+                cleanCredCmdList = []
+                for credIdx in xrange(len(credNameList)):
+                    hours, minutes, seconds = credTimeleftList[ credIdx ]
+                    timeleft = int(hours)*3600 + int(minutes)*60 + int(seconds)
+                    if timeleft == 0:
+                        cleanupCmd = "myproxy-destroy -d -k %s"%(credNameList[credIdx]) 
+                        cleanCredCmdList.append( cleanupCmd )  
+                    pass
+
+                cleanCredCmd = " && ".join(cleanCredCmdList)
+                if len(cleanCredCmd)>0:
+                    self.logging.debug('Removing expired credentials: %s'%cleanCredCmd) 
+                    try:
+                        out, ret = self.ExecuteCommand( cleanCredCmd )
+                    except:
+                        self.logging.debug('Error in cleaning expired credentials. Ignore and go ahead.')
+                        pass
+                   
         return valid
 
     def ManualRenewMyProxy( self ):
