@@ -18,7 +18,10 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
-from json.decoder import JSONDecoder
+try:
+    from json.decoder import JSONDecoder
+except ImportError:
+    from simplejson.decoder import JSONDecoder
 
 ##########################################################################
 
@@ -103,7 +106,7 @@ class SchedulerGLite(SchedulerInterface) :
             # Impossible to locate GLiteQueryStatus.py ...
             raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')
         
-        gliteLocation = os.environ.get('GLITE_LOCATION').split('glite')[0]
+        gliteLocation = os.environ.get('GLITE_LOCATION').rsplit('glite', 1)[0]
         gliteUi = '%s/etc/profile.d/grid-env.sh ' % gliteLocation
         self.prefixCommandQuery = 'unset LD_LIBRARY_PATH;' + \
             'export PATH=/usr/bin:/bin; source /etc/profile;' \
@@ -267,15 +270,13 @@ class SchedulerGLite(SchedulerInterface) :
             else :
                 # Output successfully retrieved without problems
                 
-                # -> workaround for gLite UI 3.2 
-                #    glite-wms-job-output CLI behaviour
+                # let's copy in the right place...
                 tmp = re.search(self.pathPattern, out)
-                uniqueString = str(os.path.basename(tmp.group(1)))
                 
-                command = "cp -R /tmp/" + uniqueString + "/* " + outdir + "/"
+                command = "cp -R " + tmp.group(1) + "/* " + outdir + "/"
                 os.system( command )
                 
-                command = "rm -rf /tmp/" + uniqueString
+                command = "rm -rf " + tmp.group(1)
                 os.system( command )
                 # 
                 
@@ -333,16 +334,13 @@ class SchedulerGLite(SchedulerInterface) :
                 else :
                     # Output successfully retrieved without problems
                     
-                    # -> workaround for gLite UI 3.2 
-                    #    glite-wms-job-output CLI behaviour
+                    # let's copy in the right place...
                     tmp = re.search(self.pathPattern, out)
-                    uniqueString = str(os.path.basename(tmp.group(1)))
                     
-                    command = "cp -R /tmp/" + uniqueString + \
-                                                "/* " + outdir + "/"
+                    command = "cp -R " + tmp.group(1) + "/* " + outdir + "/"
                     os.system( command )
                     
-                    command = "rm -rf /tmp/" + uniqueString
+                    command = "rm -rf " + tmp.group(1)
                     os.system( command )
                     # 
                     
@@ -533,6 +531,7 @@ class SchedulerGLite(SchedulerInterface) :
                            or job.runningJob['schedulerId'] is None \
                            or job.runningJob['closed'] == "Y" \
                            or job.runningJob['status'] in self.invalidList :
+                        count += 1
                         continue
                     
                     # append in joblist
@@ -554,7 +553,7 @@ class SchedulerGLite(SchedulerInterface) :
                         out = json.loads(outJson)
                         # DEBUG # print json.dumps( out,  indent=4 )
                     except ValueError:
-                        raise SchedulerError('error parsing JSON', out )
+                        raise SchedulerError('error parsing JSON', outJson )
                         
                     # Check error
                     if ret != 0 or out['errors']:
@@ -599,7 +598,7 @@ class SchedulerGLite(SchedulerInterface) :
                         out = json.loads(outJson)
                         # DEBUG # print json.dumps( out,  indent=4 )
                     except ValueError:
-                        raise SchedulerError('error parsing JSON', out )
+                        raise SchedulerError('error parsing JSON', outJson )
                         
                     # Check error
                     if ret != 0 or out['errors']:

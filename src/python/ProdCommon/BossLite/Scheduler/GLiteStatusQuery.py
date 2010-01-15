@@ -246,8 +246,8 @@ class GLiteStatusQuery(object):
 
                 # look if the parent is aborted
                 if str(bulkInfo[self.status]) == 'Aborted' :
+                    # warnings.append('Parent Job Failed')
                     forceAborted = True
-                    errors.append('Parent Job Failed')
                 else :
                     forceAborted = False
 
