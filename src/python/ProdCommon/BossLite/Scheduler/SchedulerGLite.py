@@ -22,138 +22,11 @@ from json.decoder import JSONDecoder
 
 ##########################################################################
 
-def processRow ( row ):
-    """
-    Utility fuction
-
-    Process jdl line, smart comment handling
-    """
-
-    row = row.strip()
-    if len( row ) == 0 :
-        return None, None
-    if row[0] == '#' :
-        row = row[ row.find('\n') : ].strip()
-        return processRow ( row )
-
-    index = row.find('=')
-    key = row[0:index].strip().lower()
-    val = row[index+1:].strip()
-
-    if key == '' or val == '' :
-        raise ValueError( row )
-    return key, val
-
-
-def processClassAd( classAd ):
-    """
-    Utility fuction
-
-    extract entries from a jdl
-    """
-
-    endpoints = []
-    cladDict = {}
-    configfile = ""
-    
-    if classAd.strip() == '' :
-        raise SchedulerError( "bad jdl ", "empty classAd" )
-    while classAd[0] == '[':
-        classAd = classAd[1:-1].strip()
-    if classAd.find("WmsClient") >= 0 :
-        classAd = (classAd.split("WmsClient")[1]).strip()
-        while classAd[0] == '[' or classAd[0] == '=' :
-            classAd = classAd[1:-1].strip()
-
-    # location of a subsection
-    index = classAd.find( '[' )
-    while index > 0 :
-
-        # start of the jdl key
-        start = classAd.rfind( ';', 0, index )
-    
-        # stop of the jdl key
-        stop = classAd.rfind( ']' )
-
-        # key from start to index
-        key = classAd[ start + 1 : classAd.find( '=', start, index ) ].strip()
-
-        # extract JdlDefaultAttributes
-        if key.lower() == "jdldefaultattributes" :
-            retCladDict, endpoints, configfile = \
-                         processClassAdBlock( classAd[ index : stop + 1 ] )
-            cladDict.update( retCladDict ) 
-
-        # value from index to stop
-        elif key.lower() != "wmsconfig" :
-            cladDict[key] = classAd[ index : stop + 1 ]
-                
-        # continue parsing of the jdl
-        classAd = classAd[ : start ] + classAd[ stop + 1: ]
-        index = classAd.find( '[' )
-
-    # return
-    retCladDict, endpoints, configfile = processClassAdBlock( classAd.strip() )
-    cladDict.update( retCladDict )
-    return cladDict, endpoints, configfile
-
-
-def processClassAdBlock( classAd ):
-    """
-    Utility fuction
-
-    extract entries from a jdl block
-    """
-
-    endpoints = []
-    cladDict = {}
-    configfile = ""
-
-    try:
-
-        # strip external '[]' pairs
-        while classAd[0] == '[':
-            classAd = classAd[1:-1].strip()
-
-        # create attributes map and loop for wms detection
-        for p in classAd.split(';'):
-
-            p = p.strip()
-            try:
-                key, val = processRow ( p )
-            except ValueError:
-                raise SchedulerError( "bad jdl key", p )
-
-            # take wms config file location
-            if ( key == "wmsconfig" ) :
-                configfile = val.replace("\"", "")
-
-            # extract wms
-            elif ( key == "wmproxyendpoints" ) :
-                wmsList = val[ val.find('{') +1 : val.find('}') ].replace(
-                    ',', '\n')
-                for wms in wmsList.split('\n'):
-                    wms = wms[ : wms.find('#') ].replace("\"", "").strip()
-                    if wms != '' :
-                        endpoints.append( wms )             
-
-            # handle not empty pairs
-            elif key is not None:
-                cladDict[ key ] = val
-
-    except StandardError, e:
-        raise SchedulerError( "bad jdl ", str(e) )
-
-    return cladDict, endpoints, configfile
-
-
-##########################################################################
-
 class BossliteJsonDecoder(JSONDecoder):
     """
     Override JSON decode
     """
-
+    
     def __init__(self):
         
         # call super
@@ -168,7 +41,6 @@ class BossliteJsonDecoder(JSONDecoder):
                     '[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
         self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
         self.pattern6 = re.compile('([a-zA-Z0-9_\-])}')
-
     
     def decodeSubmit(self, jsonString):
         """
@@ -187,7 +59,6 @@ class BossliteJsonDecoder(JSONDecoder):
         parsedJson = self.decode(toParse)
         
         return parsedJson  
-
     
 ##########################################################################
 
@@ -260,81 +131,17 @@ class SchedulerGLite(SchedulerInterface) :
         """
 
         command = "glite-wms-job-delegate-proxy -d " + self.delegationId
-
-        # to implement
-        
-        # inherited from delegateWMSProxy() method ...
+     
         if wms :
-            command += " --endpoint " + wms
-        
+            command += " -e " + wms
+            
+        if len(self.config) != 0 :
+            command += " -c " + self.config
         
         msg, ret = self.ExecuteCommand( self.proxyString + command )
 
         if ret != 0 or msg.find("Error -") >= 0 :
             self.logging.warning( "Warning : %s" % msg )
-
-
-    ##########################################################################
-    def mergeJDL( self, jdl, wms='', configfile='' ):
-        """
-        parse config files, merge jdl and retrieve wms list
-        """
-
-        schedClassad = ""
-        endpoints = []
-        if len( wms ) == 0:
-            pass
-        elif type( wms ) == str :
-            endpoints = [ wms ]
-        elif type( wms ) == list :
-            endpoints = wms
-
-        if len( endpoints ) == 0 :
-            endpoints, schedClassad = self.parseConfig ( configfile )
-        else :
-            tmp, schedClassad = self.parseConfig ( configfile )
-
-        begin = ''
-        jdl.strip()
-        if jdl[0] == '[' :
-            begin = '[\n'
-            jdl = begin + schedClassad + jdl[1:]
-
-        return jdl, endpoints
-
-
-    ##########################################################################
-    
-    def parseConfig ( self, configfile ):
-        """
-        Utility fuction
-
-        extract entries from glite config files
-        """
-
-        cladAddDict = {}
-        endpoints = []
-
-        try:
-            if ( len(configfile) == 0 ):
-                configfile = "%s/etc/%s/glite_wms.conf" \
-                             % ( os.environ['GLITE_LOCATION'], self.vo )
-
-            fileh = open( configfile, "r" )
-            configClad = fileh.read().strip()
-            cladAddDict, endpoints, dummyfile = processClassAd( configClad )
-        except  StandardError, err:
-            self.warnings.append( "Warning : " + str( err ) )
-
-        if ( len(endpoints) == 0  ) :
-            raise SchedulerError( "bad jdl ", "No WMS defined" )
-
-        cladadd = ''
-        for k, v in cladAddDict.iteritems():
-            cladadd += k + ' = ' + v + ';\n'
-
-        return endpoints, cladadd
-
 
     ##########################################################################
     
@@ -347,9 +154,10 @@ class SchedulerGLite(SchedulerInterface) :
         # decode object
         jdl = self.decode( obj, requirements )
         
-        # complete JDL with gLite config file entries
-        jdl, endpoints = self.mergeJDL( jdl, service, config )
-
+        # check config file
+        if not config :
+            config = self.config
+        
         # write a jdl into tmpFile
         tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'],
                                        dir = os.getcwd() )
@@ -361,18 +169,21 @@ class SchedulerGLite(SchedulerInterface) :
         if self.delegationId != "" :
             command = "glite-wms-job-submit --json -d " \
                                                 + self.delegationId
-            self.delegateProxy()
+            self.delegateProxy(service)
         else :
             command = "glite-wms-job-submit --json -a "
         
         if len(config) != 0 :
             command += " -c " + config
 
+        # the '-e' override the ...
         if service != '' :
             command += ' -e ' + service
 
         command += ' ' + fname
         out, ret = self.ExecuteCommand( self.proxyString + command )
+        
+        os.unlink( fname )
         
         if ret != 0 :
             raise SchedulerError('error executing glite-wms-job-submit', out)
@@ -383,8 +194,7 @@ class SchedulerGLite(SchedulerInterface) :
             
         except ValueError:
             raise SchedulerError('error parsing JSON output',  out)
-             
-        os.unlink( fname )
+        
 
         returnMap = {}
         if type(obj) == Task:
@@ -413,7 +223,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         retrieve job output
         """
-
+        
         if type(obj) == Job :
             
             # check for the RunningJob integrity
@@ -550,7 +360,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         Purge job (even bulk) from wms
         """
-
+        
         # Implement as getOutput where the "No output files ..."
         # is not an error condition but the expected status
       
@@ -608,13 +418,13 @@ class SchedulerGLite(SchedulerInterface) :
         """
         kill job
         """
-
+        
         # the object passed is a job
         if type(obj) == Job and self.valid( obj.runningJob ):
-
+            
             # check for the RunningJob integrity
             schedIdList = str( obj.runningJob['schedulerId'] ).strip()
-
+        
         # the object passed is a Task
         elif type(obj) == Task :
             
@@ -647,15 +457,17 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile = open( fname, 'w')
         
         jdl = self.decode( obj, requirements='' )
-        jdl, endpoints = self.mergeJDL( jdl, service, config )
         
         tmpFile.write( jdl )
         tmpFile.close()
-    
+        
+        if not config :
+            config = self.config
+        
         # delegate proxy
         if self.delegationId == "" :
             command = "glite-wms-job-list-match -d " + self.delegationId
-            self.delegateProxy()
+            self.delegateProxy(service)
         else :
             command = "glite-wms-job-list-match -a "
         
@@ -665,9 +477,12 @@ class SchedulerGLite(SchedulerInterface) :
         if service != '' :
             command += ' -e ' + service
 
-
+        command += " " + fname
+        
         out, ret = self.ExecuteCommand( self.proxyString + command )
 
+        os.unlink( fname )
+        
         try:
             out = out.split("CEId")[1].strip()
         except IndexError:
@@ -681,12 +496,11 @@ class SchedulerGLite(SchedulerInterface) :
     def postMortem( self, schedulerId, outfile, service):
         """
         perform scheduler logging-info
-        
         """
-
+        
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
-
+        
         return self.ExecuteCommand( self.proxyString + command )[0]
 
 
@@ -746,7 +560,8 @@ class SchedulerGLite(SchedulerInterface) :
                     if ret != 0 or out['errors']:
                         # obj.errors doesn't exist for Task object...
                         obj.warnings.append( "Errors: " + str(out['errors']) )
-                        raise SchedulerError('error executing GLiteStatusQuery', \
+                        raise SchedulerError(
+                            'error executing GLiteStatusQuery', \
                                                  str(out['errors']))
                   
             elif objType == 'parent' :
@@ -779,9 +594,6 @@ class SchedulerGLite(SchedulerInterface) :
                     outJson, ret = self.ExecuteCommand( 
                         self.prefixCommandQuery + self.proxyString + command )
                     
-                    print self.prefixCommandQuery + self.proxyString + command
-                    print outJson 
-                    
                     # parse JSON output
                     try:
                         out = json.loads(outJson)
@@ -793,7 +605,8 @@ class SchedulerGLite(SchedulerInterface) :
                     if ret != 0 or out['errors']:
                         # obj.errors doesn't exist for Task object...
                         obj.warnings.append( "Errors: " + str(out['errors']) )
-                        raise SchedulerError('error executing GLiteStatusQuery', \
+                        raise SchedulerError(
+                            'error executing GLiteStatusQuery', \
                                                  str(out['errors']))
             
             if jobIds :
@@ -832,16 +645,11 @@ class SchedulerGLite(SchedulerInterface) :
     ##########################################################################
 
     def jobDescription (self, obj, requirements='', config='', service = ''):
-
         """
         retrieve scheduler specific job description
         """
         
-        # decode obj
-        jdl = self.decode( obj, requirements )
-        
-        # return only the JDL, endpoints' list dropped  
-        return self.mergeJDL( jdl, service, config )[0]
+        return self.decode( obj, requirements )
 
         
     ##########################################################################
@@ -850,7 +658,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         prepare file for submission
         """
-
+        
         if type(obj) == RunningJob or type(obj) == Job :
             return self.jdlFile ( obj, requirements ) 
         elif type(obj) == Task :
@@ -863,7 +671,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         build a job jdl
         """
-
+        
         # general part
         jdl = "[\n"
         jdl += 'Type = "job";\n'
@@ -921,7 +729,7 @@ class SchedulerGLite(SchedulerInterface) :
         build a collection jdl easy to be handled by the wmproxy API interface
         and gives back the list of input files for a better handling
         """
-
+        
         # general part for task
         jdl = "[\n"
         jdl += 'Type = "collection";\n'
