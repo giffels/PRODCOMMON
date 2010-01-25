@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.10 2010/01/12 16:59:21 spigafi Exp $"
-__version__ = "$Revision: 2.10 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.13 2010/01/15 18:10:43 spigafi Exp $"
+__version__ = "$Revision: 2.13 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -206,7 +206,13 @@ class SchedulerGLite(SchedulerInterface) :
             for child in jOut['children'].keys() :
                 returnMap[str(child.replace('NodeName_', '', 1))] = \
                                                 str(jOut['children'][child])
-            
+                                                
+            # submission converts . to _ in job name - convert back
+            for job in obj.jobs:
+                if job['name'].count('.'):
+                    returned_name = job['name'].replace('.', '_')
+                    returnMap[job['name']] = returnMap.pop(returned_name)
+
             return returnMap, str(jOut['parent']), str(jOut['endpoint']) 
         elif type(obj) == Job:
             # usually we submit collections.....
@@ -214,7 +220,11 @@ class SchedulerGLite(SchedulerInterface) :
             
             returnMap[str(child.replace('NodeName_', '', 1))] = \
                                                 str(jOut['children'][child])
-            
+            # submission converts . to _ in job name - convert back
+            if obj['name'].count('.'):
+                returned_name = obj['name'].replace('.', '_')
+                returnMap[obj['name']] = returnMap.pop(returned_name)
+
             return returnMap, str(jOut['parent']), str(jOut['endpoint'])
         else : 
             raise SchedulerError( 'unexpected error',  type(obj) )
