@@ -261,12 +261,6 @@ class SchedulerGLite(SchedulerInterface) :
                       ' output already retrieved.' )
                     obj.runningJob.warnings.append("Job has been purged, " + \
                                                         "recovering status")
-                elif out.find("Output not yet Ready") != -1 :
-                    # Output not yet ready
-                    self.logging.warning( obj.runningJob['schedulerId'] + \
-                      ' output not yet ready' )
-                    # adapting the error string with JobOutput requirements
-                    obj.runningJob.errors.append("Job current status doesn")
                 else : 
                     self.logging.error( out )
                     obj.runningJob.errors.append( out )
@@ -323,14 +317,6 @@ class SchedulerGLite(SchedulerInterface) :
                                                 ' output already retrieved.' )
                         selJob.runningJob.warnings.append(
                                     "Job has been purged, recovering status")
-                    elif out.find("Output not yet Ready") != -1 :
-                        # Output not yet ready
-                        self.logging.warning( 
-                                    selJob.runningJob['schedulerId'] + \
-                                                    ' output not yet ready' )
-                        # adapting the error string with JobOutput requirements
-                        selJob.runningJob.errors.append(
-                                            "Job current status doesn")
                     else : 
                         self.logging.error( out )
                         selJob.runningJob.errors.append( out )
