@@ -77,6 +77,8 @@ class RequestJobFactory:
         self.workingDir = workingDir
         self.count = args.get("InitialRun", 1)
         self.firstEvent = args.get("InitialEvent", 1)
+        # The first event sets also the first event read from the MCDB table
+        self.skipMCDB = self.firstEvent - 1
         self.overrideFirstEvent = args.get("OverrideFirstEvent", None)
         if self.overrideFirstEvent != None:
             self.overrideFirstEvent = int(self.overrideFirstEvent)
@@ -236,20 +238,38 @@ class RequestJobFactory:
         else:
             maxEvents = self.eventsPerJob
 
+        # If we are dealing with MCDBSource type, then add a skipEvents
+        # paramater to the first step's configuration.
+        skipEvents = None
+        if jobSpecNode.cfgInterface.sourceType == 'MCDBSource':
+            if not self.firstNodeCfg: # we are 1st job in chain, skip events
+                efficiency = jobSpecNode.applicationControls.get(
+                    "SelectionEfficiency",
+                    None)
+                if efficiency is None:
+                    efficiency = 1
+                skipEvents = self.skipMCDB + int(self.jobnumber) * \
+                    int(float(self.eventsPerJob) / float(efficiency))
+                msg = "Job processes a MCDB table. Skipping the first "
+                msg += "%s events." % skipEvents
+                logging.info(msg)
+
         if useOutputMaxEv:
             jobCfg = generator(
                 self.currentJob,
-                maxEventsWritten = maxEvents,
-                firstEvent = self.firstEvent,
-                firstRun = self.workflowSpec.workflowRunNumber(),
-                firstLumi = self.count)
+                maxEventsWritten=maxEvents,
+                firstEvent=self.firstEvent,
+                firstRun=self.workflowSpec.workflowRunNumber(),
+                firstLumi=self.count,
+                skipEvents=skipEvents)
         else:
             jobCfg = generator(
                 self.currentJob,
-                maxEvents = maxEvents,
-                firstEvent = self.firstEvent,
-                firstRun = self.workflowSpec.workflowRunNumber(),
-                firstLumi = self.count)
+                maxEvents=maxEvents,
+                firstEvent=self.firstEvent,
+                firstRun=self.workflowSpec.workflowRunNumber(),
+                firstLumi=self.count,
+                skipEvents=skipEvents)
 
 
 
