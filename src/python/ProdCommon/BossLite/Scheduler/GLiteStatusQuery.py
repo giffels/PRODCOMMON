@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.5 2009/12/17 16:31:13 spigafi Exp $"
-__version__ = "$Revision: 1.5 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.7 2010/01/15 18:10:43 spigafi Exp $"
+__version__ = "$Revision: 1.7 $"
 
 import sys
 from socket import getfqdn
@@ -393,7 +393,7 @@ def main():
     
     # printout JSON formatted list of status records with errors
     outDict = {
-        'statusQuery': jobIds.values(), 
+        'statusQuery': jobIds, 
         'errors' : errors,   
     }
 

@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.13 2010/01/15 18:10:43 spigafi Exp $"
-__version__ = "$Revision: 2.13 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.15 2010/01/28 16:42:41 spigafi Exp $"
+__version__ = "$Revision: 2.15 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -534,7 +534,7 @@ class SchedulerGLite(SchedulerInterface) :
                     jobIds[ str(job.runningJob['schedulerId']) ] = count
                         
                     count += 1
-                    
+                
                 if jobIds :
                     formattedJobIds = ','.join(jobIds)
                                    
@@ -606,32 +606,33 @@ class SchedulerGLite(SchedulerInterface) :
             
             if jobIds :
                 # Refill objects...
-                count = 0
                 newStates = out['statusQuery']
-            
+                
                 for jobId in jobIds.values() : 
                     
+                    jobIdToUpdate = obj.jobs[jobId].runningJob['schedulerId']
+                    
+                    updatedJobInfo = newStates[jobIdToUpdate]
+                    
                     obj.jobs[jobId].runningJob['status'] = \
-                                newStates[count]['status']
+                                updatedJobInfo['status']
                     obj.jobs[jobId].runningJob['scheduledAtSite'] = \
-                                newStates[count]['scheduledAtSite']
+                                updatedJobInfo['scheduledAtSite']
                     obj.jobs[jobId].runningJob['startTime'] = \
-                                newStates[count]['startTime']
+                                updatedJobInfo['startTime']
                     obj.jobs[jobId].runningJob['service'] = \
-                                newStates[count]['service']
+                                updatedJobInfo['service']
                     obj.jobs[jobId].runningJob['statusScheduler'] = \
-                                newStates[count]['statusScheduler']
+                                updatedJobInfo['statusScheduler']
                     obj.jobs[jobId].runningJob['destination'] = \
-                                newStates[count]['destination']
+                                updatedJobInfo['destination']
                     obj.jobs[jobId].runningJob['statusReason'] = \
-                                newStates[count]['statusReason']
+                                updatedJobInfo['statusReason']
                     obj.jobs[jobId].runningJob['lbTimestamp'] = \
-                                newStates[count]['lbTimestamp']
+                                updatedJobInfo['lbTimestamp']
                     obj.jobs[jobId].runningJob['stopTime'] = \
-                                newStates[count]['stopTime']
-                        
-                    count += 1
-                  
+                                updatedJobInfo['stopTime']
+                
         # unknown object type
         else:
             raise SchedulerError('wrong argument type', str( type(obj) ))
