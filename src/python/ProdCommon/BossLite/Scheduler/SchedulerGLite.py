@@ -165,7 +165,7 @@ class SchedulerGLite(SchedulerInterface) :
         # write a jdl into tmpFile
         tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'],
                                        dir = os.getcwd() )
-        tmpFile = open( fname, 'w')
+        tmpFile = os.fdopen(tmp, "w")
         tmpFile.write( jdl )
         tmpFile.close()
         
@@ -450,7 +450,8 @@ class SchedulerGLite(SchedulerInterface) :
         
         # write a fake jdl file
         tmp, fname = tempfile.mkstemp( "", "glite_list_match_", os.getcwd() )
-        tmpFile = open( fname, 'w')
+        
+        tmpFile = os.fdopen(tmp, "w")
         
         if not config :
             config = self.config
