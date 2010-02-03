@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.16 2010/02/02 15:36:17 spigafi Exp $"
-__version__ = "$Revision: 2.16 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.18 2010/02/03 11:30:10 spigafi Exp $"
+__version__ = "$Revision: 2.18 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -782,7 +782,7 @@ class SchedulerGLite(SchedulerInterface) :
                         isbIndex += 1
                         continue
                     if ifile[0] == '/':
-                        ifile = ifile[1:]
+                        ifile = ifile#[1:]Daniele
                     commonFiles += '"' + ifile + '",'
 
         # output bypass WMS?
