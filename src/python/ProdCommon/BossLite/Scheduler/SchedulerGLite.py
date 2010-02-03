@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.15 2010/01/28 16:42:41 spigafi Exp $"
-__version__ = "$Revision: 2.15 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.16 2010/02/02 15:36:17 spigafi Exp $"
+__version__ = "$Revision: 2.16 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -115,6 +115,7 @@ class SchedulerGLite(SchedulerInterface) :
 
         # cache pattern to optimize reg-exp substitution
         self.pathPattern = re.compile('location:([\S]*)$', re.M)
+        self.patternCE = re.compile('(?<= - ).*(?=:)', re.M)
         
         # init BossliteJsonDecoder specialized class
         self.myJSONDecoder = BossliteJsonDecoder()
@@ -250,7 +251,7 @@ class SchedulerGLite(SchedulerInterface) :
             
             out, ret = self.ExecuteCommand( self.proxyString + command ) 
                 
-            if ret == 1 :
+            if ret != 0 :
                 if out.find("Proxy File Not Found") != -1 :
                     # Proxy missing
                     # # adapting the error string for JobOutput requirements
@@ -305,7 +306,7 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
 
-                if ret == 1 :
+                if ret != 0 :
                     if out.find("Proxy File Not Found") != -1 :
                         # Proxy missing
                         # adapting the error string for JobOutput requirements
@@ -443,20 +444,35 @@ class SchedulerGLite(SchedulerInterface) :
 
     def matchResources( self, obj, requirements='', config='', service='' ):
         """
-        execute a resources discovery through wms
+        execute a resources discovery through WMS
+        IMPORTANT NOTE: glite-wms-job-list-match doesn't accept collections!
         """
-
-        # write a jdl file
+        
+        # write a fake jdl file
         tmp, fname = tempfile.mkstemp( "", "glite_list_match_", os.getcwd() )
         tmpFile = open( fname, 'w')
         
-        jdl = self.decode( obj, requirements='' )
-        
-        tmpFile.write( jdl )
-        tmpFile.close()
-        
         if not config :
             config = self.config
+            
+        fakeJdl = "[\n"
+        fakeJdl += 'Type = "job";\n'
+        fakeJdl += 'Executable = "/bin/echo";\n'
+        # fakeJdl += 'Arguments  = "";\n'
+        
+        try :
+            requirements = requirements.strip()
+            while requirements[0] == '[':
+                requirements = requirements[1:-1].strip()
+            fakeJdl += '\n' + requirements + '\n'
+        except :
+            pass
+        
+        fakeJdl += 'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
+        fakeJdl += "\n]\n"
+        
+        tmpFile.write( fakeJdl )
+        tmpFile.close()
         
         # delegate proxy
         if self.delegationId == "" :
@@ -465,6 +481,7 @@ class SchedulerGLite(SchedulerInterface) :
         else :
             command = "glite-wms-job-list-match -a "
         
+        # Is it necessary ? 
         if len(config) != 0 :
             command += " -c " + config
 
@@ -473,18 +490,19 @@ class SchedulerGLite(SchedulerInterface) :
 
         command += " " + fname
         
-        out, ret = self.ExecuteCommand( self.proxyString + command )
-
+        outRaw, ret = self.ExecuteCommand( self.proxyString + command )
+        
         os.unlink( fname )
         
-        try:
-            out = out.split("CEId")[1].strip()
-        except IndexError:
-            raise SchedulerError( 'IndexError', out )
-
-        return out.split()
+        if ret == 0 : 
+            out = self.patternCE.findall(outRaw)
+        else :
+            raise SchedulerError( 'Error matchResources', outRaw )
         
-
+        # return CE without duplicate
+        return list(set(out))
+    
+    
     ##########################################################################
 
     def postMortem( self, schedulerId, outfile, service):
