@@ -192,9 +192,10 @@ class ProtocolRfio(Protocol):
  
         outt = []
         for out in outputs.split("\n"):
-            fileout = out.split()
-            fileout[3] = self.__convertPermission__(out[3])
-            outt.append( fileout ) 
+            if out:
+               fileout = out.split()
+               fileout[3] = self.__convertPermission__(out[3])
+               outt.append( fileout ) 
         ### need to parse the output of the commands ###
         
         return outt
