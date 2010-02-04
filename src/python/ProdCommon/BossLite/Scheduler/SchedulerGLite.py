@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.18 2010/02/03 11:30:10 spigafi Exp $"
-__version__ = "$Revision: 2.18 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.19 2010/02/03 21:38:14 spiga Exp $"
+__version__ = "$Revision: 2.19 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -373,9 +373,9 @@ class SchedulerGLite(SchedulerInterface) :
                   out.find("Output files already retrieved") != -1 ) :
                 # now this is the expected exit condition... 
                 self.logging.debug("Purge of %s successfully" 
-                                   % str(obj.runningJob['schedulerId']))
+                                   % str(job.runningJob['schedulerId']))
             else : 
-                obj.runningJob.errors.append(out)
+                job.runningJob.errors.append(out)
                 
             tmp = re.search(self.pathPattern, out)
             os.system( 'rm -rf ' + tmp.group(1) )
@@ -399,9 +399,9 @@ class SchedulerGLite(SchedulerInterface) :
                       out.find("Output files already retrieved") != -1 ) :
                     # now this is the expected exit condition... 
                     self.logging.debug("Purge of %s successfully" 
-                                       % str(obj.runningJob['schedulerId']))
+                                       % str(job.runningJob['schedulerId']))
                 else : 
-                    obj.runningJob.errors.append(out)
+                    job.runningJob.errors.append(out)
                 
                 tmp = re.search(self.pathPattern, out)
                 os.system( 'rm -rf ' + tmp.group(1) )
