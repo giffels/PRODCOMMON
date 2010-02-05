@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.21 2010/02/04 16:08:29 spiga Exp $"
-__version__ = "$Revision: 2.21 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.22 2010/02/05 14:32:10 spigafi Exp $"
+__version__ = "$Revision: 2.22 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -107,9 +107,8 @@ class SchedulerGLite(SchedulerInterface) :
             raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')      
         
         gliteLocation = os.environ.get('GRID_ENV_LOCATION')
-        #self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; ' + \
-        #        'source /etc/profile ; source %s/grid-env.sh' % gliteLocation + ' ; '
-        prefixCommandQuery = ''
+        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; ' + \
+        	'source /etc/profile ; source %s/grid-env.sh' % gliteLocation + ' ; '
         
         # cache pattern to optimize reg-exp substitution
         self.pathPattern = re.compile('location:([\S]*)$', re.M)
