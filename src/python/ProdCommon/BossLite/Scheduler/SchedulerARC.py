@@ -677,7 +677,6 @@ class SchedulerARC(SchedulerInterface):
             if count_nonempty(whitelist) > 0 and name not in whitelist:
                 continue
 
-            print ce
             accepted_CEs.append(name)
             #if not full:
             #    break
