@@ -4,15 +4,41 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.7 2010/01/15 18:10:43 spigafi Exp $"
-__version__ = "$Revision: 1.7 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.8 2010/02/02 15:36:17 spigafi Exp $"
+__version__ = "$Revision: 1.8 $"
 
 import sys
-from socket import getfqdn
+import os.path
+import os
+
+# ------------------------------------------------------------------
+
+# looking for the environment...
+try:
+    path=os.environ['GLITE_WMS_LOCATION']
+except:
+    try:
+       path=os.environ['GLITE_LOCATION']
+    except:
+        print "Error: Please set the GLITE_WMS_LOCATION environment variable pointing to the userinterface installation path"
+        sys.exit(1)
+
+# append lib/lib64 directories to search path
+
+for app in ["lib","lib64"]:
+        for bpp in ["",os.sep+"python"]:
+                libPath=path+os.sep+app+bpp
+                sys.path.append(libPath)
+
+# ------------------------------------------------------------------
+
 from glite_wmsui_LbWrapper import Status
 import wmsui_api
+
+from socket import getfqdn
 from copy import deepcopy
 import getopt
+
 import simplejson as json
 
 
@@ -64,7 +90,7 @@ class GLiteStatusQuery(object):
         # Loading dictionary with available parameters list
         self.states = wmsui_api.states_names
         self.attrNumber = wmsui_api.STATE_ATTR_MAX
-
+        
         # defining fields of interest
         self.status = self.states.index('Status')
         self.reason = self.states.index('Reason')

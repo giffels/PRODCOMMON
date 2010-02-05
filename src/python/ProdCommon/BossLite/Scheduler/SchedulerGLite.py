@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.20 2010/02/04 11:09:52 spiga Exp $"
-__version__ = "$Revision: 2.20 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.21 2010/02/04 16:08:29 spiga Exp $"
+__version__ = "$Revision: 2.21 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -72,19 +72,19 @@ class SchedulerGLite(SchedulerInterface) :
     """
     
     def __init__( self, **args):
-
+        
         # call super class init method
         super(SchedulerGLite, self).__init__(**args)
-
+        
         # some initializations
         self.warnings = []
-
+        
         # typical options
         self.vo = args.get( "vo", "cms" )
         self.service = args.get( "service", "" )
         self.config = args.get( "config", "" )
         self.delegationId = args.get( "proxyname", "bossproxy" )
-
+        
         # rename output files with submission number
         self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
         self.renameOutputFiles = int( self.renameOutputFiles )
@@ -104,15 +104,13 @@ class SchedulerGLite(SchedulerInterface) :
                                         '/lib/ProdCommon/BossLite/Scheduler/'
         else :
             # Impossible to locate GLiteQueryStatus.py ...
-            raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')
+            raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')      
         
-        gliteLocation = os.environ.get('GLITE_LOCATION').rsplit('glite', 1)[0]
-        gliteUi = '%s/etc/profile.d/grid-env.sh ' % gliteLocation
-        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH;' + \
-            'export PATH=/usr/bin:/bin; source /etc/profile;' \
-            'source %s' % gliteUi + \
-            ';export PYTHONPATH=${PYTHONPATH}:${GLITE_LOCATION}/lib64; '
-
+        gliteLocation = os.environ.get('GRID_ENV_LOCATION')
+        #self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; ' + \
+        #        'source /etc/profile ; source %s/grid-env.sh' % gliteLocation + ' ; '
+        prefixCommandQuery = ''
+        
         # cache pattern to optimize reg-exp substitution
         self.pathPattern = re.compile('location:([\S]*)$', re.M)
         self.patternCE = re.compile('(?<= - ).*(?=:)', re.M)
@@ -378,8 +376,12 @@ class SchedulerGLite(SchedulerInterface) :
                 obj.runningJob.errors.append(out)
                 
             tmp = re.search(self.pathPattern, out)
-            os.system( 'rm -rf ' + tmp.group(1) )
-                            
+            try :
+                toRemove = tmp.group(1)
+                os.system( 'rm -rf ' + tmp.group(1) )
+            except : 
+                pass
+            
         elif type(obj) == Task :
             
             # the object passed is a Task
@@ -404,8 +406,12 @@ class SchedulerGLite(SchedulerInterface) :
                     job.runningJob.errors.append(out)
                 
                 tmp = re.search(self.pathPattern, out)
-                os.system( 'rm -rf ' + tmp.group(1) )
-
+                try :
+                    toRemove = tmp.group(1)
+                    os.system( 'rm -rf ' + toRemove )
+                except : 
+                    pass
+                
 
     ##########################################################################
 
