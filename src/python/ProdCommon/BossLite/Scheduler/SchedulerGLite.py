@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.23 2010/02/05 14:36:29 spigafi Exp $"
-__version__ = "$Revision: 2.23 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.24 2010/02/10 20:05:06 spigafi Exp $"
+__version__ = "$Revision: 2.24 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -505,8 +505,12 @@ class SchedulerGLite(SchedulerInterface) :
         else :
             raise SchedulerError( 'Error matchResources', outRaw )
         
+        
         # return CE without duplicate
-        return list(set(out))
+        listCE=list(set(out))
+        if len(listCE)==0:
+            self.logging.debug('List match performed with following requirements:\n %s'%str(fakeJdl))  
+        return listCE
     
     
     ##########################################################################
