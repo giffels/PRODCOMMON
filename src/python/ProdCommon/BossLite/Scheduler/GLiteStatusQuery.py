@@ -4,11 +4,10 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.8 2010/02/02 15:36:17 spigafi Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.9 2010/02/05 14:32:10 spigafi Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import sys
-import os.path
 import os
 
 # ------------------------------------------------------------------
@@ -20,7 +19,7 @@ except:
     try:
        path=os.environ['GLITE_LOCATION']
     except:
-        print "Error: Please set the GLITE_WMS_LOCATION environment variable pointing to the userinterface installation path"
+        print "\nPlease set the GLITE_WMS_LOCATION environment variable pointing to the User Interface installation path.\n"
         sys.exit(1)
 
 # append lib/lib64 directories to search path
@@ -32,14 +31,39 @@ for app in ["lib","lib64"]:
 
 # ------------------------------------------------------------------
 
-from glite_wmsui_LbWrapper import Status
-import wmsui_api
+try :
+    # 'glite_wmsui_LbWrapper' exists on both gLite 3.1 and gLite 3.2 
+    from glite_wmsui_LbWrapper import Status
+    # 'wmsui_api' exists only on gLite 3.2 !!!
+    import wmsui_api
+except :
+    print "\nProblem loading python LB API."
+    print "Your default python is %s \n" % sys.version
+    sys.exit(1)
 
 from socket import getfqdn
 from copy import deepcopy
 import getopt
 
-import simplejson as json
+
+##########################################################################
+
+class myJSONEncoder(object):
+    """
+    easy class able to transform a string representation of a python dictionary 
+    in a valid JSON output recognizable by simplejson
+    """
+    
+    def dumps(self, myString):
+        """
+        the same interface as simplejson ...
+        """
+        
+        tmp = str(myString)
+        tmp = tmp.replace('\'','"')
+        tmp = tmp.replace('None','null')
+        
+        return tmp
 
 
 ##########################################################################
@@ -312,11 +336,9 @@ def usage():
     print out help
     """
     usageStr = ''' 
-    python GLiteStatusQuery.py [-p <parentId> -j <jobId1,jobId2,...,jobIdN>][-f <infile>] [-o <outfile>] [-h]
+    python GLiteStatusQuery.py [-p <parentId> -j <jobId1,jobId2,...,jobIdN>][-h]
     Options:
     -h|--help        print this summary
-    -f|--file=       input file in json format
-    -o|--output=     redirect output to file location 
     -p|--parentId=   id for the collection 
     -j|--jobId=      list of job ids (comma separated)
     '''
@@ -328,15 +350,19 @@ def main():
     __main__
     """
 
+    # load ad-hoc JSON encoder if simplejson is not present
+    try : 
+        import simplejson as json
+    except:
+        json = myJSONEncoder()  
+    
     # parse options
     try:
         opts, args = getopt.getopt(sys.argv[1:], 
-                                   "", ["help", "file=", "output=", 
-                                        "parentId=", "jobId="])
+                                   "", ["help", "parentId=", "jobId="])
     except getopt.GetoptError, err:
-        print json.dumps({'statusQuery': [], 
-                           'errors' : [ str(err)+" "+usage() ]})
-        sys.exit(2)
+        print usage()
+        sys.exit(1)
 
     inputFile = None 
     outputFile = None
@@ -347,37 +373,18 @@ def main():
         
         if o in ("-h", "--help"):
             print usage()
-            # print json.dumps( {'statusQuery': [], 'errors' : [ usage() ]} )
-            sys.exit()
-        elif o in ("-f", "--file"):
-            inputFile = a
-        elif o in ("-o", "--output"):
-            outputFile = a
+            sys.exit(1)
         elif o in ("-p", "--parentId"):
             parent = a.split(',')
         elif o in ("-j", "--jobId"):
             jobList = a.split(',')
         else:
-            print json.dumps({'statusQuery': [], 
-                               'errors' : [ "Unknown parameter."]})
-            sys.exit(2)
-
-    if inputFile:
-        try:
-            fp = open(inputFile, "r")
-            inputDict = json.load(fp)
-            parent = inputDict['parentId']
-            jobList = inputDict['jobIdList']
-            fp.close()
-        except Exception, ex:
-            print json.dumps({'statusQuery': [],
-                              'errors' : [ "inputFile in unexpected format." ]})
-            sys.exit(2)
-        
-    elif len(jobList)==0:
-        print json.dumps({'statusQuery': [],
-                          'errors' : [ "At least one jobId is needed." ]})
-        sys.exit(2)
+            print '\ Unknown parameter.\n'
+            sys.exit(1)
+    
+    if len(jobList)==0 :
+        print '\nAt least one jobId is needed.\n'
+        sys.exit(1)
 
     # LB data structures 
     template = { 'id' : None,
@@ -416,23 +423,13 @@ def main():
         lbInstance.checkJobsBulk( jobIds, parent, errors )     
     else :
         lbInstance.checkJobs( jobIds, errors )
-    
-    # printout JSON formatted list of status records with errors
-    outDict = {
-        'statusQuery': jobIds, 
-        'errors' : errors,   
-    }
-
-    if outputFile:
-        try:
-            fp = open(outputFile, 'w')
-            json.dump(outDict, fp)
-            fp.close()
-        except Exception, ex:
-            print json.dumps( {'statusQuery': [], 'errors' : [ str(ex) ]} )
-            sys.exit(2)
-    else:
-        print json.dumps(outDict)
+       
+    if errors :
+        print '\nError during API calls.\n'
+        print str(errors)
+        sys.exit(1)
+    else :
+        print json.dumps(jobIds)
 
 
 ########## END MAIN ##########
