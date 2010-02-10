@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.22 2010/02/05 14:32:10 spigafi Exp $"
-__version__ = "$Revision: 2.22 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.23 2010/02/05 14:36:29 spigafi Exp $"
+__version__ = "$Revision: 2.23 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -567,21 +567,21 @@ class SchedulerGLite(SchedulerInterface) :
                     
                     outJson, ret = self.ExecuteCommand( 
                         self.prefixCommandQuery + self.proxyString + command )
-                                        
-                    # parse JSON output
-                    try:
-                        out = json.loads(outJson)
-                        # DEBUG # print json.dumps( out,  indent=4 )
-                    except ValueError:
-                        raise SchedulerError('error parsing JSON', outJson )
-                        
+                    
                     # Check error
-                    if ret != 0 or out['errors']:
+                    if ret != 0 :
                         # obj.errors doesn't exist for Task object...
-                        obj.warnings.append( "Errors: " + str(out['errors']) )
+                        obj.warnings.append( "Errors: " + str(outJson.strip()) )
                         raise SchedulerError(
                             'error executing GLiteStatusQuery', \
-                                                 str(out['errors']))
+                                                 str(outJson.strip()))
+                    else :
+                        # parse JSON output
+                        try:
+                            out = json.loads(outJson)
+                            # DEBUG # print json.dumps( out,  indent=4 )
+                        except ValueError:
+                            raise SchedulerError('error parsing JSON', outJson )
                   
             elif objType == 'parent' :
                 
@@ -613,30 +613,28 @@ class SchedulerGLite(SchedulerInterface) :
                     outJson, ret = self.ExecuteCommand( 
                         self.prefixCommandQuery + self.proxyString + command )
                     
-                    # parse JSON output
-                    try:
-                        out = json.loads(outJson)
-                        # DEBUG # print json.dumps( out,  indent=4 )
-                    except ValueError:
-                        raise SchedulerError('error parsing JSON', outJson )
-                        
                     # Check error
-                    if ret != 0 or out['errors']:
+                    if ret != 0 :
                         # obj.errors doesn't exist for Task object...
-                        obj.warnings.append( "Errors: " + str(out['errors']) )
+                        obj.warnings.append( "Errors: " + str(outJson.strip()) )
                         raise SchedulerError(
                             'error executing GLiteStatusQuery', \
-                                                 str(out['errors']))
+                                                 str(outJson.strip()))
+                    else :
+                        # parse JSON output
+                        try:
+                            out = json.loads(outJson)                     
+                            # DEBUG # print json.dumps( out,  indent=4 )
+                        except ValueError:
+                            raise SchedulerError('error parsing JSON', outJson )
             
             if jobIds :
-                # Refill objects...
-                newStates = out['statusQuery']
-                
+                # Refill objects...  
                 for jobId in jobIds.values() : 
                     
                     jobIdToUpdate = obj.jobs[jobId].runningJob['schedulerId']
                     
-                    updatedJobInfo = newStates[jobIdToUpdate]
+                    updatedJobInfo = out[jobIdToUpdate]
                     
                     obj.jobs[jobId].runningJob['status'] = \
                                 updatedJobInfo['status']
