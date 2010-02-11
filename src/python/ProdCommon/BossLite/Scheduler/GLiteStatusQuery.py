@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 """
 _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.9 2010/02/05 14:32:10 spigafi Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.10 2010/02/10 20:04:08 spigafi Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import sys
 import os
