@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.24 2010/02/10 20:05:06 spigafi Exp $"
-__version__ = "$Revision: 2.24 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.25 2010/02/10 21:40:50 spiga Exp $"
+__version__ = "$Revision: 2.25 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -105,10 +105,6 @@ class SchedulerGLite(SchedulerInterface) :
         else :
             # Impossible to locate GLiteQueryStatus.py ...
             raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')      
-        
-        gliteLocation = os.environ.get('GRID_ENV_LOCATION')
-        self.prefixCommandQuery = 'unset LD_LIBRARY_PATH; ' + \
-        	'source /etc/profile ; source %s/grid-env.sh' % gliteLocation + ' ; '
         
         # cache pattern to optimize reg-exp substitution
         self.pathPattern = re.compile('location:([\S]*)$', re.M)
@@ -566,12 +562,11 @@ class SchedulerGLite(SchedulerInterface) :
                 if jobIds :
                     formattedJobIds = ','.join(jobIds)
                                    
-                    command = 'python ' + self.commandQueryPath \
+                    command = self.commandQueryPath \
                         + 'GLiteStatusQuery.py --jobId=%s' % formattedJobIds
                     
-                    outJson, ret = self.ExecuteCommand( 
-                        self.prefixCommandQuery + self.proxyString + command )
-                    
+                    outJson, ret = self.ExecuteCommand(self.proxyString + command)
+                                           
                     # Check error
                     if ret != 0 :
                         # obj.errors doesn't exist for Task object...
@@ -610,13 +605,12 @@ class SchedulerGLite(SchedulerInterface) :
                     formattedParentIds = ','.join(parentIds)
                     formattedJobIds = ','.join(jobIds)
                     
-                    command = 'python ' + self.commandQueryPath \
+                    command = self.commandQueryPath \
                         + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
                             % (formattedParentIds, formattedJobIds)
                     
-                    outJson, ret = self.ExecuteCommand( 
-                        self.prefixCommandQuery + self.proxyString + command )
-                    
+                    outJson, ret = self.ExecuteCommand(self.proxyString + command)
+                                           
                     # Check error
                     if ret != 0 :
                         # obj.errors doesn't exist for Task object...
