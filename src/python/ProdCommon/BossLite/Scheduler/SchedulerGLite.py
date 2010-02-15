@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.25 2010/02/10 21:40:50 spiga Exp $"
-__version__ = "$Revision: 2.25 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.26 2010/02/11 15:05:00 spigafi Exp $"
+__version__ = "$Revision: 2.26 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -239,7 +239,7 @@ class SchedulerGLite(SchedulerInterface) :
             
             # the object passed is a valid Job, let's go on ...
                 
-            command = "glite-wms-job-output --json --noint " \
+            command = "glite-wms-job-output --json --noint --dir " + outdir + " " \
                                 + obj.runningJob['schedulerId']
             
             out, ret = self.ExecuteCommand( self.proxyString + command ) 
@@ -268,10 +268,10 @@ class SchedulerGLite(SchedulerInterface) :
             else :
                 # Output successfully retrieved without problems
                 
-                # let's copy in the right place...
+                # let's move outputs in the right place...
                 tmp = re.search(self.pathPattern, out)
                 
-                command = "cp -R " + tmp.group(1) + "/* " + outdir + "/"
+                command = "mv " + tmp.group(1) + "/* " + outdir + "/"
                 os.system( command )
                 
                 command = "rm -rf " + tmp.group(1)
@@ -294,8 +294,8 @@ class SchedulerGLite(SchedulerInterface) :
                 if not self.valid( selJob.runningJob ):
                     continue
                 
-                command = "glite-wms-job-output --json --noint " + \
-                          selJob.runningJob['schedulerId']
+                command = "glite-wms-job-output --json --noint --dir " + outdir + " " \
+                          + selJob.runningJob['schedulerId']
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
 
@@ -324,10 +324,10 @@ class SchedulerGLite(SchedulerInterface) :
                 else :
                     # Output successfully retrieved without problems
                     
-                    # let's copy in the right place...
+                    # let's move outputs in the right place...
                     tmp = re.search(self.pathPattern, out)
                     
-                    command = "cp -R " + tmp.group(1) + "/* " + outdir + "/"
+                    command = "mv " + tmp.group(1) + "/* " + outdir + "/"
                     os.system( command )
                     
                     command = "rm -rf " + tmp.group(1)
