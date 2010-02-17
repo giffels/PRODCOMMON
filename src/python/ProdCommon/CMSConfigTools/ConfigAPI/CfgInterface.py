@@ -14,6 +14,7 @@ from ProdCommon.CMSConfigTools.ConfigAPI.OutputModule import OutputModule
 from ProdCommon.CMSConfigTools.ConfigAPI.MaxEvents import MaxEvents
 import ProdCommon.CMSConfigTools.ConfigAPI.Utilities as Utilities
 import FWCore.ParameterSet.Types as CfgTypes
+import FWCore.ParameterSet.Modules as CfgModules
 
 class CfgInterface:
     """
@@ -42,8 +43,6 @@ class CfgInterface:
             self.data.maxEvents = CfgTypes.untracked(
                 CfgTypes.PSet()
                 )
-
-
         self.maxEvents = MaxEvents(self.data.maxEvents)
 
 
@@ -72,7 +71,7 @@ class CfgInterface:
             self.data, "GlobalTag", None)
         if globalPSet == None:
             return
-        globalTag = getattr( globalPSet, "globaltag", None)
+        globalTag = getattr(globalPSet, "globaltag", None)
         if globalTag == None:
             globalPSet.globalTag = CfgTypes.string(condTag)
         else:
@@ -87,7 +86,7 @@ class CfgInterface:
 
         """
         globalPSet = getattr(
-            self.data,"GlobalTag",  None)
+            self.data, "GlobalTag", None)
         if globalPSet == None:
             return None
         return getattr(
@@ -186,7 +185,7 @@ class CfgInterface:
             if oldfileList == None:
                 print "No existing file list"
                 continue
-            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+            setattr(secSource, 'fileNames', CfgTypes.untracked(
                 CfgTypes.vstring()))
 
             for fileName in fileList:
@@ -220,7 +219,7 @@ class CfgInterface:
             if oldfileList == None:
                 print "No existing file list in secsource %s" % sourceName
                 continue
-            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+            setattr(secSource, 'fileNames', CfgTypes.untracked(
                 CfgTypes.vstring()))
 
             for fileName in fileList:
@@ -254,7 +253,7 @@ class CfgInterface:
             if oldfileList == None:
                 print "No existing file list in secsource %s" % sourceName
                 continue
-            setattr(secSource, 'fileNames',  CfgTypes.untracked(
+            setattr(secSource, 'fileNames', CfgTypes.untracked(
                 CfgTypes.vstring()))
 
             for fileName in fileList:
@@ -332,7 +331,7 @@ class CfgInterface:
         if srcSeedVec != None:
             numReq = len(srcSeedVec)
             seedsReq = seedList[0:numReq]
-            seedList = seedList[numReq+1:]
+            seedList = seedList[numReq + 1:]
             svc.sourceSeedVector = CfgTypes.untracked(
                 CfgTypes.vuint32(seedsReq))
 
@@ -376,6 +375,27 @@ class CfgInterface:
 
         """
         return Utilities.seedCount(self.data)
+
+
+    def setTFileAdaptorConfig(self, config):
+        """
+        Give the TFileAdaptor the provided config options
+        """
+        adaptor = self.data.services.get('AdaptorConfig')
+        if adaptor is None:
+            self.data.add_(CfgModules.Service('AdaptorConfig'))
+
+        for option in config:
+            value = str(config[option])
+            # so far only support boolean & string options
+            if option in ('enable', 'stats'):
+                thisType = CfgTypes.bool._valueFromString
+            else:
+                thisType = CfgTypes.string
+
+            setattr(self.data.services['AdaptorConfig'], option,
+                    CfgTypes.untracked(thisType(value)))
+
 
     def validateForProduction(self):
         """

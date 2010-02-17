@@ -43,7 +43,7 @@ class InputSource:
 
     def setSkipEvents(self, skipEv):
         "set SkipEvents value"""
-        self.data.skipEvents = CfgTypes.untracked( CfgTypes.uint32(int(skipEv)))
+        self.data.skipEvents = CfgTypes.untracked(CfgTypes.uint32(int(skipEv)))
 
     def firstRun(self):
         """get firstRun value of None if not set"""
@@ -59,7 +59,7 @@ class InputSource:
         set numberEventsInRun parameter
         """
         self.data.numberEventsInRun = CfgTypes.untracked(
-            CfgTypes.uint32( numEvents))
+            CfgTypes.uint32(numEvents))
 
     def setFirstLumi(self, lumiId):
         """
@@ -157,6 +157,17 @@ class InputSource:
         return
 
 
+    def cacheSize(self):
+        """return value for source.cacheSize"""
+        cfgType = getattr(self.data, "cacheSize", _CfgNoneType())
+        return cfgType.value()
+
+
+    def setCacheSize(self, size):
+        """Set source cacheSize"""
+        self.data.cacheSize = CfgTypes.untracked(CfgTypes.uint32(int(size)))
+
+
     def sourceParameters(self):
         """
         _sourceParamaters_
@@ -172,4 +183,5 @@ class InputSource:
         result['overrideCatalog'] = self.overrideCatalog()
         result['firstLuminosityBlock'] = self.firstLumi()
         result['firstEvent'] = self.firstEvent()
+        result['cacheSize'] = self.cacheSize()
         return result

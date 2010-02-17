@@ -103,6 +103,7 @@ class CMSSWConfig:
         self.inputOverrideCatalog = None
         self.requiredSeeds = 0
         self.seeds = []
+        self.tFileAdaptorConfig = {}
 
         #  //
         # // Output controls
@@ -118,7 +119,7 @@ class CMSSWConfig:
         #//
         self.pileupFiles = []
         self.beamHaloPlusFiles = []
-        self.beamHaloMinusFiles  = []
+        self.beamHaloMinusFiles = []
         self.cosmicPileupFiles = []
         self.dataMixerFiles = []
 
@@ -258,11 +259,11 @@ class CMSSWConfig:
         seedNode = IMProvNode("Seeds")
         seedNode.addNode(
             IMProvNode("RequiredSeeds",
-                       None, Value=str(self.requiredSeeds))
+                       None, Value = str(self.requiredSeeds))
             )
         if len(self.seeds) > 0:
             [ seedNode.addNode(IMProvNode(
-                "RandomSeed", None, Value=str(x))) for x in self.seeds ]
+                "RandomSeed", None, Value = str(x))) for x in self.seeds ]
 
         result.addNode(seedNode)
 
@@ -358,13 +359,13 @@ class CMSSWConfig:
             zipData = zlib.compress(self.rawCfg)
             data = base64.encodestring(zipData)
 
-        configNode = IMProvNode("ConfigData", data, Encoding="base64")
+        configNode = IMProvNode("ConfigData", data, Encoding = "base64")
         result.addNode(configNode)
 
         if self.originalCfg != None:
             origData = base64.encodestring(self.originalCfg)
             origCfgNode = IMProvNode("OriginalCfg",
-                                     origData, Encoding="base64")
+                                     origData, Encoding = "base64")
             result.addNode(origCfgNode)
 
         #  //
@@ -599,6 +600,10 @@ class CMSSWConfig:
         if firstEvent != None:
             cfg.inputSource.setFirstEvent(firstEvent)
 
+        cacheSize = self.sourceParams.get("cacheSize", None)
+        if cacheSize != None:
+            cfg.inputSource.setCacheSize(cacheSize)
+
         if self.inputOverrideCatalog not in (None, ''):
             cfg.inputSource.setOverrideCatalog(self.inputOverrideCatalog, 'override')
 
@@ -641,7 +646,7 @@ class CMSSWConfig:
                 modRef.setFileName(outModData["fileName"])
             if outModData["logicalFileName"] != None:
                 modRef.setLogicalFileName(outModData["logicalFileName"])
-            if outModData["catalog"] !=  None:
+            if outModData["catalog"] != None:
                 modRef.setCatalog(outModData["catalog"])
 
 
@@ -664,7 +669,11 @@ class CMSSWConfig:
                                         'DataMixingModule',
                                         *self.dataMixerFiles)
 
-
+        #  //
+        # // TFileAdaptor
+        #//
+        if self.tFileAdaptorConfig:
+            cfg.setTFileAdaptorConfig(self.tFileAdaptorConfig)
 
         return cfg.data
 
@@ -732,6 +741,7 @@ class CMSSWConfig:
         # // DataMix Pileup Files
         #//
         self.dataMixerFiles = cfgInterface.dataMixPileupFileList()
+
 
         return cfgInterface
 
