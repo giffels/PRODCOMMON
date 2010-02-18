@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.10 2010/02/10 20:04:08 spigafi Exp $"
-__version__ = "$Revision: 1.10 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.11 2010/02/11 15:02:27 spigafi Exp $"
+__version__ = "$Revision: 1.11 $"
 
 import sys
 import os
@@ -387,11 +387,8 @@ def main():
         sys.exit(1)
 
     # LB data structures 
-    template = { 'id' : None,
-                 'jobId' : None,
-                 'taskId' : None,
-                 'schedulerId' : None,
-                 'schedulerParentId' : None,
+    template = { 'schedulerId' : None,
+                 'schedulerParentId' : None, # probably useless...
                  'statusScheduler' : None,
                  'status' : None,
                  'statusReason' : None,
@@ -399,7 +396,8 @@ def main():
                  'lbTimestamp' : None,
                  'scheduledAtSite' : None,
                  'startTime' : None,
-                 'stopTime' : None
+                 'stopTime' : None,
+                 'service' : None
                }
 
     # jobId for re-mapping
