@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.26 2010/02/11 15:05:00 spigafi Exp $"
-__version__ = "$Revision: 2.26 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.27 2010/02/15 15:14:09 spigafi Exp $"
+__version__ = "$Revision: 2.27 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -634,24 +634,12 @@ class SchedulerGLite(SchedulerInterface) :
                     
                     updatedJobInfo = out[jobIdToUpdate]
                     
-                    obj.jobs[jobId].runningJob['status'] = \
-                                updatedJobInfo['status']
-                    obj.jobs[jobId].runningJob['scheduledAtSite'] = \
-                                updatedJobInfo['scheduledAtSite']
-                    obj.jobs[jobId].runningJob['startTime'] = \
-                                updatedJobInfo['startTime']
-                    obj.jobs[jobId].runningJob['service'] = \
-                                updatedJobInfo['service']
-                    obj.jobs[jobId].runningJob['statusScheduler'] = \
-                                updatedJobInfo['statusScheduler']
-                    obj.jobs[jobId].runningJob['destination'] = \
-                                updatedJobInfo['destination']
-                    obj.jobs[jobId].runningJob['statusReason'] = \
-                                updatedJobInfo['statusReason']
-                    obj.jobs[jobId].runningJob['lbTimestamp'] = \
-                                updatedJobInfo['lbTimestamp']
-                    obj.jobs[jobId].runningJob['stopTime'] = \
-                                updatedJobInfo['stopTime']
+                    for currentKey in updatedJobInfo.keys() :
+                        if updatedJobInfo[currentKey] is None :
+                            pass
+                        else :
+                            obj.jobs[jobId].runningJob[currentKey] = \
+                                updatedJobInfo[currentKey]
                 
         # unknown object type
         else:
