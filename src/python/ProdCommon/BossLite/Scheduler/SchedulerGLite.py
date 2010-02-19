@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.27 2010/02/15 15:14:09 spigafi Exp $"
-__version__ = "$Revision: 2.27 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.28 2010/02/18 09:53:33 spigafi Exp $"
+__version__ = "$Revision: 2.28 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -62,7 +62,62 @@ class BossliteJsonDecoder(JSONDecoder):
         parsedJson = self.decode(toParse)
         
         return parsedJson  
+
+##########################################################################
     
+def hackTheEnv(prependCommand = ''):
+    """
+    HaCk ThE eNv  *IMPORTANT NOTES* 
+    - this hack is necessary if the SYSTEM python under  '/usr/bin') and 
+        the EXTERNAL python have the same version
+    - the hack is necessary only for CLI which are python(2) script
+    - the hack reverts PATH & LD_LYBRARY_PATH if an external PYTHON is present
+    - during the hack, replicate entries will be dropped
+    - the hack MUST be placed between the 'proxyString'and the CLI command
+    """
+    
+    newEnv = prependCommand + ' '
+    
+    try :
+        pythonCategory = os.environ['PYTHON_CATEGORY']
+        
+        # revert PATH & LD_LYBRARY_PATH
+        pyVersionToRemove = os.environ['PYTHON_VERSION']
+        
+        originalPath = os.environ['PATH']
+        originalLdLibPath = os.environ['LD_LIBRARY_PATH']
+        
+        newPath = ''
+        newLdLibPath = ''
+        
+        # build new PATH
+        for x in list(set(originalPath.split(':'))) :
+            if x.find(pyVersionToRemove) == -1 :
+                newPath += x + ':'
+        newEnv += 'PATH=' + newPath[:-1] + ' '       
+         
+        # build new LD_LIBRARY_PATH
+        for x in list(set(originalLdLibPath.split(':'))) :
+            if x.find(pyVersionToRemove) == -1 :
+                newLdLibPath += x + ':'   
+        newEnv += 'LD_LIBRARY_PATH=' + newLdLibPath[:-1] + ' '
+        
+        # build new PYTHONPATH - remove comments if necessary...
+        """
+        originalPythonPath = os.environ['PYTHONPATH']
+        newPythonPath = ''
+        for x in list(set(originalPythonPath.split(':'))) :
+            if x.find(pyVersionToRemove) == -1 :
+                newPythonPath += x + ':'   
+        newEnv += 'PYTHONPATH=' + newPythonPath[:-1] + ' '
+        """
+        
+    except :
+        # revert not necessary or something went wrong during the hacking
+        pass
+    
+    return newEnv
+
 ##########################################################################
 
 class SchedulerGLite(SchedulerInterface) :
@@ -89,11 +144,13 @@ class SchedulerGLite(SchedulerInterface) :
         self.renameOutputFiles = args.get( "renameOutputFiles", 0 )
         self.renameOutputFiles = int( self.renameOutputFiles )
         
-        # x509 string for CLI commands
+        # x509 string & hackEnv for CLI commands
         if self.cert != '':
             self.proxyString = "env X509_USER_PROXY=" + self.cert + ' '
+            self.hackEnv = hackTheEnv()
         else :
             self.proxyString = ''
+            self.hackEnv = hackTheEnv('env')
             
         # this section requires an improvement....    
         if os.environ.get('CRABDIR') :
@@ -519,7 +576,9 @@ class SchedulerGLite(SchedulerInterface) :
         command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
                   " > " + outfile
         
-        return self.ExecuteCommand( self.proxyString + command )[0]
+        out, ret = self.ExecuteCommand( self.proxyString + self.hackEnv + command )
+            
+        return out
 
 
     ##########################################################################
@@ -565,7 +624,7 @@ class SchedulerGLite(SchedulerInterface) :
                     command = self.commandQueryPath \
                         + 'GLiteStatusQuery.py --jobId=%s' % formattedJobIds
                     
-                    outJson, ret = self.ExecuteCommand(self.proxyString + command)
+                    outJson, ret = self.ExecuteCommand(self.proxyString + self.hackEnv + command)
                                            
                     # Check error
                     if ret != 0 :
@@ -609,7 +668,7 @@ class SchedulerGLite(SchedulerInterface) :
                         + 'GLiteStatusQuery.py --parentId=%s --jobId=%s' \
                             % (formattedParentIds, formattedJobIds)
                     
-                    outJson, ret = self.ExecuteCommand(self.proxyString + command)
+                    outJson, ret = self.ExecuteCommand(self.proxyString + self.hackEnv + command)
                                            
                     # Check error
                     if ret != 0 :
