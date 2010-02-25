@@ -17,7 +17,7 @@ build:
 	python setup.py build --build-lib=$(LIB_DIR)
 	/bin/mkdir -p $(SHARE_DIR)	
 	/bin/cp $(BOSSLite_SRC)/src/python/ProdCommon/BossLite/DbObjects/*.sql  $(SHARE_DIR)
-
+	/bin/chmod +x $(LIB_DIR)/ProdCommon/BossLite/Scheduler/GLiteStatusQuery.py
 setup:
 	/bin/mkdir -p $(LIB_DIR)
 

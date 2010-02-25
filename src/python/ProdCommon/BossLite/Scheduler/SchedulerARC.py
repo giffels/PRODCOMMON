@@ -108,7 +108,7 @@ Arc2StatusReason = {
 
 
 def count_nonempty(list):
-    """Count number of non-empty items"""
+    """Count number of non-empty/non-false items"""
     n = 0
     for i in list:
         if i: n += 1
