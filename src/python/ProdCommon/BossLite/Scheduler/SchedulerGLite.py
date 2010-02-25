@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.29 2010/02/19 11:24:42 spigafi Exp $"
-__version__ = "$Revision: 2.29 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.30 2010/02/22 16:00:03 spiga Exp $"
+__version__ = "$Revision: 2.30 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -164,7 +164,7 @@ class SchedulerGLite(SchedulerInterface) :
             raise SchedulerError('Impossible to locate GLiteQueryStatus.py ')      
         
         # cache pattern to optimize reg-exp substitution
-        self.pathPattern = re.compile('location:([\S]*)$', re.M)
+        self.pathPattern = re.compile('location:([\S]+)$', re.M)
         self.patternCE = re.compile('(?<= - ).*(?=:)', re.M)
         
         # init BossliteJsonDecoder specialized class
@@ -326,13 +326,15 @@ class SchedulerGLite(SchedulerInterface) :
                 # Output successfully retrieved without problems
                 
                 # let's move outputs in the right place...
+                # required ONLY for local file stage-out
                 tmp = re.search(self.pathPattern, out)
                 
-                command = "mv " + tmp.group(1) + "/* " + outdir + "/"
-                os.system( command )
-                
-                command = "rm -rf " + tmp.group(1)
-                os.system( command )
+                if tmp :
+                    command = "mv " + tmp.group(1) + "/* " + outdir + "/"
+                    os.system( command )
+                    
+                    command = "rm -rf " + tmp.group(1)
+                    os.system( command )
                 # 
                 
                 self.logging.debug("Output of %s successfully retrieved" 
@@ -382,13 +384,15 @@ class SchedulerGLite(SchedulerInterface) :
                     # Output successfully retrieved without problems
                     
                     # let's move outputs in the right place...
+                    # required ONLY for local file stage-out
                     tmp = re.search(self.pathPattern, out)
                     
-                    command = "mv " + tmp.group(1) + "/* " + outdir + "/"
-                    os.system( command )
-                    
-                    command = "rm -rf " + tmp.group(1)
-                    os.system( command )
+                    if tmp :
+                        command = "mv " + tmp.group(1) + "/* " + outdir + "/"
+                        os.system( command )
+                        
+                        command = "rm -rf " + tmp.group(1)
+                        os.system( command )
                     # 
                     
                     self.logging.debug("Output of %s successfully retrieved" 
@@ -418,7 +422,6 @@ class SchedulerGLite(SchedulerInterface) :
             
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
-           # if ret == 1 and \
             if ( out.find("No output files to be retrieved") != -1 or \
                   out.find("Output files already retrieved") != -1 ) :
                 # now this is the expected exit condition... 
@@ -426,13 +429,7 @@ class SchedulerGLite(SchedulerInterface) :
                                    % str(obj.runningJob['schedulerId']))
             else : 
                 obj.runningJob.errors.append(out)
-                
-            tmp = re.search(self.pathPattern, out)
-            try :
-                toRemove = tmp.group(1)
-                os.system( 'rm -rf ' + tmp.group(1) )
-            except : 
-                pass
+            
             
         elif type(obj) == Task :
             
@@ -448,7 +445,6 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
                 
-               # if ret == 1 and \
                 if   ( out.find("No output files to be retrieved") != -1 or \
                       out.find("Output files already retrieved") != -1 ) :
                     # now this is the expected exit condition... 
@@ -457,12 +453,6 @@ class SchedulerGLite(SchedulerInterface) :
                 else : 
                     job.runningJob.errors.append(out)
                 
-                tmp = re.search(self.pathPattern, out)
-                try :
-                    toRemove = tmp.group(1)
-                    os.system( 'rm -rf ' + toRemove )
-                except : 
-                    pass
                 
 
     ##########################################################################
