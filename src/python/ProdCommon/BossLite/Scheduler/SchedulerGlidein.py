@@ -3,8 +3,8 @@
 _SchedulerGlidein_
 """
 
-__revision__ = "$Id: SchedulerGlidein.py,v 1.14.2.4 2009/11/19 20:35:26 ewv Exp $"
-__version__ = "$Revision: 1.14.2.4 $"
+__revision__ = "$Id: SchedulerGlidein.py,v 1.15 2010/01/13 15:57:53 ewv Exp $"
+__version__ = "$Revision: 1.15 $"
 
 from ProdCommon.BossLite.Scheduler.SchedulerCondorCommon import SchedulerCondorCommon
 import os
@@ -26,9 +26,9 @@ class SchedulerGlidein(SchedulerCondorCommon) :
 
         jdl  = 'Universe  = vanilla\n'
 
-        x509 = self.x509Proxy()
-        if x509:
-            jdl += 'x509userproxy = %s\n' % x509
+        #x509 = self.x509Proxy()
+        #if x509:
+            #jdl += 'x509userproxy = $ENV(X509_USER_PROXY) \n'
 
         # Glidein parameters
         jdl += 'Environment = ' \
@@ -40,6 +40,7 @@ class SchedulerGlidein(SchedulerCondorCommon) :
                 'isUndefined(Glidein_MonitorID),0,Glidein_MonitorID) ]) \n'
         jdl += '+JOB_Site = "$$(GLIDEIN_Site:Unknown)" \n'
         jdl += '+JOB_VM = "$$(Name:Unknown)" \n'
+        jdl += 'x509userproxy = $ENV(X509_USER_PROXY) \n'
         #jdl += '+JOB_Machine_KFlops = \"\$\$(KFlops:Unknown)\" \n");
         #jdl += '+JOB_Machine_Mips = \"\$\$(Mips:Unknown)\" \n");
         jdl += '+JOB_GLIDEIN_Schedd = "$$(GLIDEIN_Schedd:Unknown)" \n'

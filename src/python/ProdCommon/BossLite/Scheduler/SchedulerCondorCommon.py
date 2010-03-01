@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.55.2.13 2009/12/15 14:39:07 ewv Exp $"
-__version__ = "$Revision: 1.55.2.13 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.56 2009/12/15 14:51:36 ewv Exp $"
+__version__ = "$Revision: 1.56 $"
 
 import os
 import commands
@@ -145,7 +145,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 diffTime = str(os.path.getmtime(obj['user_proxy']))
                 proxycmd = commonEnv + proxyEnv
-                proxycmd += "%s %s %s" % (self.glexec, self.renewProxy, diffTime)
+#                proxycmd += "%s %s %s" % (self.glexec, self.renewProxy, diffTime)
+                proxycmd += "%s %s %s %s" % (self.renewProxy, userProxy, seDir, diffTime)
                 (status, output) = commands.getstatusoutput(proxycmd)
                 self.logging.debug("Result of %s\n%s\n%s" %
                                     (proxycmd,status,output))
