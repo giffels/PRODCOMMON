@@ -363,7 +363,6 @@ class ProtocolUberFtp(Protocol):
 
         filesres = []
         for filet in outputs.split('\n'):
-            import os
             if filet != "." and filet != "..":
                 filesres.append( os.path.join(source.getFullPath(), filet) )
 
