@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.30 2010/02/22 16:00:03 spiga Exp $"
-__version__ = "$Revision: 2.30 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.31 2010/02/25 07:33:22 spigafi Exp $"
+__version__ = "$Revision: 2.31 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -287,6 +287,11 @@ class SchedulerGLite(SchedulerInterface) :
         """
         retrieve job output
         """
+        
+        # sanity check: if outdir is '' or None perform getoutput operation in
+        # the current working directory
+        if outdir == '' or outdir is None :
+            outdir = '.'
         
         if type(obj) == Job :
             
