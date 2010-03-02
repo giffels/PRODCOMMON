@@ -81,7 +81,7 @@ class ProtocolUberFtp(Protocol):
 
     def copy(self, source, dest, proxy = None, opt = ""):
         """
-        Uberftp + globus-url-copy --> lcg-cp
+        Uberftp --> lcg-cp
         """
         
         precmd = ''  
@@ -89,21 +89,17 @@ class ProtocolUberFtp(Protocol):
             precmd += "env X509_USER_PROXY=%s " % str(proxy)
             self.checkUserProxy(proxy)
  
-        if type(source) is not list:
-            #fix uberftp local file references
-            srcPath, destPath =  (source.getLynk(), dest.getLynk() )
-            srcPath = srcPath.replace('file://', 'file:')
-            destPath = destPath.replace('file://', 'file:')
+        #fix uberftp local file references
+        srcPath, destPath =  (source.getLynk(), dest.getLynk() )
+        srcPath = srcPath.replace('file://', 'file:')
+        destPath = destPath.replace('file://', 'file:')
             
-            if (self.slcVersion == 4):
-                cmd = precmd + " uberftp %s %s " % ( srcPath, destPath )
-            elif (self.slcVersion == 5):
-                cmd = precmd + " uberftp %s %s " % ( srcPath, os.path.dirname(destPath) )
+        if (self.slcVersion == 4):
+            cmd = precmd + " uberftp %s %s " % ( srcPath, destPath )
+        elif (self.slcVersion == 5):
+            cmd = precmd + " uberftp %s %s " % ( srcPath, os.path.dirname(destPath) )
             
             exitcode, outputs = self.executeCommand(cmd)
-        else:
-            # list tranfer with globus-url-copy
-            exitcode, outputs = self.copyList(source, dest, proxy, opt)
         
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)

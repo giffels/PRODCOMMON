@@ -155,6 +155,18 @@ class ProtocolGlobusUtils(Protocol):
         import tempfile
         import os
 
+        # get the timeout field in format suitable for executeCommand
+        # it seems that globus-url-copy has not a parameter to impose it
+        copyTout = 600.0
+        if opt!="":
+            try:
+                #replacement needed to support setLcgTimeout format 
+                opt = str(opt).replace('-t','').replace('--connect-timeout','') 
+                copyTout = float(opt)
+            except:
+                # set default
+                copyTout = 600.0  
+
         # sources list
         sourcesList = []
         if type(source.workon) == StringType or \
@@ -198,7 +210,7 @@ class ProtocolGlobusUtils(Protocol):
             # construct the copy command with the tempfile as the argument
             cmd = setProxy + " globus-url-copy -vb -cd -f " + fname
             # do the copy and log the output
-            exitcode, outputs, errors = self.executeCommand(cmd,stderr=True)
+            exitcode, outputs, errors = self.executeCommand(cmd,stderr=True,timeout=copyTout)
         finally:
             # remove the temp file
             os.unlink( fname )
