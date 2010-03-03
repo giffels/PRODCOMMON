@@ -60,7 +60,6 @@ class SiteLocalConfig:
         self.calibData = {}
         self.localStageOut = {}
         self.fallbackStageOut = []
-        self.io_config = {}
         self.read()
 
 
@@ -202,18 +201,6 @@ class SiteLocalConfig:
         for calibNode in calibNodes:
             self.calibData[str(calibNode.name)] = \
                       str(calibNode.attrs.get("url"))
-
-        #  //
-        # // job IO
-        #//
-        ioParamQ = IMProvQuery("/site-local-config/site/job-io-config/*")
-        ioParams = ioParamQ(node)
-        for param in ioParams:
-            if not param.attrs.has_key('name') or \
-                                             not param.attrs.has_key('value'):
-                msg = "Malformed job-io-config node %s, params %s"
-                raise SiteConfigError, msg % (param.name, str(param.attrs))
-            self.io_config[param.attrs['name']] = param.attrs['value']
 
         return
 
