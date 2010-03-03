@@ -87,6 +87,9 @@ class RequestJobFactory:
         self.currentJob = None
         self.pileupDatasets = {}
         self.eventsPerJob = args.get("EventsPerJob",  100)
+        # For making sure we always skip the same number of events when
+        # reading from a MCDB table.
+        self.eventsPerMCDBJob = self.eventsPerJob
         self.firstNodeCfg = None #Chain job: cfg options needed in next steps
 
         self.sites = args.get("Sites", [] )
@@ -249,7 +252,7 @@ class RequestJobFactory:
                 if efficiency is None:
                     efficiency = 1
                 skipEvents = self.skipMCDB + int(self.jobnumber) * \
-                    int(float(self.eventsPerJob) / float(efficiency))
+                    int(float(self.eventsPerMCDBJob) / float(efficiency))
                 msg = "Job processes a MCDB table. Skipping the first "
                 msg += "%s events." % skipEvents
                 logging.info(msg)
