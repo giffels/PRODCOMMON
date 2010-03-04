@@ -157,15 +157,15 @@ class ProtocolGlobusUtils(Protocol):
 
         # get the timeout field in format suitable for executeCommand
         # it seems that globus-url-copy has not a parameter to impose it
-        copyTout = 600.0
+        copyTout =300 
         if opt!="":
             try:
                 #replacement needed to support setLcgTimeout format 
-                opt = str(opt).replace('-t','').replace('--connect-timeout','') 
+                opt = str(opt).replace('tout','')
                 copyTout = float(opt)
             except:
-                # set default
-                copyTout = 600.0  
+                # use default
+                pass
 
         # sources list
         sourcesList = []
