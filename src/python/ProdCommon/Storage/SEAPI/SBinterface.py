@@ -18,6 +18,7 @@ from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 
 import os
+
 class SBinterface:
     """
     kind of simple stupid interface to generic Protocol operations
@@ -64,17 +65,29 @@ class SBinterface:
                 if len(source) != len(dest):
                     raise OperationException \
                         ('Number of source files differs from number of destination files')
-                self.storage1.workon=os.path.dirname(self.storage1.workon[0])
-                dirContent=self.storage1.action.getFileSizeList(self.storage1,proxy)  
+                if self.storage1.protocol == 'globus':
+                    self.storage1.workon=os.path.dirname(self.storage1.workon[0])
+                    dirContent=self.storage1.action.getFileSizeList(self.storage1,proxy)  
                 for item in source:
-                    try: 
-                        if int(dirContent[os.path.basename(item)]) > 0:
-                            sizeCheckList.append(-2)
-                        else:
-                            sizeCheckList.append(0)
-                    except Exception, ex:
-                        ## source of problem: will be raised at copying time
-                        sizeCheckList.append(-3)
+                    if self.storage1.protocol == 'globus':
+                        try:   
+                            if int(dirContent[os.path.basename(item)]) > 0:
+                                sizeCheckList.append(-2)
+                            else:
+                                sizeCheckList.append(0)
+                        except Exception, ex:
+                            ## source of problem: will be raised at copying time
+                            sizeCheckList.append(-3)
+                    else:
+                        self.storage1.workon = unicode(item)
+                        try:
+                            if self.storage1.action.getFileSize (self.storage1, proxy) == 0:
+                                sizeCheckList.append(-2)
+                            else:
+                                sizeCheckList.append(0)
+                        except Exception, ex:
+                            ## source of problem: will be raised at copying time
+                            sizeCheckList.append(-3)
                 # put this back to how it was
                 self.storage1.workon = source
 

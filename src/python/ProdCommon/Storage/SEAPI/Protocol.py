@@ -163,13 +163,16 @@ class Protocol(object):
         errc = []
         while 1:
             (r, w, e) = select.select([fd], [], [], timeout)
- 
             read = '' 
             readerr = '' 
-            if fd in r :
+            if fd in r or fde in r:
                 read = p.stdout.read()
-            if fde in r:
-                readerr = p.stderr.read()
+                try: 
+                    readerr = p.stderr.read()
+                except:
+                    pass 
+            #if fde in r:
+            #    readerr = p.stderr.read()
             if fd not in r and fde not in r:
                 timedOut = True
                 break
@@ -178,7 +181,7 @@ class Protocol(object):
                 if readerr != '':errc.append( readerr )
             else :
                 break
- 
+
         if timedOut :
             stop = time.time()
             try:
