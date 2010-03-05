@@ -17,6 +17,7 @@ from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
 
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 
+import os
 class SBinterface:
     """
     kind of simple stupid interface to generic Protocol operations
@@ -63,10 +64,11 @@ class SBinterface:
                 if len(source) != len(dest):
                     raise OperationException \
                         ('Number of source files differs from number of destination files')
+                self.storage1.workon=os.path.dirname(self.storage1.workon[0])
+                dirContent=self.storage1.action.getFileSizeList(self.storage1,proxy)  
                 for item in source:
-                    self.storage1.workon = unicode(item)
-                    try:
-                        if self.storage1.action.getFileSize (self.storage1, proxy) == 0:
+                    try: 
+                        if int(dirContent[os.path.basename(item)]) > 0:
                             sizeCheckList.append(-2)
                         else:
                             sizeCheckList.append(0)

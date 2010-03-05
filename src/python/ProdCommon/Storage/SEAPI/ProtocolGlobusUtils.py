@@ -305,6 +305,34 @@ class ProtocolGlobusUtils(Protocol):
                                       problems, outputs )
         return outputs
 
+    def getFileSizeList(self, source, proxy = None, opt = ""):
+        """getFileSizelist
+        Uberftp -> ls
+        """
+        import os
+
+        precmd = ""
+
+        opt += " --verbose "
+        if proxy is not None:
+            precmd += "env X509_USER_PROXY=%s " % str(proxy)
+            self.checkUserProxy(proxy)
+        cmd = precmd + "uberftp %s \"ls %s\" | awk '{print $5 , $9}' " % (source.hostname, os.path.join("/", source.workon))
+
+        exitcode, outputs = self.executeCommand(cmd)
+
+        if exitcode != 0:
+            raise OperationException("Error listing [" +source.workon+ "]", \
+                                      outputs, outputs )
+        filesres = {}
+        for filet in outputs.split('\n'):
+            if filet != "." and filet != "..":
+                try:
+                    filesres[filet.split(' ')[1]] = filet.split(' ')[0]
+                except:
+                    pass      
+        return filesres
+
 
     def getTurl(self, source, proxy = None, opt = ""):
         """
