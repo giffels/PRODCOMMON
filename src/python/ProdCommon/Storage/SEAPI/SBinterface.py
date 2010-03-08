@@ -71,7 +71,7 @@ class SBinterface:
                 for item in source:
                     if self.storage1.protocol == 'globus':
                         try:   
-                            if int(dirContent[os.path.basename(item)]) > 0:
+                            if int(dirContent[os.path.basename(item)]) == 0:
                                 sizeCheckList.append(-2)
                             else:
                                 sizeCheckList.append(0)
