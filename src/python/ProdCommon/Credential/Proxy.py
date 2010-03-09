@@ -330,7 +330,6 @@ class Proxy:
     def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
         """
         """
-        proxyFilename= os.path.join(proxyCache, sha1(userDN).hexdigest() )
 
         # myproxy-logon -d -n -s $MYPROXY_SERVER -o <outputFile> -l <userDN> -k <credName>
 
@@ -353,6 +352,8 @@ class Proxy:
         cmdList.append('X509_USER_KEY=$HOME/.globus/hostkey.pem')
 
         ## get a new delegated proxy
+        proxyFilename= os.path.join(proxyCache, sha1(userDN + voAttr).hexdigest() )
+
         cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s -t 168:00'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
