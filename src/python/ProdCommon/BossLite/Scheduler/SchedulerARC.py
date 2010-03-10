@@ -446,6 +446,37 @@ class SchedulerARC(SchedulerInterface):
         return jobAttributes, None, service 
 
 
+    def createJobsFile(self, joblist, action = None):
+        """
+        Create a file with job arcIds.
+        Return a file object, and an {arcId: job}-dictionary.
+        The file will be removed when the file object is closed.
+        """
+
+        arcId2job = {}
+        jobsFile = tempfile.NamedTemporaryFile(prefix="crabjobs.")
+
+        for job in joblist:
+
+            if not self.valid(job.runningJob):
+                if not job.runningJob['schedulerId']:
+                    self.logging.debug("job %s has no schedulerId!" % job['name'])
+                self.logging.debug("job invalid: schedulerId = %s" % str(job.runningJob['schedulerId']))
+                self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
+                self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
+                continue
+
+            arcId = job.runningJob['schedulerId']
+            if (action):
+                self.logging.debug('%s job %s with arcId %s' % (action, job['name'], arcId))
+            jobsFile.write(arcId + "\n")
+            arcId2job[arcId] = job
+        jobsFile.flush()
+
+        return jobsFile, arcId2job
+
+
+
     def query(self, obj, service='', objType='node'):
         """
         Query status and eventually other scheduler related information,
@@ -461,30 +492,11 @@ class SchedulerARC(SchedulerInterface):
         else:
             raise SchedulerError('wrong argument type', str(type(obj)))
 
-        arcId2job = {}
+        jobsFile, arcId2job = self.createJobsFile(joblist, "Will query")
 
-        # Create a file with job IDs we want to feed to ngstat
-        jobsFile = tempfile.NamedTemporaryFile(prefix="crabjobs.")
-        for job in joblist:
-
-            if not self.valid(job.runningJob):
-                if not job.runningJob['schedulerId']:
-                    self.logging.debug("job %s has no schedulerId!" % job['name'])
-                self.logging.debug("job invalid: schedulerId = %s"%str(job.runningJob['schedulerId']))
-                self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
-                self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
-                continue
-
-            arcId = job.runningJob['schedulerId']
-            self.logging.debug('Querying job %s with arcId %s' % (job['name'], arcId))
-            jobsFile.write(arcId + "\n")
-            arcId2job[arcId] = job
-        jobsFile.flush()
-
-        # Run ngstat
         cmd = 'ngstat -i %s' % jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
-        jobsFile.close()  # Closing a tempfile should also delete it.
+        jobsFile.close()
         if stat != 0:
             raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
 
@@ -561,48 +573,44 @@ class SchedulerARC(SchedulerInterface):
         Get output files from jobs in 'obj' and put them in 'outdir', and  
         remove the job from the CE.
         """
-        if type(obj) == Job:
-            if not self.valid(obj.runningJob):
-                raise SchedulerError('invalid object', str(obj.runningJob))
-
-            self.getJobOutput(obj, outdir)
-        elif type(obj) == Task:
+        if type(obj) == Task:
+            joblist = obj.jobs
             if outdir == '':
                 outdir = obj['outputDirectory']
-
-            for job in obj.jobs:
-                if self.valid(job.runningJob):
-                    self.getJobOutput(job, outdir)
+        elif type(obj) == Job:
+            joblist = [obj]
         else:
             raise SchedulerError('wrong argument type', str(type(obj)))
 
-
-    def getJobOutput(self, job, outdir):
-        """
-        Get output files from one job and put them in 'outdir', and  
-        remove the job from the CE.
-        """
-        
         assert outdir != ''
-
-        arcId = job.runningJob['schedulerId']
-        self.logging.debug('Getting job %s with arcId %s' % (job['name'], arcId))
-
         if outdir[-1] != '/': outdir += '/'
 
-        # Use ngcp + ngclean instead of ngget, because the latter always
-        # puts the files under /somewhere/<NUMERICAL ID>, with the result
-        # that we would have to move them afterwards. I feel this is more
-        # elegant.
-        cmd = 'ngcp %s/ %s' % (arcId, outdir)
-        output, stat = self.ExecuteCommand(cmd)
-        if stat != 0:
-            raise SchedulerError('ngcp returned %i' % stat, output, cmd)
+        jobsFile, arcId2job = self.createJobsFile(joblist, "Will fetch")
 
-        cmd = 'ngclean %s' % arcId
+        # Create a tmp dir where ngget can create its subdirs of job
+        # output. Use outdir as the parent dir, to keep moving of files
+        # afterwards within the same files system (faster!)
+        tmpdir = tempfile.mkdtemp(prefix="joboutputs.", dir=outdir)
+
+        cmd = 'ngget -i %s -dir %s' % (jobsFile.name, tmpdir)
+        output, stat = self.ExecuteCommand(cmd)
+        jobsFile.close()
+        if stat != 0:
+            raise SchedulerError('ngget returned %i' % stat, output, cmd)
+
+        # Copy the dowlodaed files to their final destination
+        cmd = 'mv %s/*/* %s' % (tmpdir, outdir)
+        self.logging.debug("Moving files from %s/* to %s" % (tmpdir, outdir))
         output, stat = self.ExecuteCommand(cmd)
         if stat != 0:
-            raise SchedulerError('ngclean returned %i' % stat, output, cmd)
+            raise SchedulerError('mv returned %i' % stat, output, cmd)
+
+        # Remove the tmp output dir
+        cmd = 'rm -r %s' % tmpdir
+        output, stat = self.ExecuteCommand(cmd)
+        if stat != 0:
+            raise SchedulerError('rm returned %i' % stat, output, cmd)
+
 
 
     def kill(self, obj):
