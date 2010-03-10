@@ -624,18 +624,21 @@ class SchedulerARC(SchedulerInterface):
         else:
             raise SchedulerError('wrong argument type', str(type(obj)))
 
-        for job in jobList:
-            if not self.valid(job.runningJob):
-                raise SchedulerError('invalid object', str(job.runningJob))
-            
-            arcId = job.runningJob['schedulerId']
-            self.logging.debug('Killing job %s with arcId %s' % (job['name'], arcId))
+        jobsFile, arcId2job = self.createJobsFile(jobList, "Will kill")
 
-            cmd = "ngkill " + arcId
-            output, stat = self.ExecuteCommand(cmd)
+        cmd = "ngkill -i " + jobsFile.name
+        output, stat = self.ExecuteCommand(cmd)
+        if stat != 0:
+            raise SchedulerError('ngkill returned %i' % stat, output, cmd)
 
-            if stat != 0:
-                raise SchedulerError('ngkill returned %i' % stat, output, cmd)
+        for line in output.split('\n'):
+            # If a job URL ("arcId") occurs on a line of output, it tends
+            # to be en error message:
+            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.]+\S*/\d*)", line)
+            if errorMatch:
+                arcId = errorMatch.group(1)
+                job = arcId2job[arcId]
+                job.runningJob.errors.append("Killing job %s failed: %s" % (job['name'], line))
 
 
     def postMortem (self, arcId, outfile, service):
