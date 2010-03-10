@@ -16,6 +16,7 @@ _SchedulerARC_
 import sys  # Needed for anything else than debugging?
 
 import os, time
+import tempfile
 #import socket
 #import tempfile
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -105,6 +106,34 @@ Arc2StatusReason = {
     "UNKNOWN":    "Job not known by ARC server (or info.sys. too slow!)",
     "WTF?":       "Job not recognized as a job by the ARC client!"
 }
+
+
+def splitNgstatOutput(output):
+     """
+     Split a string of ngstat output into a list with one job per list
+     item.
+
+     The assumption is that the first line of a job has no indentation,
+     and subsequent lines are indented by at least 1 space.
+     """
+
+     jobs = []
+     s = ""
+     for line in output.split('\n'):
+
+          if len(line) == 0:
+               continue
+
+          if line[0].isspace():
+               s += line + '\n'
+          else:
+               if len(s) > 0:
+                    jobs.append(s)
+               s = line + '\n'
+     if len(s) > 0:
+          jobs.append(s)
+
+     return jobs
 
 
 def count_nonempty(list):
@@ -425,15 +454,18 @@ class SchedulerARC(SchedulerInterface):
         It may use single 'node' scheduler id or bulk id for association
 
         """
-        # FIXME: The test below was copied from the corresponding function
-        # in SchedulerLsf.py. But isn't this function expected to work also
-        # for type(obj) == Job ?
-        if type(obj) != Task:
+        if type(obj) == Task:
+            joblist = obj.jobs
+        elif type(obj) == Job:
+            joblist = [obj]
+        else:
             raise SchedulerError('wrong argument type', str(type(obj)))
 
-        # Running ngstat for many jobs at once might be faster. But
-        # let's be lazy and take one at a time.
-        for job in obj.jobs:
+        arcId2job = {}
+
+        # Create a file with job IDs we want to feed to ngstat
+        jobsFile = tempfile.NamedTemporaryFile(prefix="crabjobs.")
+        for job in joblist:
 
             if not self.valid(job.runningJob):
                 if not job.runningJob['schedulerId']:
@@ -442,50 +474,63 @@ class SchedulerARC(SchedulerInterface):
                 self.logging.debug("job invalid: closed = %s" % str(job.runningJob['closed']))
                 self.logging.debug("job invalid: status = %s" % str(job.runningJob['status']))
                 continue
-            
+
             arcId = job.runningJob['schedulerId']
             self.logging.debug('Querying job %s with arcId %s' % (job['name'], arcId))
+            jobsFile.write(arcId + "\n")
+            arcId2job[arcId] = job
+        jobsFile.flush()
 
-            cmd = 'ngstat ' + arcId
-            output, stat = self.ExecuteCommand(cmd)
+        # Run ngstat
+        cmd = 'ngstat -i %s' % jobsFile.name
+        output, stat = self.ExecuteCommand(cmd)
+        jobsFile.close()  # Closing a tempfile should also delete it.
+        if stat != 0:
+            raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
 
-            if stat != 0:
-                raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
+        # Parse output of ngstat
+        for jobstring in splitNgstatOutput(output):
 
             arcStat = None
             host = None
             jobExitCode = None
 
-            if output.find("Job information not found") >= 0:
-                if output.find("job was only very recently submitted") >= 0:
+            if jobstring.find("Job information not found") >= 0:
+                if jobstring.find("job was only very recently submitted") >= 0:
                     arcStat = "ACCEPTING"  # At least approximately true
                 else:
                     arcStat = "UNKNOWN"
 
-                jobIdMatch = re.search("\w+://([a-zA-Z0-9.]+).*", output)
-                if jobIdMatch:
-                    host = jobIdMatch.group(1)
-
-            elif output.find("Malformed URL:") >= 0:
+                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                if arcIdMatch:
+                    arcId = arcIdMatch.group(1)
+                    host = arcIdMatch.group(2)
+            elif jobstring.find("Malformed URL:") >= 0:
                 # This is something that really shoudln't happen.
                 arcStat = "WTF?"
+
+                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                if arcIdMatch:
+                    arcId = arcIdMatch.group(1)
+                    host = arcIdMatch.group(2)
             else:
 
                 # With special cases taken care of above, we are left with
                 # "normal" jobs. They are assumed to have the format
                 #
-                # Job <jobId URL>
+                # Job <arcId>
                 #   Status: <status>
                 #   Exit Code: <exit code>
                 #
                 # "Exit Code"-line might be missing.
                 # Additional lines may exist, but we'll ignore them.
 
-                for line in output.split('\n'):
+                for line in jobstring.split('\n'):
 
-                    jobIdMatch = re.match("Job +\w+://([a-zA-Z0-9.]+).*", line)
-                    if jobIdMatch:
-                        host = jobIdMatch.group(1)
+                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.]+)\S*/\d*)", line)
+                    if arcIdMatch:
+                        arcId = arcIdMatch.group(1)
+                        host = arcIdMatch.group(2)
                         continue
                         
                     statusMatch = re.match(" +Status: *(.+)", line)
@@ -498,6 +543,7 @@ class SchedulerARC(SchedulerInterface):
                         jobExitCode = codeMatch.group(1)
                         continue
 
+            job = arcId2job[arcId]
             if arcStat:
                 job.runningJob['statusScheduler'] = Arc2StatusScheduler[arcStat]
                 job.runningJob['status'] = Arc2Status[arcStat]
