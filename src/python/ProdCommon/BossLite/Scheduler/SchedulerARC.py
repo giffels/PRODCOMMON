@@ -286,9 +286,9 @@ class SchedulerARC(SchedulerInterface):
         """
         assert type(obj) == Task
 
-        xrsl = "+"
+        xrsl = "+\n"
         for job in obj.getJobs():
-            xrsl += '(' +  self.decode(job, obj, requirements) + ')'
+            xrsl += '(' +  self.decode(job, obj, requirements) + ')\n'
         return xrsl
 
 
@@ -360,7 +360,7 @@ class SchedulerARC(SchedulerInterface):
         return xrsl
 
 
-    def submit (self, obj, requirements='', config='', service = ''):
+    def submit(self, task, requirements='', config='', service = ''):
         """
         set up submission parameters and submit
         uses self.decode()
@@ -369,48 +369,52 @@ class SchedulerARC(SchedulerInterface):
 
         - jobAttributs is a map of the format
               jobAttributes[ 'name' : 'schedulerId' ]
-        - bulkId is an eventual bulk submission identifier
-        - service is a endpoit to connect withs (such as the WMS)
+        - bulkId is an eventual bulk submission identifier (i.e. None for ARC)
+        - service is a endpoit to connect with (such as the WMS)
         """
-        if type(obj) == Job:
-            raise NotImplementedError
-        elif type(obj) == Task:
-            map = {}
-            bulkId = None
-            for job in obj.getJobs():
-                try:
-                    m, bulkId = self.submitJob(obj, job, requirements)
-                    map.update(m)
-                except SchedulerError, e:
-                    job.runningJob.errors.append("Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' ')))
-            return map, bulkId, service 
+        assert type(task) == Task
 
+        jobAttributes = {}
+        bulkId = None
 
-    def submitJob(self, task, job, requirements):
-
-        # Build xRSL & cmdline-options
-        xrsl = self.decode(job, task, requirements)
-        opt = get_ngsub_opts(xrsl)
+        # Build xRSL 
+        xrsl = self.jobDescription(task, requirements, config, service)
+        xrsl_file = os.path.dirname(task['cfgName']) + '/job.xrsl'
+        f = open(xrsl_file, "w")
+        f.write(xrsl)
+        f.close()
 
         # Submit
-        command = "ngsub -e '%s' %s" % (xrsl, opt)
+        opt = get_ngsub_opts(xrsl)
+        command = "ngsub %s %s" % (xrsl_file, opt)
         self.logging.debug(command)
         self.setTimeout(300)
-        output, exitStat = self.ExecuteCommand(command)
-        if exitStat != 0:
-            raise SchedulerError('Error in submit:', output, command)
+        tmp, exitStat = self.ExecuteCommand(command)
+        output = tmp.split('\n')
 
-        # Parse output of submit command
-        match = re.match("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)", output)
-        if not match:
-            raise SchedulerError('Error in submit:', output, command)
+        # Check output of submit command
+        subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)")
+        n = 0
+        for job in task.getJobs():
+            try:
+                m = re.match(subRe, output[n])
 
-        arcId = match.group(1)
-        m = {job['name']: arcId}  # arcId will end up in job.runningJob['schedulerId']
+                if exitStat != 0 or not m:
+                    raise SchedulerError('Error in submit:', output, command)
 
-        self.logging.info("Submitted job with id %s" % arcId)
+                arcId = m.group(1) 
+                jobAttributes[job['name']] = arcId
 
-        return m, job['taskId']
+                self.logging.info("Submitted job with id %s" % arcId)
+            except SchedulerError, e:
+                job.runningJob.errors.append("Submission failed for job %s: %s"
+                                              % (job['id'], str(e).replace('\n', ' ')))
+            except Exception, e:
+                job.runningJob.errors.append("Checking submission failed for job %s: %s"
+                                              % (job['id'], str(e).replace('\n', ' ')))
+            n += 1
+
+        return jobAttributes, None, service 
 
 
     def query(self, obj, service='', objType='node'):
