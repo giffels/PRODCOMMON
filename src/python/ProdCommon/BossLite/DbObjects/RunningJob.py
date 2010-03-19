@@ -4,8 +4,8 @@ _RunningJob_
 
 """
 
-__version__ = "$Id: RunningJob.py,v 1.23 2009/02/13 09:33:16 gcodispo Exp $"
-__revision__ = "$Revision: 1.23 $"
+__version__ = "$Id: RunningJob.py,v 1.24 2009/02/25 09:52:55 gcodispo Exp $"
+__revision__ = "$Revision: 1.24 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.DbObjects.DbObject import DbObject
@@ -80,7 +80,9 @@ class RunningJob(DbObject):
                  'outputEnqueueTime' : None,
                  'getOutputRetry' : 0,
                  'outputDirectory' : None,
-                 'storage' : None,
+                 ### FEDE FOR MULTIOUTPUT
+                 #'storage' : None,
+                 'storage' : [],
                  'lfn' : [],
                  'applicationReturnCode' : None,
                  'wrapperReturnCode' : None,
