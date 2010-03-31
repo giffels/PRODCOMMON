@@ -79,9 +79,7 @@ class PileupDataset(dict):
         #  //
         # // Select the files to return, start with something really simple.
         #//
-        shuffleBlocks = matchedBlocks.keys()
-        random.shuffle(shuffleBlocks)
-        selectedBlock = shuffleBlocks[0] # Select one block randomly
+        selectedBlock = chooseBlock(matchedBlocks.keys())
         possibleFiles = self[selectedBlock]
         random.shuffle(possibleFiles)
         targetSites = matchedBlocks[selectedBlock]
@@ -92,6 +90,25 @@ class PileupDataset(dict):
         return possibleFiles[0:self.maxFilesPerJob], targetSites
         
 
+    def chooseBlock(self, blocks):
+        """
+        _chooseBlock_
+
+        This method randomly selects a block based on the number of files it
+        has. More file a blocks has more likely the block is goin to be picked
+        pu. Example: blocks[files] = {A[3], B[2], C[5]}. 'A' will be selected
+        30 % of the times, 'B' 30 % and 'C' 50%.
+        The input argument should be a list.
+        """
+        totalFiles = 0
+        selectionInterval = {}
+        for block in blocks:
+            selectionInterval[block] = len(self[block]) + totalFiles
+            totalFiles += len(self[block])
+        randomNumber = random.randrange(0, totalFiles, 1) 
+        for block in blocks:
+            if randomNumber < selectionInterval[block]:
+                return block
 
 
     def __call__(self):
