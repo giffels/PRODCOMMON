@@ -354,7 +354,7 @@ class Proxy:
         ## get a new delegated proxy
         proxyFilename= os.path.join(proxyCache, sha1(userDN + voAttr).hexdigest() )
 
-        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \'%s\' -k %s -t 168:00'%\
+        cmdList.append('myproxy-logon -d -n -s %s -o %s -l \"%s\" -k %s -t 168:00'%\
             (self.myproxyServer, proxyFilename, userDN, credName) )
 
         cmd = ' '.join(cmdList)
