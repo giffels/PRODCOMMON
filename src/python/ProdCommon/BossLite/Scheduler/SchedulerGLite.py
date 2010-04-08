@@ -3,14 +3,13 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.31 2010/02/25 07:33:22 spigafi Exp $"
-__version__ = "$Revision: 2.31 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.32 2010/03/01 15:33:39 spigafi Exp $"
+__version__ = "$Revision: 2.32 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
 import tempfile
 import re
-import simplejson as json
 
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
@@ -18,14 +17,12 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 
-try:
-    from json.decoder import JSONDecoder
-except ImportError:
-    from simplejson.decoder import JSONDecoder
+# manage json library using the appropriate WMCore wrapper
+from WMCore.Wrappers import JsonWrapper as json
 
 ##########################################################################
 
-class BossliteJsonDecoder(JSONDecoder):
+class BossliteJsonDecoder(json.JSONDecoder):
     """
     Override JSON decode
     """
@@ -101,16 +98,6 @@ def hackTheEnv(prependCommand = ''):
             if x.find(pyVersionToRemove) == -1 :
                 newLdLibPath += x + ':'   
         newEnv += 'LD_LIBRARY_PATH=' + newLdLibPath[:-1] + ' '
-        
-        # build new PYTHONPATH - remove comments if necessary...
-        """
-        originalPythonPath = os.environ['PYTHONPATH']
-        newPythonPath = ''
-        for x in list(set(originalPythonPath.split(':'))) :
-            if x.find(pyVersionToRemove) == -1 :
-                newPythonPath += x + ':'   
-        newEnv += 'PYTHONPATH=' + newPythonPath[:-1] + ' '
-        """
         
     except :
         # revert not necessary or something went wrong during the hacking
@@ -824,8 +811,6 @@ class SchedulerGLite(SchedulerInterface) :
                         commonFiles += "root.inputsandbox[%d]," % isbIndex
                         isbIndex += 1
                         continue
-                    if ifile[0] == '/':
-                        ifile = ifile#[1:]Daniele
                     commonFiles += '"' + ifile + '",'
 
         # output bypass WMS?
@@ -917,6 +902,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
+        *DEPRECATED*: THIS METHOD CAN BE DELETED BECAUSE NOT UTILIZED
         """
 
         celist = []
@@ -1000,6 +986,7 @@ class SchedulerGLite(SchedulerInterface) :
         """
         execute a resources discovery through bdii
         returns a list of resulting sites
+        *DEPRECATED*: THIS METHOD CAN BE DELETED BECAUSE NOT UTILIZED
         """
 
         result = []
