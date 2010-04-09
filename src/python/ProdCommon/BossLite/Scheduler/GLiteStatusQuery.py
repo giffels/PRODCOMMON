@@ -4,13 +4,14 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.11 2010/02/11 15:02:27 spigafi Exp $"
-__version__ = "$Revision: 1.11 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.12 2010/02/18 09:47:28 spigafi Exp $"
+__version__ = "$Revision: 1.12 $"
 
 import sys
 import os
-
-# ------------------------------------------------------------------
+import getopt
+from socket import getfqdn
+from copy import deepcopy
 
 # looking for the environment...
 try:
@@ -23,13 +24,10 @@ except:
         sys.exit(1)
 
 # append lib/lib64 directories to search path
-
 for app in ["lib","lib64"]:
         for bpp in ["",os.sep+"python"]:
                 libPath=path+os.sep+app+bpp
                 sys.path.append(libPath)
-
-# ------------------------------------------------------------------
 
 try :
     # 'glite_wmsui_LbWrapper' exists on both gLite 3.1 and gLite 3.2 
@@ -41,30 +39,8 @@ except :
     print "Your default python is %s \n" % sys.version
     sys.exit(1)
 
-from socket import getfqdn
-from copy import deepcopy
-import getopt
-
-
-##########################################################################
-
-class myJSONEncoder(object):
-    """
-    easy class able to transform a string representation of a python dictionary 
-    in a valid JSON output recognizable by simplejson
-    """
-    
-    def dumps(self, myString):
-        """
-        the same interface as simplejson ...
-        """
-        
-        tmp = str(myString)
-        tmp = tmp.replace('\'','"')
-        tmp = tmp.replace('None','null')
-        
-        return tmp
-
+# manage json library using the appropriate WMCore wrapper
+from WMCore.Wrappers import JsonWrapper as json
 
 ##########################################################################
 class GLiteStatusQuery(object):
@@ -349,12 +325,6 @@ def main():
     """
     __main__
     """
-
-    # load ad-hoc JSON encoder if simplejson is not present
-    try : 
-        import simplejson as json
-    except:
-        json = myJSONEncoder()  
     
     # parse options
     try:
