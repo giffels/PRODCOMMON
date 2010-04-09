@@ -253,15 +253,16 @@ if __name__ == '__main__':
                        datasetinfo['PSetHash'] = diz['psethash']
                        datasetinfo['PSetContent'] = "TOBEADDED"
                        #########################################################################
+                       datasetinfo['ProcessedDataset'] = UserProcessedDataset
                        if diz_filter.has_key(name):
                            filter = diz_filter[name]
                            print "filter = ", filter
-                           FilterUserProcessedDataset = UserProcessedDataset + '-' + str(filter)
+                           if (filter):
+                               FilterUserProcessedDataset = UserProcessedDataset + '-' + str(filter)
+                               datasetinfo['ProcessedDataset'] = FilterUserProcessedDataset 
+                       #else:
+                       #    datasetinfo['ProcessedDataset'] = UserProcessedDataset
                        #########################################################################    
-                           datasetinfo['ProcessedDataset'] = FilterUserProcessedDataset 
-                       else:
-                           datasetinfo['ProcessedDataset'] = UserProcessedDataset
-                       #datasetinfo['ProcessedDataset'] = for_file['UserProcessedDataset'] 
                        ### to check if the job output is composed by more files
                        modifyFile(f, os.path.basename(file_name), for_file)    
                     else:
