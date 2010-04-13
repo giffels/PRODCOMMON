@@ -250,6 +250,12 @@ class Protocol(object):
             self.logger.debug("ExitCode:\t%s"%status)
             self.logger.debug("Output:\t%s"%output)
 
+    def expandEnv(self, env_var, final_path):
+        if os.environ.get(env_var):
+            return os.path.normpath(os.environ.get(env_var) + str(final_path))
+        else:
+            return None
+
 def setPgid( ):
     """
     preexec_fn for Popen to set subprocess pgid
