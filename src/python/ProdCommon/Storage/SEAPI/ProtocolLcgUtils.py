@@ -17,28 +17,21 @@ class ProtocolLcgUtils(Protocol):
         self.options  = " --verbose "
         self.options += " --vo=cms "
          
-        glite_ui_env='' 
-        if os.environ.get('RUNTIME_AREA'):
-            glite_ui_env= '%s/CacheEnv.sh'%os.environ.get('RUNTIME_AREA')
-            self.fresh_env = 'source %s ; '%glite_ui_env
-        if not os.path.isfile(str(glite_ui_env).strip()):
-            if os.environ.get('GLITE_WMS_LOCATION'):
-                # that should be enough
-                #glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-                # temporary hack
-                glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION')
-                if not os.path.isfile(str(glite_ui_env).strip()):
-                    glite_ui_env = '%s/etc/profile.d/grid-env.sh '%os.environ.get('GLITE_WMS_LOCATION').split('glite')[0]
-                self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
-        if not os.path.isfile(str(glite_ui_env).strip()):
-            if os.environ.get('OSG_GRID'):
-                glite_ui_env = '%s/setup.sh '%os.environ.get('OSG_GRID')
-                self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%glite_ui_env
-                if not os.path.isfile(str(glite_ui_env).strip()):
-                    raise Exception("Missing glite environment.")
-            else:
-                raise Exception("Missing glite environment.")
-
+        env = ''
+        source = self.expandEnv('RUNTIME_AREA', '/CacheEnv.sh')
+        if os.path.isfile(str(source).strip()):
+            env = str(source)
+        vars = {'OSG_GRID': '/setup.sh', 'GLITE_WMS_LOCATION': '/etc/profile.d/grid-env.sh', 'GRID_ENV_LOCATION': '/grid-env.sh'}
+        if len(env) == 0:
+            for key in vars.keys():
+                source = self.expandEnv(key, vars[key])
+                if os.path.isfile(str(source).strip()):
+                   env = str(source)
+                   break;
+        if len(env) > 0:
+            self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%env
+        else:
+            raise Exception("Missing environment")
 
     def simpleOutputCheck(self, outLines):
         """
