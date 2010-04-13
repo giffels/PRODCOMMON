@@ -223,7 +223,7 @@ class ProtocolGlobusUtils(Protocol):
                     eec_flag = True
                     break
             if eec_flag is False:
-                raise OperationException( "Error copying: \n " +source.workon+ " \nto: \n " +dest.workon,\
+                raise OperationException( "Error copying: \n " +str(source.workon)+ " \nto: \n " +str(dest.workon),\
                                           errors, outputs )
         return resvalList
 
