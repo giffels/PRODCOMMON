@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.32 2010/03/01 15:33:39 spigafi Exp $"
-__version__ = "$Revision: 2.32 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.33 2010/04/08 12:13:33 spigafi Exp $"
+__version__ = "$Revision: 2.33 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -33,21 +33,21 @@ class BossliteJsonDecoder(json.JSONDecoder):
         super(BossliteJsonDecoder, self).__init__()
         
         # cache pattern to optimize reg-exp substitution
-        self.pattern1 = re.compile('\{,[\s]*([a-zA-Z0-9_\-])')
-        self.pattern2 = re.compile(':[\s]([a-zA-Z_\-])')
+        self.pattern1 = re.compile('\{,[\s]*([a-zA-Z0-9_\-\+\=])')
+        self.pattern2 = re.compile(':[\s]([a-zA-Z_\-\+\=])')
         self.pattern3 = re.compile(
-                    '[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*)"')
+                    '[\s]*([a-zA-Z0-9_\-\+\=]*),[\s]*([a-zA-Z0-9_\-\+\=]*)"')
         self.pattern4 = re.compile(
-                    '[\s]*([a-zA-Z0-9_\-]*),[\s]*([a-zA-Z0-9_\-]*):')
-        self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-]*)')
-        self.pattern6 = re.compile('([a-zA-Z0-9_\-])}')
+                    '[\s]*([a-zA-Z0-9_\-\+\=]*),[\s]*([a-zA-Z0-9_\-\+\=]*):')
+        self.pattern5 = re.compile(',[\s]*}(?!"[\s]*[a-zA-Z0-9_\-\+\=]*)')
+        self.pattern6 = re.compile('([a-zA-Z0-9_\-\+\=])}')
     
     def decodeSubmit(self, jsonString):
         """
         specialized method to decode JSON output of glite-wms-job-submit
         """
         
-        # pre-processing the string before decoding        
+        # pre-processing the string before decoding
         toParse = jsonString.replace( '\n' , ',' )
         toParse = self.pattern1.sub(r'{ "\1', toParse[:-1] )
         toParse = self.pattern2.sub(r'":"\1', toParse )
@@ -57,7 +57,7 @@ class BossliteJsonDecoder(json.JSONDecoder):
         toParse = self.pattern6.sub(r'\1"}', toParse)
         
         parsedJson = self.decode(toParse)
-        
+
         return parsedJson  
 
 ##########################################################################
