@@ -4,11 +4,12 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.56 2009/12/15 14:51:36 ewv Exp $"
-__version__ = "$Revision: 1.56 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.57 2010/03/01 15:14:03 ewv Exp $"
+__version__ = "$Revision: 1.57 $"
 
 import os
 import commands
+from subprocess import *
 import re
 import shutil
 import cStringIO
@@ -350,8 +351,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 cmd += '-name ' + schedd + ' '
             cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
 
-            (inputFile, outputFp) = os.popen4(cmd)
-
+            p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
+                      stderr=STDOUT, close_fds=True)
+            (inputFile, outputFp) = (p.stdin, p.stdout)
             try:
                 xmlLine = ''
                 while xmlLine.find('<?xml') == -1:
@@ -359,7 +361,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     xmlLine = outputFp.readline()
 
                 outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
-                #outputFile = cStringIO.StringIO(outputFp.read()) # <7.3 vers.
+                #outputFile = cStringIO.StringIO(outputFp.read()) # >7.3 vers.
             except:
                 raise SchedulerError('Problem reading output of command', cmd)
 
@@ -438,12 +440,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
                             'export GLEXEC_SOURCE_PROXY=%s; ' \
                             'export X509_USER_PROXY=%s; ' % \
                             (userProxy, userProxy, seProxy)
-                
+
                 command  = commonEnv + 'cd %s; ' % seDir
                 command += "%s `which condor_rm` -name %s %s" % (self.glexec, submitHost, jobId)
             else:
                 command = "condor_rm -name %s %s" % (submitHost, jobId)
-            (inputFile, outputFile) = os.popen4(command)
+
+            try:
+                retcode = call(command, shell=True)
+            except OSError, e:
+                raise SchedulerError('condor_rm failed', e)
+            return
 
 
     def getOutput( self, obj, outdir='' ):
