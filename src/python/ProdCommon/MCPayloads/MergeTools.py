@@ -190,6 +190,9 @@ def createMergeJobWorkflow(procSpec, isFastMerge = True, doCleanUp = True, littl
         newWF.parameters.update(procSpec.parameters)
         newWF.setWorkflowName(procSpecName)
         newWF.parameters['WorkflowType'] = "Merge"
+        oldActivity = newWF.parameters["Activity"]
+        newActivity = oldActivity + "-merge"
+        newWF.setActivity(newActivity)
         
 
         cmsRunNode = newWF.payload
