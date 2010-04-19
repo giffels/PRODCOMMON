@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.57 2010/03/01 15:14:03 ewv Exp $"
-__version__ = "$Revision: 1.57 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.58 2010/04/19 16:55:31 ewv Exp $"
+__version__ = "$Revision: 1.58 $"
 
 import os
 import commands
@@ -39,7 +39,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         self.renewProxy    = args.get('renewProxy', None)
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
-        self.batchSize  = 20 # Number of jobs to submit before changing CEs
         self.userRequirements = ''
 
 
@@ -76,15 +75,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
         else:
             os.mkdir(self.condorTemp)
 
-        #FIXME: Can we remove this. I think Frank asked for it
-        # won't workas intended with bulk submission
-        # Get list of schedd's
-#         scheddList = None
-#         nSchedd    = 0
-#         if 'CMS_SCHEDD_LIST' in os.environ:
-#             scheddList = os.environ['CMS_SCHEDD_LIST'].split(',')
-#             nSchedd    = len(scheddList)
-
         taskId = ''
         ret_map = {}
 
@@ -98,12 +88,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
             jdl = ''
             for job in obj.getJobs():
                 submitOptions = ''
-                #FIXME: Can we remove this. I think Frank asked for it
-                # won't workas intended with bulk submission
-
-#                 if scheddList:
-#                     schedd = scheddList[jobCount % nSchedd]
-#                     submitOptions += '-name %s ' % schedd
 
                 jobRequirements = requirements
                 execHost = self.findExecHost(jobRequirements)
@@ -114,11 +98,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 # Build JDL file
                 if not jobCount:
                     jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
-#                     if self.useGlexec:
                     jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
-#                     else:
-#                         jdl += 'Executable = %s/%s\n' % \
-#                         (self.jobDir, job['executable'])
                     jdl += '+BLTaskID = "' + taskId + '"\n'
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
@@ -146,7 +126,6 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 diffTime = str(os.path.getmtime(obj['user_proxy']))
                 proxycmd = commonEnv + proxyEnv
-#                proxycmd += "%s %s %s" % (self.glexec, self.renewProxy, diffTime)
                 proxycmd += "%s %s %s %s" % (self.renewProxy, userProxy, seDir, diffTime)
                 (status, output) = commands.getstatusoutput(proxycmd)
                 self.logging.debug("Result of %s\n%s\n%s" %
@@ -299,7 +278,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         """
         query status of jobs
         """
-        # FIXME: Make a singleton and cache XML output
+
         from xml.sax import make_parser
         from CondorHandler import CondorHandler
         from xml.sax.handler import feature_external_ges
@@ -351,9 +330,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 cmd += '-name ' + schedd + ' '
             cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
 
-            p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
-                      stderr=STDOUT, close_fds=True)
-            (inputFile, outputFp) = (p.stdin, p.stdout)
+            pObj = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
+                         stderr=STDOUT, close_fds=True)
+            (inputFile, outputFp) = (pObj.stdin, pObj.stdout)
             try:
                 xmlLine = ''
                 while xmlLine.find('<?xml') == -1:
@@ -448,8 +427,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
             try:
                 retcode = call(command, shell=True)
-            except OSError, e:
-                raise SchedulerError('condor_rm failed', e)
+            except OSError, ex:
+                raise SchedulerError('condor_rm failed', ex)
             return
 
 
