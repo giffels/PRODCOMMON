@@ -443,10 +443,32 @@ class WorkflowMaker:
         # // Extract dataset info from cfg
         #//
         datasets = {}
+        datasetsToForward = {}
         for cmsRunNode, config in zip(self.cmsRunNodes, self.configurations):
             
-            # Ignore nodes that don't save any output
+            # Ignore nodes that don't save any output. But keep input dataset
+            # in case we need to forward it.
             if cmsRunNode.name not in self.saveOutputFor:
+                # Store parent dataset in case we need to forward it.
+                if self.inputDataset['IsUsed'] and \
+                                            cmsRunNode == self.cmsRunNodes[0]:
+                    datasetsToForward[cmsRunNode.name] = \
+                                            self.inputDataset['DatasetName']
+                elif cmsRunNode != self.cmsRunNodes[0]:
+                    for inputLink in cmsRunNode._InputLinks:
+                        # If the previous cmsRunNode stages out, pull down the
+                        # dataset it produced.
+                        if not inputLink["AppearStandalone"]:
+                            # TODO: Wont work if more than one InputLink exists
+                            datasetsToForward[cmsRunNode.name] = \
+                                datasets['%s:%s' % (inputLink['InputNode'],
+                                inputLink['OutputModule'])]
+                        # If the previous cmsRunNode does not stage out, then
+                        # use it's parent.
+                        else:
+                            # TODO: Wont work if more than one InputLink exists
+                            datasetsToForward[cmsRunNode.name] = \
+                                datasetsToForward[inputLink['InputNode']]
                 continue
             
             for outModName in config.outputModules.keys():
@@ -516,6 +538,10 @@ class WorkflowMaker:
                             # TODO: Wont work if more than one InputLink exists
                             outDS['ParentDataset'] = datasets['%s:%s' % (inputLink['InputNode'],
                                                                     inputLink['OutputModule'])]
+                        elif datasetsToForward.get(
+                                inputLink['InputNode']) is not None:
+                            outDS['ParentDataset'] = \
+                                    datasetsToForward[inputLink['InputNode']]
 
                 if self.options['FakeHash']:
                     guid = makeUUID()

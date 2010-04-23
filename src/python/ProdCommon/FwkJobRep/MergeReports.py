@@ -129,6 +129,14 @@ def combineReports(reportFile, reportNames, newReportInstance):
                     for ancestor in report.files:
                         if ancestor['LFN'] == infile['LFN']:
                             outfile.inputFiles.extend(ancestor.inputFiles)
+                            print "Updated InputFiles %s for %s" % (
+                                ancestor.inputFiles, outfile['LFN'])
+                        # No LFN, use PFN (Needed for parent forwarding)
+                        elif not infile['LFN'] and \
+                                ancestor['PFN'] == infile['PFN']:
+                            outfile.inputFiles.extend(ancestor.inputFiles)
+                            print "Updated InputFiles %s for %s" % (
+                                ancestor.inputFiles, outfile['LFN'])
                        
             if report.timing.has_key('AppStartTime') and \
                 report.timing['AppStartTime'] < newReportInstance.timing.get('AppStartTime', time.time()):

@@ -11,8 +11,8 @@ The object is instantiated with a directory that contains the task.
 
 """
 
-__version__ = "$Revision: 1.23 $"
-__revision__ = "$Id: TaskState.py,v 1.23 2009/08/28 12:21:51 swakef Exp $"
+__version__ = "$Revision: 1.24 $"
+__revision__ = "$Id: TaskState.py,v 1.24 2009/12/01 22:31:34 hufnagel Exp $"
 __author__ = "evansde@fnal.gov"
 
 
@@ -110,6 +110,7 @@ class TaskState:
         self.catalogsLoaded = False
         self.siteConfigLoaded = False
         self.jobSpecLoaded = False
+        self.parentsForwarded = []
 
     def taskName(self):
         """
@@ -607,8 +608,11 @@ class TaskState:
                 # Standard processing job - input files weren't made in the job
                 #  - Reset file parents to the job spec input list
                 #    - This removes SecondarySource and MixingModule files
+                #  - Keep files that will be replaced by previous step input
+                #    files. LFN might be empty, use PFN instead.
                 parentFiles = [x for x in fileInfo.inputFiles \
-                               if x['LFN'] in self.inputSource()['InputFiles']]
+                    if x['LFN'] in self.inputSource()['InputFiles'] or \
+                    x['PFN'] in [y['PFN'] for y in self.parentsForwarded]]
 
             if not parentageWiped: # only wipe once per file
                 fileInfo.inputFiles = []
@@ -616,7 +620,8 @@ class TaskState:
 
             # Rebuild parentage list
             for parFile in parentFiles:
-                if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles]:
+                if parFile['LFN'] in [x['LFN'] for x in fileInfo.inputFiles] or \
+                        parFile['PFN'] in [x['PFN'] for x in fileInfo.inputFiles]:
                     continue
                 print "Add InputFile %s for %s" % (parFile['LFN'],
                                                    fileInfo['LFN'])
