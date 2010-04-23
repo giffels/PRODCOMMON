@@ -181,6 +181,7 @@ class CMSSWAPILoader:
             self.rollbackImporter = None
             raise RuntimeError, msg
         os.environ['CMSSW_SEARCH_PATH'] = self.cmsswSearchPath
+        os.environ['CMSSW_VERSION'] = self.version
         self.loaded = True
         return
         
