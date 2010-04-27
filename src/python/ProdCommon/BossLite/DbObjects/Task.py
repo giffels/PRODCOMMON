@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.17 2009/07/16 16:19:19 gcodispo Exp $"
-__revision__ = "$Revision: 1.17 $"
+__version__ = "$Id: Task.py,v 1.18 2009/07/27 16:59:38 gcodispo Exp $"
+__revision__ = "$Revision: 1.18 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -399,4 +399,4 @@ class Task(DbObject):
         if name.find( 'file:/' ) == 0:
             return name
 
-        return os.path.join(dir, name)
+        return os.path.join(path, name)
