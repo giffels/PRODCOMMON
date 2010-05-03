@@ -38,7 +38,9 @@ class ProtocolLcgUtils(Protocol):
         parse line by line the outLines text lookng for Exceptions
         """
         problems = []
-        lines = outLines.split("\n")
+        lines = []
+        if outLines.find("\n") != -1:
+            lines = outLines.split("\n")
         for line in lines:
             line = line.lower()
             if line.find("no entries for host") != -1 or\

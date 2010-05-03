@@ -33,7 +33,9 @@ class ProtocolSrmv2(Protocol):
         parse line by line the outLines text looking for Exceptions
         """
         problems = []
-        lines = outLines.split("\n")
+        lines = []
+        if outLines.find("\n") != -1:
+            lines = outLines.split("\n")
         for line in lines:
             line = line.lower()
             if line.find("exception") != -1 or \
