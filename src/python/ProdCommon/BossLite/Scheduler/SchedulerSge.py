@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.8 2009/06/09 13:41:36 gcodispo Exp $"
-__version__ = "$Revision: 1.8 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.9 2009/11/30 15:38:00 spiga Exp $"
+__version__ = "$Revision: 1.9 $"
 
 import re, os
 
@@ -27,7 +27,7 @@ class SchedulerSge (SchedulerInterface) :
             'E':'DA',
             'h':'R',
             'r':'R',
-            'hr':'R',
+            #'Running':'R',
             'R':'R',
             's':'R',
             'S':'R',
@@ -36,7 +36,7 @@ class SchedulerSge (SchedulerInterface) :
             'w':'R',
             'qw':'R',
             'Eqw':'K',
-            'DONE':'SD'
+            'Done':'SD'
             }
   
         
@@ -278,7 +278,7 @@ class SchedulerSge (SchedulerInterface) :
             if(id) and (id in schedIdList):
                 map={}
                 map[ 'status' ] = self.statusMap[st]
-                map[ 'statusScheduler' ] = st
+                if st=='r': map[ 'statusScheduler' ] = 'Running'
                 if (host): map[ 'destination' ] = host
                 ret_map[id]=map
                 #print "set state to "+map['statusScheduler']
@@ -291,7 +291,7 @@ class SchedulerSge (SchedulerInterface) :
             if not jobid in ret_map:
                 #print "job "+jobid+" not found in qstat list setting to DONE"
                 id = jobid
-                st = "DONE"
+                st = "Done"
                 map={}
                 map[ 'status' ] = self.statusMap[st]
                 map[ 'statusScheduler' ]= st
@@ -345,6 +345,7 @@ class SchedulerSge (SchedulerInterface) :
         """
         r = re.compile("has registered the job (\d+) for deletion")
         rFinished = re.compile("Job <(\d+)>: Job has already finished")
+        r2 = re.compile("has deleted job (\d+)") #by Leo
         # for jobid in schedIdList:
         for job in obj.jobs:
             if not self.valid( job.runningJob ):
@@ -354,8 +355,10 @@ class SchedulerSge (SchedulerInterface) :
             out, ret = self.ExecuteCommand(cmd)
             #print "kill:"+out
             mKilled= r.search(out)
-            if not mKilled:
-                raise SchedulerError ( "Unable to kill job "+jobid+" . Reason: ", out )
+            mKilled2= r2.search(out)
+                        
+            if not mKilled and not mKilled2:
+                raise SchedulerError ( "Unable to kill job #"+str(job['jobId'])+" (SGE id:" +jobid+") . Reason: ", out )
             pass
         pass
 
