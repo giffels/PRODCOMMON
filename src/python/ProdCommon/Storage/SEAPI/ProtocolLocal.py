@@ -15,7 +15,7 @@ class ProtocolLocal(Protocol):
     def __init__(self):
         super(ProtocolLocal, self).__init__()
 
-    def move(self, source, dest, opt = ""):
+    def move(self, source, dest, opt = "", tout = None):
         """
         move from source.workon to dest.workon
         """
@@ -24,7 +24,7 @@ class ProtocolLocal(Protocol):
         
         if self.checkExists(source, opt):
             cmd = "mv " + opt + " "+ source.workon +" "+ dest.workon
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
                                      "] does not exists.")
@@ -32,7 +32,7 @@ class ProtocolLocal(Protocol):
             raise TransferException("Error moving [" +source.workon+ "] to [" \
                                     +dest.workon+ "]\n " +outputs)
  
-    def copy(self, source, dest, opt = ""):
+    def copy(self, source, dest, opt = "", tout = None):
         """
         copy from source.workon to dest.workon
         """
@@ -40,7 +40,7 @@ class ProtocolLocal(Protocol):
         outputs = ""
         if self.checkExists(source, opt):
             cmd = "cp " + opt + " " + source.workon + " " + dest.workon
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
                                      "] does not exists.")
@@ -48,7 +48,7 @@ class ProtocolLocal(Protocol):
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     +dest.workon+ "]\n " +outputs)
  
-    def delete(self, source, opt = ""):
+    def delete(self, source, opt = "", tout = None):
         """
         _delete_
         """
@@ -56,7 +56,7 @@ class ProtocolLocal(Protocol):
         outputs = ""
         if self.checkExists(source, opt):
             cmd = "rm " + opt + " " + source.workon
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
                                      "] does not exists.")
@@ -64,14 +64,14 @@ class ProtocolLocal(Protocol):
             raise OperationException("Error deleting [" +source.workon \
                                              + "]\n "+outputs)
 
-    def createDir(self, source, opt = ""):
+    def createDir(self, source, opt = "", tout = None):
         """
         _createDir_
         """
         exitcode = -1
         outputs = ""
         cmd = "mkdir " + opt + " " + source.workon
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         if exitcode != 0:
             raise OperationException("Error creating [" +source.workon \
                                              + "]\n "+outputs)
@@ -99,7 +99,7 @@ class ProtocolLocal(Protocol):
  
         return [ownSum, groSum, othSum]
  
-    def checkPermission(self, source, opt = ""):
+    def checkPermission(self, source, opt = "", tout = None):
         """
         _checkPermission_
         """
@@ -107,7 +107,7 @@ class ProtocolLocal(Protocol):
         outputs = ""
         if self.checkExists(source, opt):
             cmd = "ls -la " + opt + " " + source.workon + " | awk '{print $1}'"
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
             if exitcode == 0:
                 outputs = self.__convertPermission__(outputs)
             else:
@@ -119,7 +119,7 @@ class ProtocolLocal(Protocol):
  
         return outputs
  
-    def getFileSize(self, source, credential = None, opt = ""):
+    def getFileSize(self, source, credential = None, opt = "", tout = None):
         """
         _getFileSize_
         """
@@ -136,7 +136,7 @@ class ProtocolLocal(Protocol):
  
         return int(sizeFile)
  
-    def getDirSize(self, source, opt = ""):
+    def getDirSize(self, source, opt = "", tout = None):
         """
         _getDirSize_
         """
@@ -154,7 +154,7 @@ class ProtocolLocal(Protocol):
             raise OperationException("Error: path [" + source.workon + \
                                              "] does not exists.")
         
-    def listPath(self, source, opt = ""):
+    def listPath(self, source, opt = "", tout = None):
         """
         _listPath_
         """
@@ -162,7 +162,7 @@ class ProtocolLocal(Protocol):
         outputs = ""
         if self.checkExists(source, opt):
             cmd = "ls " + opt + " " + source.workon
-            exitcode, outputTemp = self.executeCommand(cmd)
+            exitcode, outputTemp = self.executeCommand(cmd, timeout = tout)
             outputs = outputTemp.split("\n")
         else:
             raise OperationException("Error: path [" + source.workon + \
@@ -173,18 +173,18 @@ class ProtocolLocal(Protocol):
  
         return outputs
  
-    def checkExists(self, source, opt = ""):
+    def checkExists(self, source, opt = "", tout = None):
         """
         _checkExists_
         """
         return os.path.exists(source.workon)
  
-    def getGlobalQuota(self, source, opt = ""):
+    def getGlobalQuota(self, source, opt = "", tout = None):
         """
         _getGlobalQuota_
         """
         cmd = "df " + opt + " " + source.workon + " | awk '{ print $5,$4,$3 }'"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         if exitcode != 0:
             raise OperationException("Error getting local quota for [" \
                                              +source.workon+ "]\n " +outputs)

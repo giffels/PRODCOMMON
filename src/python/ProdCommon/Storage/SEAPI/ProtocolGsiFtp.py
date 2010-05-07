@@ -58,7 +58,7 @@ class ProtocolGsiFtp(Protocol):
                                      [line], outLines)
         return problems
 
-    def createDir(self, source, proxy = None, opt = ""):
+    def createDir(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-mkdir
         """
@@ -68,7 +68,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-mkdir " + opt + " "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -76,7 +76,7 @@ class ProtocolGsiFtp(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +source.workon+ "].", problems, outputs)
 
-    def copy(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
         lcg-cp
         """
@@ -90,14 +90,14 @@ class ProtocolGsiFtp(Protocol):
  
         cmd = self.fresh_env + setProxy + " lcg-cp " + opt + " --vo cms " + \
                            fullSource + " " + fullDest
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = "", tout = None):
         """
         copy() + delete()
         """
@@ -123,7 +123,7 @@ class ProtocolGsiFtp(Protocol):
                 filelist.append(k)
         return filelist, dirlist
 
-    def deleteRec(self, source, proxy = None, opt = ""):
+    def deleteRec(self, source, proxy = None, opt = "", tout = None):
         """
         _deleteRec_
         """
@@ -138,7 +138,7 @@ class ProtocolGsiFtp(Protocol):
             self.delete(source, proxy, opt)
             source.workon = ""
 
-    def listFile(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = "", tout = None):
         """
         list of dir [edg-gridftp-ls]
         """
@@ -149,7 +149,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         if exitcode != 0: 
             raise OperationException("Error listing [" +source.workon+ "]", \
@@ -182,7 +182,7 @@ class ProtocolGsiFtp(Protocol):
                 break
         return flag
 
-    def delete(self, source, proxy = None, opt = ""):
+    def delete(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-rm/dir
         """
@@ -194,7 +194,7 @@ class ProtocolGsiFtp(Protocol):
 
         cmd = self.fresh_env + "edg-gridftp-rm " + opt + " " + fullSource
 
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -205,7 +205,7 @@ class ProtocolGsiFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
         
-    def deleteDir(self, source, proxy = None, opt = ""):
+    def deleteDir(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-rmdir
         """
@@ -217,7 +217,7 @@ class ProtocolGsiFtp(Protocol):
 
         cmd = self.fresh_env + "edg-gridftp-rmdir " + opt + " " + fullSource
 
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -226,7 +226,7 @@ class ProtocolGsiFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def checkExists(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-ls
         """
@@ -236,7 +236,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
  
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -269,7 +269,7 @@ class ProtocolGsiFtp(Protocol):
         return [ownSum, groSum, othSum]
 
 
-    def checkPermission(self, source, proxy = None, opt = ""):
+    def checkPermission(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-ls
         """
@@ -280,7 +280,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $1}'"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -289,7 +289,7 @@ class ProtocolGsiFtp(Protocol):
             return self.__convertPermission__(outputs)
         return outputs
 
-    def getFileSize(self, source, proxy = None, opt = ""):
+    def getFileSize(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-ls
         """
@@ -300,7 +300,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource + " | awk '{print $5}'"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -309,13 +309,13 @@ class ProtocolGsiFtp(Protocol):
                                       problems, outputs )
         return outputs
  
-    def getTurl(self, source, proxy = None, opt = ""):
+    def getTurl(self, source, proxy = None, opt = "", tout = None):
         """
         return the gsiftp turl
         """
         return source.getLynk()
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = "", tout = None):
         """
         list of dir [edg-gridftp-ls]
         """
@@ -325,7 +325,7 @@ class ProtocolGsiFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = self.fresh_env + "edg-gridftp-ls " + opt + " " + fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         
         if exitcode != 0:
             raise OperationException("Error listing [" +source.workon+ "]", \

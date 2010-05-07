@@ -17,7 +17,7 @@ class ProtocolSrmv2(Protocol):
         # check for java version
         cmd = "java -version"
         try: 
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         except Exception, ex:
             raise MissingCommand("Missing java command.", \
                                      [] , outputs)
@@ -68,7 +68,7 @@ class ProtocolSrmv2(Protocol):
                                      [line], outLines)
         return problems
 
-    def copy(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
         srmcp
         """
@@ -85,14 +85,14 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
         
         cmd = "srmcp " + opt +" "+ fullSource +" "+ fullDest
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0: #or len(problems) > 0: #if exit code = 0 => skip
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = "", tout = None):
         """
         with srmmv "source and destination have to have same URL type"
          => copy and delete
@@ -122,7 +122,7 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srmmv " +option +" "+ fullSource +" "+ fullDest
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -130,10 +130,10 @@ class ProtocolSrmv2(Protocol):
                                     + dest.workon + "]", problems, outputs )
         """
 
-    def deleteRec(self, source, proxy, opt = ""):
+    def deleteRec(self, source, proxy, opt = "", tout = None):
         self.delete(source, proxy, opt)
 
-    def delete(self, source, proxy = None, opt = ""):
+    def delete(self, source, proxy = None, opt = "", tout = None):
         """
         srmrm
         """
@@ -145,7 +145,7 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srmrm " +opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -154,7 +154,7 @@ class ProtocolSrmv2(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def createDir(self, source, proxy = None, opt = ""):
+    def createDir(self, source, proxy = None, opt = "", tout = None):
         """
         srmmkdir
         """
@@ -164,7 +164,7 @@ class ProtocolSrmv2(Protocol):
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
-        if self.checkDirExists(fullSource , opt = "") is False:
+        if self.checkDirExists(fullSource , opt = "", tout = None) is False:
             #tempsource = fullSource
             #if fullSource.find(source.port) != -1:
             #    tempsource = tempsource.split(source.port,1)[-1]
@@ -179,14 +179,14 @@ class ProtocolSrmv2(Protocol):
                 if '' in fullSource_tmp[-1:] : fullSource_tmp = fullSource_tmp[:-1] 
                 fullSource = string.join(fullSource_tmp[:-1],'/') 
                 if fullSource != "srm:/":
-                    if self.checkDirExists(fullSource, opt = "" ) is True: break
+                    if self.checkDirExists(fullSource, opt = "", tout = None ) is True: break
                 else:
                     break
             toCreate.reverse()   
             for i in toCreate:
                 fullSource = fullSource+'/'+i
                 cmd = "srmmkdir " +opt +" "+ fullSource
-                exitcode, outputs = self.executeCommand(cmd)
+                exitcode, outputs = self.executeCommand(cmd, timeout = tout)
            
                 ### simple output parsing ###
                 problems = self.simpleOutputCheck(outputs)
@@ -194,13 +194,13 @@ class ProtocolSrmv2(Protocol):
                     raise OperationException("Error creating [" +source.workon+ "]", \
                                               problems, outputs )
 
-    def checkPermission(self, source, proxy = None, opt = ""):
+    def checkPermission(self, source, proxy = None, opt = "", tout = None):
         """
         return file/dir permission
         """
         return int(self.listFile(source, proxy, opt)[3])
 
-    def getFileSize(self, source, proxy = None, opt = ""):
+    def getFileSize(self, source, proxy = None, opt = "", tout = None):
         """
         file size
         """
@@ -208,7 +208,7 @@ class ProtocolSrmv2(Protocol):
         size = self.listFile(source, proxy, opt)[0]
         return int(size)
 
-    def listFile(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = "", tout = None):
         """
         srmls
 
@@ -222,7 +222,7 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srmls " + opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -243,7 +243,7 @@ class ProtocolSrmv2(Protocol):
         return size, None, None, None
         
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def checkExists(self, source, proxy = None, opt = "", tout = None):
         """
         file exists?
         """
@@ -257,21 +257,21 @@ class ProtocolSrmv2(Protocol):
             return False
         return False
 
-    def checkDirExists(self, fullSource, opt = ""):
+    def checkDirExists(self, fullSource, opt = "", tout = None):
         """
         Dir exists?
         """
 
         cmd = "srmls -recursion_depth=0 " + opt +" "+ fullSource
 
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             return False
         return True
 
-    def getTurl(self, source, proxy = None, opt = ""):
+    def getTurl(self, source, proxy = None, opt = "", tout = None):
         """
         return the gsiftp turl
         """
@@ -282,7 +282,7 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
         opt += " -T srmv2 -D srmv2 "
         cmd += "lcg-gt " + opt + " " + fullSource + " gsiftp"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         problems = self.simpleOutputCheck(outputs)
 
         if exitcode != 0 or len(problems) > 0:
@@ -290,7 +290,7 @@ class ProtocolSrmv2(Protocol):
                                       problems, outputs )
         return outputs.split('\n')[0]
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = "", tout = None):
         """
         srmls
 
@@ -304,7 +304,7 @@ class ProtocolSrmv2(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srmls " + opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:

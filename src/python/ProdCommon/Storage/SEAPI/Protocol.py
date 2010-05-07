@@ -1,4 +1,4 @@
-from Exceptions import OperationException
+from Exceptions import OperationException, SEAPITimeout
 import logging, os, time, fcntl, select,signal
 from subprocess import Popen, PIPE, STDOUT
 
@@ -6,8 +6,9 @@ from subprocess import Popen, PIPE, STDOUT
 class Protocol(object):
     '''Represents any Protocol'''
 
-    def __init__(self, logger = None):
+    def __init__(self, logger = None, tout = None):
         self.logger = logger
+        self.timeout= tout
         pass
 
     def move(self, source, sest):
@@ -111,7 +112,7 @@ class Protocol(object):
             import os
             command += ' --file ' + str(os.environ['X509_USER_PROXY'])
 
-        status, output = self.executeCommand( command )
+        status, output = self.executeCommand( command, timeout = 100 )
 
         if status != 0:
             raise OperationException("Missing Proxy", "Missing Proxy")
@@ -142,6 +143,8 @@ class Protocol(object):
  
         Util it execute the command provided in a popen object with a timeout
         """
+        if timeout is None and self.timeout is not None:
+            timeout = self.timeout
  
         start = time.time()
         p = Popen( command, shell=True, \
@@ -161,8 +164,37 @@ class Protocol(object):
         timedOut = False
         outc = []
         errc = []
+
+        ## We want a timeout based on command execution time
+        if timeout is not None:
+            temp_tout = 0
+            step_tout = float(timeout) / float(100)
+            while temp_tout <= timeout:
+                end = p.poll()
+                if end is not None:
+                    break;
+                else:
+                    temp_tout += step_tout
+                    time.sleep(step_tout)
+
+            if temp_tout > timeout:
+                try:
+                    os.killpg( os.getpgid(p.pid), signal.SIGTERM)
+                    os.kill( p.pid, signal.SIGKILL)
+                    p.wait()
+                    p.stdout.close()
+                    p.stderr.close()
+                except OSError, err :
+                    logging.warning(
+                        'Warning: an error occurred killing subprocess [%s]' \
+                        % str(err) )
+                raise SEAPITimeout("Timeout interrupt for too long execution [timeout = %s]."%str(timeout), [], "Stopped execution after %s sec."%str(temp_tout))
+
         while 1:
-            (r, w, e) = select.select([fd], [], [], timeout)
+            # We want timeout based on command execution time
+            # and not on command sleep time
+            #(r, w, e) = select.select([fd], [], [], timeout)
+            (r, w, e) = select.select([fd], [], [], None)
             read = '' 
             readerr = '' 
             if fd in r or fde in r:

@@ -12,7 +12,6 @@ class ProtocolException(Exception):
     def __str__(self):
         return repr(self.value)
 
-
 class NotExistsException(ProtocolException):
     """
     errors with not existing path
@@ -84,5 +83,11 @@ class MissingCommand(ProtocolException):
 class NFSException(ProtocolException):
     """
     'Stale NFS file handle'
+    """
+    pass
+
+class SEAPITimeout(ProtocolException):
+    """
+    when subprocess is killed for timeout limit 
     """
     pass

@@ -41,7 +41,7 @@ class ProtocolSrmv1(Protocol):
 
         return problems
 
-    def copy(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
         srmcp
         """
@@ -58,14 +58,14 @@ class ProtocolSrmv1(Protocol):
             self.checkUserProxy(proxy)
         
         cmd = "srmcp " +opt +" "+ fullSource +" "+ fullDest
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0: #or len(problems) > 0: #if exit code = 0 => skip
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = "", tout = None):
         """
         srmcp + delete()
         """
@@ -80,13 +80,13 @@ class ProtocolSrmv1(Protocol):
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
-    def deleteRec(self, source, proxy = None, opt = ""):
+    def deleteRec(self, source, proxy = None, opt = "", tout = None):
         """
         _deleteRec_
         """
         self.delete(source, proxy, opt)
 
-    def delete(self, source, proxy = None, opt = ""):
+    def delete(self, source, proxy = None, opt = "", tout = None):
         """
         srm-advisory-delete
         """
@@ -98,7 +98,7 @@ class ProtocolSrmv1(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srm-advisory-delete " +opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -107,7 +107,7 @@ class ProtocolSrmv1(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def createDir(self, source, proxy = None, opt = ""):
+    def createDir(self, source, proxy = None, opt = "", tout = None):
         """
         srmmkdir
         """
@@ -120,7 +120,7 @@ class ProtocolSrmv1(Protocol):
 
         cmd = "srmmkdir " +opt +" "+ fullSource
         print cmd
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -129,13 +129,13 @@ class ProtocolSrmv1(Protocol):
             raise OperationException("Error creating [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkPermission(self, source, proxy = None, opt = ""):
+    def checkPermission(self, source, proxy = None, opt = "", tout = None):
         """
         return file/dir permission
         """
         return int(self.listFile(source, proxy, opt)[3])
 
-    def getFileSize(self, source, proxy = None, opt = ""):
+    def getFileSize(self, source, proxy = None, opt = "", tout = None):
         """
         file size
         """
@@ -143,7 +143,7 @@ class ProtocolSrmv1(Protocol):
         size = self.listFile(source, proxy, opt)[0]
         return int(size)
 
-    def listFile(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = "", tout = None):
         """
         srm-get-metadata
 
@@ -157,7 +157,7 @@ class ProtocolSrmv1(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = "srm-get-metadata " +opt +" "+ fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -181,7 +181,7 @@ class ProtocolSrmv1(Protocol):
         return int(size), owner, group, permMode
         
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def checkExists(self, source, proxy = None, opt = "", tout = None):
         """
         file exists?
         """
@@ -196,7 +196,7 @@ class ProtocolSrmv1(Protocol):
             return False
         return False
 
-    def getTurl(self, source, proxy = None, opt = ""):
+    def getTurl(self, source, proxy = None, opt = "", tout = None):
         """
         return the gsiftp turl
         """
@@ -208,7 +208,7 @@ class ProtocolSrmv1(Protocol):
         opt += " -T srmv1 -D srmv1 "
 
         cmd += "lcg-gt " + opt + " " + str(fullSource) + " gsiftp"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         problems = self.simpleOutputCheck(outputs)
 
         if exitcode != 0 or len(problems) > 0:

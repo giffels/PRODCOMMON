@@ -20,7 +20,7 @@ class ProtocolUberFtp(Protocol):
 
         # Discriminate uberftp copy behaviour 
         cmd = "uberftp -v "
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         
         if outputs.find("1.22") != -1 :
             self.slcVersion = 4
@@ -59,7 +59,7 @@ class ProtocolUberFtp(Protocol):
                                      [line], outLines)
         return problems
 
-    def createDir(self, source, proxy = None, opt = ""):
+    def createDir(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> mkdir
         """
@@ -72,7 +72,7 @@ class ProtocolUberFtp(Protocol):
 
         cmd = precmd + "uberftp %s \"mkdir %s\" " % (source.hostname, os.path.join("/", source.workon))
  
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
  
@@ -81,7 +81,7 @@ class ProtocolUberFtp(Protocol):
             raise TransferException("Error creating remote dir " + \
                                     "[" +source.workon+ "].", problems, outputs)
 
-    def copy(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
         Uberftp --> lcg-cp
         """
@@ -101,7 +101,7 @@ class ProtocolUberFtp(Protocol):
         elif (self.slcVersion == 5):
             cmd = precmd + " uberftp %s %s " % ( srcPath, os.path.dirname(destPath) )
             
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -110,7 +110,7 @@ class ProtocolUberFtp(Protocol):
                                     + dest.workon + "]", problems, outputs )
 
 
-    def move(self, source, dest, proxy = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = "", tout = None):
         """
         copy() + delete()
         """
@@ -136,7 +136,7 @@ class ProtocolUberFtp(Protocol):
                 filelist.append(k)
         return filelist, dirlist
 
-    def deleteRec(self, source, proxy = None, opt = ""):
+    def deleteRec(self, source, proxy = None, opt = "", tout = None):
         """
         _deleteRec_
         """
@@ -151,7 +151,7 @@ class ProtocolUberFtp(Protocol):
             self.delete(source, proxy, opt)
             source.workon = ""
 
-    def listFile(self, source, proxy = None, opt = ""):
+    def listFile(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> ls
         """
@@ -164,7 +164,7 @@ class ProtocolUberFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = precmd + "uberftp %s \"ls %s\" " % (source.hostname, os.path.join("/", source.workon))
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         if exitcode != 0: 
             raise OperationException("Error listing [" +source.workon+ "]", \
@@ -197,7 +197,7 @@ class ProtocolUberFtp(Protocol):
                 break
         return flag
 
-    def delete(self, source, proxy = None, opt = ""):
+    def delete(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> rm
         """
@@ -210,7 +210,7 @@ class ProtocolUberFtp(Protocol):
 
         cmd = precmd + "uberftp %s \"rm %s\" " % (source.hostname, os.path.join("/", source.workon))
 
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -221,7 +221,7 @@ class ProtocolUberFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
         
-    def deleteDir(self, source, proxy = None, opt = ""):
+    def deleteDir(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> rmdir
         """
@@ -234,7 +234,7 @@ class ProtocolUberFtp(Protocol):
 
         cmd = precmd + "uberftp %s \"rmdir %s\" " % (source.hostname, os.path.join("/", source.workon))
 
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
 
@@ -244,7 +244,7 @@ class ProtocolUberFtp(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def checkExists(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> ls
         """
@@ -257,7 +257,7 @@ class ProtocolUberFtp(Protocol):
 
         cmd = precmd + "uberftp %s \"ls %s\" " % \
               (source.hostname, os.path.join("/", source.workon))
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
  
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -290,7 +290,7 @@ class ProtocolUberFtp(Protocol):
         return [ownSum, groSum, othSum]
 
 
-    def checkPermission(self, source, proxy = None, opt = ""):
+    def checkPermission(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> ls
         """
@@ -303,7 +303,7 @@ class ProtocolUberFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = precmd + "uberftp %s \"ls %s\" | awk '{print $1}' " % (source.hostname, os.path.join("/", source.workon))
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -312,7 +312,7 @@ class ProtocolUberFtp(Protocol):
             return self.__convertPermission__(outputs)
         return outputs
 
-    def getFileSize(self, source, proxy = None, opt = ""):
+    def getFileSize(self, source, proxy = None, opt = "", tout = None):
         """
         Uberftp -> ls
         """
@@ -326,7 +326,7 @@ class ProtocolUberFtp(Protocol):
 
         cmd = precmd + "uberftp %s \"ls %s\" | awk '{print $5}' " % (source.hostname, os.path.join("/", source.workon))
         
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -335,13 +335,13 @@ class ProtocolUberFtp(Protocol):
                                       problems, outputs )
         return outputs
  
-    def getTurl(self, source, proxy = None, opt = ""):
+    def getTurl(self, source, proxy = None, opt = "", tout = None):
         """
         return the gsiftp turl
         """
         return source.getLynk()
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = "", tout = None):
         """
         list of dir [uberftp -> ls]
         """
@@ -353,7 +353,7 @@ class ProtocolUberFtp(Protocol):
             self.checkUserProxy(proxy)
 
         cmd = precmd + "uberftp %s \"ls %s\" " % (source.hostname, os.path.join("/", source.workon))
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         
         if exitcode != 0:
             raise OperationException("Error listing [" +source.workon+ "]", \

@@ -73,13 +73,13 @@ class ProtocolLcgUtils(Protocol):
                                   [line], outLines)
         return problems
 
-    def createDir(self, source, proxy = None, opt = ""):
+    def createDir(self, source, proxy = None, opt = "", tout = None):
         """
         edg-gridftp-mkdir
         """
         pass
 
-    def copy(self, source, dest, proxy = None, opt = ""):
+    def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
         lcg-cp
         """
@@ -93,21 +93,21 @@ class ProtocolLcgUtils(Protocol):
  
         cmd = self.fresh_env + setProxy + " lcg-cp " + self.options + " " + opt + " " + \
                            fullSource + " " + fullDest
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
                                     + dest.workon + "]", problems, outputs )
 
-    def move(self, source, dest, proxy = None, opt = ""):
+    def move(self, source, dest, proxy = None, opt = "", tout = None):
         """
         copy() + delete()
         """
         self.copy(source, dest, proxy, opt)
         self.delete(source, proxy, opt)
 
-    def delete(self, source, proxy = None, opt = ""):
+    def delete(self, source, proxy = None, opt = "", tout = None):
         """
         lcg-del
         """
@@ -120,7 +120,7 @@ class ProtocolLcgUtils(Protocol):
             setProxy =  "export X509_USER_PROXY=" + str(proxy) + " && "
 
         cmd = self.fresh_env + setProxy + "lcg-del "+ self.options +" " + opt + " " + fullSource
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -129,7 +129,7 @@ class ProtocolLcgUtils(Protocol):
             raise OperationException("Error deleting [" +source.workon+ "]", \
                                       problems, outputs )
 
-    def checkExists(self, source, proxy = None, opt = ""):
+    def checkExists(self, source, proxy = None, opt = "", tout = None):
         """
         lcg-ls (lcg-gt)
         """
@@ -147,7 +147,7 @@ class ProtocolLcgUtils(Protocol):
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
             cmd += "lcg-ls " + opt + " " + fullSource
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("no such file or directory") != -1 or \
@@ -159,7 +159,7 @@ class ProtocolLcgUtils(Protocol):
                                          problems, outputs )
             return True
 
-    def getFileSize(self, source, proxy = None, opt = ""):
+    def getFileSize(self, source, proxy = None, opt = "", tout = None):
         """
         lcg-ls
         """
@@ -170,7 +170,7 @@ class ProtocolLcgUtils(Protocol):
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
         cmd += "lcg-ls -l " + opt + " "+ fullSource +" | awk '{print $5}'"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise OperationException("Error reading [" +source.workon+ "]", \
@@ -178,7 +178,7 @@ class ProtocolLcgUtils(Protocol):
         return int(outputs)
 
 
-    def getTurl(self, source, proxy = None, opt = ""):
+    def getTurl(self, source, proxy = None, opt = "", tout = None):
         """
         return the gsiftp turl
         """
@@ -189,7 +189,7 @@ class ProtocolLcgUtils(Protocol):
             cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
             self.checkUserProxy(proxy)
         cmd += "lcg-gt " + opt + " " + str(fullSource) + " gsiftp"
-        exitcode, outputs = self.executeCommand(cmd)
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         problems = self.simpleOutputCheck(outputs)
 
         if exitcode != 0 or len(problems) > 0:
@@ -198,7 +198,7 @@ class ProtocolLcgUtils(Protocol):
         return outputs.split('\n')[0]
 
 
-    def listPath(self, source, proxy = None, opt = ""):
+    def listPath(self, source, proxy = None, opt = "", tout = None):
         """
         lcg-ls (lcg-gt)
         """
@@ -212,7 +212,7 @@ class ProtocolLcgUtils(Protocol):
                 cmd += 'export X509_USER_PROXY=' + str(proxy) + ' && '
                 self.checkUserProxy(proxy)
             cmd += "lcg-ls " + opt + " " + fullSource
-            exitcode, outputs = self.executeCommand(cmd)
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
             problems = self.simpleOutputCheck(outputs)
             if exitcode != 0 or len(problems) > 0:
                 if str(problems).find("such file or directory") != -1 or \
