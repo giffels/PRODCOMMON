@@ -19,7 +19,13 @@ class ProtocolGsiFtp(Protocol):
         source = self.expandEnv('RUNTIME_AREA', '/CacheEnv.sh')
         if os.path.isfile(str(source).strip()):
             env = str(source)
-        vars = {'OSG_GRID': '/setup.sh', 'GLITE_WMS_LOCATION': '/etc/profile.d/grid-env.sh', 'GRID_ENV_LOCATION': '/grid-env.sh'}
+        vars = {\
+                 'OSG_GRID': '/setup.sh', \
+                 'GLITE_WMS_LOCATION': '/etc/profile.d/glite-wmsui.sh',  \
+                 'GLITE_LOCATION': '/../etc/profile.d/grid-env.sh', \
+#                 'GLITE_WMS_LOCATION': '/../etc/profile.d/grid-env.sh', \
+                 'GRID_ENV_LOCATION': '/grid-env.sh'\
+               }
         if len(env) == 0:
             for key in vars.keys():
                 source = self.expandEnv(key, vars[key])
