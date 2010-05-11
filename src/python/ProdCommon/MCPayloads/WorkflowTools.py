@@ -7,7 +7,11 @@ Common tools used in the creation of Workflow Specs
 
 """
 
+# Silence deprecation warnings until all runtime python > python2.6
+import warnings
+warnings.filterwarnings("ignore", category = DeprecationWarning)
 import popen2
+warnings.filterwarnings("default", category = DeprecationWarning)
 import sys
 import time
 

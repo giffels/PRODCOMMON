@@ -2,9 +2,13 @@
 
 import time
 import random
-import md5
 import socket
+# Silence deprecation warnings until all runtime python > python2.6
+import warnings
+warnings.filterwarnings("ignore", category = DeprecationWarning)
 import popen2
+import md5
+warnings.filterwarnings("default", category = DeprecationWarning)
 
 def uuid( *args ):
     """

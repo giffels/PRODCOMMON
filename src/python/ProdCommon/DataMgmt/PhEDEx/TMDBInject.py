@@ -9,7 +9,8 @@ Command wrapper for calling TMDBInject
 """
 
 import logging
-import os, popen2, fcntl, select, sys, string
+import os, fcntl, select, sys, string
+from subprocess import Popen, PIPE
 from ProdCommon.DataMgmt.PhEDEx.DropMaker import makePhEDExDrop
 from ProdCommon.DataMgmt.DBS.DBSReader import DBSReader
 from ProdCommon.DataMgmt.DataMgmtError import DataMgmtError
@@ -46,11 +47,10 @@ def runCommand(command):
     Return the output + error and exitcode
                                                                                                                                                  
     """
-    child = popen2.Popen3(command, 1) # capture stdout and stderr from command
-    child.tochild.close()             # don't need to talk to child
-    outfile = child.fromchild
+    child = Popen(command, shell = True, stdout = PIPE, stderr = PIPE)
+    outfile = child.stdout
     outfd = outfile.fileno()
-    errfile = child.childerr
+    errfile = child.stderr
     errfd = errfile.fileno()
     makeNonBlocking(outfd)            # don't deadlock!
     makeNonBlocking(errfd)
