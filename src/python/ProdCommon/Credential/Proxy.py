@@ -252,6 +252,7 @@ class Proxy:
             minTime = int(Time) * 24 * 3600
             ## regex to extract the right information
             timeleftList = re.compile("timeleft: (?P<hours>[\\d]*):(?P<minutes>[\\d]*):(?P<seconds>[\\d]*)").findall(out)
+            timeleft = 0
 
             ## the first time refers to the flat user proxy, the other ones are related to the server credential name
             try:
