@@ -188,7 +188,7 @@ def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retrie
      for i in range(retries+1):
           try:
                if i > 0:
-                    logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
+                    logging.debug("Retrying ldapsearch ... (%i/%i)" % (i, retries))
                     time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
@@ -760,7 +760,7 @@ class SchedulerARC(SchedulerInterface):
         return CEs fullfilling requirements.
         """
 
-        self.logging.info("Trying GIIS %s, %s" % (root['host'], root['base']))
+        self.logging.debug("Trying GIIS %s, %s" % (root['host'], root['base']))
         CEs, giises = self.query_giis(root)
         accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
 
