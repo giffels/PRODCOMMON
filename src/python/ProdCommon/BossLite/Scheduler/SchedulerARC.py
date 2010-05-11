@@ -194,7 +194,9 @@ def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retrie
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
                bind = TimeoutFunction(con.simple_bind_s, timeout)
                try:
+                   bound = False
                    bind()
+                   bound = True
                except TimeoutFunctionException:
                    raise ldap.LDAPError("Bind timeout")
                con.search(dn, scope, filter, attr)
@@ -217,7 +219,9 @@ def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retrie
                con.unbind()
                break;
           except ldap.LDAPError, e:
-               con.unbind()
+               logging.debug("ldapsearch: got error '%s' for host %s" % (str(e), host))
+               if bound:
+                    con.unbind()
      else:
           raise e
 
@@ -436,8 +440,9 @@ class SchedulerARC(SchedulerInterface):
 
                 self.logging.info("Submitted job with id %s" % arcId)
             except SchedulerError, e:
-                job.runningJob.errors.append("Submission failed for job %s: %s"
-                                              % (job['id'], str(e).replace('\n', ' ')))
+                msg = "Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' '))
+                self.logging.error(msg)
+                job.runningJob.errors.append(msg)
             except Exception, e:
                 job.runningJob.errors.append("Checking submission failed for job %s: %s"
                                               % (job['id'], str(e).replace('\n', ' ')))
@@ -727,9 +732,13 @@ class SchedulerARC(SchedulerInterface):
             RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
 
             if count_nonempty(seList) > 0 and not set(seList) & localSEs:
+                if count_nonempty(whitelist) > 0 and name in whitelist:
+                    self.logging.warning("NOTE: Whitelisted CE %s was found but isn't close to any SE that have the data" % name)
                 continue
 
             if count_nonempty(tags) > 0 and not set(tags) <= RTEs:
+                if count_nonempty(whitelist) > 0 and name in whitelist:
+                    self.logging.warning("NOTE: Whitelisted CE %s was found but doesn't have all required runtime environments installed" % name)
                 continue
 
             if count_nonempty(blacklist) > 0 and name in blacklist:
@@ -768,7 +777,6 @@ class SchedulerARC(SchedulerInterface):
         return accepted_CEs
 
 
-
     def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
         """
         Query grid information system for CE:s.
@@ -801,5 +809,6 @@ class SchedulerARC(SchedulerInterface):
             self.logging.error("No more toplevel GIISes to try!  All GIISes down? Please wait for a while and try again")
             raise SchedulerError("No reply from GIISes", "")
 
+        self.logging.debug("lcgInfo found the following sites: %s" % str(accepted_CEs))
         return accepted_CEs
 
