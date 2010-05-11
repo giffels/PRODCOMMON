@@ -425,6 +425,9 @@ class SchedulerARC(SchedulerInterface):
         tmp, exitStat = self.ExecuteCommand(command)
         output = tmp.split('\n')
 
+        if exitStat != 0:
+            raise SchedulerError('Error in submit:', output, command)
+
         # Check output of submit command
         subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)")
         n = 0
@@ -432,13 +435,10 @@ class SchedulerARC(SchedulerInterface):
             try:
                 m = re.match(subRe, output[n])
 
-                if exitStat != 0 or not m:
-                    raise SchedulerError('Error in submit:', output, command)
-
-                arcId = m.group(1) 
-                jobAttributes[job['name']] = arcId
-
-                self.logging.info("Submitted job with id %s" % arcId)
+                if m:
+                    arcId = m.group(1) 
+                    jobAttributes[job['name']] = arcId
+                    self.logging.info("Submitted job with id %s" % arcId)
             except SchedulerError, e:
                 msg = "Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' '))
                 self.logging.error(msg)
