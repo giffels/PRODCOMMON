@@ -518,7 +518,7 @@ class SchedulerARC(SchedulerInterface):
                 else:
                     arcStat = "UNKNOWN"
 
-                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", output)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -526,7 +526,7 @@ class SchedulerARC(SchedulerInterface):
                 # This is something that really shoudln't happen.
                 arcStat = "WTF?"
 
-                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\d*)", output)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -544,7 +544,7 @@ class SchedulerARC(SchedulerInterface):
 
                 for line in jobstring.split('\n'):
 
-                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.]+)\S*/\d*)", line)
+                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", line)
                     if arcIdMatch:
                         arcId = arcIdMatch.group(1)
                         host = arcIdMatch.group(2)
@@ -639,7 +639,7 @@ class SchedulerARC(SchedulerInterface):
         for line in output.split('\n'):
             # If a job URL ("arcId") occurs on a line of output, it tends
             # to be en error message:
-            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.]+\S*/\d*)", line)
+            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.-]+\S*/\d*)", line)
             if errorMatch:
                 arcId = errorMatch.group(1)
                 job = arcId2job[arcId]
