@@ -240,7 +240,7 @@ class Proxy:
 
         out, ret = self.ExecuteCommand(cmd)
         if ret != 0 and ret != 1 :
-            msg = "Error while checking myproxy timeleft for %s"%proxy
+            msg = "Error while checking myproxy timeleft for %s from %s: %s"%(proxy, self.myproxyServer, out)
             raise Exception(msg)
 
         if not out:
