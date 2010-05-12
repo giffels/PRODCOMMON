@@ -17,7 +17,7 @@ class ProtocolSrmv2(Protocol):
         # check for java version
         cmd = "java -version"
         try: 
-            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
+            exitcode, outputs = self.executeCommand(cmd)
         except Exception, ex:
             raise MissingCommand("Missing java command.", \
                                      [] , cmd)
