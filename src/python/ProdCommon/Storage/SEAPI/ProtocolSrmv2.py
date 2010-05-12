@@ -20,7 +20,7 @@ class ProtocolSrmv2(Protocol):
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         except Exception, ex:
             raise MissingCommand("Missing java command.", \
-                                     [] , outputs)
+                                     [] , cmd)
         javaLink='https://twiki.cern.ch/twiki/bin/view/CMS/CheckUserJava'
         for line in outputs.split("\n"):
             line = line.lower()
