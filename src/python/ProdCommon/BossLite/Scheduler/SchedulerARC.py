@@ -499,6 +499,10 @@ class SchedulerARC(SchedulerInterface):
 
         jobsFile, arcId2job = self.createJobsFile(joblist, "Will query")
 
+        if len(arcId2job) == 0:
+            self.logging.info("No active (and valid) jobs!")
+            return
+
         cmd = 'ngstat -i %s' % jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         jobsFile.close()
