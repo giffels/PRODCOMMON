@@ -233,7 +233,11 @@ def removeQueues(celist):
     Given a list of CEUniqueIDs, return a list of jobmanager contact
     strings.
     """
-    r = re.compile('^(.*:.*/jobmanager-.*?)-(.*)')
+    if DEBUG > 1:
+        print 'removeQueues: input %s' % celist
+
+    r = re.compile('^(.*:.*/(jobmanager|nordugrid|cream)-.*?)-(.*)')
+
     jmlist = []
     for x in celist:
         m = r.match(x)
@@ -241,6 +245,8 @@ def removeQueues(celist):
             item = m.groups()[0]
             if (jmlist.count(item) == 0):
                 jmlist.append(item)
+    if DEBUG > 1:
+        print 'removeQueues: output %s' % jmlist
     return jmlist
 
 def listAllCEs(software='', arch='', onlyOSG=False, bdii='exp-bdii.cern.ch'):
