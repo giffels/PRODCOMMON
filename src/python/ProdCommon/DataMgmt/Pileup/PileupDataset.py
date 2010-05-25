@@ -79,7 +79,7 @@ class PileupDataset(dict):
         #  //
         # // Select the files to return, start with something really simple.
         #//
-        selectedBlock = chooseBlock(matchedBlocks.keys())
+        selectedBlock = self.chooseBlock(matchedBlocks.keys())
         possibleFiles = self[selectedBlock]
         random.shuffle(possibleFiles)
         targetSites = matchedBlocks[selectedBlock]
