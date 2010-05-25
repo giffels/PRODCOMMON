@@ -141,7 +141,7 @@ class Token:
     def ManualRenewCredential( self, proxy=None, vo='cms', group=None, role=None ):
         """
         """
-        cmd = 'kinit '
+        cmd = 'kinit -5 -l 24h -r 240h'
 
         try:
             out = os.system(cmd)
