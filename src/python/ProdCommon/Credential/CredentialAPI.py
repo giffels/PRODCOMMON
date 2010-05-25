@@ -152,3 +152,11 @@ class CredentialAPI:
             raise Exception( str(ex) )
 
 
+    def renewalMyToken(self, proxyFile) :
+        """
+        """
+        try:
+            self.credObj.renewalMyToken(proxyFile)
+        except Exception, ex:
+            raise Exception( str(ex) )
+
