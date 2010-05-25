@@ -2,6 +2,7 @@ import os,sys
 import commands
 import traceback
 from  time import *
+import tempfile
 import logging
 
 from ProdCommon.BossLite.Common.System import executeCommand
@@ -19,6 +20,7 @@ class Token:
         self.debug = args.get("debug",False)
         self.logging = args.get( "logger", logging )
         self.args = args
+        self.ksuCmd = 'cd /tmp; unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; '
 
     def ExecuteCommand( self, command ):
         """
@@ -96,6 +98,8 @@ class Token:
         return expires
 
 
+
+
     def getSubject( self, userKerb ):
         """
         """
@@ -127,7 +131,7 @@ class Token:
             msg = "Error no valid user kerberos to remove "
             raise Exception(msg)
 
-        cmd = 'rm %s'%proxy
+        cmd = 'rm %s'%userKerb
 
         out, ret = self.ExecuteCommand(cmd)
         if ret != 0 :
@@ -145,6 +149,53 @@ class Token:
         except:
             msg = "Unable to create a valid Token!\n"
             raise Exception(msg)
+
+    def renewalMyToken(self, userKerb):
+        """
+        """
+        if userKerb == None:
+            userKerb = self.getUserKerberos()
+
+        command =  "kinit -R -c FILE:%s" %userKerb + ";chmod 777 %s" %userKerb
+        cmd = '%s\n'%command
+        command,fname = self.createCommand(cmd, userKerb)
+ 
+        out, ret = self.executeCommandWrapper( command )
+
+        if self.ksuCmd: os.unlink( fname )
+        if (ret>0): 
+            raise Exception("Unable to create a valid Token!\n")
+
+
+    def createCommand(self, cmd, cert):
+        """
+        write a ksu tmpFile
+        """
+        BaseCmd = self.ksuCmd +'/usr/kerberos/bin/ksu %s -k -c FILE:%s < '%(cert.split('_')[1],cert)
+
+        tmp, fname = tempfile.mkstemp( "", "ksu_", os.getcwd() )
+        os.close( tmp )
+        tmpFile = open( fname, 'w')
+        tmpFile.write( cmd )
+        tmpFile.close()
+
+        #redefine command
+        command = BaseCmd + fname
+
+        return command, fname
+
+
+    def executeCommandWrapper(self, command ):
+        """
+        try to execute ksu command
+        """
+        out, ret = self.ExecuteCommand( command )
+
+        tries = 0
+        while (ret != 0 and tries < 5):
+            out, ret = self.ExecuteCommand( command )
+            tries += 1
+        return out, ret
 
     def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
         """
