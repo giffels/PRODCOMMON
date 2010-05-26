@@ -4,8 +4,8 @@ _BossLiteDB_
 
 """
 
-__version__ = "$Id: BossLiteDB.py,v 1.8 2008/10/10 13:32:37 gcodispo Exp $"
-__revision__ = "$Revision: 1.8 $"
+__version__ = "$Id: BossLiteDB.py,v 1.9 2009/08/03 09:59:27 gcodispo Exp $"
+__revision__ = "$Revision: 1.9 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -183,7 +183,8 @@ class BossLiteDB(object):
 
         # update
         obj.update(self.session)
-        self.session.commit()
+        if self.database == "MySQL":
+            self.session.commit()
 
 
     ##########################################################################
