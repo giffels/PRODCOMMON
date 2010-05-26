@@ -147,7 +147,7 @@ class ProtocolGlobusUtils(Protocol):
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
             raise TransferException("Error creating remote dir " + \
-                                    "[" +source.workon+ "].", problems, outputs)
+                                    "[" +str(source.workon)+ "].", problems, outputs)
 
     def copy(self, source, dest, proxy = None, opt = "", tout = None):
         """
@@ -260,7 +260,7 @@ class ProtocolGlobusUtils(Protocol):
         if ' Is a directory' in problems:
             self.deleteDir( source, proxy, opt )
         elif exitcode != 0 or len(problems) > 0:
-            raise OperationException("Error deleting [" +source.workon+ "]", \
+            raise OperationException("Error deleting [" +str(source.workon)+ "]", \
                                       problems, outputs )
 
     def checkExists(self, source, proxy = None, opt = "", tout = None):
@@ -305,7 +305,7 @@ class ProtocolGlobusUtils(Protocol):
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
-            raise OperationException("Error getting size for [" +source.workon+ "]",
+            raise OperationException("Error getting size for [" +str(source.workon)+ "]",
                                       problems, outputs )
         return outputs
 
@@ -326,7 +326,7 @@ class ProtocolGlobusUtils(Protocol):
         exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         if exitcode != 0:
-            raise OperationException("Error listing [" +source.workon+ "]", \
+            raise OperationException("Error listing [" +str(source.workon)+ "]", \
                                       outputs, outputs )
         filesres = {}
         for filet in outputs.split('\n'):
@@ -361,7 +361,7 @@ class ProtocolGlobusUtils(Protocol):
         exitcode, outputs = self.executeCommand(cmd, timeout = tout)
 
         if exitcode != 0:
-            raise OperationException("Error listing [" +source.workon+ "]", \
+            raise OperationException("Error listing [" +str(source.workon)+ "]", \
                                       outputs, outputs )
 
         filesres = []
