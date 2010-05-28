@@ -6,6 +6,10 @@ Example of how to use the FwkJobRep package to update a job report post processi
 
 
 """
+try:
+    import json
+except:    
+    import simplejson as json
 import os, string
 import sys
 import popen2
@@ -51,65 +55,58 @@ def addFileStats(file):
     Add checksum and size info to each size
 
     """
-    #if not os.path.exists(file['PFN']):
-    #    print "Error: Cannot find file: %s " % file['PFN']
-    #    return 1 
     file['Size'] = fileSize(file['PFN'])
     checkSum = readCksum(file['PFN'])
     file.addChecksum('cksum',checkSum)
     return
 
 
-def modifyFile(file):
+def modifyFile(f, file_name, for_file):
     """
     _modifyFile_
     
     Calls functions to modify PFN and LFN
     """
+    #print "    for_file['se_path'] = ", for_file['se_path']
+    #print "    for_file['endpoint'] = ", for_file['endpoint']
+    print "    file = ", file_name
+    newPfn = for_file['endpoint'] + file_name
+    print "    newPfn = ", newPfn
 
-    str.split(str(file['PFN']), '.root')
-    pref =  str.split(str(file['PFN']), '.root')[0]
-    suff = str.split(str(file['PFN']), pref)[1]
-    
-    ### FEDE changing se_path with  the endpoint
-    #newPfn = diz['se_name'] + diz['se_path'] + pref + '_' + diz['n_job'] + suff
-    newPfn = diz['se_path'] + pref + '_' + diz['n_job'] + suff
-    print "newPfn = ", newPfn
-    #########################
+    newLfn = for_file['for_lfn'] + file_name
+    print "    newLfn = ", newLfn
 
-    newLfn = diz['for_lfn'] + pref + '_' + diz['n_job'] + suff
-    print "newLfn = ", newLfn
+    updatePFN(f, f['LFN'], newPfn)
 
-    updatePFN(file, file['LFN'], newPfn)
-
-    updateLFN(file, file['LFN'], newLfn)
+    updateLFN(f, f['LFN'], newLfn)
 
     return
 
 
-def updatePFN(file, lfn, newPFN):
+def updatePFN(f, lfn, newPFN):
     """
     _updatePFN_
 
     Update a PFN for an LFN, based on a stage out to some SE.
     """
-    if file['LFN'] != lfn:
+    if f['LFN'] != lfn:
         return
 
-    file['PFN'] = newPFN
-    file['SEName'] = diz['se_name']
+    f['PFN'] = newPFN
+    #file['SEName'] = diz['se_name']
+    f['SEName'] = for_file['se_name']
     return
 
 
-def updateLFN(file, lfn, newLFN):
+def updateLFN(f, lfn, newLFN):
     """
     _updateLFN_
 
     Update a LFN.
     """
-    if file['LFN'] != lfn:
+    if f['LFN'] != lfn:
         return
-    file['LFN'] = newLFN
+    f['LFN'] = newLFN
     return
 
 
@@ -118,11 +115,16 @@ if __name__ == '__main__':
     # Example:  Load the report, update the file stats, pretend to do a stage out
     # and update the information for the stage out
 
+############################
+### file_list, se_path, se_name, for_lfn, UserProcessedDataset have been passed with json file
+### json:
+### {"file_1.root": {"se_name": "se_legnaro", "for_lfn": "/store/xxx/yyy", "se_path": "srm=se_legnaro/xxx/yyy", "UserProcessedDataset": "$USER_processedDataset2_$PSETHASH"}, "file_2": {"se_name": "se_legnaro", "for_lfn": "/store/zzz/www", "se_path": "srm:se_bari/zzz/www", "UserProcessedDataset": "$USER_processedDataset2_$PSETHASH"}}
+
+### instead of:
+### $RUNTIME_AREA/ProdCommon/FwkJobRep/ModifyJobReport.py fjr $RUNTIME_AREA/crab_fjr_$NJob.xml n_job $NJob for_lfn $FOR_LFN PrimaryDataset $PrimaryDataset  ApplicationFamily $ApplicationFamily ApplicationName $executable cmssw_version $CMSSW_VERSION psethash $PSETHASH se_name $SE se_path $SE_PATH file_list $file_list UserProcessedDataset $USER-$ProcessedDataset-$PSETHASH
+############################
 
     L = sys.argv[1:]
-    if len(L) < 21:
-        print "Error: wrong number of arguments passed to the ModifyJobreport. Please check your script"
-        sys.exit(1)
     diz={}
     
     i = 0
@@ -130,6 +132,16 @@ if __name__ == '__main__':
         diz[L[i]] = L[i+1]
         i = i + 2
 
+    if diz.has_key('json'):
+        json_file = diz['json']
+        fp = open(json_file, "r")
+        inputDict = json.load(fp)
+        fp.close()
+        print "inputDict = ", inputDict
+    else:
+        print "Error: no json file provided"
+        sys.exit()
+        
     if diz.has_key('fjr'):
         inputReport = diz['fjr']
         reports = readJobReport(inputReport)
@@ -140,10 +152,10 @@ if __name__ == '__main__':
         try:   
             report = reports[-1]
         except IndexError:
-            print "Error: No file to publish in xml file"
+            print "Error: fjr file does not contain enough information"
             sys.exit(1)
     else:
-        print "no crab fjr found"
+        print "Error: no fjr provided"
         sys.exit(1)
 
 
@@ -151,9 +163,22 @@ if __name__ == '__main__':
     if diz.has_key('n_job'):
         n_job = diz['n_job'] 
     else:
-        print "it is necessary to specify the job number" 
+        print "Error: it is necessary to specify the job number" 
         sys.exit(1)
         
+    ##### filter name takes from environment variable #####
+    try:
+       var_filter = os.getenv('var_filter')
+    except:
+       var_filter=''
+    ### filter dictionary
+    diz_filter={}
+    if (var_filter):
+       diz_filter=json.loads(var_filter)
+       print "diz_filter = ", diz_filter
+    else:
+        print "no filter to add to ProcessedDataset"
+
     if diz.has_key('UserProcessedDataset'): 
         UserProcessedDataset = diz['UserProcessedDataset']
     else:
@@ -162,56 +187,104 @@ if __name__ == '__main__':
     
     #### Adding AnalysisFile ####
     if (len(report.files) == 0) and (len(report.analysisFiles) == 0):
-       print "no EDM_output file or NO_EDM_output to modify"
+       print "Warninig: no EDM_output file or NO_EDM_output to modify in the fjr"
        print "Adding a no EDM_output file"
-       files=str.split(str(diz['file_list']), ',')
-       #print "files = ", files 
-       for file in files:
-           split = str.split(str(file), '/')
-           if (len(split) > 0):
-               file_name = split[len(split)-1]
-           else:
-               file_name = file    
-
+       for file_name in inputDict.keys():
+           for_file = inputDict[file_name]
            report.newAnalysisFile()
            for aFile in report.analysisFiles:
                if (aFile['SEName'] == None):
-                   aFile['SEName']=diz['se_name']
+                   aFile['SEName']=for_file['se_name']
                if (aFile['LFN'] == None):    
-                   aFile['LFN']=diz['for_lfn']+file_name
+                   aFile['SEName']=for_file['for_lfn']+file_name
                if (aFile['PFN'] == None):    
-                   aFile['PFN']=diz['se_path']+file_name
+                   #aFile['PFN']=for_file['se_path']+file_name
+                   aFile['PFN']=for_file['endpoint']+file_name
            report.save()
-        
        report.write("NewFrameworkJobReport.xml")         
     else:
         if (len(report.files) != 0):
+            ### f is <file> tag
             for f in report.files:
+                ### f['PFN'] is the original file name, as produced by CMSSW: out.root o file:out.root
                 if (string.find(f['PFN'], ':') != -1):
                     tmp_path = string.split(f['PFN'], ':')
                     f['PFN'] = tmp_path[1]
+                    
+                ### check if the file exists in the wn
                 if not os.path.exists(f['PFN']):
                     print "Error: Cannot find file: %s " % f['PFN']
                     sys.exit(1)
-                #Generate per file stats
-                addFileStats(f)
+                    
+                for file_name in inputDict.keys():
+                    print "file_name in inputDict = ", file_name
+                    ### file is the name of produced file + number submission: out_6_1.root
+                    only_name = os.path.basename(file_name)
+                    #print "only_name = ", only_name
+                    tmp = string.split(only_name, ".")
+                    suff = '.' + tmp[-1]
+                    #print "suff = ", suff
 
-                datasetinfo=f.newDataset()
-                datasetinfo['PrimaryDataset'] = diz['PrimaryDataset'] 
-                datasetinfo['DataTier'] = "USER" 
-                datasetinfo['ProcessedDataset'] = UserProcessedDataset 
-                datasetinfo['ApplicationFamily'] = diz['ApplicationFamily'] 
-                datasetinfo['ApplicationName'] = diz['ApplicationName'] 
-                datasetinfo['ApplicationVersion'] = diz['cmssw_version'] 
-                datasetinfo['PSetHash'] = diz['psethash']
-                datasetinfo['PSetContent'] = "TOBEADDED"
-                ### to check if the job output is composed by more files
-                modifyFile(f)    
+                    tmp = string.split(only_name, "_"+n_job)
+                    pref = tmp[0]
+                    #print "pref = ", pref
+
+                    name = pref + suff
+                    #print "name = ", name
+                      
+                    #print "f['PFN'] = ", f['PFN']
+                    if ( name == f['PFN']):
+                       #print "    name = ", name
+                       ### parameter for this file extracted from json 
+                       for_file = inputDict[file_name]
+                       #print "    inputDict[file] = ", inputDict[file_name]
+                       #print "    file_name = ", file_name
+                       #Generate per file stats
+                       #print "    call addFileStats"
+                       addFileStats(f)
+                       #print "    after addFileStats"
+
+                       datasetinfo=f.newDataset()
+                       datasetinfo['PrimaryDataset'] = diz['PrimaryDataset'] 
+                       datasetinfo['DataTier'] = "USER" 
+                       datasetinfo['ApplicationFamily'] = diz['ApplicationFamily'] 
+                       datasetinfo['ApplicationName'] = diz['ApplicationName'] 
+                       datasetinfo['ApplicationVersion'] = diz['cmssw_version'] 
+                       datasetinfo['PSetHash'] = diz['psethash']
+                       datasetinfo['PSetContent'] = "TOBEADDED"
+                       #########################################################################
+                       datasetinfo['ProcessedDataset'] = UserProcessedDataset
+                       if diz_filter.has_key(name):
+                           filter = diz_filter[name]
+                           print "filter = ", filter
+                           if (filter):
+                               FilterUserProcessedDataset = UserProcessedDataset + '-' + str(filter)
+                               datasetinfo['ProcessedDataset'] = FilterUserProcessedDataset 
+                       #else:
+                       #    datasetinfo['ProcessedDataset'] = UserProcessedDataset
+                       #########################################################################    
+                       ### to check if the job output is composed by more files
+                       modifyFile(f, os.path.basename(file_name), for_file)    
+                    else:
+                        print "file not found "
+                        continue
 
         if (len(report.analysisFiles) != 0):
             for aFile in report.analysisFiles:
                 aFile['PFN'] = os.path.basename(aFile['FileName'])
-                modifyFile(aFile)
+                for file_name in inputDict.keys():
+                    tmp = string.split(file_name, ".")
+                    suff = '.' + tmp[-1]
+
+                    tmp = string.split(file_name, "_"+n_job)
+                    pref = tmp[0]
+
+                    name = pref + suff
+
+                    if ( name == aFile['PFN']):
+                        for_file = inputDict[file_name]
+                        modifyFile(aFile, file_name)
+                    
                 
         # After modifying the report, you can then save it to a file.
         report.write("NewFrameworkJobReport.xml")
