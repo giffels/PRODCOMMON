@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.12 2010/02/18 09:47:28 spigafi Exp $"
-__version__ = "$Revision: 1.12 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.13 2010/04/09 11:39:40 spigafi Exp $"
+__version__ = "$Revision: 1.13 $"
 
 import sys
 import os
@@ -39,10 +39,28 @@ except :
     print "Your default python is %s \n" % sys.version
     sys.exit(1)
 
-# manage json library using the appropriate WMCore wrapper
-from WMCore.Wrappers import JsonWrapper as json
 
 ##########################################################################
+
+class myJSONEncoder(object):
+    """
+    easy class able to transform a string representation of a python dictionary 
+    in a valid JSON output recognizable by simplejson
+    """
+    
+    def dumps(self, myString):
+        """
+        the same interface as simplejson ...
+        """
+        
+        tmp = str(myString)
+        tmp = tmp.replace('\'','"')
+        tmp = tmp.replace('None','null')
+        
+        return tmp
+    
+##########################################################################
+
 class GLiteStatusQuery(object):
     """
     basic class to handle glite jobs status query
@@ -326,6 +344,12 @@ def main():
     __main__
     """
     
+    # load ad-hoc JSON encoder if there are some problems with WMCore
+    try : 
+        from WMCore.Wrappers import JsonWrapper as json
+    except:
+        json = myJSONEncoder() 
+        
     # parse options
     try:
         opts, args = getopt.getopt(sys.argv[1:], 
