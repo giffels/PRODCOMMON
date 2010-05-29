@@ -97,7 +97,37 @@ class Token:
         expires = expires - now 
         return expires
 
+    def checkMyProxy( self , proxy=None, Time=100, checkRetrieverRenewer=False):
+        """ 
+        Note The Name is Really CONFUSING... but functionality is the same as for myproxy
+        """
+        expires = None
+        if userKerb == None:
+            userKerb = self.getUserKerberos()
 
+        cmd = 'klist -c %s'%userKerb
+
+        out, ret = self.ExecuteCommand(cmd)
+        if ret != 0 :
+            msg = ('Error %s in checkCredential while executing : %s ' % (out, cmd))
+            raise Exception(msg)
+        lines = out.split('\n')
+        for i in range(len(lines)) :
+            if lines[i].find('renew until') >=1:
+                expires =lines[i].split('renew until')[1].strip()
+        expires =  mktime(strptime(expires, '%m/%d/%y %H:%M:%S'))
+        now = time()
+        timeLeft = expires - now
+
+        minTimeLeft=int(Time)*3600 # in seconds
+        valid = True
+
+        ## if no valid proxy
+        if not timeLeftLocal :
+            valid = False
+        elif int(timeLeft)<minTimeLeft :
+            valid = False
+        return valid
 
 
     def getSubject( self, userKerb ):
