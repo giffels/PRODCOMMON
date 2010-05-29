@@ -185,9 +185,10 @@ class Protocol(object):
                     p.stdout.close()
                     p.stderr.close()
                 except OSError, err :
-                    logging.WARNING(
-                        'Warning: an error occurred killing subprocess [%s]' \
-                        % str(err) )
+                    pass
+                    #logging.warning(
+                    #    'Warning: an error occurred killing subprocess [%s]' \
+                    #    % str(err) )
                 raise SEAPITimeout("Timeout interrupt for too long execution [timeout = %s]."%str(timeout), [], "Stopped execution after %s sec."%str(temp_tout))
 
         while 1:
@@ -223,9 +224,10 @@ class Protocol(object):
                 p.stdout.close()
                 p.stderr.close()
             except OSError, err :
-                logging.WARNING(
-                    'Warning: an error occurred killing subprocess [%s]' \
-                    % str(err) )
+                pass 
+                #logging.warning(
+                #    'Warning: an error occurred killing subprocess [%s]' \
+                #    % str(err) )
  
             raise TimeOut( command, ''.join(outc)+ ''.join(errc), timeout, start, stop )
  
@@ -234,8 +236,9 @@ class Protocol(object):
             p.stdout.close()
             p.stderr.close()
         except OSError, err:
-            logging.WARNING( 'Warning: an error occurred closing subprocess [%s] %s  %s' \
-                             % (str(err), ''.join(outc)+''.join(errc), p.returncode ))
+            pass 
+            #logging.warning( 'Warning: an error occurred closing subprocess [%s] %s  %s' \
+            #                 % (str(err), ''.join(outc)+''.join(errc), p.returncode ))
  
         returncode = p.returncode
         
@@ -247,10 +250,10 @@ class Protocol(object):
             self.__logout__(str(command), str(returncode), str(''.join(outc)+''.join(errc)))
             return returncode,''.join(outc),''.join(errc)
 
-        logging.DEBUG(command)
-        logging.DEBUG(returncode)
-        logging.DEBUG(''.join(outc))
-        logging.DEBUG(''.join(errc))
+        #logging.debug(command)
+        #logging.debug(returncode)
+        #logging.debug(''.join(outc))
+        #logging.debug(''.join(errc))
         ## we could remove this.... and only use logging... 
         self.__logout__(str(command), str(returncode), str(''.join(outc)+''.join(errc)))
         return returncode,''.join(outc)+''.join(errc)
