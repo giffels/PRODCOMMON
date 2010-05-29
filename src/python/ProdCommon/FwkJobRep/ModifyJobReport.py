@@ -12,7 +12,7 @@ except:
     import simplejson as json
 import os, string
 import sys
-import popen2
+from subprocess import Popen, PIPE, STDOUT
 
 from ProdCommon.FwkJobRep.ReportParser import readJobReport
 
@@ -24,15 +24,13 @@ def readCksum(filename):
     Run a cksum command on a file an return the checksum value
 
     """
-    pop = popen2.Popen4("cksum %s" % filename)
-    while pop.poll() == -1:
-        exitStatus = pop.poll()
-    exitStatus = pop.poll()
-    if exitStatus:
+
+    pop = Popen(["cksum", "%s" % filename],
+                stdout = PIPE, stderr = STDOUT)
+    output = pop.communicate()[0]
+    if pop.wait():
         return None
-    content = pop.fromchild.read()
-    value = content.strip()
-    value = content.split()[0]
+    value = output.split()[0]
     print "checksum = ", value
     return value
 
