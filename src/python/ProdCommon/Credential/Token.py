@@ -97,7 +97,7 @@ class Token:
         expires = expires - now 
         return expires
 
-    def checkMyProxy( self , proxy=None, Time=100, checkRetrieverRenewer=False):
+    def checkMyProxy( self , userKerb=None, Time=100, checkRetrieverRenewer=False):
         """ 
         Note The Name is Really CONFUSING... but functionality is the same as for myproxy
         """
@@ -123,7 +123,7 @@ class Token:
         valid = True
 
         ## if no valid proxy
-        if not timeLeftLocal :
+        if not timeLeft :
             valid = False
         elif int(timeLeft)<minTimeLeft :
             valid = False
