@@ -195,17 +195,13 @@ class Protocol(object):
             # We want timeout based on command execution time
             # and not on command sleep time
             #(r, w, e) = select.select([fd], [], [], timeout)
-            (r, w, e) = select.select([fd], [], [], None)
+            (r, w, e) = select.select([fd, fde], [], [], None)
             read = '' 
             readerr = '' 
-            if fd in r or fde in r:
+            if fd in r:
                 read = p.stdout.read()
-                try: 
-                    readerr = p.stderr.read()
-                except:
-                    pass 
-            #if fde in r:
-            #    readerr = p.stderr.read()
+            if fde in r:
+                readerr = p.stderr.read()
             if fd not in r and fde not in r:
                 timedOut = True
                 break
