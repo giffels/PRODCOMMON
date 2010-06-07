@@ -20,7 +20,7 @@ class ProtocolUberFtp(Protocol):
 
         # Discriminate uberftp copy behaviour 
         cmd = "uberftp -v "
-        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
+        exitcode, outputs = self.executeCommand(cmd, timeout = self.timeout)
         
         if outputs.find("1.22") != -1 :
             self.slcVersion = 4
