@@ -2,6 +2,7 @@
 import re
 import sys
 import ldap
+from copy import deepcopy
 
 DEBUG = 0
 map_source = {'ceList': [], 'bdii': ''}
@@ -182,7 +183,7 @@ def getSoftwareAndArch(host_list, software, arch, bdii='exp-bdii.cern.ch'):
     query +=   "(GlueHostApplicationSoftwareRunTimeEnvironment="+arch+")"
 
     clusterlist = []
-    for h in host_list:
+    for h in deepcopy(host_list):
         try:
             clusterlist.append(ce_to_cluster_map[h])
         except KeyError:
