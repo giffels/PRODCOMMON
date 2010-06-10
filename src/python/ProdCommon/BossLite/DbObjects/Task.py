@@ -4,8 +4,8 @@ _Task_
 
 """
 
-__version__ = "$Id: Task.py,v 1.18 2009/07/27 16:59:38 gcodispo Exp $"
-__revision__ = "$Revision: 1.18 $"
+__version__ = "$Id: Task.py,v 1.19 2010/04/27 10:33:06 gcodispo Exp $"
+__revision__ = "$Revision: 1.19 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 import os.path
@@ -88,10 +88,10 @@ class Task(DbObject):
         if self.data['id'] is None:
             raise TaskError( "Task not loaded %s" %self)
 
-        if self.data['id'] != job['taskId'] :
+        if int(self.data['id']) != int(job['taskId']) :
             raise TaskError(
                 "Mismatching taskId: %d for the task, %d for the job" \
-                % ( self.data['id'], job['taskId'] )
+                % ( int(self.data['id']), int(job['taskId']) )
                 )
 
         # insert job
