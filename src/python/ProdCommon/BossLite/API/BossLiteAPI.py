@@ -4,8 +4,8 @@ _BossLiteAPI_
 
 """
 
-__version__ = "$Id: BossLiteAPI.py,v 1.78 2009/02/13 09:32:13 gcodispo Exp $"
-__revision__ = "$Revision: 1.78 $"
+__version__ = "$Id: BossLiteAPI.py,v 1.79 2009/08/03 09:59:27 gcodispo Exp $"
+__revision__ = "$Revision: 1.79 $"
 __author__ = "Giuseppe.Codispoti@bo.infn.it"
 
 import logging
@@ -171,6 +171,37 @@ class BossLiteAPI(object):
         # all done
         return task
 
+    def declareNewJobs( self, xml, task, proxyFile=None ) :
+        """
+        register job related informations in the db
+        """
+        taskInfo, jobInfos, rjAttrs = self.deserialize( xml )
+        jobRange=range(len(task.getJobs())+1)
+        jobRange.remove(0)  
+        # reconstruct jobs and fill the data
+        jobs = []
+        for jI in jobInfos:
+            # check if jobs is new 
+            if int(jI['jobId']) not in jobRange:
+                job = Job( jI )
+                job['taskId']=task['id']  
+                subn = int( job['submissionNumber'] )
+                if subn > 0 :
+                    job['submissionNumber'] = subn - 1
+                else :
+                    job['submissionNumber'] = subn
+                #jobs.append(job)
+                task.appendJob(job)
+        for job in task.jobs:
+            if int(job['jobId']) not in jobRange:
+                attrs = rjAttrs[ str(job['name']) ]
+                self.getRunningInstance( job, attrs )
+                self.updateDB( job )
+          
+        # self.updateDB( task )
+
+        # all done
+        return task
 
     ##########################################################################
     def saveTask( self, task ):
