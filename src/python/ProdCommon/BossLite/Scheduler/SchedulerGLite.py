@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.32 2010/03/01 15:33:39 spigafi Exp $"
-__version__ = "$Revision: 2.32 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.35 2010/04/15 08:27:42 spigafi Exp $"
+__version__ = "$Revision: 2.35 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -793,12 +793,12 @@ class SchedulerGLite(SchedulerInterface) :
         else :
             # files are elsewhere, just add their composed path
             if task['globalSandbox'] is not None :
-                jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
+               # jdl += 'InputSandboxBaseURI = "%s";\n' % task['startDirectory']
                 for ifile in task['globalSandbox'].split(','):
                     if ifile.strip() == '' :
                         continue
-                    if ifile.find( 'file:/' ) == 0:
-                        globalSandbox += '"' + ifile + '",'
+                    if ifile.find( 'file:/' ) <= 0:#==0: DANIELE
+                        globalSandbox += '"' +task['startDirectory']+ ifile + '",'
                         
                         commonFiles += "root.inputsandbox[%d]," % isbIndex
                         isbIndex += 1
