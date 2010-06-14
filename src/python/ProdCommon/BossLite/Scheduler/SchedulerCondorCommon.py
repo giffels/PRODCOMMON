@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.58 2010/04/19 16:55:31 ewv Exp $"
-__version__ = "$Revision: 1.58 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.59 2010/04/19 18:15:47 ewv Exp $"
+__version__ = "$Revision: 1.59 $"
 
 import os
 import commands
@@ -307,9 +307,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
+                
                 schedulerId = job.runningJob['schedulerId']
-
-
+                
+                # fix: skip if the Job was created but never submitted
+                if job.runningJob['status'] == 'C' :
+                    continue
+		        
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
                 schedd = schedulerId.split('//')[0]

@@ -26,8 +26,12 @@ class RollbackImporter:
         __builtin__.__import__ = self._import
         self.newModules = {}
         
-    def _import(self, name, globals=None, locals=None, fromlist=[]):
-        result = apply(self.realImport, (name, globals, locals, fromlist))
+    def _import(self, name, globals=None, locals=None, fromlist=[], level=None):
+        # level not used in python2.3
+        if level is not None:
+            result = apply(self.realImport, (name, globals, locals, fromlist, level))
+        else:
+            result = apply(self.realImport, (name, globals, locals, fromlist))
         self.newModules[name] = 1
         return result
         
