@@ -115,8 +115,8 @@ class ProtocolGlobusUtils(Protocol):
                              line.find("error") != -1 or line.find("failed") != -1 or \
                              line.find("cacheexception") != -1 or \
                              line.find("does not exist") != -1:
-                            cacheP = line.split(":")[-1]
-                            return cacheP, 4
+                            #cacheP = line.split(":")[-1]
+                            return line, 4
 
                         elif line.find("unknown option") != -1 or \
                              line.find("unrecognized option") != -1 or \
