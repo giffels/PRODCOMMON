@@ -114,7 +114,7 @@ def splitNgstatOutput(output):
      item.
 
      The assumption is that the first line of a job has no indentation,
-     and subsequent lines are indented by at least 1 space.
+     and subsequent lines are indented by at least 1 space or start with "This job was only very recently submitted".
      """
 
      jobs = []
@@ -125,11 +125,13 @@ def splitNgstatOutput(output):
                continue
 
           if line[0].isspace():
-               s += line + '\n'
+               s += '\n' + line
+          elif re.match("This job was only very recently submitted", line):
+               s += ' ' + line
           else:
                if len(s) > 0:
-                    jobs.append(s)
-               s = line + '\n'
+                    jobs.append(s + '\n')
+               s = line 
      if len(s) > 0:
           jobs.append(s)
 
@@ -336,11 +338,12 @@ class SchedulerARC(SchedulerInterface):
         xrsl = '&'
         xrsl += '(executable="%s")' % job['executable']
 
-        # The comma separated list of input files contains '\"':s and '\':s
-        # that should be removed -- otherwise the list will be split into
+        # An argument-string may contain '\"':s and '\':s
+        # that should be removed -- otherwise it will be split into
         # several arguments by the shell, which is WRONG!
-        args = job['arguments'].replace('\\"', '').replace('\\', '')
-        xrsl += '(arguments=%s)' % args
+        if job['arguments']:
+            args = job['arguments'].replace('\\"', '').replace('\\', '')
+            xrsl += '(arguments=%s)' % args
 
         xrsl += '(jobName="%s")' % job['name']
         xrsl += '(stdout="%s")' % job['standardOutput']
@@ -351,6 +354,16 @@ class SchedulerARC(SchedulerInterface):
         inputfiles = ""
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
+            xrsl += '(%s %s)' % (f.split('/')[-1], f)
+            if inputfiles == "'":
+                inputfiles += f.split('/')[-1]
+            else:
+                inputfiles += "\\ " + f.split('/')[-1]
+                # FIXME: The '\\' above is required with older versions of ARC
+                # (0.6.*) -- otherwise everything after the first space is
+                # lost -- but will cause problems for newer versions
+                # (0.8.*).
+        for f in job['inputFiles']:
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
             if inputfiles == "'":
                 inputfiles += f.split('/')[-1]
@@ -386,9 +399,10 @@ class SchedulerARC(SchedulerInterface):
 
         # User supplied thingies:
         xrsl += self.user_xrsl
-        for s in task['jobType'].split('&&'):
-            if re.match('^ *\(.*=.*\) *$', s):
-                xrsl += s
+        if task['jobType']:
+            for s in task['jobType'].split('&&'):
+                if re.match('^ *\(.*=.*\) *$', s):
+                    xrsl += s
 
         return xrsl
 
@@ -412,7 +426,7 @@ class SchedulerARC(SchedulerInterface):
 
         # Build xRSL 
         xrsl = self.jobDescription(task, requirements, config, service)
-        xrsl_file = os.path.dirname(task['cfgName']) + '/job.xrsl'
+        xrsl_file = os.path.dirname(task['cfgName'] or './') + '/%s-jobs.xrsl' % task['name']
         f = open(xrsl_file, "w")
         f.write(xrsl)
         f.close()
@@ -522,7 +536,7 @@ class SchedulerARC(SchedulerInterface):
                 else:
                     arcStat = "UNKNOWN"
 
-                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", output)
+                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -530,7 +544,7 @@ class SchedulerARC(SchedulerInterface):
                 # This is something that really shoudln't happen.
                 arcStat = "WTF?"
 
-                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\d*)", output)
+                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
