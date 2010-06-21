@@ -169,7 +169,7 @@ class Protocol(object):
         if timeout is not None:
             temp_tout = 0
             step_tout = float(timeout) / float(100)
-            while temp_tout <= timeout:
+            while float(temp_tout) <= float(timeout):
                 end = p.poll()
                 if end is not None:
                     break;
@@ -177,7 +177,7 @@ class Protocol(object):
                     temp_tout += step_tout
                     time.sleep(step_tout)
 
-            if temp_tout > timeout:
+            if float(temp_tout) > float(timeout):
                 try:
                     os.killpg( os.getpgid(p.pid), signal.SIGTERM)
                     os.kill( p.pid, signal.SIGKILL)
