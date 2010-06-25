@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.35 2010/04/15 08:27:42 spigafi Exp $"
-__version__ = "$Revision: 2.35 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.36 2010/06/11 15:46:20 spiga Exp $"
+__version__ = "$Revision: 2.36 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -155,7 +155,10 @@ class SchedulerGLite(SchedulerInterface) :
         if version.find( '3.2' ) != 0 :
             raise SchedulerError( 'SchedulerGLite is allowed on UI >3.2' )
 
-
+        # job killed per CLI call (tunable value)
+        self.killThreshold = 100
+        
+    
     ##########################################################################
 
     def delegateProxy( self, wms = '' ):
@@ -445,6 +448,8 @@ class SchedulerGLite(SchedulerInterface) :
         """
         kill job
         """
+            
+        jobsToKill = []
         
         # the object passed is a job
         if type(obj) == Job and self.valid( obj.runningJob ):
@@ -452,26 +457,43 @@ class SchedulerGLite(SchedulerInterface) :
             # check for the RunningJob integrity
             schedIdList = str( obj.runningJob['schedulerId'] ).strip()
         
+            command = "glite-wms-job-cancel --json --noint " + schedIdList
+            
+            out, ret = self.ExecuteCommand( self.proxyString + command )
+            
+            if ret != 0 :
+                raise SchedulerError('error executing glite-wms-job-cancel', out)
+            elif ret == 0 and out.find("result: success") == -1 :
+                raise SchedulerError('error', out)
+        
         # the object passed is a Task
         elif type(obj) == Task :
             
-            schedIdList = ""
             for job in obj.jobs:
                 if not self.valid( job.runningJob ):
                     continue
-                schedIdList += " " + \
-                               str( job.runningJob['schedulerId'] ).strip()
+                jobsToKill.append(str( job.runningJob['schedulerId'] ).strip())
+                
+            # split the list
+            chunk = lambda ulist, step:  map(lambda i: ulist[i:i+step],  xrange(0, len(ulist), step))
+            lljobs = chunk(jobsToKill, self.killThreshold)
+                
+            for x in lljobs :
+                
+                schedIdList = ' '.join(x)
         
-        command = "glite-wms-job-cancel --json --noint " + schedIdList
+                command = "glite-wms-job-cancel --json --noint " + schedIdList
+                
+                out, ret = self.ExecuteCommand( self.proxyString + command )
+                
+                if ret != 0 :
+                    raise SchedulerError('error executing glite-wms-job-cancel', out)
+                elif ret == 0 and out.find("result: success") == -1 :
+                    raise SchedulerError('error', out)
         
-        out, ret = self.ExecuteCommand( self.proxyString + command )
-        
-        if ret != 0 :
-            raise SchedulerError('error executing glite-wms-job-cancel', out)
-        elif ret == 0 and out.find("result: success") == -1 :
-            raise SchedulerError('error', out)
-
-
+        return 0
+    
+    
     ##########################################################################
 
     def matchResources( self, obj, requirements='', config='', service='' ):
