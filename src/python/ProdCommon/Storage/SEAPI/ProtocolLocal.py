@@ -177,7 +177,7 @@ class ProtocolLocal(Protocol):
         """
         _checkExists_
         """
-        return os.path.exists(source.workon)
+        return os.path.exists( source.getLynk().split("file://",1)[1] )
  
     def getGlobalQuota(self, source, opt = "", tout = None):
         """
