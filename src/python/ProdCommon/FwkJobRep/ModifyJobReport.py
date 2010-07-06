@@ -194,10 +194,9 @@ if __name__ == '__main__':
                if (aFile['SEName'] == None):
                    aFile['SEName']=for_file['se_name']
                if (aFile['LFN'] == None):    
-                   aFile['SEName']=for_file['for_lfn']+file_name
+                   aFile['LFN']=for_file['for_lfn']+os.path.basename(file_name)
                if (aFile['PFN'] == None):    
-                   #aFile['PFN']=for_file['se_path']+file_name
-                   aFile['PFN']=for_file['endpoint']+file_name
+                   aFile['PFN']=for_file['endpoint']+os.path.basename(file_name)
            report.save()
        report.write("NewFrameworkJobReport.xml")         
     else:
