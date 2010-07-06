@@ -59,15 +59,17 @@ class Token:
         """
         """
         serverName = self.args['serverName']
+        proxyPath = self.args['proxyPath']
+
         for i in dict.keys():
-            cmd = 'rfcp %s %s:/data/proxyCache/%s'%(i,serverName,dict[i])         
+            cmd = 'rfcp %s %s:%s/%s'%(i,serverName,proxyPath,dict[i])
 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
                 msg = ('Error %s in delegate while executing : %s ' % (out, cmd)) 
                 raise Exception(msg)
-            cmd = 'rfchmod 777  %s:/data/proxyCache/%s'%(serverName,dict[i])         
-
+            cmd = 'rfchmod 777  %s:%s/%s'%(serverName,proxyPath,dict[i])
+ 
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
                 msg = ('Error %s in delegate while executing : %s ' % (out, cmd)) 
