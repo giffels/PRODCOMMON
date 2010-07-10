@@ -35,7 +35,7 @@ class ProtocolLcgUtils(Protocol):
                    env = str(source)
                    break;
         if len(env) > 0:
-            self.fresh_env = 'unset LD_LIBRARY_PATH; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%env
+            self.fresh_env = 'unset LD_LIBRARY_PATH; unset GLITE_ENV_SET; export PATH=/usr/bin:/bin; source /etc/profile; source %s ; '%env
         else:
             raise Exception("Missing environment")
 
