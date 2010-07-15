@@ -237,9 +237,10 @@ class Protocol(object):
             #                 % (str(err), ''.join(outc)+''.join(errc), p.returncode ))
  
         returncode = p.returncode
-        
+
+        ## we trust None as zero and then leave to the plugin the check on the stdout
         if returncode is None :
-            returncode = -666666
+            returncode = 0
         
         if stderr == True:
             ## we could remove this.... and only use logging... 
