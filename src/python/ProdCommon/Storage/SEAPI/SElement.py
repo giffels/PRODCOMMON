@@ -11,7 +11,7 @@ from ProtocolUberFtp import ProtocolUberFtp
 from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 from ProtocolGlobusUtils import ProtocolGlobusUtils
-
+from ProtocolHadoop import ProtocolHadoop
 
 class SElement(object):
     """
@@ -20,7 +20,7 @@ class SElement(object):
     """
 
     _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", \
-                  "srm-lcg", "gsiftp-lcg", "uberftp", "globus"]
+                  "srm-lcg", "gsiftp-lcg", "uberftp", "globus", "hadoop"]
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -47,7 +47,7 @@ class SElement(object):
         """
         if protocol in ["srmv1", "srmv2", "srm-lcg"]:
             return "8443"
-        elif protocol in ["local", "gridftp", "rfio", "gsiftp-lcg", "uberftp", "globus"]:
+        elif protocol in ["local", "gridftp", "rfio", "gsiftp-lcg", "uberftp", "globus", "hadoop"]:
             return ""
         else:
             raise ProtocolUnknown()
@@ -68,10 +68,12 @@ class SElement(object):
             return ProtocolRfio()
         elif protocol in ["srm-lcg", "gsiftp-lcg"]:
             return ProtocolLcgUtils()
-	elif protocol == "uberftp":
+        elif protocol == "uberftp":
             return ProtocolUberFtp()
         elif protocol == "globus":
             return ProtocolGlobusUtils()
+        elif protocol == "hadoop":
+            return ProtocolHadoop()
         else:
             raise ProtocolUnknown()
 
@@ -100,6 +102,10 @@ class SElement(object):
             return ("gsiftp://" + self.hostname + join("/", self.workon) )
         elif self.protocol == "rfio":
             return (self.hostname + ":" + self.workon)
+        elif self.protocol == "hadoop":
+            if self.workon[0] != '/':
+                self.workon = join("/", self.workon) 
+            return (self.hostname + self.workon)
         else:
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
@@ -109,7 +115,12 @@ class SElement(object):
         _getFullPath_
         """ 
         if self.full:
-            if self.protocol != "local":
+            if self.protocol == "local":
+                if self.hostname != "/":
+                    return ("file://" + join(self.hostname, self.workon))
+            elif self.protocol == "hadoop":
+               return join(self.hostname, self.workon)
+            else:
                 if self.hostname.find(":") != -1:
                     tmpath = self.hostname.split(":")[-1]
                     if tmpath.find("/") != -1:
@@ -119,9 +130,6 @@ class SElement(object):
                             return join(tmpath.split("?SFN=",1)[-1],self.workon)
                         else:
                             return join(tmpath, self.workon)
-            else:
-                if self.hostname != "/":
-                    return ("file://" + join(self.hostname, self.workon))
         return self.workon
 
 class FullPath(object):

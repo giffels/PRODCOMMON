@@ -11,6 +11,7 @@ from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 from ProtocolUberFtp import ProtocolUberFtp
+from ProtocolHadoop import ProtocolHadoop
 from SElement import SElement
 from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
                        ProtocolMismatch, OperationException
@@ -36,7 +37,7 @@ class SBinterface:
         self.useProxy = True
         if self.storage2 != None:
             self.mono = True
-        if self.storage1.protocol in ['local']: #, 'rfio']:
+        if self.storage1.protocol in ['local', 'hadoop']: #, 'rfio']:
             self.useProxy = False
         if self.mono:
             if storel1.protocol != storel2.protocol:
@@ -384,7 +385,7 @@ class SBinterface:
             val = self.storage1.action.createDir(self.storage1, proxy, opt, tout = tout)
             self.storage1.workon = ""
             return val
-        if self.storage1.protocol in ['local']: #'rfio', 'local']:
+        if self.storage1.protocol in ['local', 'hadoop']: #'rfio', 'local']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, opt = opt, tout = tout)
             self.storage1.workon = ""
