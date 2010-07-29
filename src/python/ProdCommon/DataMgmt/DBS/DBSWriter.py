@@ -848,7 +848,7 @@ class DBSWriter:
 
             try:
 
-                self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, noParentsReadOnly = False)
+                self.dbs.dbsMigrateBlock(sourceDBS, targetDBS, block_name=block)
             except DbsException, ex:
                 msg = "Error in DBSWriter.importDataset\n"
                 msg += "Could not write content of dataset:\n ==> %s\n" % (
@@ -871,80 +871,5 @@ class DBSWriter:
                 self.dbs.addReplicaToBlock(block,sename)
                                                                                 
         return
-    
 
-    def importDatasetWithoutParentage(self, sourceDBS, sourceDatasetPath, targetDBS,
-                      onlyClosed = True, skipNoSiteError=False):
-        """
-        _importDataset_
-                                                                                                                                      
-        Import a dataset into the local scope DBS with one level parentage,
-        however it has severe limitation on its use due to the "ReadOnly" concept. 
-                                                                                                                                      
-        - *sourceDBS* : URL for input DBS instance
 
-        - *sourceDatasetPath* : Dataset Path to be imported
-
-        - *targetDBS* : URL for DBS to have dataset imported to
-
-        - *skipNoSiteError* : If this is True, then this method wont raise an
-                              Exception if a block has no site information in 
-                              sourceDBS.
-
-        """
-        reader = DBSReader(sourceDBS)
-        inputBlocks = reader.getFileBlocksInfo(sourceDatasetPath, onlyClosed)
-        for inputBlock in inputBlocks:
-            block = inputBlock['Name']
-            #  //
-            # // Test block does not exist in target
-            #//
-            if self.reader.blockExists(block):
-                #  //
-                # // block exists
-                #//  If block is closed dont attempt transfer
-                if str(inputBlock['OpenForWriting']) != '1':
-                    msg = "Block already exists in target DBS and is closed:\n"
-                    msg += " ==> %s\n" % block
-                    msg += "Skipping Import of that block"
-                    logging.warning(msg)
-                    locations = reader.listFileBlockLocation(block)
-                    # only empty file blocks can have no location
-                    if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                        # we don't skip the error raising
-                        if not skipNoSiteError:
-                            msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
-                            msg += "Block has no locations defined: %s" % block
-                            raise DBSWriterError(msg)
-                        msg = "Block has no locations defined: %s" % block
-                        logging.info(msg)
-                    logging.info("Update block locations to:")
-                    for sename in locations:
-                        self.dbs.addReplicaToBlock(block,sename)
-                        logging.info(sename)
-                    continue
-                                                                               
-            try:                                                       
-                self.dbs.migrateDatasetContents(sourceDBS, targetDBS, sourceDatasetPath, block_name=block, noParentsReadOnly = True )
-            except DbsException, ex:
-                msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
-                msg += "Could not write content of dataset:\n ==> %s\n" % (
-                    sourceDatasetPath,)
-                msg += "Block name:\n ==> %s\n" % block
-                msg += "%s\n" % formatEx(ex)
-                raise DBSWriterError(msg)
-
-            locations = reader.listFileBlockLocation(block)
-            # only empty file blocks can have no location
-            if not locations and str(inputBlock['NumberOfFiles']) != "0":
-                # we don't skip the error raising
-                if not skipNoSiteError:
-                    msg = "Error in DBSWriter.importDatasetWithoutParentage\n"
-                    msg += "Block has no locations defined: %s" % block
-                    raise DBSWriterError(msg)
-                msg = "Block has no locations defined: %s" % block
-                logging.info(msg) 
-            for sename in locations:
-                self.dbs.addReplicaToBlock(block,sename)
-                
-        return    

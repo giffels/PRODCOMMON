@@ -114,7 +114,7 @@ def splitNgstatOutput(output):
      item.
 
      The assumption is that the first line of a job has no indentation,
-     and subsequent lines are indented by at least 1 space.
+     and subsequent lines are indented by at least 1 space or start with "This job was only very recently submitted".
      """
 
      jobs = []
@@ -125,11 +125,13 @@ def splitNgstatOutput(output):
                continue
 
           if line[0].isspace():
-               s += line + '\n'
+               s += '\n' + line
+          elif re.match("This job was only very recently submitted", line):
+               s += ' ' + line
           else:
                if len(s) > 0:
-                    jobs.append(s)
-               s = line + '\n'
+                    jobs.append(s + '\n')
+               s = line 
      if len(s) > 0:
           jobs.append(s)
 
@@ -164,7 +166,7 @@ class TimeoutFunction:
             result = self.function(*args)
         finally: 
             signal.signal(signal.SIGALRM, old)
-        signal.alarm(0)
+            signal.alarm(0)
         return result 
 
 
@@ -188,13 +190,15 @@ def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retrie
      for i in range(retries+1):
           try:
                if i > 0:
-                    logging.info("Retrying ldapsearch ... (%i/%i)" % (i, retries))
+                    logging.debug("Retrying ldapsearch ... (%i/%i)" % (i, retries))
                     time.sleep(i*10)
 
                con = ldap.initialize(host)      # host = ldap://hostname[:port]
                bind = TimeoutFunction(con.simple_bind_s, timeout)
                try:
+                   bound = False
                    bind()
+                   bound = True
                except TimeoutFunctionException:
                    raise ldap.LDAPError("Bind timeout")
                con.search(dn, scope, filter, attr)
@@ -217,7 +221,9 @@ def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retrie
                con.unbind()
                break;
           except ldap.LDAPError, e:
-               con.unbind()
+               logging.debug("ldapsearch: got error '%s' for host %s" % (str(e), host))
+               if bound:
+                    con.unbind()
      else:
           raise e
 
@@ -320,7 +326,6 @@ class SchedulerARC(SchedulerInterface):
             xrsl += '(' +  self.decode(job, obj, requirements) + ')\n'
         return xrsl
 
-
         
     def decode(self, job, task, requirements=''):
         """
@@ -332,11 +337,12 @@ class SchedulerARC(SchedulerInterface):
         xrsl = '&'
         xrsl += '(executable="%s")' % job['executable']
 
-        # The comma separated list of input files contains '\"':s and '\':s
-        # that should be removed -- otherwise the list will be split into
+        # An argument-string may contain '\"':s and '\':s
+        # that should be removed -- otherwise it will be split into
         # several arguments by the shell, which is WRONG!
-        args = job['arguments'].replace('\\"', '').replace('\\', '')
-        xrsl += '(arguments=%s)' % args
+        if job['arguments']:
+            args = job['arguments'].replace('\\"', '').replace('\\', '')
+            xrsl += '(arguments=%s)' % args
 
         xrsl += '(jobName="%s")' % job['name']
         xrsl += '(stdout="%s")' % job['standardOutput']
@@ -347,6 +353,16 @@ class SchedulerARC(SchedulerInterface):
         inputfiles = ""
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
+            xrsl += '(%s %s)' % (f.split('/')[-1], f)
+            if inputfiles == "'":
+                inputfiles += f.split('/')[-1]
+            else:
+                inputfiles += "\\ " + f.split('/')[-1]
+                # FIXME: The '\\' above is required with older versions of ARC
+                # (0.6.*) -- otherwise everything after the first space is
+                # lost -- but will cause problems for newer versions
+                # (0.8.*).
+        for f in job['inputFiles']:
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
             if inputfiles == "'":
                 inputfiles += f.split('/')[-1]
@@ -382,9 +398,10 @@ class SchedulerARC(SchedulerInterface):
 
         # User supplied thingies:
         xrsl += self.user_xrsl
-        for s in task['jobType'].split('&&'):
-            if re.match('^ *\(.*=.*\) *$', s):
-                xrsl += s
+        if task['jobType']:
+            for s in task['jobType'].split('&&'):
+                if re.match('^ *\(.*=.*\) *$', s):
+                    xrsl += s
 
         return xrsl
 
@@ -408,7 +425,7 @@ class SchedulerARC(SchedulerInterface):
 
         # Build xRSL 
         xrsl = self.jobDescription(task, requirements, config, service)
-        xrsl_file = os.path.dirname(task['cfgName']) + '/job.xrsl'
+        xrsl_file = os.path.dirname(task['cfgName'] or './') + '/%s-jobs.xrsl' % task['name']
         f = open(xrsl_file, "w")
         f.write(xrsl)
         f.close()
@@ -419,25 +436,27 @@ class SchedulerARC(SchedulerInterface):
         self.logging.debug(command)
         self.setTimeout(300)
         tmp, exitStat = self.ExecuteCommand(command)
+        self.logging.debug("ngsub exitStatus: %i" % exitStat)
+        self.logging.debug("ngsub output:\n" + tmp)
         output = tmp.split('\n')
 
         # Check output of submit command
-        subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.]+)(:\d+)?(/.*)?/\d+)")
+        subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.-]+)(:\d+)?(/.*)?/\d+)")
         n = 0
         for job in task.getJobs():
             try:
                 m = re.match(subRe, output[n])
 
-                if exitStat != 0 or not m:
-                    raise SchedulerError('Error in submit:', output, command)
+                if not m:
+                    raise SchedulerError('Error in submit:', output[n], command)
 
                 arcId = m.group(1) 
                 jobAttributes[job['name']] = arcId
-
                 self.logging.info("Submitted job with id %s" % arcId)
             except SchedulerError, e:
-                job.runningJob.errors.append("Submission failed for job %s: %s"
-                                              % (job['id'], str(e).replace('\n', ' ')))
+                msg = "Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' '))
+                self.logging.error(msg)
+                job.runningJob.errors.append(msg)
             except Exception, e:
                 job.runningJob.errors.append("Checking submission failed for job %s: %s"
                                               % (job['id'], str(e).replace('\n', ' ')))
@@ -494,6 +513,10 @@ class SchedulerARC(SchedulerInterface):
 
         jobsFile, arcId2job = self.createJobsFile(joblist, "Will query")
 
+        if len(arcId2job) == 0:
+            self.logging.info("No (valid) jobs to query")
+            return
+
         cmd = 'ngstat -i %s' % jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         jobsFile.close()
@@ -513,7 +536,7 @@ class SchedulerARC(SchedulerInterface):
                 else:
                     arcStat = "UNKNOWN"
 
-                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -521,7 +544,7 @@ class SchedulerARC(SchedulerInterface):
                 # This is something that really shoudln't happen.
                 arcStat = "WTF?"
 
-                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.]+)\S*/\d*)", output)
+                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -539,7 +562,7 @@ class SchedulerARC(SchedulerInterface):
 
                 for line in jobstring.split('\n'):
 
-                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.]+)\S*/\d*)", line)
+                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", line)
                     if arcIdMatch:
                         arcId = arcIdMatch.group(1)
                         host = arcIdMatch.group(2)
@@ -634,7 +657,7 @@ class SchedulerARC(SchedulerInterface):
         for line in output.split('\n'):
             # If a job URL ("arcId") occurs on a line of output, it tends
             # to be en error message:
-            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.]+\S*/\d*)", line)
+            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.-]+\S*/\d*)", line)
             if errorMatch:
                 arcId = errorMatch.group(1)
                 job = arcId2job[arcId]
@@ -727,9 +750,13 @@ class SchedulerARC(SchedulerInterface):
             RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
 
             if count_nonempty(seList) > 0 and not set(seList) & localSEs:
+                if count_nonempty(whitelist) > 0 and name in whitelist:
+                    self.logging.warning("NOTE: Whitelisted CE %s was found but isn't close to any SE that have the data" % name)
                 continue
 
             if count_nonempty(tags) > 0 and not set(tags) <= RTEs:
+                if count_nonempty(whitelist) > 0 and name in whitelist:
+                    self.logging.warning("NOTE: Whitelisted CE %s was found but doesn't have all required runtime environments installed" % name)
                 continue
 
             if count_nonempty(blacklist) > 0 and name in blacklist:
@@ -751,7 +778,7 @@ class SchedulerARC(SchedulerInterface):
         return CEs fullfilling requirements.
         """
 
-        self.logging.info("Trying GIIS %s, %s" % (root['host'], root['base']))
+        self.logging.debug("Trying GIIS %s, %s" % (root['host'], root['base']))
         CEs, giises = self.query_giis(root)
         accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
 
@@ -766,7 +793,6 @@ class SchedulerARC(SchedulerInterface):
                 break
 
         return accepted_CEs
-
 
 
     def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
@@ -801,5 +827,6 @@ class SchedulerARC(SchedulerInterface):
             self.logging.error("No more toplevel GIISes to try!  All GIISes down? Please wait for a while and try again")
             raise SchedulerError("No reply from GIISes", "")
 
+        self.logging.debug("lcgInfo found the following sites: %s" % str(accepted_CEs))
         return accepted_CEs
 

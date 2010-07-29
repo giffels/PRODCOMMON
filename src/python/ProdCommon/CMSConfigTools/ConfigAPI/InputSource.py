@@ -104,7 +104,8 @@ class InputSource:
 
     def setFileNames(self, *fileNames):
         """set fileNames vector"""
-        self.data.fileNames = CfgTypes.untracked(CfgTypes.vstring())
+        if fileNames:
+            self.data.fileNames = CfgTypes.untracked(CfgTypes.vstring())
         for entry in fileNames:
             self.data.fileNames.append(entry)
 
