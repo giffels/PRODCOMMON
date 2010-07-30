@@ -21,16 +21,18 @@ class ProtocolLocal(Protocol):
         """
         exitcode = -1
         outputs = ""
+        ll = dest.getLynk()
+        dest_fullpath = ll.split("file://",1)[1] 
         
         if self.checkExists(source, opt):
-            cmd = "mv " + opt + " "+ source.workon +" "+ dest.workon
+            cmd = "mv " + opt + " "+ source.workon +" "+ dest_fullpath
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
                                      "] does not exists.")
         if exitcode != 0:
             raise TransferException("Error moving [" +source.workon+ "] to [" \
-                                    +dest.workon+ "]\n " +outputs)
+                                    +dest_fullpath+ "]\n " +outputs)
  
     def copy(self, source, dest, opt = "", tout = None):
         """
@@ -38,15 +40,18 @@ class ProtocolLocal(Protocol):
         """
         exitcode = -1
         outputs = ""
+        ll = dest.getLynk()
+        dest_fullpath = ll.split("file://",1)[1]
+
         if self.checkExists(source, opt):
-            cmd = "cp " + opt + " " + source.workon + " " + dest.workon
+            cmd = "cp " + opt + " " + source.workon + " " + dest_fullpath
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
             raise NotExistsException("Error: path [" + source.workon + \
                                      "] does not exists.")
         if exitcode != 0:
             raise TransferException("Error copying [" +source.workon+ "] to [" \
-                                    +dest.workon+ "]\n " +outputs)
+                                    +dest_fullpath+ "]\n " +outputs)
  
     def delete(self, source, opt = "", tout = None):
         """
@@ -54,14 +59,16 @@ class ProtocolLocal(Protocol):
         """
         exitcode = -1
         outputs = ""
+        ll = source.getLynk()
+        source_fullpath = ll.split("file://",1)[1]
         if self.checkExists(source, opt):
-            cmd = "rm " + opt + " " + source.workon
+            cmd = "rm " + opt + " " + source_fullpath
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         else:
-            raise NotExistsException("Error: path [" + source.workon + \
+            raise NotExistsException("Error: path [" + source_fullpath + \
                                      "] does not exists.")
         if exitcode != 0:
-            raise OperationException("Error deleting [" +source.workon \
+            raise OperationException("Error deleting [" +source_fullpath \
                                              + "]\n "+outputs)
 
     def createDir(self, source, opt = "", tout = None):
@@ -70,10 +77,13 @@ class ProtocolLocal(Protocol):
         """
         exitcode = -1
         outputs = ""
-        cmd = "mkdir " + opt + " " + source.workon
-        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
+        ll = source.getLynk()
+        source_fullpath = ll.split("file://",1)[1]
+        if self.checkExists(source, opt)  is False:
+            cmd = "/bin/mkdir -m 775 -p " + opt + " " + source_fullpath
+            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         if exitcode != 0:
-            raise OperationException("Error creating [" +source.workon \
+            raise OperationException("Error creating [" +source_fullpath \
                                              + "]\n "+outputs)
  
     def __convertPermission__(self, drwx):
@@ -105,16 +115,18 @@ class ProtocolLocal(Protocol):
         """
         exitcode = -1
         outputs = ""
+        ll = source.getLynk()
+        source_fullpath = ll.split("file://",1)[1]
         if self.checkExists(source, opt):
-            cmd = "ls -la " + opt + " " + source.workon + " | awk '{print $1}'"
+            cmd = "ls -la " + opt + " " + source_fullpath + " | awk '{print $1}'"
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
             if exitcode == 0:
                 outputs = self.__convertPermission__(outputs)
             else:
-                raise TransferException("Error checking [" +source.workon+ \
+                raise TransferException("Error checking [" +source_fullpath+ \
                                         "]\n "+outputs)
         else:
-            raise OperationException("Error: path [" + source.workon + \
+            raise OperationException("Error: path [" + source_fullpath + \
                                              "] does not exists.")
  
         return outputs
@@ -177,7 +189,10 @@ class ProtocolLocal(Protocol):
         """
         _checkExists_
         """
-        return os.path.exists( source.getLynk().split("file://",1)[1] )
+        ll = source.getLynk()
+        fullpath = ll.split("file://",1)[1] 
+        out = os.path.exists( fullpath )
+        return out
  
     def getGlobalQuota(self, source, opt = "", tout = None):
         """
