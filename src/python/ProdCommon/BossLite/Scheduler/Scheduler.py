@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.46 2009/06/09 13:23:04 gcodispo Exp $"
-__revision__ = "$Revision: 1.46 $"
+__version__ = "$Id: Scheduler.py,v 1.47 2009/06/11 10:53:57 gcodispo Exp $"
+__revision__ = "$Revision: 1.47 $"
 
 
 ##########################################################################
@@ -69,6 +69,7 @@ class Scheduler(object):
             obj.runningJob['status'] = 'S'
             obj.runningJob['submissionTime'] = timestamp
             obj.runningJob['statusScheduler'] = 'Submitted'
+            obj.runningJob['state'] = 'SubSuccess'
             obj.runningJob['schedulerParentId'] = obj.runningJob['schedulerId']
             obj.runningJob['scheduler'] = self.scheduler
             obj.runningJob['service'] = service
@@ -104,6 +105,7 @@ class Scheduler(object):
                 job.runningJob['scheduler'] = self.scheduler
                 job.runningJob['service'] = service
                 job.runningJob['statusScheduler'] = 'Submitted'
+                job.runningJob['state'] = 'SubSuccess'
                 job.runningJob['processStatus'] = 'not_handled'
                 if bulkId is None :
                     job.runningJob['schedulerParentId'] = \
