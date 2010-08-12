@@ -75,16 +75,17 @@ class ProtocolLocal(Protocol):
         """
         _createDir_
         """
-        exitcode = -1
         outputs = ""
         ll = source.getLynk()
         source_fullpath = ll.split("file://",1)[1]
         if self.checkExists(source, opt)  is False:
             cmd = "/bin/mkdir -m 775 -p " + opt + " " + source_fullpath
             exitcode, outputs = self.executeCommand(cmd, timeout = tout)
-        if exitcode != 0:
-            raise OperationException("Error creating [" +source_fullpath \
+            if exitcode != 0:
+                raise OperationException("Error creating [" +source_fullpath \
                                              + "]\n "+outputs)
+        else:
+            print "directory" + source_fullpath + "already exists"
  
     def __convertPermission__(self, drwx):
         owner  = drwx[1:3]
