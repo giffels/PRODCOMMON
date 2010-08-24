@@ -70,7 +70,7 @@ class ProtocolRfio(Protocol):
         if token is not None:
             exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -95,7 +95,7 @@ class ProtocolRfio(Protocol):
         if token is not None:
             exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -117,9 +117,9 @@ class ProtocolRfio(Protocol):
         cmd = "rfcp " + opt + " "+ fullSource +" "+ fullDest 
         exitcode, outputs = None, None
         if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
+            exitcode, outputs = self.executeCommand( cmd, token)#, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -159,7 +159,7 @@ class ProtocolRfio(Protocol):
         if token is not None:
             exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
 
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
@@ -179,9 +179,9 @@ class ProtocolRfio(Protocol):
         cmd = "rfdir " + opt + " " + fullSource + " | awk '{print $5,$3,$4,$1}'"
         exitcode, outputs = None, None
         if token is not None:
-            exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
+            exitcode, outputs = self.executeCommand( cmd, token)#, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
 
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -240,7 +240,7 @@ class ProtocolRfio(Protocol):
         if token is not None:
             exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
         
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
@@ -294,7 +294,7 @@ class ProtocolRfio(Protocol):
         if token is not None:
             exitcode, outputs = self.executeCommand( cmd, token, timeout = tout )
         else:
-            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd, timeout = tout)
+            exitcode, outputs = super(ProtocolRfio, self).executeCommand(cmd)#, timeout = tout)
         problems = self.simpleOutputCheck(outputs)
         for problema in problems:
             if "no such file or directory" in problema:
@@ -350,18 +350,17 @@ class ProtocolRfio(Protocol):
 
             command = BaseCmd + fname
             #from ProdCommon.BossLite.Common.System import executeCommand
-            exit, out = super(ProtocolRfio, self).executeCommand(command, timeout = tout)
+            exit, out = super(ProtocolRfio, self).executeCommand(command)#, timeout = tout)
             self.__logout__("Executing through ksu:\t" + str(cmd) + "\n",exit,out)
             #out, exit = executeCommand(command)
 
             tries = 0
             while (exit != 0 and tries < 5):
-                exit, out = super(ProtocolRfio, self).executeCommand(command, timeout = tout)
-                self.__logout__("Executing through ksu:\t" + str(cmd, timeout = tout) + \
-                      ": try number " + str(tries) + "\n", exit, out)
+                exit, out = super(ProtocolRfio, self).executeCommand(command)#, timeout = tout)
+                self.__logout__("Executing through ksu:\t" + str(cmd) + \
+                  ": try number " + str(tries) + "\n", exit, out)
                 tries += 1
 
         finally:
             os.unlink( fname )
-
         return exit, out
