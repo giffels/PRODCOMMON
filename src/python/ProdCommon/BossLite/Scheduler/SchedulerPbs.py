@@ -10,8 +10,8 @@ Uses a wrapper script which assumes an env var PBS_JOBCOOKIE points to the local
 
 """
 
-__revision__ = "$Id: SchedulerPbs.py,v 1.1 2009/10/08 15:09:20 mcinquil Exp $"
-__version__ = "$Revision: 1.1 $"
+__revision__ = "$Id: SchedulerPbs.py,v 1.2 2009/12/19 14:56:34 mcinquil Exp $"
+__version__ = "$Revision: 1.2 $"
 
 import re, os, time
 import tempfile
@@ -32,6 +32,7 @@ class SchedulerPbs (SchedulerInterface) :
         self.jobScriptDir=args['jobScriptDir']
         self.jobResDir=args['jobResDir']
         self.queue=args['queue']
+        self.workerNodeWorkDir = args.get('workDir', '')
 
         self.res_dict={}
         for a in args['resources'].split(','):
@@ -74,7 +75,8 @@ class SchedulerPbs (SchedulerInterface) :
                          'S':'R',
                          'T':'R',
                          'W':'SS',
-                         'Done':'SD'}
+                         'Done':'SD',
+                         'C':'SD'}
 
     def jobDescription ( self, obj, requirements='', config='', service = '' ):
         """
@@ -126,13 +128,16 @@ class SchedulerPbs (SchedulerInterface) :
         f=tempfile.NamedTemporaryFile()
         s=[]
         s.append('#!/bin/sh');
+        if self.workerNodeWorkDir:
+	    s.append('cd ' + self.workerNodeWorkDir)
         s.append('if [ ! -d $PBS_JOBCOOKIE ] ; then mkdir -p $PBS_JOBCOOKIE ; fi')
         s.append('cd $PBS_JOBCOOKIE')
         for ifile in task['globalSandbox'].split(','):
             s.append('cp '+ifile+' .')
         s.append(self.jobScriptDir + job['executable']+' '+ job['arguments'] +\
                  ' >' + job['standardOutput'] + ' 2>' + job['standardError'])
-        s.append('cd $PBS_O_WORKDIR')
+        if self.workerNodeWorkDir:
+	    s.append('cd ' + self.workerNodeWorkDir)
         s.append('rm -fr $PBS_JOBCOOKIE')
         f.write('\n'.join(s))
         f.flush()
