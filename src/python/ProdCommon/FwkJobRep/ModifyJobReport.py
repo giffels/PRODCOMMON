@@ -230,7 +230,8 @@ if __name__ == '__main__':
                     #print "name = ", name
                       
                     #print "f['PFN'] = ", f['PFN']
-                    if ( name == f['PFN']):
+                    #if ( name == f['PFN']):
+                    if ( name == os.path.basename(f['PFN'])):
                        #print "    name = ", name
                        ### parameter for this file extracted from json 
                        for_file = inputDict[file_name]
@@ -270,17 +271,21 @@ if __name__ == '__main__':
             for aFile in report.analysisFiles:
                 aFile['PFN'] = os.path.basename(aFile['FileName'])
                 for file_name in inputDict.keys():
-                    tmp = string.split(file_name, ".")
+                    only_name = os.path.basename(file_name)
+                    tmp = string.split(only_name, ".")
+                    #tmp = string.split(file_name, ".")
                     suff = '.' + tmp[-1]
 
-                    tmp = string.split(file_name, "_"+n_job)
+                    tmp = string.split(only_name, "_"+n_job)
+                    #tmp = string.split(file_name, "_"+n_job)
                     pref = tmp[0]
 
                     name = pref + suff
 
                     if ( name == aFile['PFN']):
                         for_file = inputDict[file_name]
-                        modifyFile(aFile, file_name)
+                        modifyFile(aFile, os.path.basename(file_name), for_file)
+                        #modifyFile(aFile, file_name)
                     
                 
         # After modifying the report, you can then save it to a file.
