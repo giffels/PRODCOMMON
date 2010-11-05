@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.13 2010/04/09 11:39:40 spigafi Exp $"
-__version__ = "$Revision: 1.13 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.14 2010/05/28 12:23:32 spigafi Exp $"
+__version__ = "$Revision: 1.14 $"
 
 import sys
 import os
@@ -56,7 +56,11 @@ class myJSONEncoder(object):
         tmp = str(myString)
         tmp = tmp.replace('\'','"')
         tmp = tmp.replace('None','null')
-        
+        ## special case for reason on aborted jobs
+        # any extra case can be added here
+        # if there are too many extra-special cases need to review the logic
+        tmp = tmp.replace('doesn"t',"doesn't")
+
         return tmp
     
 ##########################################################################
