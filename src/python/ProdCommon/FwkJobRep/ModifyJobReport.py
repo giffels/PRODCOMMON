@@ -65,8 +65,6 @@ def modifyFile(f, file_name, for_file):
     
     Calls functions to modify PFN and LFN
     """
-    #print "    for_file['se_path'] = ", for_file['se_path']
-    #print "    for_file['endpoint'] = ", for_file['endpoint']
     print "    file = ", file_name
     newPfn = for_file['endpoint'] + file_name
     print "    newPfn = ", newPfn
@@ -74,12 +72,28 @@ def modifyFile(f, file_name, for_file):
     newLfn = for_file['for_lfn'] + file_name
     print "    newLfn = ", newLfn
 
+
     updatePFN(f, f['LFN'], newPfn)
 
     updateLFN(f, f['LFN'], newLfn)
+    
+    if (for_file['surl_for_grid'] != ""):
+        newSurlForGrid = for_file['surl_for_grid'] + file_name  
+    else:     
+        newSurlForGrid = f['PFN']  
+           
+    updateSurlForGrid(f, newSurlForGrid)
 
     return
 
+
+def updateSurlForGrid(f, newSurlForGrid):
+    """
+    _updateSurlForGrid_
+
+    """
+    f['SurlForGrid'] = newSurlForGrid
+    return
 
 def updatePFN(f, lfn, newPFN):
     """
@@ -91,7 +105,6 @@ def updatePFN(f, lfn, newPFN):
         return
 
     f['PFN'] = newPFN
-    #file['SEName'] = diz['se_name']
     f['SEName'] = for_file['se_name']
     return
 
@@ -169,7 +182,6 @@ if __name__ == '__main__':
        var_filter = os.getenv('var_filter')
     except:
        var_filter=''
-    ### filter dictionary
     diz_filter={}
     if (var_filter):
        diz_filter=json.loads(var_filter)
@@ -197,6 +209,10 @@ if __name__ == '__main__':
                    aFile['LFN']=for_file['for_lfn']+os.path.basename(file_name)
                if (aFile['PFN'] == None):    
                    aFile['PFN']=for_file['endpoint']+os.path.basename(file_name)
+               ### FEDE FOR COPY DATA     
+               if (aFile['SurlForGrid'] == None):    
+                   aFile['SurlForGrid']=for_file['surl_for_grid']+os.path.basename(file_name)
+               ####     
            report.save()
        report.write("NewFrameworkJobReport.xml")         
     else:
@@ -217,30 +233,16 @@ if __name__ == '__main__':
                     print "file_name in inputDict = ", file_name
                     ### file is the name of produced file + number submission: out_6_1.root
                     only_name = os.path.basename(file_name)
-                    #print "only_name = ", only_name
                     tmp = string.split(only_name, ".")
                     suff = '.' + tmp[-1]
-                    #print "suff = ", suff
-
                     tmp = string.split(only_name, "_"+n_job)
                     pref = tmp[0]
-                    #print "pref = ", pref
-
                     name = pref + suff
-                    #print "name = ", name
-                      
-                    #print "f['PFN'] = ", f['PFN']
-                    #if ( name == f['PFN']):
                     if ( name == os.path.basename(f['PFN'])):
-                       #print "    name = ", name
                        ### parameter for this file extracted from json 
                        for_file = inputDict[file_name]
-                       #print "    inputDict[file] = ", inputDict[file_name]
-                       #print "    file_name = ", file_name
                        #Generate per file stats
-                       #print "    call addFileStats"
                        addFileStats(f)
-                       #print "    after addFileStats"
 
                        datasetinfo=f.newDataset()
                        datasetinfo['PrimaryDataset'] = diz['PrimaryDataset'] 
@@ -258,8 +260,6 @@ if __name__ == '__main__':
                            if (filter):
                                FilterUserProcessedDataset = UserProcessedDataset + '-' + str(filter)
                                datasetinfo['ProcessedDataset'] = FilterUserProcessedDataset 
-                       #else:
-                       #    datasetinfo['ProcessedDataset'] = UserProcessedDataset
                        #########################################################################    
                        ### to check if the job output is composed by more files
                        modifyFile(f, os.path.basename(file_name), for_file)    
@@ -273,21 +273,14 @@ if __name__ == '__main__':
                 for file_name in inputDict.keys():
                     only_name = os.path.basename(file_name)
                     tmp = string.split(only_name, ".")
-                    #tmp = string.split(file_name, ".")
                     suff = '.' + tmp[-1]
-
                     tmp = string.split(only_name, "_"+n_job)
-                    #tmp = string.split(file_name, "_"+n_job)
                     pref = tmp[0]
-
                     name = pref + suff
-
                     if ( name == aFile['PFN']):
                         for_file = inputDict[file_name]
                         modifyFile(aFile, os.path.basename(file_name), for_file)
-                        #modifyFile(aFile, file_name)
                     
-                
         # After modifying the report, you can then save it to a file.
         report.write("NewFrameworkJobReport.xml")
     

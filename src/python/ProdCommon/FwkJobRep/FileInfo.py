@@ -29,6 +29,9 @@ class FileInfo(dict):
         self.setdefault("Stream", None)
         self.setdefault("LFN", None)
         self.setdefault("PFN", None)
+        ## FEDE FOR COPY DATA
+        self.setdefault("SurlForGrid", None)
+        ###
         self.setdefault("GUID", None)
         self.setdefault("Size", None)
         self.setdefault("DataType", None)
@@ -409,6 +412,9 @@ class AnalysisFile(dict):
         self.setdefault("LFN", None)
         self.setdefault("PFN", None)
         self.setdefault("SEName", None)
+        ## FEDE FOR COPY DATA
+        self.setdefault("SurlForGrid", None)
+        ###
         ############                                                                
 
 
