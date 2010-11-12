@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.59 2010/04/19 18:15:47 ewv Exp $"
-__version__ = "$Revision: 1.59 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.60 2010/05/19 21:09:55 spigafi Exp $"
+__version__ = "$Revision: 1.60 $"
 
 import os
 import commands
@@ -224,8 +224,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             [key, value] = line.split('=', 1)
             if key.strip() == "schedulerList":
                 ceList = value.split(',')
-                ce = ceList[0]
-                jdl += "globusscheduler = " + ce + '\n'
+                ce = ceList[0].strip()
+                jdl += "grid_resource = gt2 " + ce + '\n'
             else:
                 jdl += line.strip() + '\n'
         filelist = ''
@@ -307,13 +307,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
-                
+
                 schedulerId = job.runningJob['schedulerId']
-                
+
                 # fix: skip if the Job was created but never submitted
                 if job.runningJob['status'] == 'C' :
                     continue
-		        
+
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
                 schedd = schedulerId.split('//')[0]
