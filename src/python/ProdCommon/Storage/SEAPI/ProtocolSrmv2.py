@@ -4,7 +4,7 @@ Class interfacing with srm version 2 end point
 
 from Protocol import Protocol
 from Exceptions import *
-import string
+import string,os
 
 class ProtocolSrmv2(Protocol):
     """
@@ -15,6 +15,10 @@ class ProtocolSrmv2(Protocol):
         super(ProtocolSrmv2, self).__init__()
         self._options = " -2 -debug=true -protocols=gsiftp,http " 
         # check for java version
+
+        if not os.environ.has_key('_JAVA_OPTIONS'):
+            os.environ['_JAVA_OPTIONS'] = '-Xms128m -Xmx512m'
+
         cmd = "java -version"
         try: 
             exitcode, outputs = self.executeCommand(cmd)
@@ -43,21 +47,24 @@ class ProtocolSrmv2(Protocol):
                line.find("srm client error") != -1 or \
                line.find("failed in some way or another") != -1 or \
                line.find("srm_failure") != -1:
-                cacheP = line.split(":")[-1]
+                   cacheP = line.split(":")[-1]
+                   if cacheP not in problems:
+                       problems.append(cacheP)
+            if line.find("couldn't getgsscredential") != -1:
+                cacheP = line
                 if cacheP not in problems:
                     problems.append(cacheP)
             if line.find("unknownhostexception") != -1 or \
                line.find("no entries for host") != -1: # or \
-               #line.find("srm client error") != -1:
-                raise MissingDestination("Host not found!", [line], outLines)
+                 raise MissingDestination("Host not found!", [line], outLines)
             elif line.find("srm_authorization_failure") != -1 or \
                line.find("permission denied") != -1:
-                raise AuthorizationException("Permission denied", [line], outLines)
+                 raise AuthorizationException("Permission denied", [line], outLines)
             elif line.find("connection timed out") != -1:
-                raise OperationException("Connection timed out", [line], outLines)
+                 raise OperationException("Connection timed out", [line], outLines)
             elif line.find("already exists") != -1 or \
                line.find("srm_duplication_error") != -1:
-                raise AlreadyExistsException("File already exists!", \
+                 raise AlreadyExistsException("File already exists!", \
                                               [line], outLines)
             elif line.find("unrecognized option") != -1:
                 raise WrongOption("Wrong option passed to the command", \
@@ -108,28 +115,6 @@ class ProtocolSrmv2(Protocol):
             raise TransferException("Error deleting [" +source.workon+ "]", \
                                      ["Uknown Problem"] )
 
-        """
-        fullSource = "file:///" + str(source.workon)
-        fullDest = "file:///" + str(dest.workon)
-        if source.protocol != 'local':
-            fullSource = source.getLynk()
-        if dest.protocol != 'local':
-            fullDest = dest.getLynk()
-
-        option = self._options + " -retry_num=1 "
-        if proxy is not None:
-            option += " -x509_user_proxy=%s " % proxy
-            self.checkUserProxy(proxy)
-
-        cmd = "srmmv " +option +" "+ fullSource +" "+ fullDest
-        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
-        ### simple output parsing ###
-        problems = self.simpleOutputCheck(outputs)
-        if exitcode != 0 or len(problems) > 0:
-            raise TransferException("Error moving [" +source.workon+ "] to [" \
-                                    + dest.workon + "]", problems, outputs )
-        """
-
     def deleteRec(self, source, proxy, opt = "", tout = None):
         self.delete(source, proxy, opt)
 
@@ -165,10 +150,6 @@ class ProtocolSrmv2(Protocol):
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
         if self.checkDirExists(fullSource , opt = "", tout = None) is False:
-            #tempsource = fullSource
-            #if fullSource.find(source.port) != -1:
-            #    tempsource = tempsource.split(source.port,1)[-1]
-            #elements = tempsource.split('/')
             elements = fullSource.split('/')
             elements.reverse()
             if '' in elements: elements.remove('') 
@@ -177,7 +158,8 @@ class ProtocolSrmv2(Protocol):
                 toCreate.append(ele)
                 fullSource_tmp = fullSource.split('/')
                 if '' in fullSource_tmp[-1:] : fullSource_tmp = fullSource_tmp[:-1] 
-                fullSource = string.join(fullSource_tmp[:-1],'/') 
+                fullSource = string.join(fullSource_tmp[:-1],'/')
+
                 if fullSource != "srm:/":
                     if self.checkDirExists(fullSource, opt = "", tout = None ) is True: break
                 else:
