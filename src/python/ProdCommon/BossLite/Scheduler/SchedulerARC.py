@@ -5,7 +5,6 @@
 #
 # Maintainers:
 # Erik Edelmann <erik.edelmann@ndgf.fi>
-# Jesper Koivumäki <jesper.koivumaki@hip.fi>
 # 
 
 """
@@ -13,9 +12,7 @@ _SchedulerARC_
 """
 
 
-import sys  # Needed for anything else than debugging?
-
-import os, time
+import os
 import tempfile
 #import socket
 #import tempfile
@@ -24,8 +21,7 @@ from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 import logging
-import ldap
-import re, signal
+import re
 #import arclib as arc
 
 #
@@ -108,6 +104,28 @@ Arc2StatusReason = {
 }
 
 
+def ngstatqlSplitClusters(output):
+    """
+    Take the output of 'ngstat -q -l', and split it into text
+    chunks; one chunck per cluster.
+    """
+
+    in_cluster = False
+    for line in output.split('\n'):
+        if in_cluster:
+            if line == "":
+                in_cluster = False
+                yield cluster
+            else:
+                cluster.append(line)
+        else:
+            if line[0:8] == "Cluster ":
+                cluster = [ line ]
+                in_cluster = True
+    if in_cluster:
+        yield cluster
+
+
 def splitNgstatOutput(output):
      """
      Split a string of ngstat output into a list with one job per list
@@ -146,30 +164,6 @@ def count_nonempty(list):
     return n
 
 
-class TimeoutFunctionException(Exception): 
-    """Exception to raise on a timeout""" 
-    pass 
-
-
-class TimeoutFunction: 
-    def __init__(self, function, timeout): 
-        self.timeout = timeout 
-        self.function = function 
-
-    def handle_timeout(self, signum, frame): 
-        raise TimeoutFunctionException()
-
-    def __call__(self, *args): 
-        old = signal.signal(signal.SIGALRM, self.handle_timeout) 
-        signal.alarm(self.timeout) 
-        try: 
-            result = self.function(*args)
-        finally: 
-            signal.signal(signal.SIGALRM, old)
-            signal.alarm(0)
-        return result 
-
-
 def get_ngsub_opts(xrsl):
     """
     If the xrsl-code contains (cluster=...), we can speed up submitting a lot by using option '-c ...' to ngsub
@@ -184,122 +178,6 @@ def get_ngsub_opts(xrsl):
     return opt
 
 
-def ldapsearch(host, dn, filter, attr, logging, scope=ldap.SCOPE_SUBTREE, retries=5):
-     timeout = 45  # seconds
-
-     for i in range(retries+1):
-          try:
-               if i > 0:
-                    logging.debug("Retrying ldapsearch ... (%i/%i)" % (i, retries))
-                    time.sleep(i*10)
-
-               con = ldap.initialize(host)      # host = ldap://hostname[:port]
-               bind = TimeoutFunction(con.simple_bind_s, timeout)
-               try:
-                   bound = False
-                   bind()
-                   bound = True
-               except TimeoutFunctionException:
-                   raise ldap.LDAPError("Bind timeout")
-               con.search(dn, scope, filter, attr)
-               try:
-                   x = con.result(all=1, timeout=timeout)[1]
-               except ldap.SIZELIMIT_EXCEEDED:
-                    # Apparently too much output. Let's try to get one
-                    # entry at a time instead; that way we'll hopefully get
-                    # at least a part of the total output.
-                    logging.info("ldap.SIZELIMIT_EXCEEDED ...")
-                    x = []
-                    con.search(dn, ldap.SCOPE_SUBTREE, filter, attr)
-                    tmp = con.result(all=0, timeout=timeout)
-                    while tmp:
-                         x.append(tmp[1][0])
-                         try:
-                              tmp = con.result(all=0, timeout=timeout)
-                         except ldap.SIZELIMIT_EXCEEDED, e:
-                              break;
-               con.unbind()
-               break;
-          except ldap.LDAPError, e:
-               logging.debug("ldapsearch: got error '%s' for host %s" % (str(e), host))
-               if bound:
-                    con.unbind()
-     else:
-          raise e
-
-     return x
-
-
-def parseGiisUrl(giis_url):
-    """
-    Parse a giis string in either of the formats
-        ldap://giis.csc.fi:2135/O=Grid/Mds-Vo-name=Finland
-    or
-        ldap://giis.csc.fi:2135/Mds-Vo-name=Finland,O=Grid
-    and return the giis itself, and base, e.g.
-    "ldap://giis.csc.fi:2135",  "Mds-Vo-name=Finland,O=Grid"
-    """
-
-    m = re.match("(ldap://[^/]*)/(.*)", giis_url)
-    assert(m)
-
-    host = m.group(1)
-    base_str = m.group(2)
-
-    # If the 'base' part has the format 'y=b/x=a'
-    # it has to be converted to 'x=a,y=b'. If it's in
-    # the latter format already, we'll use it as it is.
-    m = re.match("(.*=.*)/(.*=.*)", base_str)
-    if m:
-        base = m.group(2) + ',' + m.group(1)
-    else:
-        # FIXME: Check that base_str has some sane format
-        # (e.g. "x=a,y=b")
-        base = base_str
-
-    return host, base
-
-
-def getGiisUrlList():
-    """
-    Find out which GIIS(s) to use
-    """
-    giises = []
-
-    # 
-    # FIXME: Maybe we could just parse the output of 'ngtest -O'?
-    #
-
-    # First look in the file ~/.arc/client.conf
-    if "HOME" in os.environ.keys():
-        home = os.environ["HOME"]
-        try:
-            clientconf = open(home + "/.arc/client.conf", "r").readlines()
-        except IOError:
-            clientconf = []
-
-        for line in clientconf:
-            m = re.match("giis=\"*(ldap://[^\"]*)\"*", line)
-            if m:
-                g = m.group(1)
-                giises.append(g)
-
-    # Look for site-wide giislist
-    try:
-        arc_location = os.environ["NORDUGRID_LOCATION"]
-    except KeyError:
-        self.logging.error("Environment variable NORDUGRID_LOCATION not set!")
-        raise
-
-    giislist = open(arc_location + "/etc/giislist", "r").readlines()
-            
-    for line in giislist:
-        if line not in giises:
-            giises.append(line)
-
-    return giises
-
-
 class SchedulerARC(SchedulerInterface):
     """
     basic class to handle ARC jobs
@@ -308,8 +186,7 @@ class SchedulerARC(SchedulerInterface):
     def __init__(self, **args):
         super(SchedulerARC, self).__init__(**args)
         self.vo = args.get("vo", "cms")
-        self.giis_result = {}
-        self.ce_result = {}
+        self.accepted_CEs = []
         self.user_xrsl = args.get("user_xrsl", "")
         self.scheduler = "ARC"
 
@@ -682,42 +559,40 @@ class SchedulerARC(SchedulerInterface):
         raise NotImplementedError
 
 
-    def query_giis(self, giis):
+    def getClusters(self):
         """
-        Return CEs and sub-GIISes from giis.
+        Get a list of clusters from the ARC info.sys., including the
+        installed RTE:s and local SE:s of the clusters.
         """
 
-        attr = [ 'giisregistrationstatus' ]
+        cmd = 'ngstat -q -l'
+        output, s = self.ExecuteCommand(cmd)
 
-        # Use cached result if we have it:
-        if giis['host'] in self.giis_result.keys():
-            ldap_result = self.giis_result[giis['host']]
-        else:
-            try:
-                ldap_result = ldapsearch(giis['host'], giis['base'], '(objectclass=*)', attr, self.logging, scope=ldap.SCOPE_BASE, retries=0)
-            except ldap.LDAPError:
-                self.logging.warning("No reply from GIIS %s" % giis['host'])
-                ldap_result = []
-            else:
-                self.giis_result[giis['host']] = ldap_result
+        clusters = []
+        for c_text in ngstatqlSplitClusters(output):
+            c = {}
+            c["cluster"] = c_text[0].split(' ')[1]
+            c["localse"] = []
+            c["rte"] = []
+            in_list = False
+            for line in c_text:
+                if in_list:
+                    if line[0:4] == "    ":
+                        c[list_name].append(line.lstrip())
+                    else:
+                        in_list = False
 
-        CEs = []
-        giises = []
-        for r in ldap_result:
-            item = r[1]
+                if not in_list:
+                    if line == "  Local Storage Elements:":
+                        in_list = True
+                        list_name = "localse"
+                    elif line == "  Installed Runtime Environments:":
+                        in_list = True
+                        list_name = "rte"
 
-            if item['Mds-Reg-status'][0] != 'VALID':
-                continue
+            clusters.append(c)
+        return clusters
 
-            m_ce = re.match("nordugrid-cluster-name=", item['Mds-Service-Ldap-suffix'][0])
-            m_giis = re.match("Mds-Vo-name=.*, *[oO]=[gG]rid", item['Mds-Service-Ldap-suffix'][0])
-
-            if m_ce:
-                CEs.append({'name': item['Mds-Service-hn'][0], 'port': item['Mds-Service-port'][0]})
-            elif m_giis:
-                giises.append({'name': item['Mds-Service-hn'][0], 'port': item['Mds-Service-port'][0],
-                               'base':item['Mds-Service-Ldap-suffix'][0]})
-        return CEs, giises
 
 
     def check_CEs(self, CEs, tags, vos, seList, blacklist, whitelist, full):
@@ -727,27 +602,10 @@ class SchedulerARC(SchedulerInterface):
 
         accepted_CEs = []
 
-        attr = ['nordugrid-cluster-name', 'nordugrid-cluster-localse',
-                'nordugrid-cluster-runtimeenvironment' ]
-
         for ce in CEs:
-            if ce['name'] in self.ce_result.keys():
-                ldap_result = self.ce_result[ce['name']]
-            else:
-                host = 'ldap://' + ce['name'] + ':' + ce['port']
-                try:
-                    ldap_result = ldapsearch(host,'mds-vo-name=local,o=grid','objectclass=nordugrid-cluster', attr, self.logging, retries=0)
-                    self.ce_result[ce['name']] = ldap_result
-                except ldap.LDAPError:
-                    continue
-
-            if not ldap_result:
-                continue
-
-            ce = ldap_result[0][1]
-            name = ce['nordugrid-cluster-name'][0]
-            localSEs = set(ce.get('nordugrid-cluster-localse', []))
-            RTEs = set(ce.get('nordugrid-cluster-runtimeenvironment', []))
+            name = ce['cluster']
+            localSEs = set(ce['localse'])
+            RTEs = set(ce['rte'])
 
             if count_nonempty(seList) > 0 and not set(seList) & localSEs:
                 if count_nonempty(whitelist) > 0 and name in whitelist:
@@ -772,29 +630,6 @@ class SchedulerARC(SchedulerInterface):
         return accepted_CEs
 
 
-    def pick_CEs_from_giis_trees(self, root, tags, vos, seList, blacklist, whitelist, full):
-        """
-        Recursively traverse the GIIS tree, starting from 'root',
-        return CEs fullfilling requirements.
-        """
-
-        self.logging.debug("Trying GIIS %s, %s" % (root['host'], root['base']))
-        CEs, giises = self.query_giis(root)
-        accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
-
-        if len(accepted_CEs) > 0 and not full:
-            return accepted_CEs
-
-        for g in giises:
-            host = 'ldap://' + g['name'] + ':' + g['port']
-            root = {'host':host, 'base': g['base']}
-            accepted_CEs += self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
-            if len(accepted_CEs) > 0 and not full:
-                break
-
-        return accepted_CEs
-
-
     def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
         """
         Query grid information system for CE:s.
@@ -804,29 +639,14 @@ class SchedulerARC(SchedulerInterface):
 
         self.logging.debug("lcgInfo called with %s, %s, %s, %s, %s, %s" % (str(tags), str(vos), str(seList), str(blacklist), str(whitelist), str(full)))
 
+        if self.accepted_CEs:
+            self.logging.debug("lcgInfo: using cached result")
+            return self.accepted_CEs
+            
         if type(full) == type(""):  
             full = (full == "True")
 
-        giis_urls = getGiisUrlList()
-
-        if not giis_urls:
-            raise SchedulerError("No Toplevel GIISes?", "Something must be wrong with ARC's setup!")
-    
-        tolevel_giises = []
-        for g in giis_urls:
-            host, base = parseGiisUrl(g)
-            tolevel_giises.append({'host': host, 'base': base})
-
-        for root in tolevel_giises:
-            accepted_CEs = self.pick_CEs_from_giis_trees(root, tags, vos, seList, blacklist, whitelist, full)
-            if accepted_CEs:
-                break;
-            else:
-                self.logging.warning("No suitable CE:s found using toplevel GIIS %s, %s" % (root['host'], root['base']))
-        else:
-            self.logging.error("No more toplevel GIISes to try!  All GIISes down? Please wait for a while and try again")
-            raise SchedulerError("No reply from GIISes", "")
-
-        self.logging.debug("lcgInfo found the following sites: %s" % str(accepted_CEs))
-        return accepted_CEs
-
+        CEs = self.getClusters()
+        self.accepted_CEs = self.check_CEs(CEs, tags, vos, seList, blacklist, whitelist, full)
+        self.logging.debug("lcgInfo found" + str(self.accepted_CEs))
+        return self.accepted_CEs
