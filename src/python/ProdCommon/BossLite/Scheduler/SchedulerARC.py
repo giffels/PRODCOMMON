@@ -243,11 +243,16 @@ class SchedulerARC(SchedulerInterface):
             inputfiles += " " + f.split('/')[-1]
         xrsl += ')'
 
+        if task['outputDirectory'] and task['outputDirectory'].find('gsiftp://') >= 0:
+            destUrl = lambda f: task['outputDirectory'] + f
+        else:
+            destUrl = lambda f: '""'
+
         outputfiles = ""
         if len(job['outputFiles']) > 0:
             xrsl += '(outputFiles='
             for f in job['outputFiles']:
-                xrsl += '(%s "")' % f
+                xrsl += '(%s %s)' % (f, destUrl(f))
                 outputfiles += " " + f
             xrsl += ')'
 
