@@ -635,6 +635,9 @@ class SchedulerARC(SchedulerInterface):
 
         return accepted_CEs
 
+    def delegateProxy(self, wms = ''):
+        # ARC doesn't need anything to be done here.
+        return
 
     def lcgInfo(self, tags, vos, seList=None, blacklist=None, whitelist=None, full=False):
         """
