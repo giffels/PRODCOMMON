@@ -237,24 +237,10 @@ class SchedulerARC(SchedulerInterface):
         xrsl += '(inputFiles='
         for f in task['globalSandbox'].split(','):
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
-            if inputfiles == "'":
-                inputfiles += f.split('/')[-1]
-            else:
-                inputfiles += "\\ " + f.split('/')[-1]
-                # FIXME: The '\\' above is required with older versions of ARC
-                # (0.6.*) -- otherwise everything after the first space is
-                # lost -- but will cause problems for newer versions
-                # (0.8.*).
+            inputfiles += " " + f.split('/')[-1]
         for f in job['inputFiles']:
             xrsl += '(%s %s)' % (f.split('/')[-1], f)
-            if inputfiles == "'":
-                inputfiles += f.split('/')[-1]
-            else:
-                inputfiles += "\\ " + f.split('/')[-1]
-                # FIXME: The '\\' above is required with older versions of ARC
-                # (0.6.*) -- otherwise everything after the first space is
-                # lost -- but will cause problems for newer versions
-                # (0.8.*).
+            inputfiles += " " + f.split('/')[-1]
         xrsl += ')'
 
         outputfiles = ""
@@ -262,14 +248,7 @@ class SchedulerARC(SchedulerInterface):
             xrsl += '(outputFiles='
             for f in job['outputFiles']:
                 xrsl += '(%s "")' % f
-                if outputfiles == "'":
-                    outputfiles += f
-                else:
-                    outputfiles += "\\ " + f
-                    # FIXME: The '\\' above is required with older versions of ARC
-                    # (0.6.*) -- otherwise everything after the first space is
-                    # lost -- but will cause problems for newer versions
-                    # (0.8.*).
+                outputfiles += " " + f
             xrsl += ')'
 
         xrsl += "(environment="
