@@ -189,6 +189,12 @@ class SchedulerARC(SchedulerInterface):
         self.accepted_CEs = []
         self.user_xrsl = args.get("user_xrsl", "")
         self.scheduler = "ARC"
+        self.logging.debug("self.cert =" + self.cert)
+
+        if self.cert:
+            self.pre_arcCmd = "X509_USER_PROXY=" + self.cert + " "
+        else:
+            self.pre_arcCmd = ""
 
 
     def jobDescription(self, obj, requirements='', config='', service = ''):
@@ -309,7 +315,7 @@ class SchedulerARC(SchedulerInterface):
 
         # Submit
         opt = get_ngsub_opts(xrsl)
-        command = "ngsub %s %s" % (xrsl_file, opt)
+        command = self.pre_arcCmd + "ngsub %s %s" % (xrsl_file, opt)
         self.logging.debug(command)
         self.setTimeout(300)
         tmp, exitStat = self.ExecuteCommand(command)
@@ -394,7 +400,7 @@ class SchedulerARC(SchedulerInterface):
             self.logging.info("No (valid) jobs to query")
             return
 
-        cmd = 'ngstat -i %s' % jobsFile.name
+        cmd = self.pre_arcCmd + 'ngstat -i %s' % jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         jobsFile.close()
         if stat != 0:
@@ -492,7 +498,7 @@ class SchedulerARC(SchedulerInterface):
         # afterwards within the same files system (faster!)
         tmpdir = tempfile.mkdtemp(prefix="joboutputs.", dir=outdir)
 
-        cmd = 'ngget -i %s -dir %s' % (jobsFile.name, tmpdir)
+        cmd = self.pre_arcCmd + 'ngget -i %s -dir %s' % (jobsFile.name, tmpdir)
         output, stat = self.ExecuteCommand(cmd)
         jobsFile.close()
         if stat != 0:
@@ -526,7 +532,7 @@ class SchedulerARC(SchedulerInterface):
 
         jobsFile, arcId2job = self.createJobsFile(jobList, "Will kill")
 
-        cmd = "ngkill -i " + jobsFile.name
+        cmd = self.pre_arcCmd + "ngkill -i " + jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         if stat != 0:
             raise SchedulerError('ngkill returned %i' % stat, output, cmd)
@@ -547,7 +553,7 @@ class SchedulerARC(SchedulerInterface):
         and write it in outfile
         """
         self.logging.debug('postMortem for job %s' % arcId)
-        cmd = "ngcat -l " + arcId + " > " + outfile
+        cmd = self.pre_arcCmd + "ngcat -l " + arcId + " > " + outfile
         return self.ExecuteCommand(cmd)[0]
 
 
@@ -565,7 +571,7 @@ class SchedulerARC(SchedulerInterface):
         installed RTE:s and local SE:s of the clusters.
         """
 
-        cmd = 'ngstat -q -l'
+        cmd = self.pre_arcCmd + 'ngstat -q -l'
         output, s = self.ExecuteCommand(cmd)
 
         clusters = []
