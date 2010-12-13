@@ -244,7 +244,7 @@ class SchedulerARC(SchedulerInterface):
         xrsl += ')'
 
         if task['outputDirectory'] and task['outputDirectory'].find('gsiftp://') >= 0:
-            destUrl = lambda f: task['outputDirectory'] + f
+            destUrl = lambda f: task['outputDirectory'] + "/" +  f
         else:
             destUrl = lambda f: '""'
 
@@ -292,7 +292,7 @@ class SchedulerARC(SchedulerInterface):
 
         # Build xRSL 
         xrsl = self.jobDescription(task, requirements, config, service)
-        xrsl_file = os.path.dirname(task['cfgName'] or './') + '/%s-jobs.xrsl' % task['name']
+        xrsl_file = "/tmp" + '/%s-jobs.xrsl' % task['name']
         f = open(xrsl_file, "w")
         f.write(xrsl)
         f.close()
@@ -306,6 +306,7 @@ class SchedulerARC(SchedulerInterface):
         self.logging.debug("ngsub exitStatus: %i" % exitStat)
         self.logging.debug("ngsub output:\n" + tmp)
         output = tmp.split('\n')
+        os.remove(xrsl_file)
 
         # Check output of submit command
         subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.-]+)(:\d+)?(/.*)?/\d+)")
