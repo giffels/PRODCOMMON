@@ -16,8 +16,10 @@ class ProtocolSrmv2(Protocol):
         self._options = " -2 -debug=true -protocols=gsiftp,http " 
         # check for java version
 
-        if not os.environ.has_key('_JAVA_OPTIONS'):
-            os.environ['_JAVA_OPTIONS'] = '-Xms128m -Xmx512m'
+        ### FEDE ###
+        #if not os.environ.has_key('_JAVA_OPTIONS'):
+        os.environ['_JAVA_OPTIONS'] = '-Xms128m -Xmx512m'
+        ############
 
         cmd = "java -version"
         try: 
@@ -87,6 +89,10 @@ class ProtocolSrmv2(Protocol):
             fullDest = dest.getLynk()
 
         opt += " %s --delegate=false "%self._options
+        ### FEDE ### 
+        opt += " -storagetype=permanent "
+        ############
+
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)

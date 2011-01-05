@@ -14,8 +14,10 @@ class ProtocolSrmv1(Protocol):
     def __init__(self):
         super(ProtocolSrmv1, self).__init__()
         self._options = " -debug=true " 
-        if not os.environ.has_key('_JAVA_OPTIONS'):
-            os.environ['_JAVA_OPTIONS'] = '-Xms128m -Xmx512m'
+        ### FEDE ###
+        #if not os.environ.has_key('_JAVA_OPTIONS'):
+        os.environ['_JAVA_OPTIONS'] = '-Xms128m -Xmx512m'
+        ############
 
     def simpleOutputCheck(self, outLines):
         """
@@ -56,6 +58,10 @@ class ProtocolSrmv1(Protocol):
             fullDest = dest.getLynk()
 
         opt += self._options
+        ### FEDE ###
+        opt += " -storagetype=permanent "
+        ############
+
         if proxy is not None:
             opt += " -x509_user_proxy=%s " % proxy
             self.checkUserProxy(proxy)
