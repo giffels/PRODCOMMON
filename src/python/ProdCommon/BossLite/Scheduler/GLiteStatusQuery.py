@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.14 2010/05/28 12:23:32 spigafi Exp $"
-__version__ = "$Revision: 1.14 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.15 2010/11/05 14:46:51 mcinquil Exp $"
+__version__ = "$Revision: 1.15 $"
 
 import sys
 import os
@@ -32,6 +32,7 @@ for app in ["lib","lib64"]:
 try :
     # 'glite_wmsui_LbWrapper' exists on both gLite 3.1 and gLite 3.2 
     from glite_wmsui_LbWrapper import Status
+    from glite_wmsui_LbWrapper import Eve
     # 'wmsui_api' exists only on gLite 3.2 !!!
     import wmsui_api
 except :
@@ -237,6 +238,8 @@ class GLiteStatusQuery(object):
                     
                  # update runningJob
                 self.getJobInfo(jobInfo, job )
+                if job['statusScheduler'] == 'Aborted' :
+                    self.getAbortReason(job)
                 
                 jobIds[jobSchedId] = job
                 
@@ -320,6 +323,8 @@ class GLiteStatusQuery(object):
 
                     # update runningJob
                     self.getJobInfo( jobInfo, job, forceAborted)
+                    if job['statusScheduler'] == 'Aborted' :
+                        self.getAbortReason(job)
                     jobIds[jobSchedId] = job
                     
 
@@ -328,6 +333,34 @@ class GLiteStatusQuery(object):
             except Exception, err :
                 errors.append("skipping " + bulkId + " : " +  str(err))
 
+    ##########################################################################
+
+    def getAbortReason( self, job ):
+        """
+        gets real reasons behind the status
+        """
+        jobSchedId = job['schedulerId']
+        
+        statusrealreason=str("")
+        reason=""
+
+        wrapEvent = Eve(jobSchedId)
+        err , apiMsg = wrapEvent.get_error ()
+        if err:
+            raise Exception(apiMsg)
+        eventsNumber = wrapEvent.getEventsNumber()
+        for eventNumber in range(eventsNumber):
+            eventAttributes = wrapEvent.getEventAttributes(eventNumber)
+            err , apiMsg = wrapEvent.get_error ()
+            if err:
+                raise Exception(apiMsg)
+            event = wmsui_api.Event(wrapEvent.getEventName(eventNumber), eventAttributes, 3)
+            name=wrapEvent.getEventName(eventNumber)
+            if name == "Done" :
+                oneReason=event.getAttribute(wmsui_api.events_names.index("Reason")).strip()
+                reason = reason + oneReason + "."
+        if reason is not "" : job['statusReason'] = reason
+        return
 
 def usage():
     """
