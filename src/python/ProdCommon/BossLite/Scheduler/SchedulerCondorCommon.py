@@ -224,8 +224,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             [key, value] = line.split('=', 1)
             if key.strip() == "schedulerList":
                 ceList = value.split(',')
-                ce = ceList[0].strip()
-                jdl += "grid_resource = gt2 " + ce + '\n'
+                ce = ceList[0]
+                jdl += "globusscheduler = " + ce + '\n'
             else:
                 jdl += line.strip() + '\n'
         filelist = ''
@@ -259,6 +259,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             jdl += 'input = %s\n' % job['standardInput']
         jdl += 'output  = %s\n' % job['standardOutput']
         jdl += 'error   = %s\n' % job['standardError']
+        jdl += 'transfer_output_remaps   = "%s=/dev/null; %s=/dev/null"\n' % (job['standardError'], job['standardOutput'])
+
         # Make logfile with same root filename
         jdl += 'log     = %s.log\n' % os.path.splitext(job['standardError'])[0]
 
@@ -307,13 +309,13 @@ class SchedulerCondorCommon(SchedulerInterface) :
             for job in obj.jobs:
                 if not self.valid(job.runningJob):
                     continue
-
+                
                 schedulerId = job.runningJob['schedulerId']
-
+                
                 # fix: skip if the Job was created but never submitted
                 if job.runningJob['status'] == 'C' :
                     continue
-
+		        
                 # Jobs are done by default
                 bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
                 schedd = schedulerId.split('//')[0]
@@ -431,6 +433,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
             try:
                 retcode = call(command, shell=True)
+                self.logging.info("Condor kill %s, %s, %s, %s, %s, %s" %(command, jobId, submitHost, userProxy, userProxy, seProxy))
             except OSError, ex:
                 raise SchedulerError('condor_rm failed', ex)
             return
