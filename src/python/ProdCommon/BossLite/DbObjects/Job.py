@@ -4,8 +4,8 @@ _Job_
 
 """
 
-__version__ = "$Id: Job.py,v 1.20 2009/06/12 15:03:06 gcodispo Exp $"
-__revision__ = "$Revision: 1.20 $"
+__version__ = "$Id: Job.py,v 1.21 2009/10/13 16:04:31 riahi Exp $"
+__revision__ = "$Revision: 1.21 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.BossLite.Common.Exceptions import JobError, DbError
@@ -264,12 +264,15 @@ class Job(DbObject):
         """
 
         # close previous running instance (if any)
-        self.closeRunningInstance(db)
+        maxSubmission = self.closeRunningInstance(db)
 
         # update job id and submission counter
         runningJob['jobId'] = self.data['jobId']
         runningJob['taskId'] = self.data['taskId']
-        self.data['submissionNumber'] += 1
+        #self.data['submissionNumber'] += 1
+        #Fabio. Fix for duplicate entries
+        self.data['submissionNumber'] = maxSubmission + 1
+
         runningJob['submission'] = self.data['submissionNumber']
         runningJob.existsInDataBase = False
         
@@ -347,12 +350,17 @@ class Job(DbObject):
         # get running job
         runningJobs = db.select(template)
 
+        #Fabio. Fix for duplicate entries
+        maxSubmission = template['submissionNumber']
+
         # do for all of them (should be one...)
         for job in runningJobs:
+            if job['submissionNumber'] > maxSubmission: maxSubmission = job['submissionNumber']
 
             job["closed"] = "Y"
             job.update(db)
-
+        return maxSubmission 
+       
 
 
 
