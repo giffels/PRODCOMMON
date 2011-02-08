@@ -264,15 +264,12 @@ class Job(DbObject):
         """
 
         # close previous running instance (if any)
-        maxSubmission = self.closeRunningInstance(db)
+        self.closeRunningInstance(db)
 
         # update job id and submission counter
         runningJob['jobId'] = self.data['jobId']
         runningJob['taskId'] = self.data['taskId']
-        #self.data['submissionNumber'] += 1
-        #Fabio. Fix for duplicate entries
-        self.data['submissionNumber'] = maxSubmission + 1
-
+        self.data['submissionNumber'] += 1
         runningJob['submission'] = self.data['submissionNumber']
         runningJob.existsInDataBase = False
         
@@ -350,17 +347,12 @@ class Job(DbObject):
         # get running job
         runningJobs = db.select(template)
 
-        #Fabio. Fix for duplicate entries
-        maxSubmission = template['submissionNumber']
-
         # do for all of them (should be one...)
         for job in runningJobs:
-            if job['submissionNumber'] > maxSubmission: maxSubmission = job['submissionNumber']
 
             job["closed"] = "Y"
             job.update(db)
-        return maxSubmission 
-       
+
 
 
 
