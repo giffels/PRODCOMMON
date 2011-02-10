@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.36 2010/06/11 15:46:20 spiga Exp $"
-__version__ = "$Revision: 2.36 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.37 2010/06/25 13:07:56 spigafi Exp $"
+__version__ = "$Revision: 2.37 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -202,12 +202,14 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile.close()
         
         # delegate proxy
-        if self.delegationId != "" :
-            command = "glite-wms-job-submit --json -d " \
-                                                + self.delegationId
-            self.delegateProxy(service)
-        else :
-            command = "glite-wms-job-submit --json -a "
+        #if self.delegationId != "" :
+        #    command = "glite-wms-job-submit --json -d " \
+        #                                        + self.delegationId
+        #    self.delegateProxy(service)
+        #else :
+        #    command = "glite-wms-job-submit --json -a "
+
+        command = "glite-wms-job-submit --json -a "
         
         if len(config) != 0 :
             command += " -c " + config
