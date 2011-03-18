@@ -201,6 +201,11 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile.write( jdl )
         tmpFile.close()
         
+        # prepare a tmpFile for the verbose log
+        tmplog, subLog = tempfile.mkstemp( suffix = '.submit.log',
+                                            prefix = obj['name'],
+                                            dir = os.getcwd() )
+        
         # delegate proxy
         #if self.delegationId != "" :
         #    command = "glite-wms-job-submit --json -d " \
@@ -209,7 +214,7 @@ class SchedulerGLite(SchedulerInterface) :
         #else :
         #    command = "glite-wms-job-submit --json -a "
 
-        command = "glite-wms-job-submit --json -a "
+        command = "glite-wms-job-submit --json -a --logfile %s "% subLog
         
         if len(config) != 0 :
             command += " -c " + config
@@ -220,19 +225,25 @@ class SchedulerGLite(SchedulerInterface) :
 
         command += ' ' + fname
         out, ret = self.ExecuteCommand( self.proxyString + command )
+
+        
+        flog=open(subLog)
+        verboselog=flog.read()
+        flog.close()
         
         os.unlink( fname )
+        os.unlink( subLog )
         
         if ret != 0 :
-            raise SchedulerError('error executing glite-wms-job-submit', out)
-        
+            raise SchedulerError('error executing glite-wms-job-submit', out + \
+                                 "============== start of glite-job-submit debug info ===============\n" + \
+                                 "submit LOGFILE:\n" + verboselog  + \
+                                 "used JDL:\n" + jdl + \
+                                 "============== end of glite-job-submit debug info =================\n" )
         try:
-            
             jOut = self.myJSONDecoder.decodeSubmit(out)
-            
         except ValueError:
             raise SchedulerError('error parsing JSON output',  out)
-        
 
         returnMap = {}
         if type(obj) == Task:
@@ -304,7 +315,7 @@ class SchedulerGLite(SchedulerInterface) :
                 else : 
                     self.logging.error( out )
                     obj.runningJob.errors.append( out )
-                                           
+                
             elif ret == 0 and out.find("result: success") == -1 :
                 # Excluding all the previous cases however something went wrong
                 self.logging.error( obj.runningJob['schedulerId'] + \
