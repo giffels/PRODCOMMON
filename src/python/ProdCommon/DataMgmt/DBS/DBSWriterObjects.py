@@ -209,6 +209,8 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     status = datasetInfo.get("Status", "VALID")
     dataTier = datasetInfo['DataTier']
     globalTag = datasetInfo['Conditions']
+    ### FEDE FOR PROCESSED DATASET ###
+    description = datasetInfo.get('Description',None)
     if globalTag is None: globalTag = ''
 
     parents = []
@@ -236,7 +238,11 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
 
     if apiRef != None:
         apiRef.insertProcessedDataset(processedDataset)
-    #
+
+    ### FEDE TO UPDATE THE DESCRIPTION FIELD ###
+    if description != None:
+        apiRef.updateProcDSDesc(processedDataset, description)
+
     logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))
     return processedDataset
 
