@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.37 2010/06/25 13:07:56 spigafi Exp $"
-__version__ = "$Revision: 2.37 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.39 2011/03/18 14:43:09 belforte Exp $"
+__version__ = "$Revision: 2.39 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -528,14 +528,8 @@ class SchedulerGLite(SchedulerInterface) :
         fakeJdl += 'Executable = "/bin/echo";\n'
         # fakeJdl += 'Arguments  = "";\n'
         
-        try :
-            requirements = requirements.strip()
-            while requirements[0] == '[':
-                requirements = requirements[1:-1].strip()
-            fakeJdl += '\n' + requirements + '\n'
-        except :
-            pass
-        
+        fakeJdl += '\n' + requirements + '\n'
+                
         fakeJdl += 'SignificantAttributes = {"Requirements", "Rank", "FuzzyRank"};'
         fakeJdl += "\n]\n"
         
