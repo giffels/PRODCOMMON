@@ -29,6 +29,7 @@ class FileInfo(dict):
         self.setdefault("Stream", None)
         self.setdefault("LFN", None)
         self.setdefault("PFN", None)
+        self.setdefault("Runs", None)
         ## FEDE FOR COPY DATA
         self.setdefault("SurlForGrid", None)
         ###
@@ -321,6 +322,7 @@ class FileInfo(dict):
                 continue
 
             self.runs[newRun.run] = newRun
+            self["Runs"]=self.runs
 
 
         self.legacyLumiInfo(improvNode, queryBase)
