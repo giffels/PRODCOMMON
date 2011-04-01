@@ -239,9 +239,9 @@ def createProcessedDataset(primaryDataset, algorithm, datasetInfo,
     if apiRef != None:
         apiRef.insertProcessedDataset(processedDataset)
 
-    ### FEDE TO UPDATE THE DESCRIPTION FIELD ###
-    if description != None:
-        apiRef.updateProcDSDesc(processedDataset, description)
+        ### FEDE TO UPDATE THE DESCRIPTION FIELD ###
+        if description != None:
+            apiRef.updateProcDSDesc(processedDataset, description)
 
     logging.debug("PrimaryDataset: %s ProcessedDataset: %s DataTierList: %s  requested by PhysicsGroup: %s "%(primaryDataset['Name'],name,tierList,physicsGroup))
     return processedDataset
