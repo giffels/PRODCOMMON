@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.61 2010/11/12 19:46:30 ewv Exp $"
-__version__ = "$Revision: 1.61 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.63 2011/05/08 07:31:27 spiga Exp $"
+__version__ = "$Revision: 1.63 $"
 
 import os
 import commands
@@ -180,7 +180,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
         jdlLines = requirements.split(';')
         execHost = 'Unknown'
         for line in jdlLines:
-            if line.find("globusscheduler") != -1:
+            if line.find("grid_resource") != -1:
                 parts = line.split('=')
                 sched = parts[1]
                 parts = sched.split(':')
