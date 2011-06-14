@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.39 2011/03/18 14:43:09 belforte Exp $"
-__version__ = "$Revision: 2.39 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.40 2011/03/23 15:26:11 belforte Exp $"
+__version__ = "$Revision: 2.40 $"
 __author__ = "filippo.spiga@cern.ch"
 
 import os
@@ -536,12 +536,15 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile.write( fakeJdl )
         tmpFile.close()
         
+        # prepare a log file
+        logname = fname + "_log"
+        
         # delegate proxy
         if self.delegationId == "" :
             command = "glite-wms-job-list-match -d " + self.delegationId
             self.delegateProxy(service)
         else :
-            command = "glite-wms-job-list-match -a "
+            command = "glite-wms-job-list-match -a --logfile %s" % logname
         
         # Is it necessary ? 
         if len(config) != 0 :
@@ -551,13 +554,14 @@ class SchedulerGLite(SchedulerInterface) :
             command += ' -e ' + service
 
         command += " " + fname
+
         
         outRaw, ret = self.ExecuteCommand( self.proxyString + command )
         
-        os.unlink( fname )
-        
         if ret == 0 : 
-            out = self.patternCE.findall(outRaw)
+            out = self.patternCE.findall(outRaw)        
+            os.unlink( fname )
+            os.unlink (logname)
         else :
             raise SchedulerError( 'Error matchResources', outRaw )
         
