@@ -372,7 +372,8 @@ def sherpa():
     # Third line is the tarball name incl version of madgraph
     file      = open(cfgFile, 'r')
     generatorLine    = file.readline() # Not used
-    tarballPath      = file.readline().strip()
+    nameLabel    = file.readline().strip()
+    tarballName      = file.readline().strip()
 
     #  //
     # // Build tarball location within release structure
@@ -383,13 +384,13 @@ def sherpa():
     if os.environ.get("SCRAM_ARCH", None) == None:
         msg = "Error: SCRAM_ARCH variable not set"
         raise RuntimeError, msg
-  
-    fngetcommand='fn-fileget -c "`cmsGetFnConnect frontier://smallfiles`" '+tarballPath
-    os.system (fngetcommand)
-    
-    tarballPathSplit = tarballPath.split('/')
-    tarballLocation=tarballPathSplit[len(tarballPathSplit)-1]  
 
+
+    tarballLocation = "%s/%s/generatorData/" % (os.environ['CMS_PATH'],
+                                                os.environ['SCRAM_ARCH'])
+    tarballLocation += "sherpa/"
+    tarballLocation += "%s/" % nameLabel
+    tarballLocation += "%s" % tarballName
     if not os.path.exists(tarballLocation):
         msg = "Error: Sherpa Tarball Location not found:\n"
         msg += tarballLocation
@@ -399,7 +400,8 @@ def sherpa():
     #  //
     # // unpack the tarball
     #//
-    setupCommand = "tar -xzf %s\n" % os.path.basename(tarballLocation)
+    setupCommand = "/bin/cp %s . \n" % tarballLocation
+    setupCommand += "tar -xzf %s\n" % os.path.basename(tarballLocation)
     os.system(setupCommand)
  
     #  //
