@@ -3,9 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.40 2011/03/23 15:26:11 belforte Exp $"
-__version__ = "$Revision: 2.40 $"
-__author__ = "filippo.spiga@cern.ch"
+__revision__ = "$Id: SchedulerGLite.py,v 2.41 2011/06/14 18:19:30 belforte Exp $"
+__version__ = "$Revision: 2.41 $"
 
 import os
 import tempfile
@@ -153,7 +152,10 @@ class SchedulerGLite(SchedulerInterface) :
         version, ret = self.ExecuteCommand( 'glite-version' )
         version = version.strip()
         if version.find( '3.2' ) != 0 :
-            raise SchedulerError( 'SchedulerGLite is allowed on UI >3.2' )
+            version1, ret1 = self.ExecuteCommand( 'glite-version -n glite-UI -v' )
+            version1 = version1.strip()
+            if version1.find( '3.2' ) != 0 :
+                raise SchedulerError( 'SchedulerGLite is allowed on UI >3.2' )
 
         # job killed per CLI call (tunable value)
         self.killThreshold = 100
@@ -240,10 +242,16 @@ class SchedulerGLite(SchedulerInterface) :
                                  "submit LOGFILE:\n" + verboselog  + \
                                  "used JDL:\n" + jdl + \
                                  "============== end of glite-job-submit debug info =================\n" )
+
         try:
-            jOut = self.myJSONDecoder.decodeSubmit(out)
-        except ValueError:
-            raise SchedulerError('error parsing JSON output',  out)
+            ## try to see if we got a real json
+            jOut = eval(out)
+        except SyntaxError, ex:
+            try:
+                ## not possible to evaluate json directly - use the patched version
+                jOut = self.myJSONDecoder.decodeSubmit(out)
+            except ValueError:
+                raise SchedulerError('error parsing JSON output',  out)
 
         returnMap = {}
         if type(obj) == Task:
@@ -316,28 +324,67 @@ class SchedulerGLite(SchedulerInterface) :
                     self.logging.error( out )
                     obj.runningJob.errors.append( out )
                 
-            elif ret == 0 and out.find("result: success") == -1 :
-                # Excluding all the previous cases however something went wrong
-                self.logging.error( obj.runningJob['schedulerId'] + \
-                      ' problems during getOutput operation.' )
-                obj.runningJob.errors.append(out)     
-            
-            else :
-                # Output successfully retrieved without problems
+            #raise Exception('a \n', str(result))
+            elif ret == 0:
+                result = {}
+                try:
+                    ## try to see if we got a real json
+                    result = eval(out)
+                except SyntaxError, ex:
+                    ## not possible to evaluate json - try as string
+                    if out.find("result: success") == -1 :
+                        # Excluding all the previous cases however something went wrong
+                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                        obj.runningJob.errors.append(out)
+                        return
+                else:
+                    if 'result' in result and not result['result'] == 'success':
+                        # Excluding all the previous cases however something went wrong
+                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                        obj.runningJob.errors.append(out)     
+                        return
+                try:
+                    ## try to see if we got a real json
+                    result = eval(out)
+                except SyntaxError, ex:
+                    ## not possible to evaluate json - try as string
+                    # Output successfully retrieved without problems
+
+                    # let's move outputs in the right place...
+                    # required ONLY for local file stage-out
+                    tmp = re.search(self.pathPattern, out)
+
+                    if tmp :
+                        command = "mv " + tmp.group(1) + "/* " + outdir + "/"
+                        os.system( command )
+
+                        command = "rm -rf " + tmp.group(1)
+                        os.system( command )
+
+                    self.logging.debug("Output of %s successfully retrieved"
+                                        % str(obj.runningJob['schedulerId']))
+
+                else:
+                    outlocation = None
+                    try:
+                        if result['jobs'][obj.runningJob['schedulerId']]['output_available'] is 1:
+                            outlocation = result['jobs'][obj.runningJob['schedulerId']]['location']
+                        else:
+                            raise KeyError('Output not available')
+                    except KeyError, ke:
+                        obj.runningJob.errors.append( 'Error: %s ' % str(ke))
+                        obj.runningJob.errors.append( out )
+
+                    #m = 'outlocation = %s , result = %s ' %(str(outlocation),str(result))
+                    #self.logging.error(m)
+                    if outlocation: 
+                        command = "mv " + outlocation + "/* " + outdir + "/"
+                        os.system( command )
+                     
+                        command = "rm -rf " + outlocation
+                        os.system( command )
                 
-                # let's move outputs in the right place...
-                # required ONLY for local file stage-out
-                tmp = re.search(self.pathPattern, out)
-                
-                if tmp :
-                    command = "mv " + tmp.group(1) + "/* " + outdir + "/"
-                    os.system( command )
-                    
-                    command = "rm -rf " + tmp.group(1)
-                    os.system( command )
-                # 
-                
-                self.logging.debug("Output of %s successfully retrieved" 
+                    self.logging.debug("Output of %s successfully retrieved" 
                                         % str(obj.runningJob['schedulerId'])) 
             
             if obj.runningJob.isError() :
@@ -374,30 +421,68 @@ class SchedulerGLite(SchedulerInterface) :
                         self.logging.error( out )
                         selJob.runningJob.errors.append( out )
                                                
-                elif ret == 0 and out.find("result: success") == -1 :
-                    # Excluding all previous cases however something went wrong
-                    self.logging.error( selJob.runningJob['schedulerId'] + \
-                          ' problems during getOutput operation.' )
-                    selJob.runningJob.errors.append(out)   
-                
-                else :
-                    # Output successfully retrieved without problems
-                    
-                    # let's move outputs in the right place...
-                    # required ONLY for local file stage-out
-                    tmp = re.search(self.pathPattern, out)
-                    
-                    if tmp :
-                        command = "mv " + tmp.group(1) + "/* " + outdir + "/"
-                        os.system( command )
-                        
-                        command = "rm -rf " + tmp.group(1)
-                        os.system( command )
-                    # 
-                    
-                    self.logging.debug("Output of %s successfully retrieved" 
-                                % str(selJob.runningJob['schedulerId']))
-        
+                elif ret == 0:
+                    result = {}
+                    try:
+                        ## try to see if we got a real json
+                        result = eval(out)
+                    except SyntaxError, ex:
+                        ## not possible to evaluate json - try as string
+                        if out.find("result: success") == -1 :
+                            # Excluding all the previous cases however something went wrong
+                            self.logging.error( selJob.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                            selJob.runningJob.errors.append(out)
+                            continue
+                    else:
+                        if 'result' in result and not result['result'] == 'success':
+                            # Excluding all the previous cases however something went wrong
+                            self.logging.error( selJob.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                            selJob.runningJob.errors.append(out)
+                            continue
+
+                    try:
+                        ## try to see if we got a real json
+                        result = eval(out)
+                    except SyntaxError, ex:
+                        ## not possible to evaluate json - try as string
+                        # Output successfully retrieved without problems
+
+                        # let's move outputs in the right place...
+                        # required ONLY for local file stage-out
+                        tmp = re.search(self.pathPattern, out)
+
+                        if tmp :
+                            command = "mv " + tmp.group(1) + "/* " + outdir + "/"
+                            os.system( command )
+
+                            command = "rm -rf " + tmp.group(1)
+                            os.system( command )
+
+                        self.logging.debug("Output of %s successfully retrieved"
+                                            % str(selJob.runningJob['schedulerId']))
+                    else:
+                        outlocation = None
+                        try:
+                            if result['jobs'][selJob.runningJob['schedulerId']]['output_available'] is 1:
+                                outlocation = result['jobs'][selJob.runningJob['schedulerId']]['location']
+                            else:
+                                raise KeyError('Output not available')
+                        except KeyError, ke:
+                            selJob.runningJob.errors.append( 'Error: %s ' % str(ke))
+                            selJob.runningJob.errors.append( out )
+
+                        #m = 'outlocation = %s , result = %s ' %(str(outlocation),str(result))
+                        #self.logging.error(m)
+
+                        if outlocation:
+                             command = "mv " + outlocation + "/* " + outdir + "/"
+                             os.system( command )
+  
+                             command = "rm -rf " + outlocation
+                             os.system( command )
+
+                        self.logging.debug("Output of %s successfully retrieved"
+                                            % str(selJob.runningJob['schedulerId']))
         else:
              # unknown object type
             raise SchedulerError('wrong argument type', str( type(obj) ))      
@@ -476,8 +561,22 @@ class SchedulerGLite(SchedulerInterface) :
             
             if ret != 0 :
                 raise SchedulerError('error executing glite-wms-job-cancel', out)
-            elif ret == 0 and out.find("result: success") == -1 :
-                raise SchedulerError('error', out)
+            elif ret == 0:
+                try:
+                    ## try to see if we got a real json
+                    result = eval(out)
+                except SyntaxError, ex:
+                    ## not possible to evaluate json - try as string
+                    if out.find("result: success") == -1 :
+                        raise SchedulerError('error', out)
+                else:
+                    ## if was a json...
+                    if 'result' in result:
+                        if not result['result'] == "success" :
+                            raise SchedulerError('error', result)
+                    else:
+                        raise SchedulerError('Missing result', result)
+                
         
         # the object passed is a Task
         elif type(obj) == Task :
@@ -501,9 +600,22 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 if ret != 0 :
                     raise SchedulerError('error executing glite-wms-job-cancel', out)
-                elif ret == 0 and out.find("result: success") == -1 :
-                    raise SchedulerError('error', out)
-        
+                elif ret == 0:
+                    try:
+                        ## try to see if we got a real json
+                        result = eval(out)
+                    except SyntaxError, ex:
+                        ## not possible to evaluate json - try as string
+                        if out.find("result: success") == -1 :
+                           raise SchedulerError('error', out)
+                    else:
+                        ## if was a json...
+                        if 'result' in result:
+                            if not result['result'] == "success" :
+                                raise SchedulerError('error', result)
+                        else:
+                            raise SchedulerError('Missing result', result)
+
         return 0
     
     
@@ -538,14 +650,14 @@ class SchedulerGLite(SchedulerInterface) :
         
         # prepare a log file
         logname = fname + "_log"
-        
+
         # delegate proxy
         if self.delegationId == "" :
             command = "glite-wms-job-list-match -d " + self.delegationId
             self.delegateProxy(service)
         else :
             command = "glite-wms-job-list-match -a --logfile %s" % logname
-        
+
         # Is it necessary ? 
         if len(config) != 0 :
             command += " -c " + config
@@ -555,9 +667,9 @@ class SchedulerGLite(SchedulerInterface) :
 
         command += " " + fname
 
-        
+
         outRaw, ret = self.ExecuteCommand( self.proxyString + command )
-        
+
         if ret == 0 : 
             out = self.patternCE.findall(outRaw)        
             os.unlink( fname )
@@ -571,8 +683,8 @@ class SchedulerGLite(SchedulerInterface) :
         if len(listCE)==0:
             self.logging.debug('List match performed with following requirements:\n %s'%str(fakeJdl))  
         return listCE
-    
-    
+
+
     ##########################################################################
 
     def postMortem( self, schedulerId, outfile, service):
