@@ -79,6 +79,8 @@ class RequestJobFactory:
         self.firstEvent = args.get("InitialEvent", 1)
         # The first event sets also the first event read from the MCDB table
         self.skipMCDB = self.firstEvent - 1
+        # The first event sets also the first event read from the LHE table
+        self.skipLHE = self.firstEvent - 1
         self.overrideFirstEvent = args.get("OverrideFirstEvent", None)
         if self.overrideFirstEvent != None:
             self.overrideFirstEvent = int(self.overrideFirstEvent)
@@ -90,6 +92,9 @@ class RequestJobFactory:
         # For making sure we always skip the same number of events when
         # reading from a MCDB table.
         self.eventsPerMCDBJob = self.eventsPerJob
+        # For making sure we always skip the same number of events when
+        # reading from a LHE table.
+        self.eventsPerLHEJob = self.eventsPerJob
         self.firstNodeCfg = None #Chain job: cfg options needed in next steps
 
         self.sites = args.get("Sites", [] )
@@ -254,6 +259,21 @@ class RequestJobFactory:
                 skipEvents = self.skipMCDB + int(self.jobnumber) * \
                     int(float(self.eventsPerMCDBJob) / float(efficiency))
                 msg = "Job processes a MCDB table. Skipping the first "
+                msg += "%s events." % skipEvents
+                logging.info(msg)
+
+        # If we are dealing with LHESource type, then add a skipEvents
+        # paramater to the first step's configuration.
+        if jobSpecNode.cfgInterface.sourceType == 'LHESource':
+            if not self.firstNodeCfg: # we are 1st job in chain, skip events
+                efficiency = jobSpecNode.applicationControls.get(
+                    "SelectionEfficiency",
+                    None)
+                if efficiency is None:
+                    efficiency = 1
+                skipEvents = self.skipLHE + int(self.jobnumber) * \
+                    int(float(self.eventsPerLHEJob) / float(efficiency))
+                msg = "Job processes a LHE table. Skipping the first "
                 msg += "%s events." % skipEvents
                 logging.info(msg)
 
