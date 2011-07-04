@@ -68,7 +68,7 @@ class Token:
             if ret != 0 :
                 msg = ('Error %s in delegate while executing : %s ' % (out, cmd)) 
                 raise Exception(msg)
-            cmd = 'rfchmod 777  %s:%s/%s'%(serverName,proxyPath,dict[i])
+            cmd = 'rfchmod 760  %s:%s/%s'%(serverName,proxyPath,dict[i])
  
             out, ret = self.ExecuteCommand(cmd)  
             if ret != 0 :
