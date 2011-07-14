@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.41 2011/06/14 18:19:30 belforte Exp $"
-__version__ = "$Revision: 2.41 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.42 2011/06/15 10:43:10 mcinquil Exp $"
+__version__ = "$Revision: 2.42 $"
 
 import os
 import tempfile
@@ -197,16 +197,14 @@ class SchedulerGLite(SchedulerInterface) :
             config = self.config
         
         # write a jdl into tmpFile
-        tmp, fname = tempfile.mkstemp( suffix = '.jdl', prefix = obj['name'],
+        tmp, fname = tempfile.mkstemp( suffix = '.submit.jdl', prefix = obj['name'] + '.',
                                        dir = os.getcwd() )
         tmpFile = os.fdopen(tmp, "w")
         tmpFile.write( jdl )
         tmpFile.close()
         
         # prepare a tmpFile for the verbose log
-        tmplog, subLog = tempfile.mkstemp( suffix = '.submit.log',
-                                            prefix = obj['name'],
-                                            dir = os.getcwd() )
+        subLog = fname.replace('.jdl','.log')
         
         # delegate proxy
         #if self.delegationId != "" :
@@ -628,7 +626,8 @@ class SchedulerGLite(SchedulerInterface) :
         """
         
         # write a fake jdl file
-        tmp, fname = tempfile.mkstemp( "", "glite_list_match_", os.getcwd() )
+        tmp, fname = tempfile.mkstemp( suffix = '.listmatch.jdl', prefix = obj['name'] + '.',
+                                       dir = os.getcwd() )
         
         tmpFile = os.fdopen(tmp, "w")
         
@@ -637,7 +636,7 @@ class SchedulerGLite(SchedulerInterface) :
             
         fakeJdl = "[\n"
         fakeJdl += 'Type = "job";\n'
-        fakeJdl += 'Executable = "/bin/echo";\n'
+        fakeJdl += 'Executable = "/bin/true";\n'
         # fakeJdl += 'Arguments  = "";\n'
         
         fakeJdl += '\n' + requirements + '\n'
@@ -649,7 +648,7 @@ class SchedulerGLite(SchedulerInterface) :
         tmpFile.close()
         
         # prepare a log file
-        logname = fname + "_log"
+        logname = fname.replace('.jdl','.log')
 
         # delegate proxy
         if self.delegationId == "" :
