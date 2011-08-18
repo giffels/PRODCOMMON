@@ -12,21 +12,9 @@ class ProtocolUberFtp(Protocol):
     implementing the GsiFtp protocol
     """
 
-    # Actual SL(C) version 
-    slcVersion = 4
-
     def __init__(self):
         super(ProtocolUberFtp, self).__init__()
 
-        # Discriminate uberftp copy behaviour 
-        cmd = "uberftp -v "
-        exitcode, outputs = self.executeCommand(cmd, timeout = self.timeout)
-        
-        if outputs.find("1.22") != -1 :
-            self.slcVersion = 4
-        elif outputs.find("1.27") != -1:
-            self.slcVersion = 5    
-        
     def simpleOutputCheck(self, outLines):
         """
         parse line by line the outLines text lookng for Exceptions
@@ -95,14 +83,10 @@ class ProtocolUberFtp(Protocol):
         srcPath, destPath =  (source.getLynk(), dest.getLynk() )
         srcPath = srcPath.replace('file://', 'file:')
         destPath = destPath.replace('file://', 'file:')
-            
-        if (self.slcVersion == 4):
-            cmd = precmd + " uberftp %s %s " % ( srcPath, destPath )
-        elif (self.slcVersion == 5):
-            cmd = precmd + " uberftp %s %s " % ( srcPath, os.path.dirname(destPath) )
-            
-            exitcode, outputs = self.executeCommand(cmd, timeout = tout)
         
+        cmd = precmd + " uberftp %s %s " % ( srcPath, os.path.dirname(destPath) )
+        exitcode, outputs = self.executeCommand(cmd, timeout = tout)
+                
         ### simple output parsing ###
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0 or len(problems) > 0:
