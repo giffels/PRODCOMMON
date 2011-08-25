@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.15 2010/11/05 14:46:51 mcinquil Exp $"
-__version__ = "$Revision: 1.15 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.16 2011/01/06 21:17:40 belforte Exp $"
+__version__ = "$Revision: 1.16 $"
 
 import sys
 import os
@@ -54,7 +54,12 @@ class myJSONEncoder(object):
         the same interface as simplejson ...
         """
         
-        tmp = str(myString)
+        finalstring = {} 
+        for schedid in myString: 
+            finalstring[ schedid ] = {} 
+            for k in myString[schedid]: 
+                finalstring[schedid][str(k).replace('"', '').replace("'","")] = str(myString[schedid][k]).replace('"', '').replace("'","") 
+        tmp = str(finalstring) 
         tmp = tmp.replace('\'','"')
         tmp = tmp.replace('None','null')
         ## special case for reason on aborted jobs
@@ -465,4 +470,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
