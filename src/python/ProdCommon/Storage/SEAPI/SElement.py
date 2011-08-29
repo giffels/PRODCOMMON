@@ -12,15 +12,17 @@ from ProtocolRfio import ProtocolRfio
 from ProtocolLcgUtils import ProtocolLcgUtils
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 from ProtocolHadoop import ProtocolHadoop
+from ProtocolXrootd import ProtocolXrootd
 
 class SElement(object):
     """
     class rappresenting a storage element
     [just a bit more then a classis struct type]
     """
-
+    #### FEDE FOR xrootd ####### 
     _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", \
-                  "srm-lcg", "gsiftp-lcg", "uberftp", "globus", "hadoop"]
+                  "srm-lcg", "gsiftp-lcg", "uberftp", "globus", "hadoop", "xrootd"]
+    #############################
 
     def __init__(self, hostname=None, prot=None, port=None):
         if prot in self._protocols:
@@ -74,6 +76,11 @@ class SElement(object):
             return ProtocolGlobusUtils()
         elif protocol == "hadoop":
             return ProtocolHadoop()
+        #### FEDE FOR xrootd ####### 
+        elif protocol == "xrootd":
+            #print "--->>> FEDE cerco xrootd chiamando ProtocolXrootd()"
+            return ProtocolXrootd()
+        #####################################    
         else:
             raise ProtocolUnknown()
 
@@ -118,7 +125,9 @@ class SElement(object):
             if self.protocol == "local":
                 if self.hostname != "/":
                     return ("file://" + join(self.hostname, self.workon))
-            elif self.protocol == "hadoop":
+            ###### FEDE FOR XROOTD ######################################         
+            elif (self.protocol == "hadoop" or self.protocol == "xrootd") :
+            #############################################################
                return join(self.hostname, self.workon)
             else:
                 if self.hostname.find(":") != -1:

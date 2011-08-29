@@ -65,6 +65,8 @@ class ProtocolRfio(Protocol):
         
         fullDest = dest.getLynk()
 
+        if str.find(str(fullDest),'path=') != -1:
+            fullDest = str.split(str(fullDest),'path=')[1]
         cmd = "rfchmod " + opt + " " + str(values) + " " + fullDest
         exitcode, outputs = None, None
         if token is not None:
@@ -89,6 +91,8 @@ class ProtocolRfio(Protocol):
                                           dest.workon+ "]", problems)
 
         fullDest = dest.getLynk()
+        if str.find(str(fullDest),'path=') != -1:
+            fullDest = str.split(str(fullDest),'path=')[1]
 
         cmd = "rfmkdir -p " + opt + " " + fullDest 
         exitcode, outputs = None, None
@@ -113,6 +117,8 @@ class ProtocolRfio(Protocol):
             fullSource = source.getLynk()
         if dest.protocol != 'local':
             fullDest = dest.getLynk()
+            if str.find(str(fullDest),'path=') != -1:
+                fullDest = str.split(str(fullDest),'path=')[1]
 
         cmd = "rfcp " + opt + " "+ fullSource +" "+ fullDest 
         exitcode, outputs = None, None
@@ -154,6 +160,9 @@ class ProtocolRfio(Protocol):
         """
         fullSource = source.getLynk()
 
+        if str.find(str(fullSource),'path=') != -1:
+            fullSource = str.split(str(fullSource), 'path=')[1]
+
         cmd = "rfrm " + opt + " "+ fullSource
         exitcode, outputs = None, None
         if token is not None:
@@ -175,6 +184,8 @@ class ProtocolRfio(Protocol):
         returns size, owner, group, permMode of the file-dir
         """
         fullSource = source.getLynk()
+        if str.find(str(fullSource),'path=') != -1:
+            fullSource = str.split(str(fullSource),'path=')[1]
 
         cmd = "rfdir " + opt + " " + fullSource + " | awk '{print $5,$3,$4,$1}'"
         exitcode, outputs = None, None
@@ -234,6 +245,8 @@ class ProtocolRfio(Protocol):
         returns list of files
         """
         fullSource = source.getLynk()
+        if str.find(str(fullSource),'path=') != -1:
+            fullSource = str.split(str(fullSource),'path=')[1]
 
         cmd = "rfdir " + opt + " "+ fullSource +" | awk '{print $9}'"
         exitcode, outputs = None, None
@@ -288,6 +301,8 @@ class ProtocolRfio(Protocol):
         returns boolean 
         """
         fullSource = source.getLynk()
+        if str.find(str(fullSource),'path=') != -1:
+            fullSource = str.split(str(fullSource),'path=')[1]
 
         cmd = "rfstat " + opt + " " + fullSource
         exitcode, outputs = None, None
