@@ -10,8 +10,8 @@ Uses a wrapper script which assumes an env var PBS_JOBCOOKIE points to the local
 
 """
 
-__revision__ = "$Id: SchedulerPbs.py,v 1.2 2009/12/19 14:56:34 mcinquil Exp $"
-__version__ = "$Revision: 1.2 $"
+__revision__ = "$Id: SchedulerPbs.py,v 1.3 2010/09/08 17:37:23 mcinquil Exp $"
+__version__ = "$Revision: 1.3 $"
 
 import re, os, time
 import tempfile
@@ -51,20 +51,20 @@ class SchedulerPbs (SchedulerInterface) :
         env.append('PBS_O_WORKDIR='+os.getcwd())
         env.append('PBS_O_HOST='+pbs.pbs_default())
         #if 'use_proxy' in args:
-        #    if args['use_proxy'] == 1:
-        #        proxy_location = ''
-        #        try:
-        #            proxy_location = os.environ['X509_USER_PROXY']
-        #        except:
-        #            proxy_location = '/tmp/x509up_u'+ repr(os.getuid())
+        #     if args['use_proxy'] == 1:
+        #         proxy_location = ''
+        #         try:
+        #             proxy_location = os.environ['X509_USER_PROXY']
+        #         except:
+        #             proxy_location = '/tmp/x509up_u'+ repr(os.getuid())
 
-        #        msg, ret = self.ExecuteCommand('cp ' + proxy_location + " " + self.cert)
-        ##        proxy_path = self.getUserProxy()
-        #        env.append('X509_USER_PROXY=' + self.cert)
-        #        env.append('X509_USER_CERT=' + self.cert)
-        #        env.append('X509_USER_KEY=' + self.cert)
-        #    else:
-        #        raise SchedulerError(str(args), self.cert)
+        #         msg, ret = self.ExecuteCommand('cp ' + proxy_location + " " + self.cert)
+        ##          proxy_path = self.getUserProxy()
+        #         env.append('X509_USER_PROXY=' + self.cert)
+        #         env.append('X509_USER_CERT=' + self.cert)
+        #         env.append('X509_USER_KEY=' + self.cert)
+        #     else:
+        #         raise SchedulerError(str(args), self.cert)
         
         self.pbs_env=','.join(env)
 
@@ -129,7 +129,7 @@ class SchedulerPbs (SchedulerInterface) :
         s=[]
         s.append('#!/bin/sh');
         if self.workerNodeWorkDir:
-	    s.append('cd ' + self.workerNodeWorkDir)
+            s.append('cd ' + self.workerNodeWorkDir)
         s.append('if [ ! -d $PBS_JOBCOOKIE ] ; then mkdir -p $PBS_JOBCOOKIE ; fi')
         s.append('cd $PBS_JOBCOOKIE')
         for ifile in task['globalSandbox'].split(','):
@@ -137,20 +137,34 @@ class SchedulerPbs (SchedulerInterface) :
         s.append(self.jobScriptDir + job['executable']+' '+ job['arguments'] +\
                  ' >' + job['standardOutput'] + ' 2>' + job['standardError'])
         if self.workerNodeWorkDir:
-	    s.append('cd ' + self.workerNodeWorkDir)
+            s.append('cd ' + self.workerNodeWorkDir)
+    
+        # this fails if the job is aborted, which leaks disc space. Adding an epilogue to make
+        # sure it's gone for good - AMM 18/07/2011
         s.append('rm -fr $PBS_JOBCOOKIE')
         f.write('\n'.join(s))
         f.flush()
 
+        epilogue = tempfile.NamedTemporaryFile()
+        s = []
+        s.append('#!/bin/sh');
+        if self.workerNodeWorkDir:
+            s.append('cd ' + self.workerNodeWorkDir)
+        s.append('rm -fr $PBS_JOBCOOKIE')
+        s.append('touch $HOME/done.$1')
+        epilogue.write( '\n'.join( s ) )
+        epilogue.flush()
+        os.chmod( epilogue.name, 700 )
         attr_dict={'Job_Name':'CRAB_PBS',
                    'Variable_List':self.pbs_env,
                    'Output_Path':self.jobResDir+'wrapper_'+str(job['standardOutput']),
                    'Error_Path':self.jobResDir+'wrapper_'+str(job['standardError'])
                    }
 
-        attropl=pbs.new_attropl(len(attr_dict)+len(self.res_dict))
+        attropl=pbs.new_attropl(len(attr_dict)+len(self.res_dict) + 1)
         i_attr=0
         for k in attr_dict.keys():
+            self.logging.debug("adding k %s" % k)
             attropl[i_attr].name=k
             attropl[i_attr].value=attr_dict[k]
             i_attr+=1
@@ -159,9 +173,14 @@ class SchedulerPbs (SchedulerInterface) :
             attropl[i_attr].resource=k
             attropl[i_attr].value=self.res_dict[k]
             i_attr+=1
+    
+        attropl[i_attr].name = 'Resource_List'
+        attropl[i_attr].resource  = 'epilogue'
+        attropl[i_attr].value = epilogue.name
+        self.logging.debug("adding epilogue: %s" % epilogue.name)
+        i_attr += 1
 
         jobid = pbs.pbs_submit(conn, attropl, f.name, self.queue, 'NULL')
-        #raise Exception (str(s))
         f.close()
 
         if not jobid:
