@@ -265,6 +265,10 @@ class ProtocolXrootd(Protocol):
         problems = self.simpleOutputCheck(outputs)
         if exitcode != 0:
             return False
+
+        for problema in problems:
+            if "no such file or directory" in problema:
+                return False
         return True
 
     def checkDirExists(self, source, token = None, opt = "", tout = None):
