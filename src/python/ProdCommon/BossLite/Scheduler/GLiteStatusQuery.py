@@ -53,13 +53,7 @@ class myJSONEncoder(object):
         """
         the same interface as simplejson ...
         """
-        
-        finalstring = {} 
-        for schedid in myString: 
-            finalstring[ schedid ] = {} 
-            for k in myString[schedid]: 
-                finalstring[schedid][str(k).replace('"', '').replace("'","")] = str(myString[schedid][k]).replace('"', '').replace("'","") 
-        tmp = str(finalstring) 
+        tmp = str(myString)
         tmp = tmp.replace('\'','"')
         tmp = tmp.replace('None','null')
         ## special case for reason on aborted jobs
@@ -363,7 +357,11 @@ class GLiteStatusQuery(object):
             name=wrapEvent.getEventName(eventNumber)
             if name == "Done" :
                 oneReason=event.getAttribute(wmsui_api.events_names.index("Reason")).strip()
-                reason = reason + oneReason + "."
+                # make type conversion to string explicit
+                # and remove all " and ' from oneReason
+                oneReasonString=str(oneReason).replace('\"','')
+                oneReasonString=oneReasonString.replace('\'','')
+                reason = reason + oneReasonString + "."
         if reason is not "" : job['statusReason'] = reason
         return
 
@@ -470,3 +468,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
