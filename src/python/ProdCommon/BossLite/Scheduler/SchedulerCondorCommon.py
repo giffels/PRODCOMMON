@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.63 2011/05/08 07:31:27 spiga Exp $"
-__version__ = "$Revision: 1.63 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.64 2011/05/13 15:15:43 ewv Exp $"
+__version__ = "$Revision: 1.64 $"
 
 import os
 import commands
@@ -433,7 +433,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 retcode = call(command, shell=True)
             except OSError, ex:
                 raise SchedulerError('condor_rm failed', ex)
-            return
+        return
 
 
     def getOutput( self, obj, outdir='' ):
