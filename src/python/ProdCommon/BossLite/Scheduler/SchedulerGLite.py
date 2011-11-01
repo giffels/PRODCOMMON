@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.42 2011/06/15 10:43:10 mcinquil Exp $"
-__version__ = "$Revision: 2.42 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.43 2011/07/14 14:06:50 belforte Exp $"
+__version__ = "$Revision: 2.43 $"
 
 import os
 import tempfile
@@ -332,13 +332,13 @@ class SchedulerGLite(SchedulerInterface) :
                     ## not possible to evaluate json - try as string
                     if out.find("result: success") == -1 :
                         # Excluding all the previous cases however something went wrong
-                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.\n%s'%out )
                         obj.runningJob.errors.append(out)
                         return
                 else:
                     if 'result' in result and not result['result'] == 'success':
                         # Excluding all the previous cases however something went wrong
-                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.' )
+                        self.logging.error( obj.runningJob['schedulerId'] + ' problems during getOutput operation.\n%s'%out )
                         obj.runningJob.errors.append(out)     
                         return
                 try:
@@ -495,7 +495,7 @@ class SchedulerGLite(SchedulerInterface) :
         
         # Implement as getOutput where the "No output files ..."
         # is not an error condition but the expected status
-      
+        
         if type(obj) == Job and self.valid( obj.runningJob ):
             
             # the object passed is a valid Job
@@ -505,17 +505,19 @@ class SchedulerGLite(SchedulerInterface) :
             
             out, ret = self.ExecuteCommand( self.proxyString + command )
             
-            if ( out.find("No output files to be retrieved") != -1 or \
-                  out.find("Output files already retrieved") != -1 ) :
-                # now this is the expected exit condition... 
-                self.logging.debug("Purge of %s successfully" 
-                                   % str(obj.runningJob['schedulerId']))
-            else : 
-                obj.runningJob.errors.append(out)
-            
+            if ret != 0 :
+                self.logging.error("Purge of %s Failed with exit code =%d" % (str(job.runningJob['schedulerId']),ret))
+                self.logging.error("output was \n%s" % out)
+            elif ret == 0:
+                loadOut = json.loads(out)
+                if unicode('result') in loadOut and loadOut[unicode('result')] == unicode('success'):
+                    self.logging.info("Purge of %s successfully done" % str(job.runningJob['schedulerId']))
+                else:
+                    self.logging.error("Purge of %s Executed NOT VALIDATED" % str(job.runningJob['schedulerId']))
+                    self.logging.error("Purge of %s Executed with output\n%s" % (str(job.runningJob['schedulerId']),out))
             
         elif type(obj) == Task :
-            
+
             # the object passed is a Task
             
             for job in obj.jobs:
@@ -528,13 +530,16 @@ class SchedulerGLite(SchedulerInterface) :
                 
                 out, ret = self.ExecuteCommand( self.proxyString + command )
                 
-                if   ( out.find("No output files to be retrieved") != -1 or \
-                      out.find("Output files already retrieved") != -1 ) :
-                    # now this is the expected exit condition... 
-                    self.logging.debug("Purge of %s successfully" 
-                                       % str(job.runningJob['schedulerId']))
-                else : 
-                    job.runningJob.errors.append(out)
+                if ret != 0 :
+                    self.logging.error("Purge of %s Failed with exit code =%d" % (str(job.runningJob['schedulerId']),ret))
+                    self.logging.error("output was \n%s" % out)
+                elif ret == 0:
+                    loadOut = json.loads(out)
+                    if unicode('result') in loadOut and loadOut[unicode('result')] == unicode('success'):
+                        self.logging.info("Purge of %s successfully done" % str(job.runningJob['schedulerId']))
+                    else:
+                        self.logging.error("Purge of %s Executed NOT VALIDATED" % str(job.runningJob['schedulerId']))
+                        self.logging.error("Purge of %s Executed with output\n%s" % (str(job.runningJob['schedulerId']),out))
                 
                 
 
