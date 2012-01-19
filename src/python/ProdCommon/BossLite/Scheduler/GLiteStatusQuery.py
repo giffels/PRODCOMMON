@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.16 2011/01/06 21:17:40 belforte Exp $"
-__version__ = "$Revision: 1.16 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.18 2011/10/05 11:28:33 belforte Exp $"
+__version__ = "$Revision: 1.18 $"
 
 import sys
 import os
@@ -385,10 +385,10 @@ def main():
     """
     
     # load ad-hoc JSON encoder if there are some problems with WMCore
-    try : 
-        from WMCore.Wrappers import JsonWrapper as json
-    except:
-        json = myJSONEncoder() 
+    #try : 
+    #    from WMCore.Wrappers import JsonWrapper as json
+    #except:
+    json = myJSONEncoder() 
         
     # parse options
     try:
