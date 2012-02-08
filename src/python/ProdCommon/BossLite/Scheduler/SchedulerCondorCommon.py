@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.64 2011/05/13 15:15:43 ewv Exp $"
-__version__ = "$Revision: 1.64 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.65 2011/10/12 21:21:11 ewv Exp $"
+__version__ = "$Revision: 1.65 $"
 
 import os
 import commands
@@ -480,6 +480,21 @@ class SchedulerCondorCommon(SchedulerInterface) :
         fileList.extend(job['outputFiles'])
 
         for fileName in fileList:
+            targetFile = outdir + '/' + fileName
+            subCounter = 0
+            while os.path.exists( targetFile ):
+                subCounter = subCounter + 1
+                try:
+                    temporaryDir = "%s/Submission_%s" % (outdir, subCounter)
+                    try:
+                        os.mkdir( temporaryDir )
+                    except IOError:
+                        pass # Double nest the try blocks to keep the mkdir
+                             # from incrementing the subCounter
+                    shutil.move( targetFile, temporaryDir )
+                except IOError:
+                    pass #ignore problems
+                
             try:
                 shutil.move(self.condorTemp+'/'+fileName, outdir)
             except IOError:
