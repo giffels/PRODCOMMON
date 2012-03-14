@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.18 2011/10/05 11:28:33 belforte Exp $"
-__version__ = "$Revision: 1.18 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.19 2012/01/19 17:45:20 spiga Exp $"
+__version__ = "$Revision: 1.19 $"
 
 import sys
 import os
@@ -348,7 +348,7 @@ class GLiteStatusQuery(object):
         if err:
             raise Exception(apiMsg)
         eventsNumber = wrapEvent.getEventsNumber()
-        for eventNumber in range(eventsNumber):
+        for eventNumber in range(eventsNumber-1,-1,-1):  # start from last event and go back
             eventAttributes = wrapEvent.getEventAttributes(eventNumber)
             err , apiMsg = wrapEvent.get_error ()
             if err:
@@ -361,8 +361,10 @@ class GLiteStatusQuery(object):
                 # and remove all " and ' from oneReason
                 oneReasonString=str(oneReason).replace('\"','')
                 oneReasonString=oneReasonString.replace('\'','')
-                reason = reason + oneReasonString + "."
+                if len(reason) < 700 : #make sure reason is not too long ~<1K char
+                       reason = oneReasonString + "." + reason
         if reason is not "" : job['statusReason'] = reason
+        
         return
 
 def usage():
