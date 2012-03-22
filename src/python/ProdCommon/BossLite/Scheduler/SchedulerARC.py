@@ -164,17 +164,13 @@ def count_nonempty(list):
     return n
 
 
-def get_ngsub_opts(xrsl):
-    """
-    If the xrsl-code contains (cluster=...), we can speed up submitting a lot by using option '-c ...' to ngsub
-    """
+def get_ngsub_opts(requirements):
+    assert type(requirements) == dict
+
     opt = ""
-    clusters = []
-    for attr in xrsl.split(')('):
-        m = re.match(".*cluster=([^)]*)", attr)
-        if m and m.group(1) not in clusters:
-            opt += " -c " + m.group(1)
-            clusters.append(m.group(1))
+    if "clusters" in requirements:
+        for c in requirements["clusters"]:
+            opt += " -c " + c
     return opt
 
 
@@ -197,7 +193,7 @@ class SchedulerARC(SchedulerInterface):
             self.pre_arcCmd = ""
 
 
-    def jobDescription(self, obj, requirements='', config='', service = ''):
+    def jobDescription(self, obj, requirements={}, config='', service = ''):
         """
         retrieve scheduler specific job description
         return it as a string
@@ -210,12 +206,14 @@ class SchedulerARC(SchedulerInterface):
         return xrsl
 
         
-    def decode(self, job, task, requirements=''):
+    def decode(self, job, task, requirements={}):
         """
         prepare scheduler specific job description
 
         used by self.submit(), return xrsl code.
         """
+
+        assert type(requirements) == dict
 
         xrsl = '&'
         xrsl += '(executable="%s")' % job['executable']
@@ -261,7 +259,8 @@ class SchedulerARC(SchedulerInterface):
         xrsl += "(ARC_STDOUT %s)(ARC_STDERR %s)" % (job['standardOutput'], job['standardError'])
         xrsl += ')'
 
-        xrsl += requirements
+        if "xrsl" in requirements:
+            xrsl += requirements["xrsl"]
 
         # User supplied thingies:
         xrsl += self.user_xrsl
@@ -273,7 +272,7 @@ class SchedulerARC(SchedulerInterface):
         return xrsl
 
 
-    def submit(self, task, requirements='', config='', service = ''):
+    def submit(self, task, requirements={}, config='', service = ''):
         """
         set up submission parameters and submit
         uses self.decode()
@@ -292,13 +291,14 @@ class SchedulerARC(SchedulerInterface):
 
         # Build xRSL 
         xrsl = self.jobDescription(task, requirements, config, service)
+        self.logging.debug("The xRSL code:\n%s" % xrsl)
         xrsl_file = "/tmp" + '/%s-jobs.xrsl' % task['name']
         f = open(xrsl_file, "w")
         f.write(xrsl)
         f.close()
 
         # Submit
-        opt = get_ngsub_opts(xrsl)
+        opt = get_ngsub_opts(requirements)
         command = self.pre_arcCmd + "ngsub %s %s" % (xrsl_file, opt)
         self.logging.debug(command)
         self.setTimeout(300)
