@@ -361,10 +361,12 @@ class Proxy:
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
 
-        self.logging.debug('MyProxy logon - retrieval:\n%s'%cmd)
         if (out>0):
-            self.logging.debug('MyProxy result - retrieval :\n%s'%msg)
+            self.logging.info('MyProxy logon - retrieval FAILED:\n%s'%cmd)
+            self.logging.info('MyProxy result - retrieval :\n%s'%msg)
             raise Exception("Unable to retrieve delegated proxy for user DN %s! Exit code:%s"%(userDN, out) )
+        else:
+            self.logging.debug('MyProxy logon - retrieval OK :\n%s'%cmd)
 
         self.vomsExtensionRenewal(proxyFilename, voAttr)
 
@@ -411,10 +413,12 @@ class Proxy:
 
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
-        self.logging.debug('MyProxy renewal - logon :\n%s'%cmd)
         if (out>0):
+            self.logging.debug('MyProxy renewal - logon FAILED :\n%s'%cmd)
             self.logging.debug('MyProxy renewal - logon result:\n%s'%msg)
             raise Exception("Unable to retrieve proxy for renewal: %s! Exit code:%s"%(proxyFilename, out) )
+        else:
+            self.logging.debug('MyProxy renewal - logon OK :\n%s'%cmd)
 
         self.vomsExtensionRenewal(proxyFilename, voAttr)
 
