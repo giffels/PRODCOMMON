@@ -210,7 +210,7 @@ class Proxy:
             out = os.system(cmd)
             if (out>0): raise Exception("Unable to create a valid proxy!\n")
         except:
-            msg = "Unable to create a valid proxy!\n"
+            msg = "Unable to create a valid proxy with command:\n%s\n"%cmd
             raise Exception(msg)
 
     def destroyCredential(self, proxy):
@@ -325,7 +325,7 @@ class Proxy:
         out = os.system(cmd)
         self.logging.debug('MyProxy delegation:\n%s'%cmd)
         if (out>0):
-            raise Exception("Unable to delegate the proxy to myproxyserver %s !\n" % self.myproxyServer )
+            raise Exception("Unable to delegate the proxy to myproxyserver with command \n" % cmd )
         return
 
     def logonMyProxy( self, proxyCache, userDN, vo='cms', group=None, role=None):
@@ -362,8 +362,8 @@ class Proxy:
         msg, out = self.ExecuteCommand(cmd)
 
         if (out>0):
-            self.logging.info('MyProxy logon - retrieval FAILED:\n%s'%cmd)
-            self.logging.info('MyProxy result - retrieval :\n%s'%msg)
+            self.logging.info('MyProxy logon - retrieval FAILED - command issued:\n%s'%cmd)
+            self.logging.info('MyProxy logon - command output:\n%s'%msg)
             raise Exception("Unable to retrieve delegated proxy for user DN %s! Exit code:%s"%(userDN, out) )
         else:
             self.logging.debug('MyProxy logon - retrieval OK :\n%s'%cmd)
@@ -414,8 +414,8 @@ class Proxy:
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
         if (out>0):
-            self.logging.debug('MyProxy renewal - logon FAILED :\n%s'%cmd)
-            self.logging.debug('MyProxy renewal - logon result:\n%s'%msg)
+            self.logging.info('MyProxy logon - retrieval FAILED - command issued:\n%s'%cmd)
+            self.logging.info('MyProxy logon - command output:\n%s'%msg)
             raise Exception("Unable to retrieve proxy for renewal: %s! Exit code:%s"%(proxyFilename, out) )
         else:
             self.logging.debug('MyProxy renewal - logon OK :\n%s'%cmd)
@@ -457,10 +457,12 @@ class Proxy:
 
         cmd = ' '.join(cmdList)
         msg, out = self.ExecuteCommand(cmd)
-        self.logging.debug('Voms extension:\n%s'%cmd)
         if (out>0):
-            self.logging.debug('Voms extension result:\n%s'%msg)
+            self.logging.info('Voms extension:\n%s'%cmd)
+            self.logging.info('Voms extension result:\n%s'%msg)
             raise Exception("Unable to renew proxy voms extension: %s! Exit code:%s"%(proxy, out) )
+        else:
+            self.logging.debug('Voms extension:\n%s'%cmd)
 
         return
 
