@@ -57,7 +57,9 @@ class ProtocolLcgUtils(Protocol):
                                      "installed or wrong environment", \
                                      [line], outLines)
             elif line.find("user has no permission") != -1 or\
-                 line.find("permission denied") != -1:
+                 line.find("permission denied") != -1 and line.find("could not open lock file") == -1:
+				# Messages of the form "Could not open lock file <filename>: Permission denied"
+				# are non-fatal warnings relating to GLOBUS_TCP_PORT_RANGE_STATE_FILE.  Ignore them.
                 raise AuthorizationException("Permission denied!", \
                                               [line], outLines)
             elif line.find("file exists") != -1:
