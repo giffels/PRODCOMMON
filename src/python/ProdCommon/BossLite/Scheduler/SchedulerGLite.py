@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.43 2011/07/14 14:06:50 belforte Exp $"
-__version__ = "$Revision: 2.43 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.44 2011/11/01 23:11:15 belforte Exp $"
+__version__ = "$Revision: 2.44 $"
 
 import os
 import tempfile
@@ -460,14 +460,14 @@ class SchedulerGLite(SchedulerInterface) :
                                             % str(selJob.runningJob['schedulerId']))
                     else:
                         outlocation = None
-                        try:
-                            if result['jobs'][selJob.runningJob['schedulerId']]['output_available'] is 1:
-                                outlocation = result['jobs'][selJob.runningJob['schedulerId']]['location']
-                            else:
-                                raise KeyError('Output not available')
-                        except KeyError, ke:
-                            selJob.runningJob.errors.append( 'Error: %s ' % str(ke))
-                            selJob.runningJob.errors.append( out )
+                        #try:
+                        if result['jobs'][selJob.runningJob['schedulerId']]['output_available'] is 1:
+                            outlocation = result['jobs'][selJob.runningJob['schedulerId']]['location']
+                            #else:
+                                #raise KeyError('Output not available')
+                        #except KeyError, ke:
+                        #    selJob.runningJob.errors.append( 'Error: %s ' % str(ke))
+                        #    selJob.runningJob.errors.append( out )
 
                         #m = 'outlocation = %s , result = %s ' %(str(outlocation),str(result))
                         #self.logging.error(m)
@@ -479,7 +479,7 @@ class SchedulerGLite(SchedulerInterface) :
                              command = "rm -rf " + outlocation
                              os.system( command )
 
-                        self.logging.debug("Output of %s successfully retrieved"
+                        self.logging.debug("Output retrieve done for %s"
                                             % str(selJob.runningJob['schedulerId']))
         else:
              # unknown object type
