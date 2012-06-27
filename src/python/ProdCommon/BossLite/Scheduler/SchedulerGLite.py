@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.44 2011/11/01 23:11:15 belforte Exp $"
-__version__ = "$Revision: 2.44 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.45 2012/05/23 13:09:32 belforte Exp $"
+__version__ = "$Revision: 2.45 $"
 
 import os
 import tempfile
