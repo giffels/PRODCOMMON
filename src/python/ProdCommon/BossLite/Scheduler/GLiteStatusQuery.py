@@ -4,8 +4,8 @@ _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.19 2012/01/19 17:45:20 spiga Exp $"
-__version__ = "$Revision: 1.19 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.20 2012/03/14 14:29:49 belforte Exp $"
+__version__ = "$Revision: 1.20 $"
 
 import sys
 import os
@@ -60,6 +60,7 @@ class myJSONEncoder(object):
         # any extra case can be added here
         # if there are too many extra-special cases need to review the logic
         tmp = tmp.replace('doesn"t',"doesn't")
+        tmp = tmp.replace('CREAM"S',"CREAM'S")
 
         return tmp
     
