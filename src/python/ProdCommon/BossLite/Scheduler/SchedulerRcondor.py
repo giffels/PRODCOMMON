@@ -25,11 +25,8 @@ class SchedulerRcondor(SchedulerInterface) :
     """
     def __init__( self, **args ):
         # call super class init method
-        print "SB PRIMA"
         super(SchedulerRcondor, self).__init__(**args)
-        print "SB DOPO"
         os.environ['_CONDOR_GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE'] = '20'
-        print "SV E VAI"
         self.hostname   = getfqdn()
         self.condorTemp = args.get('tmpDir', None)
         self.outputDir  = args.get('outputDirectory', None)
@@ -92,8 +89,6 @@ class SchedulerRcondor(SchedulerInterface) :
                 jobRequirements = requirements
                 execHost = self.findExecHost(jobRequirements)
                 filelist = self.inputFiles(obj['globalSandbox'])
-                print "SBFL"
-                print filelist
                     
                 if filelist:
                     fnList=[]
@@ -103,20 +98,15 @@ class SchedulerRcondor(SchedulerInterface) :
                         fnList.append(fileName)
                     shortFilelist= ','.join(fnList)
                     jobRequirements += "transfer_input_files = %s\n" % shortFilelist
-                    print shortFilelist 
 
                 # Build JDL file
-                print "JOBCOUNT ", jobCount
                 if not jobCount:
-                    print "QUIIIIIIIIIIIIIIIII"
                     jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
-                    print "JDLini: ", jdl
                     #jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
                     jdl += 'Executable = %s\n' % (job['executable'])
-                    print "executable: ", job['executable']
                     jdl += '\n'
                     jdl += '+BLTaskID = "' + taskId + '"\n'
-                    jdl += '+DESIRED_SEs = "bsrm-1.t2.ucsd.edu"\n'
+                    #jdl += '+DESIRED_SEs = "bsrm-1.t2.ucsd.edu"\n'
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
                 jobCount += 1
@@ -214,9 +204,7 @@ class SchedulerRcondor(SchedulerInterface) :
         """
         Bulk mode, common things for all jobs
         """
-        print "in commonJdl 1"
         jdl  = self.specificBulkJdl(job, requirements='')
-        print "in commonJdl 2"
         jdl += 'stream_output = false\n'
         jdl += 'stream_error  = false\n'
         jdl += 'notification  = never\n'
@@ -236,7 +224,6 @@ class SchedulerRcondor(SchedulerInterface) :
             else:
                 jdl += line.strip() + '\n'
         filelist = ''
-        print "in commonJdl 3"
         return jdl, filelist, ce
     
     def specificBulkJdl(self, job, requirements=''):
