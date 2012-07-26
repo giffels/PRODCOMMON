@@ -116,9 +116,6 @@ class SchedulerRcondor(SchedulerInterface) :
             # Write and submit JDL
             jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
             jdlLocalFileName = job['name'] + '.jdl'
-            print "JDL"
-            print jdlFileName
-            print jdlLocalFileName
             jdlFile = open(jdlFileName, 'w')
             jdlFile.write(jdl)
             jdlFile.close()
@@ -170,7 +167,6 @@ class SchedulerRcondor(SchedulerInterface) :
                                + matchObj.group(2) + "." + str(jobCount)
                             ret_map[job['name']] = condorID
                             job.runningJob['schedulerId'] = condorID
-                            print "condorID = ", condorID
                             jobCount += 1
             if not jobsSubmitted:
                 job.runningJob.errors.append('Job not submitted:\n%s' \
