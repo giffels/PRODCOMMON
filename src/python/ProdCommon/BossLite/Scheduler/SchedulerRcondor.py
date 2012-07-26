@@ -37,6 +37,7 @@ class SchedulerRcondor(SchedulerInterface) :
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.userRequirements = ''
+        self.rcondorHost = os.getenv('RCONDOR_HOST')
 
 
     def submit( self, obj, requirements='', config ='', service='' ):
@@ -164,10 +165,12 @@ class SchedulerRcondor(SchedulerInterface) :
                             else:
                                 job.runningJob['destination'] = execHost
 
-                            condorID = self.hostname + "//" \
+                            
+                            condorID = self.rcondorHost + "//" \
                                + matchObj.group(2) + "." + str(jobCount)
                             ret_map[job['name']] = condorID
                             job.runningJob['schedulerId'] = condorID
+                            print "condorID = ", condorID
                             jobCount += 1
             if not jobsSubmitted:
                 job.runningJob.errors.append('Job not submitted:\n%s' \
