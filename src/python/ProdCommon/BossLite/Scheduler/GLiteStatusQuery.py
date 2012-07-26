@@ -1,11 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/python2
 """
 _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.20 2012/03/14 14:29:49 belforte Exp $"
-__version__ = "$Revision: 1.20 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.21 2012/06/28 13:08:25 belforte Exp $"
+__version__ = "$Revision: 1.21 $"
 
 import sys
 import os
