@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.46 2012/06/27 22:05:49 belforte Exp $"
-__version__ = "$Revision: 2.46 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.47 2012/07/31 19:50:19 belforte Exp $"
+__version__ = "$Revision: 2.47 $"
 
 import os
 import tempfile
@@ -696,8 +696,10 @@ class SchedulerGLite(SchedulerInterface) :
         perform scheduler logging-info
         """
         
-        command = "glite-wms-job-logging-info -v 3 " + schedulerId + \
-                  " > " + outfile
+        # make sure to use pre-CMSSW python2 in glite command
+        command = "`type -pa python2|grep -v CMSSW|head -1` " + \
+                  "`which glite-wms-job-logging-info` -v 3 " + \
+                  schedulerId + " > " + outfile
         
         out, ret = self.ExecuteCommand( self.proxyString + self.hackEnv + command )
 
