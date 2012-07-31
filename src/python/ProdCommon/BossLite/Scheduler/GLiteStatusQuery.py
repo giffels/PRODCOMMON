@@ -1,17 +1,43 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 """
 _GLiteLBQuery_
 GLite LB query functions
 """
 
-__revision__ = "$Id: GLiteStatusQuery.py,v 1.21 2012/06/28 13:08:25 belforte Exp $"
-__version__ = "$Revision: 1.21 $"
+__revision__ = "$Id: GLiteStatusQuery.py,v 1.22 2012/07/26 13:14:41 belforte Exp $"
+__version__ = "$Revision: 1.22 $"
 
 import sys
 import os
 import getopt
 from socket import getfqdn
 from copy import deepcopy
+
+def usePythonWithModule(modulename):
+  import os                                                                                                                                                                                     
+  import sys
+  from os.path import exists, dirname, basename, join
+  try:
+    __import__(modulename)
+  except:
+    pythonpath = os.path.dirname(sys.executable)
+    check = False
+    for x in [x for x in os.environ["PATH"].split(":") if x]:
+      newpython = join(x, "python")
+      if not exists(newpython):
+        continue
+      if dirname(newpython) == dirname(sys.executable):
+        check = True
+        continue
+      if not check:
+        continue
+      print "Wrong python used", sys.executable, "attempting with", newpython
+      args = sys.argv
+      os.execv(newpython, [newpython] + args)
+    print "Cannot find a version of python which can import " + modulename
+    sys.exit(1)
+
+usePythonWithModule("glite_wmsui_LbWrapper")
 
 # looking for the environment...
 try:
