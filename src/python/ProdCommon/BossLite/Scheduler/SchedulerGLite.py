@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.45 2012/05/23 13:09:32 belforte Exp $"
-__version__ = "$Revision: 2.45 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.46 2012/06/27 22:05:49 belforte Exp $"
+__version__ = "$Revision: 2.46 $"
 
 import os
 import tempfile
@@ -700,7 +700,11 @@ class SchedulerGLite(SchedulerInterface) :
                   " > " + outfile
         
         out, ret = self.ExecuteCommand( self.proxyString + self.hackEnv + command )
-            
+
+        if ret != 0:
+            self.logging.error('ERROR: glite-wms-job-logging-info failed with:\n%s'%out)
+            out=""
+
         return out
 
 
