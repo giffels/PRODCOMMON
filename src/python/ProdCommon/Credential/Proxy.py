@@ -320,7 +320,7 @@ class Proxy:
 
         if len( self.serverDN.strip() ) > 0:
             credName = sha1(self.serverDN).hexdigest()
-            cmd += ' -x -R \'%s\' -Z \'%s\' -k %s -t 168:00 '%(self.serverDN, self.serverDN, credName)
+            cmd += ' -x -R \'%s\' -Z \'%s\' -k %s -t 168:00 --certfile $X509_USER_PROXY --keyfile $X509_USER_PROXY'%(self.serverDN, self.serverDN, credName)
 
         out = os.system(cmd)
         self.logging.debug('MyProxy delegation:\n%s'%cmd)
