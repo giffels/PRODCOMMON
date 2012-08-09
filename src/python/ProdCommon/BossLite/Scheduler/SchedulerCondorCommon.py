@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.65 2011/10/12 21:21:11 ewv Exp $"
-__version__ = "$Revision: 1.65 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.66 2012/02/08 16:25:29 ewv Exp $"
+__version__ = "$Revision: 1.66 $"
 
 import os
 import commands
@@ -259,6 +259,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             jdl += 'input = %s\n' % job['standardInput']
         jdl += 'output  = %s\n' % job['standardOutput']
         jdl += 'error   = %s\n' % job['standardError']
+        jdl += 'transfer_output_remaps   = "%s=/dev/null; %s=/dev/null"\n' % (job['standardError'], job['standardOutput'])
         # Make logfile with same root filename
         jdl += 'log     = %s.log\n' % os.path.splitext(job['standardError'])[0]
 
