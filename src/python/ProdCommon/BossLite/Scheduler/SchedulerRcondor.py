@@ -28,16 +28,28 @@ class SchedulerRcondor(SchedulerInterface) :
         super(SchedulerRcondor, self).__init__(**args)
         os.environ['_CONDOR_GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE'] = '20'
         self.hostname   = getfqdn()
-        self.condorTemp = args.get('tmpDir', None)
         self.outputDir  = args.get('outputDirectory', None)
         self.jobDir     = args.get('jobDir', None)
+        self.shareDir  = args.get('shareDir',None)
+        self.remoteDir  = args.get('taskDir',None)
+        self.taskId = ''
         self.useGlexec  = args.get('useGlexec', False)
         self.glexec     = args.get('glexec', None)
         self.renewProxy    = args.get('renewProxy', None)
         self.glexecWrapper = args.get('glexecWrapper', None)
         self.condorQCacheDir     = args.get('CondorQCacheDir', None)
         self.userRequirements = ''
-        self.rcondorHost = os.getenv('RCONDOR_HOST')
+        self.rcondorHost = args.get('rcondorHost', None)
+        self.rcondorUser = os.getenv('RCONDOR_USER')
+        if self.rcondorUser==None:
+            print "$RCONDOR_USER not define, trying to find out via uberftp ..."
+            command="uberftp $RCONDOR_HOST pwd|grep User|awk '{print $3}'"
+            (status, output) = commands.getstatusoutput(command)
+            if status == 0:
+                self.rcondorUser = output
+                print "rcondorUser set to ", self.rcondorUser
+        if self.rcondorUser==None:
+            raise Exception('FATAL ERROR: env.var RCONDOR_USER not defined')
 
 
     def submit( self, obj, requirements='', config ='', service='' ):
@@ -68,11 +80,6 @@ class SchedulerRcondor(SchedulerInterface) :
             seDir = self.jobDir
         self.userRequirements = obj['commonRequirements']
 
-        if os.path.isdir(self.condorTemp):
-            pass
-        else:
-            os.makedirs(self.condorTemp)
-
         taskId = ''
         ret_map = {}
 
@@ -84,66 +91,74 @@ class SchedulerRcondor(SchedulerInterface) :
             taskId = obj['name']
             jobCount = 0
             jdl = ''
+            
+            submitOptions = ''
+
+            jobRequirements = requirements
+            execHost = self.findExecHost(jobRequirements)
+            filelist = self.inputFiles(obj['globalSandbox'])
+
+            if filelist:
+                fnList=[]
+                for fn in filelist.split(','):
+                    fileName=fn.split('/')[-1]
+                    fnList.append(fileName)
+                shortFilelist= ','.join(fnList)
+            jobRequirements += "transfer_input_files = %s\n" % shortFilelist
+                
+            jdl, sandboxFileList, ce = self.commonJdl(jobRequirements)
+            # for some strange reason I need one job to get the executable name
+            oneJob=obj.getJobs()[0]
+            jdl += 'Executable = %s\n' % (oneJob['executable'])
+            jdl += 'log     = condor.log\n'
+
+            jdl += '\n'
+            jdl += '+BLTaskID = "' + taskId + '"\n'
+
             for job in obj.getJobs():
-                submitOptions = ''
-
-                jobRequirements = requirements
-                execHost = self.findExecHost(jobRequirements)
-                filelist = self.inputFiles(obj['globalSandbox'])
-                    
-                if filelist:
-                    fnList=[]
-                    for fn in filelist.split(','):
-                        fileName=fn.split('/')[-1]
-                        shutil.copyfile(fn,self.condorTemp+'/'+fileName)
-                        fnList.append(fileName)
-                    shortFilelist= ','.join(fnList)
-                    jobRequirements += "transfer_input_files = %s\n" % shortFilelist
-
                 # Build JDL file
-                if not jobCount:
-                    jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
-                    #jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
-                    jdl += 'Executable = %s\n' % (job['executable'])
-                    jdl += '\n'
-                    jdl += '+BLTaskID = "' + taskId + '"\n'
-                    #jdl += '+DESIRED_SEs = "bsrm-1.t2.ucsd.edu"\n'
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
                 jobCount += 1
             # End of loop over jobs to produce JDL
 
-            # Write and submit JDL
-            jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
+            # Write  JDL
+
+            jdlFileName = self.shareDir + '/' + job['name'] + '.jdl'
             jdlLocalFileName = job['name'] + '.jdl'
             jdlFile = open(jdlFileName, 'w')
             jdlFile.write(jdl)
             jdlFile.close()
 
-            command = 'cd %s; ' % self.condorTemp
+            print "COPY FILES TO REMOTE RCONDOR HOST"
 
-            if self.useGlexec:
-                # Set up environment in thread safe manner
-                userProxy = obj['user_proxy']
-                seProxy   = seDir + '/userProxy'
-                commonEnv = 'export GLEXEC_CLIENT_CERT=%s; ' \
-                            'export GLEXEC_SOURCE_PROXY=%s; ' \
-                            'export X509_USER_PROXY=%s; ' % \
-                            (userProxy, userProxy, seProxy)
-                proxyEnv  = 'export GLEXEC_TARGET_PROXY=/tmp/x509_ugeneric; '
-                submitEnv = 'export GLEXEC_TARGET_PROXY=%s; ' % seProxy
+            # make sure there's a condor work directory on remote host
+            command = "gsissh %s@%s mkdir -p %s" % (self.rcondorUser, self.rcondorHost, taskId )
+            print "Execute command : ", command
+            (status, output) = commands.getstatusoutput(command)
+            self.logging.info("Result of %s\n%s\n%s" %
+                    (command, status, output))
 
-                diffTime = str(os.path.getmtime(obj['user_proxy']))
-                proxycmd = commonEnv + proxyEnv
-                proxycmd += "%s %s %s %s" % (self.renewProxy, userProxy, seDir, diffTime)
-                (status, output) = commands.getstatusoutput(proxycmd)
-                self.logging.debug("Result of %s\n%s\n%s" %
-                                    (proxycmd,status,output))
-                command += commonEnv + submitEnv
-                command += "%s %s %s %s" % (self.glexec, self.glexecWrapper,
-                                            seDir, jdlFileName)
-            else:
-                command += 'condor_submit ' + submitOptions + jdlLocalFileName
+
+            # move files to remote host
+            filesToCopy = self.inputFiles(obj['globalSandbox']).replace(","," ")
+            filesToCopy += " " + jdlFileName
+            filesToCopy += " " + self.x509Proxy()
+
+            command = 'gsiscp %s  %s@%s:%s'  \
+                      % (filesToCopy, self.rcondorUser, self.rcondorHost, taskId)
+            print "Execute command : ", command
+            (status, output) = commands.getstatusoutput(command)
+            self.logging.info("Result of %s\n%s\n%s" %
+                    (command, status, output))
+
+
+            # submit
+
+            print "SUBMIT TO REMOTE CONDOR HOST"
+            command = 'gsissh %s@%s "cd %s; ' % (self.rcondorUser, self.rcondorHost, taskId)
+            command += 'condor_submit ' + submitOptions + jdlLocalFileName + '"'
+            print "Execute command : ", command
             (status, output) = commands.getstatusoutput(command)
             self.logging.debug("Result of %s\n%s\n%s" %
                     (command, status, output))
@@ -199,11 +214,11 @@ class SchedulerRcondor(SchedulerInterface) :
         return filelist[:-1] # Strip off last ","
 
 
-    def commonJdl(self, job, requirements=''):
+    def commonJdl(self, requirements=''):
         """
         Bulk mode, common things for all jobs
         """
-        jdl  = self.specificBulkJdl(job, requirements='')
+        jdl  = self.specificBulkJdl(requirements='')
         jdl += 'stream_output = false\n'
         jdl += 'stream_error  = false\n'
         jdl += 'notification  = never\n'
@@ -225,17 +240,30 @@ class SchedulerRcondor(SchedulerInterface) :
         filelist = ''
         return jdl, filelist, ce
     
-    def specificBulkJdl(self, job, requirements=''):
-        # FIXME: This is very similar to SchedulerCondorCommon's version,
-        # should be consolidated.
+    def specificBulkJdl(self, requirements=''):
+        # This is taken from SchedulerGlidein with minor changes for proxy handling
+
         """
         build a job jdl
         """
-        rootName = os.path.splitext(job['standardError'])[0]
 
         jdl  = 'Universe  = vanilla\n'
-        jdl += 'environment = CONDOR_ID=$(Cluster).$(Process)\n'
-        jdl += 'log     = %s.log\n' % rootName # Same root as stderr
+
+        # Glidein parameters
+        jdl += 'Environment = ' \
+                'CONDOR_ID=$(Cluster).$(Process);' \
+               'JobRunCount=$$([ ifThenElse(' \
+                'isUndefined(JobRunCount),0,JobRunCount) ]);' \
+               'GlideinMemory=$$([ ifThenElse(' \
+                'isUndefined(ImageSize_RAW),0,ImageSize_RAW) ]);' \
+               'Glidein_MonitorID=$$([ ifThenElse(' \
+                'isUndefined(Glidein_MonitorID),0,Glidein_MonitorID) ]) \n'
+        jdl += 'since=(CurrentTime-EnteredCurrentStatus)\n'
+        jdl += 'Periodic_Remove = (((JobStatus == 2) && ' \
+               '((CurrentTime - JobCurrentStartDate) > ' \
+                '(MaxWallTimeMins*60))) =?= True) || '
+        jdl += '(JobStatus==5 && $(since)>691200) || ' \
+               '(JobStatus==1 && $(since)>691200)\n'
 
         if self.userRequirements:
             jdl += 'requirements = %s\n' % self.userRequirements
@@ -244,8 +272,7 @@ class SchedulerRcondor(SchedulerInterface) :
         if x509:
             proxyName=x509.split('/')[-1]
             jdl += 'x509userproxy = %s\n' % proxyName
-            shutil.copyfile(x509,self.condorTemp+'/'+proxyName)
-
+            
         return jdl
 
     def singleApiJdl(self, job, requirements=''):
@@ -269,8 +296,7 @@ class SchedulerRcondor(SchedulerInterface) :
             jdl += 'input = %s\n' % job['standardInput']
         jdl += 'output  = %s\n' % job['standardOutput']
         jdl += 'error   = %s\n' % job['standardError']
-        # Make logfile with same root filename
-        jdl += 'log     = %s.log\n' % os.path.splitext(job['standardError'])[0]
+        jdl += 'transfer_output_remaps   = "%s=/dev/null; %s=/dev/null"\n' % (job['standardError'], job['standardOutput'])
 
         # HACK: Figure out where the request for .BrokerInfo comes from
         outputFiles = []
@@ -297,7 +323,6 @@ class SchedulerRcondor(SchedulerInterface) :
         bossIds = {}
 
         # FUTURE:
-        #  Remove Condor < 7.3 when OK
         #  Use condor_q -attributes to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         statusCodes = {'0':'RE', '1':'S', '2':'R',
@@ -339,22 +364,23 @@ class SchedulerRcondor(SchedulerInterface) :
                                   str(type(obj)) + ' ' + str(objType))
 
         for schedd in jobIds.keys() :
-            cmd = 'cd %s; condor_q -xml ' % self.condorTemp
+            cmd = 'gsissh %s@%s "cd %s; condor_q -xml ' % (self.rcondorUser, self.rcondorHost, taskId)
             if schedd != self.hostname:
                 cmd += '-name ' + schedd + ' '
-            cmd += """-constraint 'BLTaskID=?="%s"'""" % taskId
+            #need some magic combination of quotes and \ to pass
+            #a string to gsissh that will end in having both ' and "
+            # in the condor command, i.e.
+            # remotely need -constraint 'BLTaskID=?="taskId"'
+            cmd += "-constraint \'BLTaskID=?=\\\"%s\\\"\' " % taskId
+            cmd += '"'
+
+            print "Execute command : ", cmd
 
             pObj = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
                          stderr=STDOUT, close_fds=True)
             (inputFile, outputFp) = (pObj.stdin, pObj.stdout)
             try:
-                xmlLine = ''
-                while xmlLine.find('<?xml') == -1:
-                    # Throw away junk for condor < 7.3, remove when obsolete
-                    xmlLine = outputFp.readline()
-
-                outputFile = cStringIO.StringIO(xmlLine+outputFp.read())
-                #outputFile = cStringIO.StringIO(outputFp.read()) # >7.3 vers.
+                outputFile = cStringIO.StringIO(outputFp.read()) # >7.3 vers.
             except:
                 raise SchedulerError('Problem reading output of command', cmd)
 
@@ -366,6 +392,7 @@ class SchedulerRcondor(SchedulerInterface) :
             handler = CondorHandler('GlobalJobId',
                        ['JobStatus', 'GridJobId','ProcId','ClusterId',
                         'MATCH_GLIDEIN_Gatekeeper', 'GlobalJobId'])
+
             parser = make_parser()
             try:
                 parser.setContentHandler(handler)
@@ -375,6 +402,7 @@ class SchedulerRcondor(SchedulerInterface) :
                 raise SchedulerError('Problem parsing output of command', cmd)
 
             jobDicts = handler.getJobInfo()
+
 
             for globalJobId in jobDicts.keys():
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
@@ -423,22 +451,10 @@ class SchedulerRcondor(SchedulerInterface) :
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
             submitHost, jobId  = schedulerId.split('//')
-            if self.glexec:
-                # Set up environment in thread safe manner
-                seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
-                userProxy = obj['user_proxy']
-                seProxy   = seDir + '/userProxy'
-                commonEnv = 'export GLEXEC_TARGET_PROXY=/tmp/x509_ugeneric; '\
-                            'export GLEXEC_CLIENT_CERT=%s; ' \
-                            'export GLEXEC_SOURCE_PROXY=%s; ' \
-                            'export X509_USER_PROXY=%s; ' % \
-                            (userProxy, userProxy, seProxy)
 
-                command  = commonEnv + 'cd %s; ' % seDir
-                command += "%s `which condor_rm` -name %s %s" % (self.glexec, submitHost, jobId)
-            else:
-                command = "cd %s; condor_rm -name %s %s" % (self.condorTemp, submitHost, jobId)
+            command = 'gsissh %s@%s "condor_rm -name %s %s"' % (self.rcondorUser, self.rcondorHost, submitHost, jobId)
 
+            print "Execute command : ", command
             try:
                 retcode = call(command, shell=True)
             except OSError, ex:
@@ -467,6 +483,8 @@ class SchedulerRcondor(SchedulerInterface) :
         # the object passed is a Task
         elif type(obj) == Task :
 
+            taskId = obj['name']
+            self.taskId = taskId
             if outdir == '':
                 outdir = obj['outputDirectory']
 
@@ -484,10 +502,7 @@ class SchedulerRcondor(SchedulerInterface) :
         Move the files for Condor from temp directory to
         final resting place
         """
-        fileList = []
-        fileList.append(job['standardOutput'])
-        fileList.append(job['standardError'])
-        fileList.extend(job['outputFiles'])
+        fileList = job['outputFiles']
 
         for fileName in fileList:
             targetFile = outdir + '/' + fileName
@@ -501,12 +516,20 @@ class SchedulerRcondor(SchedulerInterface) :
                     except IOError:
                         pass # Double nest the try blocks to keep the mkdir
                              # from incrementing the subCounter
+                    except OSError:
+                        pass
                     shutil.move( targetFile, temporaryDir )
                 except IOError:
                     pass #ignore problems
                 
             try:
-                shutil.move(self.condorTemp+'/'+fileName, outdir)
+                command = 'gsiscp %s@%s:%s/' % (self.rcondorUser, self.rcondorHost, self.taskId)
+                command += fileName + " " + outdir
+                print "RETRIEVE FILE %s for job #%d" % (fileName, job['jobId'])
+                print "Execute command : ", command
+                (status, output) = commands.getstatusoutput(command)
+                self.logging.info("Result of %s\n%s\n%s" %
+                    (command, status, output))
             except IOError:
                 self.logging.error( "Could not move file %s" % fileName)
 
@@ -517,21 +540,23 @@ class SchedulerRcondor(SchedulerInterface) :
         Get detailed postMortem job info
         """
 
-        if not outfile:
-            raise SchedulerError('Empty filename',
-                                 'postMortem called with empty logfile name')
+        raise SchedulerError('NotImplemented','postMortem not implemented for this scheduler')
 
-        submitHost, jobId = schedulerId.split('//')
-        cmd = "condor_q -l -name  %s %s > %s" % (submitHost, jobId, outfile)
-        return self.ExecuteCommand(cmd)
+        #if not outfile:
+        #    raise SchedulerError('Empty filename',
+        #                         'postMortem called with empty logfile name')
 
+        #submitHost, jobId = schedulerId.split('//')
+        #cmd = "condor_history -l -name  %s %s > %s" % (submitHost, jobId, outfile)
+        #print "SB pm : ", cmd
+        #return self.ExecuteCommand(cmd)
 
     def jobDescription(self, obj, requirements='', config='', service = ''):
         """
         retrieve scheduler specific job description
         """
 
-        return "Check jdl files in " + self.condorTemp + " after submit\n"
+        return "Check jdl files in " + self.shareDir + " after submit\n"
 
 
     def x509Proxy(self):
