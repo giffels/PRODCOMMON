@@ -382,6 +382,10 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 glideinHost = jobDicts[globalJobId].get('MATCH_GLIDEIN_Gatekeeper', None)
                 if glideinHost:
                     execHost = glideinHost
+                    # strip possible leading https's and leading/trailing extra words
+                    for token in glideinHost.replace("https://","").split(" ") :
+                        if token.find("/") != -1 :
+                            execHost = token
 
                 # Don't mess with jobs we're not interested in,
                 # put what we found into BossLite statusRecord
