@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.66 2012/02/08 16:25:29 ewv Exp $"
-__version__ = "$Revision: 1.66 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.67 2012/08/09 14:33:03 lolass Exp $"
+__version__ = "$Revision: 1.67 $"
 
 import os
 import commands
