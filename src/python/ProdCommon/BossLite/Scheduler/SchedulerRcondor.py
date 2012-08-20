@@ -5,8 +5,10 @@ Base class for Remote Condor scheduler
 """
 
 import os
+import sys
 import commands
-from subprocess import *
+import subprocess
+import shlex
 import re
 import shutil
 import cStringIO
@@ -41,16 +43,30 @@ class SchedulerRcondor(SchedulerInterface) :
         self.userRequirements = ''
         self.rcondorHost = args.get('rcondorHost', None)
         self.rcondorUser = os.getenv('RCONDOR_USER')
-        if self.rcondorUser==None:
-            print "$RCONDOR_USER not define, try to find out via uberftp ..."
+        if not self.rcondorUser :
+            self.logging.info("$RCONDOR_USER not defined, try to find out via uberftp ...")
             command="uberftp $RCONDOR_HOST pwd|grep User|awk '{print $3}'"
             (status, output) = commands.getstatusoutput(command)
             if status == 0:
                 self.rcondorUser = output
-                print "rcondorUser set to ", self.rcondorUser
+                self.logging.info("rcondorUser set to %s" % self.rcondorUser)
         if self.rcondorUser==None:
             raise Exception('FATAL ERROR: env.var RCONDOR_USER not defined')
-
+        
+        self.gsisshOptions = "-o ControlMaster=auto -o ControlPath=/tmp/link-%r@%h.%p"
+        
+        # ControlPersist is not supported by current gssapi
+        # so will fork a 60sec ssh connection in background to speed up
+        # successive gsissh/gsiscp commands
+        # make sure the ControlPath link is there before going on
+        # in order to avoid races with later gsi* commands
+        command = "gsissh  %s %s@%s " % (self.gsisshOptions, self.rcondorUser, self.rcondorHost)
+        command += ' -n "sleep 60" 2>&1 > /dev/null'
+        bkgGsissh = subprocess.Popen(shlex.split(command))
+        sshLink="/tmp/link-%s@%s.22" % (self.rcondorUser, self.rcondorHost)
+        while not os.access(sshLink, os.F_OK) :
+          self.logging.info("wait 2 sec for gsissh ControlPath")
+          subprocess.call(shlex.split("sleep 2"))
 
     def submit( self, obj, requirements='', config ='', service='' ):
         """
@@ -74,10 +90,6 @@ class SchedulerRcondor(SchedulerInterface) :
 
         """
 
-        # Make directory for Condor returned files
-        #SBseDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
-        #SBif self.jobDir:
-        #SB    seDir = self.jobDir
         self.userRequirements = obj['commonRequirements']
 
         submissionHost = self.rcondorHost
@@ -97,7 +109,6 @@ class SchedulerRcondor(SchedulerInterface) :
             submitOptions = ''
 
             jobRequirements = requirements
-            #SBexecHost = self.findExecHost(jobRequirements)
             filelist = self.inputFiles(obj['globalSandbox'])
 
             if filelist:
@@ -132,13 +143,14 @@ class SchedulerRcondor(SchedulerInterface) :
             jdlFile.write(jdl)
             jdlFile.close()
 
-            print "COPY FILES TO REMOTE HOST"
+            self.logging.info("COPY FILES TO REMOTE HOST")
 
             # make sure there's a condor work directory on remote host
-            command = "gsissh %s@%s mkdir -p %s" % (self.rcondorUser, submissionHost, taskId )
-            self.logging.info("Execute command :\n%s" % command)
+            command = "gsissh %s %s@%s " % (self.gsisshOptions, self.rcondorUser, submissionHost)
+            command += " mkdir -p %s" % (taskId )
+            self.logging.debug("Execute command :\n%s" % command)
             (status, output) = commands.getstatusoutput(command)
-            self.logging.info("Status,output= %s,%s" %
+            self.logging.debug("Status,output= %s,%s" %
                     (status, output))
 
 
@@ -147,22 +159,23 @@ class SchedulerRcondor(SchedulerInterface) :
             filesToCopy += " " + jdlFileName
             filesToCopy += " " + self.x509Proxy()
 
-            command = 'gsiscp %s  %s@%s:%s'  \
-                      % (filesToCopy, self.rcondorUser, submissionHost, taskId)
-            self.logging.info("Execute command :\n%s" % command)
+            command = 'gsiscp %s %s %s@%s:%s' % \
+                      (self.gsisshOptions, filesToCopy, self.rcondorUser, submissionHost, taskId)
+            self.logging.debug("Execute command :\n%s" % command)
             (status, output) = commands.getstatusoutput(command)
-            self.logging.info("Status,output= %s,%s" %
+            self.logging.debug("Status,output= %s,%s" %
                     (status, output))
 
 
             # submit
 
-            print "SUBMIT TO REMOTE CONDOR "
-            command = 'gsissh %s@%s "cd %s; ' % (self.rcondorUser, submissionHost, taskId)
-            command += 'condor_submit ' + submitOptions + jdlLocalFileName + '"'
-            self.logging.info("Execute command :\n%s" % command)
+            self.logging.info("SUBMIT TO REMOTE CONDOR ")
+            command = "gsissh %s %s@%s " % (self.gsisshOptions, self.rcondorUser, submissionHost)
+            #command +== '"cd %s; ' % (taskId)
+            command += ' "cd %s; condor_submit %s %s"' % (taskId, submitOptions, jdlLocalFileName)
+            self.logging.debug("Execute command :\n%s" % command)
             (status, output) = commands.getstatusoutput(command)
-            self.logging.info("Status,output= %s,%s" %
+            self.logging.debug("Status,output= %s,%s" %
                     (status, output))
 
             # Parse output, build numbers
@@ -174,12 +187,6 @@ class SchedulerRcondor(SchedulerInterface) :
                         jobsSubmitted = True
                         jobCount = 0
                         for job in obj.getJobs():
-                            #SBif ce:
-                            #SB    job.runningJob['destination'] = ce.split(':')[0]
-                            #SBelse:
-                            #SB    job.runningJob['destination'] = execHost
-
-                            
                             condorID = submissionHost + "//" \
                                + matchObj.group(2) + "." + str(jobCount)
                             ret_map[job['name']] = condorID
@@ -366,24 +373,41 @@ class SchedulerRcondor(SchedulerInterface) :
                                   str(type(obj)) + ' ' + str(objType))
 
         for schedd in jobIds.keys() :
-            cmd = 'gsissh %s@%s "condor_q ' % (self.rcondorUser, schedd)
-            cmd += '-userlog %s/condor.log' % taskId
-            cmd += ' -xml"'
+            submissionHost = schedd
+            
+            # to begin with, push a fresh proxy to the remote host
+            
+            command = 'gsiscp %s %s %s@%s:%s' % \
+                      (self.gsisshOptions, self.x509Proxy(), self.rcondorUser, submissionHost, taskId)
+            self.logging.debug("Execute command :\n%s" % command)
+            (status, output) = commands.getstatusoutput(command)
+            self.logging.debug("Status,output= %s,%s" %
+                    (status, output))
 
-            self.logging.info("Execute command :\n%s" % cmd)
+            command = "gsissh %s %s@%s " % (self.gsisshOptions, self.rcondorUser, submissionHost)
+            command += ' "condor_q -userlog %s/condor.log' % taskId
+            command += ' -xml"'
 
-            pObj = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE,
-                         stderr=STDOUT, close_fds=True)
-            (inputFile, outputFp) = (pObj.stdin, pObj.stdout)
+            self.logging.debug("Execute command :\n%s" % command)
+
+            pObj = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, close_fds=True)
+            (inputFile, outputFp, errorFp) = (pObj.stdin, pObj.stdout, pObj.stderr)
             try:
                 outputFile = cStringIO.StringIO(outputFp.read()) # >7.3 vers.
             except:
-                raise SchedulerError('Problem reading output of command', cmd)
+                raise SchedulerError('Problem reading output of command', command)
 
             # If the command succeeded, close returns None
             # Otherwise, close returns the exit code
             if outputFp.close():
                 raise SchedulerError("condor_q command or cache file failed.")
+            else:   # close stderr from command ignoring errors
+                try:
+                    errorFp.close()
+                except:
+                    pass
 
             handler = CondorHandler('GlobalJobId',
                        ['JobStatus', 'GridJobId','ProcId','ClusterId',
@@ -395,7 +419,9 @@ class SchedulerRcondor(SchedulerInterface) :
                 parser.setFeature(feature_external_ges, False)
                 parser.parse(outputFile)
             except:
-                raise SchedulerError('Problem parsing output of command', cmd)
+                self.logging.info("Unexpected exception: %s" % sys.exc_info()[0])
+                self.logging.debug("Error parsing condor_q output:\n%s" % outputFile.getvalue())
+                raise SchedulerError('Problem parsing output of condor_q command', command)
 
             jobDicts = handler.getJobInfo()
 
@@ -456,9 +482,10 @@ class SchedulerRcondor(SchedulerInterface) :
             if not self.valid( job.runningJob ):
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
-            submitHost, jobId  = schedulerId.split('//')
+            submissionHost, jobId  = schedulerId.split('//')
 
-            command = 'gsissh %s@%s "condor_rm -name %s %s"' % (self.rcondorUser, submitHost, submitHost, jobId)
+            command = 'gsissh %s %s@%s ' (self.gsisshOptions, self.rcondorUser, submissionHost)
+            command += ' "condor_rm -name %s %s"' % (submissionHost, jobId)
 
             self.logging.info("Execute command :\n%s" % command)
             try:
@@ -531,12 +558,13 @@ class SchedulerRcondor(SchedulerInterface) :
                     pass #ignore problems
                 
             try:
-                command = 'gsiscp %s@%s:%s/' % (self.rcondorUser, submissionHost, self.taskId)
+                command = 'gsiscp %s %s@%s:%s/' % \
+                          (self.gsisshOptions, self.rcondorUser, submissionHost, self.taskId)
                 command += fileName + " " + outdir
-                print "RETRIEVE FILE %s for job #%d" % (fileName, job['jobId'])
-                self.logging.info("Execute command :\n%s" % command)
+                self.logging.info("RETRIEVE FILE %s for job #%d" % (fileName, job['jobId']))
+                self.logging.debug("Execute command :\n%s" % command)
                 (status, output) = commands.getstatusoutput(command)
-                self.logging.info("Status,output= %s,%s" %
+                self.logging.debug("Status,output= %s,%s" %
                     (status, output))
             except IOError:
                 self.logging.error( "Could not move file %s" % fileName)
@@ -554,9 +582,9 @@ class SchedulerRcondor(SchedulerInterface) :
         #    raise SchedulerError('Empty filename',
         #                         'postMortem called with empty logfile name')
 
-        #submitHost, jobId = schedulerId.split('//')
-        #cmd = "condor_history -l -name  %s %s > %s" % (submitHost, jobId, outfile)
-        #return self.ExecuteCommand(cmd)
+        #submissionHost, jobId = schedulerId.split('//')
+        #command = "condor_history -l -name  %s %s > %s" % (submissionHost, jobId, outfile)
+        #return self.ExecuteCommand(command)
 
     def jobDescription(self, obj, requirements='', config='', service = ''):
         """
