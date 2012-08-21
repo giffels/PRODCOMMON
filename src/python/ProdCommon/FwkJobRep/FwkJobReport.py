@@ -41,6 +41,7 @@ class FwkJobReport:
         self.exitCode = 50117
         self.siteDetails = {}
         self.timing = {}
+        self.readBranches = {}
         self.storageStatistics = None
         self.generatorInfo = {}
         self.dashboardId = None
@@ -306,6 +307,14 @@ class FwkJobReport:
             timing.addNode(IMProvNode(key, None, Value=str(value) ))
 
         #  //
+        # // Save ReadBranches Info
+        #//
+        readBranches = IMProvNode("ReadBranches")
+        result.addNode(readBranches)
+        for key, value in self.readBranches.items():
+            readBranches.addNode(IMProvNode("Branch", None, Name= key,  ReadCount=str(value) ))
+
+        #  //
         # // Save Storage Statistics
         #//
         if self.storageStatistics != None:
@@ -448,6 +457,13 @@ class FwkJobReport:
         [ self.timing.__setitem__(x.name, x.attrs['Value'])
           for x in timingQ(improvNode) ]
 
+        #  //
+        # // ReadBranches tag from cmsRun
+        #//
+        readBranchesQ = IMProvQuery("/FrameworkJobReport/ReadBranches/*")
+        [ self.readBranches.__setitem__(x.attrs['Name'], x.attrs['ReadCount'])
+          for x in readBranchesQ(improvNode) ]
+
         storageQ = IMProvQuery("/FrameworkJobReport/StorageStatistics")
         storageInfo = storageQ(improvNode)
         if len(storageInfo) > 0:
@@ -486,7 +502,7 @@ class FwkJobReport:
                      "errors": self.errors, "skippedEvents": self.skippedEvents,
                      "skippedFiles": self.skippedFiles,
                      "psetHash": self.psetHash, "exitCode": self.exitCode,
-                     "siteDetails": self.siteDetails, "timing": self.timing,
+                     "siteDetails": self.siteDetails, "timing": self.timing, 
                      "generatorInfo": self.generatorInfo,
                      "dashboardId": self.dashboardId,
                      "removedFiles": self.removedFiles,

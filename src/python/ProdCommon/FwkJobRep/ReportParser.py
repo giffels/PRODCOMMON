@@ -76,6 +76,7 @@ class FwkJobRepHandler(ContentHandler):
             "StorageStatistics" : self.noResponse,
             "GeneratorInfo" : self.generatorInfo,
             "Data" : self.dataHandler,
+            "ReadBranches" : self.readBranches,
             }
 
         #  //
@@ -103,6 +104,7 @@ class FwkJobRepHandler(ContentHandler):
             "StorageStatistics" : self.storageStatistics,
             "GeneratorInfo" : self.endGeneratorInfo,
             "Data": self.noResponse,
+            "ReadBranches" : self.endReadBranches,
             }
 
     def noResponse(self, name, attrs = {}):
@@ -433,6 +435,33 @@ class FwkJobRepHandler(ContentHandler):
         _endTimingService_
 
         End of Timing Service element
+
+        """
+
+        if self.currentReport == None:
+            return
+        self.inTiming = False
+        self.currentDict = None
+        return
+
+    def readBranches(self, name, attrs):
+        """
+        _readBranches_
+
+        Start of readBranches element
+
+        """
+        if self.currentReport == None:
+            return
+        self.inTiming = True
+        self.currentDict = self.currentReport.readBranches
+        return
+
+    def endReadBraches(self, name):
+        """
+        _endReadBranches_
+
+        End of ReadBranches element
 
         """
 
