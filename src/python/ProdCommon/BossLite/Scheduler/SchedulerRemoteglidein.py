@@ -531,7 +531,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             while os.path.exists( targetFile ):
                 subCounter = subCounter + 1
                 try:
-                     temporaryDir = "%s/Submission_%s" % (outdir, subCounter)
+                    temporaryDir = "%s/Submission_%s" % (outdir, subCounter)
                     try:
                          os.mkdir( temporaryDir )
                     except IOError:
@@ -539,7 +539,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                              # from incrementing the subCounter
                     except OSError:
                         pass
-                     shutil.move( targetFile, temporaryDir )
+                    shutil.move( targetFile, temporaryDir )
                 except IOError:
                     pass #ignore problems
                 
