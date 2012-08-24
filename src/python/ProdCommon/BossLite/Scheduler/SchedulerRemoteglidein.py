@@ -8,9 +8,7 @@ import os
 import sys
 import commands
 import subprocess
-import shlex
 import re
-from zlib import adler32
 import shutil
 import cStringIO
 
@@ -593,6 +591,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         return x509
 
     def initializeGsissh(self,obj):
+        import time
+        from zlib import adler32
+        import shlex
         
         if obj['serverName'] :
             # cast to string to avoid issues with unicode later in shlex :-(
@@ -606,30 +607,50 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         else:
             self.remoteHost = self.remoteUserHost
 
-        # need to uniquely identify the ssh link for this gsissh connection
-        # must be reusable by subsequent crab command with same credentials,
+        # uniquely identify the ssh link for this gsissh connection
+        # to be reusable by subsequent crab command with same credentials,
         # so use voms id + fqan  and remote host name
+        # ControlPath link can not be in $HOME/.ssh since e.g. does
+        # not work on AFS, I am sticking with /tmp/uid
         
         command = "voms-proxy-info -id"
-        userId = commands.getoutput(command)
+        vomsId = commands.getoutput(command)
         command = "voms-proxy-info -fqan | head -1"
-        userId += commands.getoutput(command)
-        uId = adler32(userId)
-        sshLink = "/tmp/ssh-link-%s-%s" % (uId, self.remoteHost)
+        vomsId += commands.getoutput(command)
+        sshLink = "/tmp/%s/ssh-link-%s-%s" % \
+            (os.getuid(),adler32(vomsId), self.remoteHost)
         self.gsisshOptions = "-o ControlMaster=auto "
         self.gsisshOptions += "-o ControlPath=%s" % sshLink
 
         # ControlPersist is not supported by current gsissh
-        # therefore fork a 60sec ssh connection in background to speed up
+        # therefore fork and renew a 20min long
+        # ssh connection in background to speed up
         # successive gsissh/gsiscp commands
-        # make sure the ControlPath link is there before going on
-        # in order to avoid races with later gsi* commands
-        command = "gsissh  -n %s %s " % (self.gsisshOptions, self.remoteUserHost)
-        command += ' "sleep 60" 2>&1 > /dev/null'
-        bkgGsissh = subprocess.Popen(shlex.split(command))
+        # try to make sure there are always 10 more minutes
 
-        while not os.access(sshLink, os.F_OK) :
-            self.logging.info("Establishing gsissh ControlPath. Wait 2 sec ...")
-            subprocess.call(shlex.split("sleep 2"))
+        sshLinkOK = False
+        if os.access(sshLink, os.F_OK) :  # if a CP is there already
+            linkTime=(time.time() - os.stat(sshLink).st_ctime)
+            # if created by less then 10min, surely there are 10 more to go
+            sshLinkOK = linkTime/60 < 10
+
+        if not sshLinkOK :
+            # CP link is either missing or expiring in less then 10min
+            # create 20min gsissh connection to keep CP link alive
+            # make sure /tmp/uid is there
+            try: os.mkdir("/tmp/%s" % os.getuid())
+            except: pass
+            command = "gsissh  -n %s %s " % \
+                (self.gsisshOptions, self.remoteUserHost)
+            command += ' "sleep 1200" 2>&1 > /dev/null'
+            bkgGsissh = subprocess.Popen(shlex.split(command))
+
+            # make sure the ControlPath link is there before going on
+            # to avoid races with later gsi* commands
+            while not os.access(sshLink, os.F_OK) :
+                self.logging.info("Establishing gsissh ControlPath. Wait 2 sec ...")
+                time.sleep(2)
+            # update time stamp of ssh CP link to note that it was renewed
+            os.utime(sshLink,None)
 
         return
