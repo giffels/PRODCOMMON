@@ -551,7 +551,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 self.logging.debug("Status,output= %s,%s" %
                     (status, output))
             except IOError:
-                self.logging.error( "Could not move file %s" % fileName)
+                self.logging.error( "Could not retrieve file %s" % fileName)
 
 
 
