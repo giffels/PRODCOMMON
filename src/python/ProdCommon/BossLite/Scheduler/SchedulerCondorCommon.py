@@ -4,13 +4,15 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.67 2012/08/09 14:33:03 lolass Exp $"
-__version__ = "$Revision: 1.67 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.69 2012/08/18 20:02:19 belforte Exp $"
+__version__ = "$Revision: 1.69 $"
 
 import os
+import time
 import commands
 from subprocess import *
 import re
+import string
 import shutil
 import cStringIO
 
@@ -77,6 +79,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
         taskId = ''
         ret_map = {}
+        submissionDay=None
 
         jobRegExp = re.compile(
                 "\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
@@ -90,6 +93,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 submitOptions = ''
 
                 jobRequirements = requirements
+
                 execHost = self.findExecHost(jobRequirements)
                 filelist = self.inputFiles(obj['globalSandbox'])
                 if filelist:
@@ -100,16 +104,31 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     jdl, sandboxFileList, ce = self.commonJdl(job, jobRequirements)
                     jdl += 'Executable = %s/%s\n' % (seDir, job['executable'])
                     jdl += '+BLTaskID = "' + taskId + '"\n'
+                    self.logging.info("SB requirements = \n%s", jobRequirements)
+                    # look for the +submissionDay="day" requirement
+                    reqList=re.split('[;,=]',jobRequirements) # turn jdl into a list of workds
+                    for i in range(len(reqList)):
+                        if string.strip(reqList[i]) == "+submissionDay":
+                            subDay = reqList[i+1]
+                    submissionDay = re.sub('[" ]','',subDay)  # remove extra chars
+                    self.logging.info("Got submissionDay from JDL = %s", submissionDay)
+                
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
                 jobCount += 1
             # End of loop over jobs to produce JDL
+
+            if not (submissionDay):
+                submissionDay= time.strftime("%y%m%d",time.localtime())
+                self.logging.info("no submissionDay in input JDL, use today= %s" % submissionDay)
 
             # Write and submit JDL
             jdlFileName = self.condorTemp + '/' + job['name'] + '.jdl'
             jdlFile = open(jdlFileName, 'w')
             jdlFile.write(jdl)
             jdlFile.close()
+
+            self.logging.info 
 
             command = 'cd %s; ' % self.condorTemp
 
@@ -152,11 +171,11 @@ class SchedulerCondorCommon(SchedulerInterface) :
                                 job.runningJob['destination'] = ce.split(':')[0]
                             else:
                                 job.runningJob['destination'] = execHost
-
-                            condorID = self.hostname + "//" \
-                               + matchObj.group(2) + "." + str(jobCount)
-                            ret_map[job['name']] = condorID
-                            job.runningJob['schedulerId'] = condorID
+                            schedulerID = self.hostname + "//"
+                            schedulerID += submissionDay + "//"
+                            schedulerID += matchObj.group(2) + "." + str(jobCount) 
+                            ret_map[job['name']] = schedulerID
+                            job.runningJob['schedulerId'] = schedulerID
                             jobCount += 1
             if not jobsSubmitted:
                 job.runningJob.errors.append('Job not submitted:\n%s' \
@@ -285,7 +304,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
         from xml.sax.handler import feature_external_ges
 
         jobIds = {}
-        bossIds = {}
+        bossStatus = {}
+        schdId = {}
 
         # FUTURE:
         #  Remove Condor < 7.3 when OK
@@ -315,10 +335,14 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 if job.runningJob['status'] == 'C' :
                     continue
 
-                # Jobs are done by default
-                bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
-                schedd = schedulerId.split('//')[0]
-                jobNum = schedulerId.split('//')[1]
+                # Jobs are done by default (i.e. if not found in condor's schedd)
+                # boss tracks by schedulerId in the format schedd//submissionday//cluster.job
+                # queries to condor schedd's will only return cluster.job
+                # so needs to cross link the two
+                bossStatus[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
+                schedd, submitDay, jobNum  = schedulerId.split('//')
+                condorId = schedd + '//' + jobNum
+                schdId[condorId] = schedulerId
 
                 # Fill dictionary of schedd and job #'s to check
                 if schedd in jobIds.keys():
@@ -371,6 +395,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
                 jobId = str(clusterId) + '.' + str(procId)
+                condorId = schedd + '//' + jobId
                 jobStatus = jobDicts[globalJobId].get('JobStatus', None)
 
                 # Host can be either in GridJobId or Glidein match
@@ -389,7 +414,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
                 # Don't mess with jobs we're not interested in,
                 # put what we found into BossLite statusRecord
-                if bossIds.has_key(schedd+'//'+jobId):
+                if schdId.has_key(condorId):
+                #if bossStatus.has_key(schedd+'//'+jobId):
+                    schedulerId = schdId[condorId]
                     statusRecord = {}
                     statusRecord['status']          = statusCodes.get(jobStatus, 'UN')
                     statusRecord['statusScheduler'] = textStatusCodes.get(jobStatus, 'Undefined')
@@ -398,12 +425,12 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     if execHost:
                         statusRecord['destination'] = execHost
 
-                    bossIds[schedd + '//' + jobId] = statusRecord
+                    bossStatus[schedulerId] = statusRecord
 
         for job in obj.jobs:
             schedulerId = job.runningJob['schedulerId']
-            if bossIds.has_key(schedulerId):
-                for key, value in bossIds[schedulerId].items():
+            if bossStatus.has_key(schedulerId):
+                for key, value in bossStatus[schedulerId].items():
                     job.runningJob[key] = value
         return
 
@@ -417,7 +444,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
             if not self.valid( job.runningJob ):
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
-            submitHost, jobId  = schedulerId.split('//')
+            submitHost, submitDay, jobId  = schedulerId.split('//')
             if self.glexec:
                 # Set up environment in thread safe manner
                 seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
@@ -516,7 +543,8 @@ class SchedulerCondorCommon(SchedulerInterface) :
             raise SchedulerError('Empty filename',
                                  'postMortem called with empty logfile name')
 
-        submitHost, jobId = schedulerId.split('//')
+        #submitHost, jobId = schedulerId.split('//')
+        submitHost, submitDay, jobId  = schedulerId.split('//')
         cmd = "condor_q -l -name  %s %s > %s" % (submitHost, jobId, outfile)
         return self.ExecuteCommand(cmd)
 
