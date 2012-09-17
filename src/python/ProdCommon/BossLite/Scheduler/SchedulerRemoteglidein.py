@@ -32,6 +32,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         self.jobDir     = args.get('jobDir', None)
         self.shareDir  = args.get('shareDir',None)
         self.remoteDir  = args.get('taskDir',None)
+        self.submissionDay  = args.get('submissionDay',None)
         self.taskId = ''
         self.renewProxy    = args.get('renewProxy', None)
         self.userRequirements = ''
@@ -132,7 +133,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
 
         # submit
 
-        self.logging.info("SUBMIT TO REMOTE CONDOR ")
+        self.logging.info("SUBMIT TO REMOTE GLIDEIN FRONTEND")
 
         command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
         command += '"cd %s; ' % (taskId)
@@ -297,7 +298,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         from xml.sax.handler import feature_external_ges
 
         # FUTURE:
-        #  Use condor_q -attributes to limit the XML size. Faster on both ends
+        #  Use condor_history -attributes to limit the XML size. Faster on both ends
         # Convert Condor integer status to BossLite Status codes
         # Condor status is e.g. from http://pages.cs.wisc.edu/~adesmet/status.html#condor-jobstatus
         # 0	Unexpanded 	U
@@ -339,7 +340,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             if job.runningJob['status'] == 'C' :
                 continue
 
-            # Jobs are done if condor_q does not list them
+            # Jobs are done if condor_q/history does not list them
             bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
             schedd = schedulerId.split('//')[0]
             jobNum = schedulerId.split('//')[1]
@@ -368,7 +369,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     (status, output))
 
             command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
-            command += ' "condor_q -userlog %s/condor.log' % taskId
+            command += ' "condor_history -userlog %s/condor.log' % taskId
             command += ' -xml"'
 
             self.logging.debug("Execute command :\n%s" % command)
@@ -385,7 +386,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             # If the command succeeded, close returns None
             # Otherwise, close returns the exit code
             if outputFp.close():
-                raise SchedulerError("condor_q command or cache file failed.")
+                raise SchedulerError("condor_history command or cache file failed.")
             else:   # close stderr from command ignoring errors
                 try:
                     errorFp.close()
@@ -403,8 +404,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 parser.parse(outputFile)
             except:
                 self.logging.info("Unexpected exception: %s" % sys.exc_info()[0])
-                self.logging.debug("Error parsing condor_q output:\n%s" % outputFile.getvalue())
-                raise SchedulerError('Problem parsing output of condor_q command', command)
+                self.logging.debug("Error parsing condor_history output:\n%s" % outputFile.getvalue())
+                raise SchedulerError('Problem parsing output of condor_history command', command)
 
             jobDicts = handler.getJobInfo()
 
