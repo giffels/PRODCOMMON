@@ -155,10 +155,13 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     jobsSubmitted = True
                     jobCount = 0
                     for job in obj.getJobs():
-                        condorID = self.remoteHost + "//" \
-                              + matchObj.group(2) + "." + str(jobCount)
-                        ret_map[job['name']] = condorID
-                        job.runningJob['schedulerId'] = condorID
+                        schedulerID = self.remoteHost + "//"
+                        schedulerID += self.submissionDay + "//"
+                        schedulerID += matchObj.group(2) + "." + str(jobCount)
+                        #condorID = self.remoteHost + "//" \
+                        #      + matchObj.group(2) + "." + str(jobCount)
+                        ret_map[job['name']] = schedulerID
+                        job.runningJob['schedulerId'] = schedulerID
                         jobCount += 1
         if not jobsSubmitted:
             job.runningJob.errors.append('Job not submitted:\n%s' \
@@ -328,7 +331,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         taskId = obj['name']
         
         jobIds = {}
-        bossIds = {}
+        bossStatus = {}
+        schdId = {}
 
         for job in obj.jobs:
             if not self.valid(job.runningJob):
@@ -341,9 +345,14 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 continue
 
             # Jobs are done if condor_q/history does not list them
-            bossIds[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
+            # queries to condor schedd's will only return cluster.job
+            # so needs to cross link the two via the schdId[condoId] map
+            bossStatus[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
             schedd = schedulerId.split('//')[0]
-            jobNum = schedulerId.split('//')[1]
+            submissionDay = schedulerId.split('//')[1]
+            jobNum = schedulerId.split('//')[2]
+            condorId = schedd + '//' + jobNum
+            schdId[condorId] = schedulerId
 
             # Fill dictionary of schedd and job #'s to check
             if schedd in jobIds.keys():
@@ -354,7 +363,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         if len(jobIds.keys()) > 0 :
             # there is something to check on remote condor host
             self.initializeGsissh(obj)
-        
+
         for schedd in jobIds.keys() :
             if not schedd == self.remoteHost:
                 self.logging.info("ERROR: found jobs for schedd %s in a task targetted for submission host %s" % (schedd,self.remoteHost))
@@ -414,6 +423,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 clusterId = jobDicts[globalJobId].get('ClusterId', None)
                 procId    = jobDicts[globalJobId].get('ProcId',    None)
                 jobId = str(clusterId) + '.' + str(procId)
+                condorId = schedd + '//' + jobId
                 jobStatus = jobDicts[globalJobId].get('JobStatus', None)
 
                 # Host can be either in Job_Gatekeeper or MATCH_GLIDEIN_Gatekeeper
@@ -436,7 +446,10 @@ class SchedulerRemoteglidein(SchedulerInterface) :
 
                 # Don't mess with jobs we're not interested in,
                 # put what we found into BossLite statusRecord
-                if bossIds.has_key(schedd+'//'+jobId):
+                
+                if schdId.has_key(condorId):
+                #if bossStatus.has_key(schedd+'//'+jobId):
+                    schedulerId = schdId[condorId]
                     statusRecord = {}
                     statusRecord['status']          = statusCodes.get(jobStatus, 'UN')
                     statusRecord['statusScheduler'] = textStatusCodes.get(jobStatus, 'Undefined')
@@ -445,13 +458,13 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     if execHost:
                         statusRecord['destination'] = execHost
 
-                    bossIds[schedd + '//' + jobId] = statusRecord
+                    bossStatus[schedulerId] = statusRecord
 
 
         for job in obj.jobs:
             schedulerId = job.runningJob['schedulerId']
-            if bossIds.has_key(schedulerId):
-                for key, value in bossIds[schedulerId].items():
+            if bossStatus.has_key(schedulerId):
+                for key, value in bossStatus[schedulerId].items():
                     job.runningJob[key] = value
 
         return
@@ -468,7 +481,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             if not self.valid( job.runningJob ):
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
-            jobId  = schedulerId.split('//')[1]
+            jobId  = schedulerId.split('//')[-1]
 
             command = 'gsissh %s %s ' % (self.gsisshOptions, self.remoteUserHost)
             command += ' "condor_rm  %s"' % (jobId)
@@ -487,7 +500,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         """
 
         self.initializeGsissh(obj)
-        
+
         if type(obj) == RunningJob: # The object passed is a RunningJob
             raise SchedulerError('Operation not possible',
                   'Condor cannot retrieve files when passed RunningJob')
