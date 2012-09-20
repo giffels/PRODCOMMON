@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 """
-_SchedulerRcondor_
+_SchedulerRemoteGlidein_
 Base class for Remote Glidein scheduler
 """
 
 import os
+import stat
 import sys
 import commands
 import subprocess
@@ -625,14 +626,19 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # to be reusable by subsequent crab command with same credentials,
         # so use voms id + fqan  and remote host name
         # ControlPath link can not be in $HOME/.ssh since e.g. does
-        # not work on AFS, I am sticking with /tmp/uid
-        
+        # not work on AFS, I am sticking with /tmp
+        # need to make sure this file is owned by user and protected
+        # to avoid someone stealing the control socket
+        # at least on lxplus /tmp/<username> appear to be there already
+        # and have proper protection, so pick that as start point
+
+        sshLinkDir="/tmp/%s/.ssh/" % os.environ['LOGNAME']
         command = "voms-proxy-info -id"
         vomsId = commands.getoutput(command)
         command = "voms-proxy-info -fqan | head -1"
         vomsId += commands.getoutput(command)
-        sshLink = "/tmp/%s/ssh-link-%s-%s" % \
-            (os.getuid(),adler32(vomsId), self.remoteHost)
+        sshLink = sshLinkDir + "ssh-link-%s-%s" % \
+            (adler32(vomsId), self.remoteHost)
         self.gsisshOptions = "-o ControlMaster=auto "
         self.gsisshOptions += "-o ControlPath=%s" % sshLink
 
@@ -642,8 +648,54 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # successive gsissh/gsiscp commands
         # try to make sure there are always 10 more minutes
 
+        # meglio che lo rigiro tutto, per prima cosa controllare
+        # che il link c'e' ed e' sicuro e se no fare un touch
+        # poi preoccuparsi del tempo
+
         sshLinkOK = False
-        if os.access(sshLink, os.F_OK) :  # if a CP is there already
+        # make sure we have a properly safe directory where to put the CP link
+
+        if not os.access(sshLinkDir, os.F_OK) : 
+            try:
+                os.makedirs(sshLinkDir, 0700)   # mode 700 octal only owner can access
+            except:
+                self.logging.error("CAN'T CREATE SAFE DIRECTORY %s. CANNOT GO ON"%sshLinkDir)
+                raise SchedulerError('Fatal','SECURITY COMPROMISED')
+                
+        sshDirMine = os.stat(sshLinkDir).st_uid == os.getuid() and  \
+               stat.S_IMODE(os.stat(sshLinkDir).st_mode) ==  0700     # I own and permission is 700 octal
+
+        print sshDirMine
+
+        if not sshDirMine :
+            list = subprocess.Popen(['ls', '-ld', sshLinkDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
+            msg  = "DIRECTORY %s EXISTS BUT NOT OWNED OR BAD PROTECTION. CANNOT GO ON\n" % sshLinkDir
+            msg += list
+            msg += "\nFIND OUT WHAT HAPPENED, REMOVE IT, RETRY"
+            self.logging.error(msg)
+            raise SchedulerError('Fatal','SECURITY COMPROMISED')
+            
+
+        # so far so good sshLinkDir is OK
+        if os.access(sshLink, os.F_OK) :  # a CtrlPath link is there already
+            sshLinkMine = os.stat(sshLink).st_uid == os.getuid() and \
+                          stat.S_IMODE(os.stat(sshLink).st_mode) == 0700  # I own and permission in 700 octal
+            if not sshLinkMine :
+                #scream loud
+                self.logging.error("SECURITY HAZARD: ssh control link %s exists but not owned !"%sshLink)
+                try:
+                    os.unlink(sshLink)
+                except:
+                    self.logging.error("CAN'T REMOVE SPURIOUS control link %s. CANNOT GO ON"%ssLink)
+                    raise SchedulerError('Fatal','SECURITY COMPROMISED')
+            else :
+                sshLinkOK = True
+
+        else :
+            # no problem, will be created as needed
+            sshLinkOK = False
+                
+        if sshLinkOK :
             linkTime=(time.time() - os.stat(sshLink).st_ctime)
             # if created by less then 10min, surely there are 10 more to go
             sshLinkOK = linkTime/60 < 10
@@ -651,12 +703,11 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         if not sshLinkOK :
             # CP link is either missing or expiring in less then 10min
             # create 20min gsissh connection to keep CP link alive
-            # make sure /tmp/uid is there
-            try: os.mkdir("/tmp/%s" % os.getuid())
-            except: pass
+            
             command = "gsissh  -n %s %s " % \
                 (self.gsisshOptions, self.remoteUserHost)
-            command += ' "sleep 1200" 2>&1 > /dev/null'
+            #command += ' "sleep 1200" 2>&1 > /dev/null'
+            command += ' "sleep 1200"'
             bkgGsissh = subprocess.Popen(shlex.split(command))
 
             # make sure the ControlPath link is there before going on
@@ -664,7 +715,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             while not os.access(sshLink, os.F_OK) :
                 self.logging.info("Establishing gsissh ControlPath. Wait 2 sec ...")
                 time.sleep(2)
-            # update time stamp of ssh CP link to note that it was renewed
+            # update time stamp of ssh CP link to signal that it was renewed
             os.utime(sshLink,None)
 
         return
