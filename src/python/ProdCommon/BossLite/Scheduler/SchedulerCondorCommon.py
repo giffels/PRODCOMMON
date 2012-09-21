@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.69 2012/08/18 20:02:19 belforte Exp $"
-__version__ = "$Revision: 1.69 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.70 2012/09/10 15:17:15 belforte Exp $"
+__version__ = "$Revision: 1.70 $"
 
 import os
 import time
@@ -338,9 +338,18 @@ class SchedulerCondorCommon(SchedulerInterface) :
                 # Jobs are done by default (i.e. if not found in condor's schedd)
                 # boss tracks by schedulerId in the format schedd//submissionday//cluster.job
                 # queries to condor schedd's will only return cluster.job
-                # so needs to cross link the two
+                # so needs to cross link the two via the schdId[condoId] map
                 bossStatus[schedulerId] = {'status':'SD', 'statusScheduler':'Done'}
-                schedd, submitDay, jobNum  = schedulerId.split('//')
+
+                # for the transition phase, be ready to handle old format
+                tokens=schedulerId.split('//')
+                schedd = tokens[0]
+                if len(tokens) == 2 :
+                    submitDay = None
+                    jobNum  = tokens[1]
+                else :
+                    submitDay = tokens[1]
+                    jobNum  = tokens[2]
                 condorId = schedd + '//' + jobNum
                 schdId[condorId] = schedulerId
 
@@ -444,7 +453,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
             if not self.valid( job.runningJob ):
                 continue
             schedulerId = str(job.runningJob['schedulerId']).strip()
-            submitHost, submitDay, jobId  = schedulerId.split('//')
+            #submitHost, submitDay, jobId  = schedulerId.split('//')
+            # for the transition phase, be ready to handle old format
+            tokens=schedulerId.split('//')
+            submitHost = tokens[0]
+            if len(tokens) == 2 :
+                submitDay = None
+                jobId  = tokens[1]
+            else :
+                submitDay = tokens[1]
+                jobId  = tokens[2]
+
             if self.glexec:
                 # Set up environment in thread safe manner
                 seDir = "/".join((obj['globalSandbox'].split(',')[0]).split('/')[:-1])
@@ -544,7 +563,16 @@ class SchedulerCondorCommon(SchedulerInterface) :
                                  'postMortem called with empty logfile name')
 
         #submitHost, jobId = schedulerId.split('//')
-        submitHost, submitDay, jobId  = schedulerId.split('//')
+        #submitHost, submitDay, jobId  = schedulerId.split('//')
+        # for the transition phase, be ready to handle old format
+        tokens=schedulerId.split('//')
+        submitHost = tokens[0]
+        if len(tokens) == 2 :
+            submitDay = None
+            jobId  = tokens[1]
+        else :
+            submitDay = tokens[1]
+            jobId  = tokens[2]
         cmd = "condor_q -l -name  %s %s > %s" % (submitHost, jobId, outfile)
         return self.ExecuteCommand(cmd)
 
