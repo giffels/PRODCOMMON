@@ -665,8 +665,6 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         sshDirMine = os.stat(sshLinkDir).st_uid == os.getuid() and  \
                stat.S_IMODE(os.stat(sshLinkDir).st_mode) ==  0700     # I own and permission is 700 octal
 
-        print sshDirMine
-
         if not sshDirMine :
             list = subprocess.Popen(['ls', '-ld', sshLinkDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
             msg  = "DIRECTORY %s EXISTS BUT NOT OWNED OR BAD PROTECTION. CANNOT GO ON\n" % sshLinkDir
@@ -679,7 +677,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # so far so good sshLinkDir is OK
         if os.access(sshLink, os.F_OK) :  # a CtrlPath link is there already
             sshLinkMine = os.stat(sshLink).st_uid == os.getuid() and \
-                          stat.S_IMODE(os.stat(sshLink).st_mode) == 0700  # I own and permission in 700 octal
+                          stat.S_IMODE(os.stat(sshLink).st_mode) == 0600  # I own and permission in 600 octal
             if not sshLinkMine :
                 #scream loud
                 self.logging.error("SECURITY HAZARD: ssh control link %s exists but not owned !"%sshLink)
