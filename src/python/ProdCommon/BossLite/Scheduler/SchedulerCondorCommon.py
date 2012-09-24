@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.70 2012/09/10 15:17:15 belforte Exp $"
-__version__ = "$Revision: 1.70 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.71 2012/09/21 14:01:41 belforte Exp $"
+__version__ = "$Revision: 1.71 $"
 
 import os
 import time
@@ -110,8 +110,9 @@ class SchedulerCondorCommon(SchedulerInterface) :
                     for i in range(len(reqList)):
                         if string.strip(reqList[i]) == "+submissionDay":
                             subDay = reqList[i+1]
-                    submissionDay = re.sub('[" ]','',subDay)  # remove extra chars
-                    self.logging.info("Got submissionDay from JDL = %s", submissionDay)
+                            submissionDay = re.sub('[" ]','',subDay)  # remove extra chars
+                    if (submissionDay) :
+                        self.logging.info("Got submissionDay from JDL = %s", submissionDay)
                 
                 jdl += self.singleApiJdl(job, jobRequirements)
                 jdl += "Queue 1\n"
