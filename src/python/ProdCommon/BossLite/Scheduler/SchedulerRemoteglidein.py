@@ -147,6 +147,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # Parse output, build numbers
         jobsSubmitted = False
         ret_map = {}
+        jobsMaybeSubmitted = "submitted" in output
         if not status:
             jobRegExp = re.compile(
                 "\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
@@ -164,11 +165,19 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                         ret_map[job['name']] = schedulerID
                         job.runningJob['schedulerId'] = schedulerID
                         jobCount += 1
+            if jobCount != matchObj.group(1):
+                self.logging.error("Submitted %s job when %d requested"%\
+                                           (matchObj.group(1),jobCount))
+                #do a condor_rm of the cluster
+                #jobsSubmitted = False
+
         if not jobsSubmitted:
-            job.runningJob.errors.append('Job not submitted:\n%s' \
+            job.runningJob.errors.append('Job(s) not submitted: output was\n%s' \
                                          % output )
             self.logging.error("Job not submitted:")
             self.logging.error(output)
+            if jobsMaybeSubmitted :
+                self.logging.error("condor_submit returned error but likely jobs were submitted anyhow. Cleanup may be needed. Do crab -uploadLog and contact support")
 
         success = self.hostname
         self.logging.debug("Returning %s\n%s\n%s" %
