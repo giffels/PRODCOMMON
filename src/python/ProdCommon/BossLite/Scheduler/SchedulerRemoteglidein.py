@@ -140,17 +140,27 @@ class SchedulerRemoteglidein(SchedulerInterface) :
 
         command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
         command += '"cd %s; ' % (taskId)
-        command += ' condor_submit %s %s"' % (submitOptions, jdlLocalFileName)
+        command += ' condor_submit %s %s;' % (submitOptions, jdlLocalFileName)
+        # in order to look at condor_submit exit code, need a shell dependent addition
+        # this is for bash
+        # command += ' if [ $? -eq 0 ]; then echo SUBOK; else echo SUBFAIL; fi"'
+        # this is for tcsh
+        #command += ' if  $? -eq 0  ; then echo SUBOK; else echo SUBFAIL; endif"'
+        # try a shell independent shortcut
+        command += " echo 'CONDOR_SUBMIT-EXIT-STATUS IS' $?" + '"'
         self.logging.debug("Execute command :\n%s" % command)
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
                            (status, output))
 
         # Parse output, build numbers
-        jobsSubmitted = False
-        ret_map = {}
-        jobsMaybeSubmitted = "submitted" in output
-        if not status:
+
+        jobsSubmitted = "CONDOR_SUBMIT-EXIT-STATUS IS 0" in output
+        if status and jobsSubmitted:
+            self.logging.debug("submission was OK but gsissh reported non-zero exit code, if this happens a lot please do crab -uploadLog and report to crabFeedback")
+
+        if jobsSubmitted :
+            ret_map = {}
             jobRegExp = re.compile(
                 "\s*(\d+)\s+job\(s\) submitted to cluster\s+(\d+)*")
             for line in output.split('\n'):
@@ -167,8 +177,10 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                         ret_map[job['name']] = schedulerID
                         job.runningJob['schedulerId'] = schedulerID
                         jobCount += 1
-            if jobCount != matchObj.group(1):
-                self.logging.error("Submitted %s job when %d requested"%\
+                    break       # skip lines after condor output
+
+            if jobCount != int(matchObj.group(1)):
+                self.logging.error("****** Submitted %s job when %d requested"%\
                                            (matchObj.group(1),jobCount))
                 #do a condor_rm of the cluster
                 #jobsSubmitted = False
@@ -176,10 +188,10 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         if not jobsSubmitted:
             job.runningJob.errors.append('Job(s) not submitted: output was\n%s' \
                                          % output )
-            self.logging.error("Job not submitted:")
+            self.logging.error("Job not submitted")
             self.logging.error(output)
-            if jobsMaybeSubmitted :
-                self.logging.error("condor_submit returned error but likely jobs were submitted anyhow. Cleanup may be needed. Do crab -uploadLog and contact support")
+            #if jobsMaybeSubmitted :
+            #    self.logging.error("condor_submit returned error but likely jobs were submitted anyhow. Cleanup may be needed. Do crab -uploadLog and contact support")
 
         success = self.hostname
         self.logging.debug("Returning %s\n%s\n%s" %
