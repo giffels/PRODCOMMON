@@ -117,7 +117,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
                            (status, output))
-
+        if (status) :
+            self.logging.error("Command: %s failed with output=\n%s"%(command,output))
 
         # copy files to remote host
         filesToCopy = self.inputFiles(obj['globalSandbox']).replace(","," ")
@@ -130,7 +131,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
                            (status, output))
-
+        if (status) :
+            self.logging.error("Command: %s failed with output=\n%s"%(command,output))
 
         # submit
 
@@ -386,6 +388,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             (status, output) = commands.getstatusoutput(command)
             self.logging.debug("Status,output= %s,%s" %
                     (status, output))
+            if (status) :
+                self.logging.error("Failed to renew proxy on remote submission host")
+                self.logging.error("Command: %s failed with output=\n%s"%(command,output))
 
             command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
             command += ' "condor_history -userlog %s/condor.log' % taskId
@@ -496,7 +501,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             command = 'gsissh %s %s ' % (self.gsisshOptions, self.remoteUserHost)
             command += ' "condor_rm  %s"' % (jobId)
 
-            #self.logging.info("Execute command :\n%s" % command)
+            self.logging.debug("Execute command :\n%s" % command)
             try:
                 retcode = subprocess.call(command, shell=True)
             except OSError, ex:
@@ -574,8 +579,13 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 (status, output) = commands.getstatusoutput(command)
                 self.logging.debug("Status,output= %s,%s" %
                     (status, output))
-            except IOError:
+                if (status) :
+                    self.logging.error( "Could not retrieve file %s" % fileName)
+                    self.logging.error("Command: %s failed with output=\n%s"%(command,output))
+
+            except :
                 self.logging.error( "Could not retrieve file %s" % fileName)
+                self.logging.error("Unexpected exception: %s" % sys.exc_info()[0])
 
 
 
