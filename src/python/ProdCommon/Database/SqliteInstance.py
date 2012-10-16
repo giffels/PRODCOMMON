@@ -3,15 +3,17 @@
 Implements DB object that deals with SQLITE DB connection operations
 """
 
-__version__ = "$Id$"
-__revision__ = "$Revision$"
+__version__ = "$Id: SqliteInstance.py,v 1.1 2007/12/05 14:53:14 ckavka Exp $"
+__revision__ = "$Revision: 1.1 $"
 __author__ = "Carlos.Kavka@ts.infn.it"
 
 from ProdCommon.Database.DbInstance import DbInstance
 
 # Warning: SQLite specifics, not default in PA distribution!
-from pysqlite2 import dbapi2 as sqlite
-
+try:
+    from pysqlite2 import dbapi2 as sqlite
+except:
+    import sqlite3 as sqlite 
 ##############################################################################
 
 class SqliteInstance(DbInstance):
