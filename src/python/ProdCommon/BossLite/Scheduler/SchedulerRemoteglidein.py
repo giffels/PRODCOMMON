@@ -568,20 +568,19 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             targetFile = outdir + '/' + fileName
             subCounter = 0
             while os.path.exists( targetFile ):
+            # if file exists already make an attempt to save old copy in Submission_x subdir, but if that fails plow on and overwrite with the new one
                 subCounter = subCounter + 1
                 try:
                     temporaryDir = "%s/Submission_%s" % (outdir, subCounter)
                     try:
                          os.mkdir( temporaryDir )
-                    except IOError:
+                    except : # ignore problems
                         pass # Double nest the try blocks to keep the mkdir
                              # from incrementing the subCounter
-                    except OSError:
-                        pass
                     shutil.move( targetFile, temporaryDir )
-                except IOError:
+                except :
                     pass #ignore problems
-                
+
             try:
                 command = 'gsiscp %s %s:%s/' % \
                           (self.gsisshOptions, self.remoteUserHost, self.taskId)

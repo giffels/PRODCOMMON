@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.71 2012/09/21 14:01:41 belforte Exp $"
-__version__ = "$Revision: 1.71 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.72 2012/09/24 14:34:52 belforte Exp $"
+__version__ = "$Revision: 1.72 $"
 
 import os
 import time
@@ -535,16 +535,17 @@ class SchedulerCondorCommon(SchedulerInterface) :
             targetFile = outdir + '/' + fileName
             subCounter = 0
             while os.path.exists( targetFile ):
+            # if file exists already make an attempt to save old copy in Submission_x subdir, but if that fails plow on and overwrite with the new one
                 subCounter = subCounter + 1
                 try:
                     temporaryDir = "%s/Submission_%s" % (outdir, subCounter)
                     try:
                         os.mkdir( temporaryDir )
-                    except IOError:
+                    except : # ignore problems
                         pass # Double nest the try blocks to keep the mkdir
                              # from incrementing the subCounter
                     shutil.move( targetFile, temporaryDir )
-                except IOError:
+                except :
                     pass #ignore problems
                 
             try:
