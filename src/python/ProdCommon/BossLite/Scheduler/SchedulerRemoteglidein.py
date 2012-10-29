@@ -661,7 +661,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # to avoid someone stealing the control socket
         # at least on lxplus /tmp/<username> appear to be there already
         # and have proper protection, so pick that as start point
+        # anyhow verify /tmp/<username> as well
 
+        tmpDir="/tmp/%s" % os.environ['LOGNAME']
         sshLinkDir="/tmp/%s/.ssh/" % os.environ['LOGNAME']
         command = "voms-proxy-info -id"
         vomsId = commands.getoutput(command)
@@ -678,12 +680,24 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # successive gsissh/gsiscp commands
         # try to make sure there are always 10 more minutes
 
-        # meglio che lo rigiro tutto, per prima cosa controllare
-        # che il link c'e' ed e' sicuro e se no fare un touch
-        # poi preoccuparsi del tempo
-
         sshLinkOK = False
         # make sure we have a properly safe directory where to put the CP link
+
+        if not os.access(tmpDir, os.F_OK) : 
+            try:
+                os.makedirs(tmpDir, 0700)   # mode 700 octal only owner can access
+            except:
+                self.logging.error("CAN'T CREATE SAFE DIRECTORY %s. CANNOT GO ON"%tmpDir)
+                raise SchedulerError('Fatal','SECURITY COMPROMISED')
+                
+        tmpDirMine = os.stat(tmpDir).st_uid == os.getuid() # I own
+        if not tmpDirMine :
+            list = subprocess.Popen(['ls', '-ld', tmpDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
+            msg  = "DIRECTORY %s EXISTS BUT NOT OWNED. CANNOT GO ON\n" % tmpDir
+            msg += list
+            msg += "\nFIND OUT WHAT HAPPENED, REMOVE IT, RETRY"
+            self.logging.error(msg)
+            raise SchedulerError('Fatal','SECURITY COMPROMISED')
 
         if not os.access(sshLinkDir, os.F_OK) : 
             try:
