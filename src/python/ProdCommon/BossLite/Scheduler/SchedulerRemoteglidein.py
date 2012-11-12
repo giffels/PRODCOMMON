@@ -147,7 +147,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         # this is for tcsh
         #command += ' if  $? -eq 0  ; then echo SUBOK; else echo SUBFAIL; endif"'
         # try a shell independent shortcut
-        command += " echo 'CONDOR_SUBMIT-EXIT-STATUS IS' $?" + '"'
+        command += " echo 'CONDOR_SUBMIT-EXIT-STATUS IS' \$?" + '"'
         self.logging.debug("Execute command :\n%s" % command)
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
