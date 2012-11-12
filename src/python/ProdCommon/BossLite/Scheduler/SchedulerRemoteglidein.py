@@ -111,7 +111,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         self.logging.info("COPY FILES TO REMOTE HOST")
 
         # make sure there's a condor work directory on remote host
-        command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
+        command = "%s %s %s " % \
+            (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
         command += " mkdir -p %s" % (taskId )
         self.logging.debug("Execute command :\n%s" % command)
         (status, output) = commands.getstatusoutput(command)
@@ -125,8 +126,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         filesToCopy += " " + jdlFileName
         filesToCopy += " " + self.x509Proxy()
 
-        command = 'gsiscp %s %s %s:%s' % \
-                  (self.gsisshOptions, filesToCopy, self.remoteUserHost, taskId)
+        command = '%s %s %s %s:%s' % \
+                  (self.remoteCopyCommand, self.gsisshOptions, \
+                       filesToCopy, self.remoteUserHost, taskId)
         self.logging.debug("Execute command :\n%s" % command)
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
@@ -138,7 +140,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
 
         self.logging.info("SUBMIT TO REMOTE GLIDEIN FRONTEND")
 
-        command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
+        command = "%s %s %s " % \
+            (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
         command += '"cd %s; ' % (taskId)
         command += ' condor_submit %s %s;' % (submitOptions, jdlLocalFileName)
         # in order to look at condor_submit exit code, need a shell dependent addition
@@ -394,8 +397,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 raise Exception("Mixing schedd's in same task is not supported")
             
             # to begin with, push a fresh proxy to the remote host
-            command = 'gsiscp %s %s %s:%s' % \
-                      (self.gsisshOptions, self.x509Proxy(), self.remoteUserHost, taskId)
+            command = '%s %s %s %s:%s' % \
+                      (self.remoteCopyCommand, self.gsisshOptions, \
+                           self.x509Proxy(), self.remoteUserHost, taskId)
             self.logging.debug("Execute command :\n%s" % command)
             (status, output) = commands.getstatusoutput(command)
             self.logging.debug("Status,output= %s,%s" %
@@ -404,7 +408,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 self.logging.error("Failed to renew proxy on remote submission host")
                 self.logging.error("Command: %s failed with output=\n%s"%(command,output))
 
-            command = "gsissh %s %s " % (self.gsisshOptions, self.remoteUserHost)
+            command = "%s %s %s " % \
+                (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
             command += ' "condor_history -userlog %s/condor.log' % taskId
             command += ' -xml"'
 
@@ -510,7 +515,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             schedulerId = str(job.runningJob['schedulerId']).strip()
             jobId  = schedulerId.split('//')[-1]
 
-            command = 'gsissh %s %s ' % (self.gsisshOptions, self.remoteUserHost)
+            command = '%s %s %s ' \
+                % (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
             command += ' "condor_rm  %s"' % (jobId)
 
             self.logging.debug("Execute command :\n%s" % command)
@@ -582,8 +588,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     pass #ignore problems
 
             try:
-                command = 'gsiscp %s %s:%s/' % \
-                          (self.gsisshOptions, self.remoteUserHost, self.taskId)
+                command = '%s %s %s:%s/' % \
+                          (self.remoteCopyCommand, self.gsisshOptions, \
+                               self.remoteUserHost, self.taskId)
                 command += fileName + " " + outdir
                 self.logging.info("RETRIEVE FILE %s for job #%d" % (fileName, job['jobId']))
                 self.logging.debug("Execute command :\n%s" % command)
@@ -642,16 +649,24 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         
         if obj['serverName'] :
             # cast to string to avoid issues with unicode later in shlex :-(
-            self.remoteUserHost = str(obj['serverName'])
-            self.logging.info("contacting remote host %s" % self.remoteUserHost)
+            self.remoteUserHostCommand = str(obj['serverName'])
+            self.logging.info("contacting remote host %s" % self.remoteUserHostCommand)
         else:
             raise SchedulerError("ERROR!!!! no serverName in task ",obj)
         
-        if '@' in self.remoteUserHost:
-            self.remoteHost = self.remoteUserHost.split('@')[1]
+        if ':' in self.remoteUserHostCommand:
+            self.remoteCommand = self.remoteUserHostCommand.split(':')[0]
+            if self.remoteCommand == 'ssh':
+                self.remoteCopyCommand = 'scp'
+            else:
+                raise SchedulerError('Fatal','no copy command defined')
+            self.remoteUserHost = self.remoteUserHostCommand.split(':')[1]
         else:
-            self.remoteHost = self.remoteUserHost
-
+            self.remoteCommand = 'gsissh'
+            self.remoteCopyCommand = 'gsiscp'
+            self.remoteUserHost = self.remoteUserHostCommand
+        self.remoteHost = self.remoteUserHostCommand.split('@')[-1]
+        
         # uniquely identify the ssh link for this gsissh connection
         # to be reusable by subsequent crab command with same credentials,
         # so use voms id + fqan  and remote host name
@@ -746,8 +761,10 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             # CP link is either missing or expiring in less then 10min
             # create 20min gsissh connection to keep CP link alive
             
-            command = "gsissh  -n %s %s " % \
-                (self.gsisshOptions, self.remoteUserHost)
+            #SBcommand = "gsissh  -n %s %s " % \
+            #SB    (self.gsisshOptions, self.remoteUserHost)
+            command = "%s  -n %s %s " % \
+                      (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
             #command += ' "sleep 1200" 2>&1 > /dev/null'
             command += ' "sleep 1200"'
             bkgGsissh = subprocess.Popen(shlex.split(command))
@@ -755,7 +772,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             # make sure the ControlPath link is there before going on
             # to avoid races with later gsi* commands
             while not os.access(sshLink, os.F_OK) :
-                self.logging.info("Establishing gsissh ControlPath. Wait 2 sec ...")
+                self.logging.info("Establishing %s ControlPath. Wait 2 sec ..."%self.remoteCommand)
                 time.sleep(2)
             # update time stamp of ssh CP link to signal that it was renewed
             os.utime(sshLink,None)
