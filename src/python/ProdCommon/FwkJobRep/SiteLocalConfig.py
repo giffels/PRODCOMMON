@@ -30,7 +30,7 @@ def loadSiteLocalConfig():
     Requires that CMS_PATH is defined as an environment variable
 
     """
-    defaultPath = "$CMS_PATH/SITECONF/local/JobConfig/site-local-config.xml"
+    defaultPath = "$CMS_PATH/SITECONF/T0_CH_CERN/JobConfig/site-local-config.xml"
     actualPath = os.path.expandvars(defaultPath)
     if os.environ.get("CMS_PATH", None) == None:
         msg = "Unable to find site local config file:\n"

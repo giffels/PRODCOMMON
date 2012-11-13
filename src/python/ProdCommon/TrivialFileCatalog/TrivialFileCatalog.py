@@ -274,7 +274,7 @@ if __name__ == '__main__':
     tfc.addLfnToPfnRule('local', '.*', '/data/')
     print tfc
     print "Now read siteconf tfc"
-    tfc.load(os.path.expandvars("$CMS_PATH/SITECONF/local/PhEDEx/storage.xml"))
+    tfc.load(os.path.expandvars("$CMS_PATH/SITECONF/T0_CH_CERN/PhEDEx/storage.xml"))
     print 'look for /store/test/storage.xml'
     pfn = tfc.matchLFN('srm', '/store/test/storage.xml')
     print "found at %s" % pfn
