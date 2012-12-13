@@ -598,13 +598,15 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 self.logging.debug("Status,output= %s,%s" %
                     (status, output))
                 if (status) :
-                    self.logging.error( "Could not retrieve file %s" % fileName)
-                    self.logging.error("Command: %s failed with output=\n%s"%(command,output))
-
+                    msg="Could not retrieve file %s." % fileName
+                    msg += " Command: %s failed with output=\n%s"%(command,output)
+                    self.logging.error( msg )
+                    job.runningJob.errors.append( msg )
             except :
-                self.logging.error( "Could not retrieve file %s" % fileName)
-                self.logging.error("Unexpected exception: %s" % sys.exc_info()[0])
-
+                msg="Could not retrieve file %s." % fileName
+                msg += " Unexpected exception: %s" % sys.exc_info()[0]
+                self.logging.error( msg )
+                job.runningJob.errors.append( msg )
 
 
     def postMortem( self, schedulerId, outfile, service):
