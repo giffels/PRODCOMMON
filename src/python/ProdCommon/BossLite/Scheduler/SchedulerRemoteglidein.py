@@ -599,13 +599,13 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     (status, output))
                 if (status) :
                     msg="Could not retrieve file %s." % fileName
-                    msg += " Command: %s failed with output=\n%s"%(command,output)
                     self.logging.error( msg )
+                    msg += " Command: %s failed with status,output=\n%d\n%s"%(command,status,output)
                     job.runningJob.errors.append( msg )
             except :
                 msg="Could not retrieve file %s." % fileName
-                msg += " Unexpected exception: %s" % sys.exc_info()[0]
                 self.logging.error( msg )
+                msg += " Unexpected exception: %s" % sys.exc_info()[0]
                 job.runningJob.errors.append( msg )
 
 
