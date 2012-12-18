@@ -267,9 +267,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 'isUndefined(Glidein_MonitorID),0,Glidein_MonitorID) ]) \n'
         jdl += 'since=(CurrentTime-EnteredCurrentStatus)\n'
         # remove Running jobs after MaxWallTime
-        jdl += 'Periodic_Remove = (((JobStatus == 2) && ' \
-               '((CurrentTime - JobCurrentStartDate) > ' \
-                '(MaxWallTimeMins*60))) =?= True) || '
+        jdl += 'Periodic_Remove = ((JobStatus == 2) && ' \
+               '(((CurrentTime - JobCurrentStartDate) > ' \
+                '(MaxWallTimeMins*60)) =?= True)) || '
         # remove 5-Held and 1-Idle jobs after 8 days
         jdl += '(JobStatus==5 && $(since)>691200) || ' \
                '(JobStatus==1 && $(since)>691200)\n'
