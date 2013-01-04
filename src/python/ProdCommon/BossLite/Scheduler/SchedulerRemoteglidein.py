@@ -688,8 +688,14 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         vomsId += commands.getoutput(command)
         sshLink = sshLinkDir + "ssh-link-%s-%s" % \
             (adler32(vomsId), self.remoteHost)
-        self.gsisshOptions = "-o ControlMaster=auto "
-        self.gsisshOptions += "-o ControlPath=%s" % sshLink
+        self.gsisshOptions = "-o ControlMaster=auto"
+        self.gsisshOptions += " -o ControlPath=%s" % sshLink
+
+        # also do not rely on local user's cofig
+        self.gsisshOptions += " -o BatchMode=yes"
+        self.gsisshOptions += " -o StrictHostKeyChecking=no"
+        self.gsisshOptions += " -o ForwardX11=no"
+
 
         # ControlPersist is not supported by current gsissh
         # therefore fork and renew a 20min long
@@ -763,11 +769,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             # CP link is either missing or expiring in less then 10min
             # create 20min gsissh connection to keep CP link alive
             
-            #SBcommand = "gsissh  -n %s %s " % \
-            #SB    (self.gsisshOptions, self.remoteUserHost)
             command = "%s  -n %s %s " % \
                       (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
-            #command += ' "sleep 1200" 2>&1 > /dev/null'
             command += ' "sleep 1200"'
             bkgGsissh = subprocess.Popen(shlex.split(command))
 
