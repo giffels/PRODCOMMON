@@ -13,6 +13,7 @@ from ProtocolLcgUtils import ProtocolLcgUtils
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 from ProtocolHadoop import ProtocolHadoop
 from ProtocolXrootd import ProtocolXrootd
+from ProtocolLStore import ProtocolLStore
 
 class SElement(object):
     """
@@ -21,7 +22,7 @@ class SElement(object):
     """
     #### FEDE FOR xrootd ####### 
     _protocols = ["srmv1", "srmv2", "local", "gridftp", "rfio", \
-                  "srm-lcg", "gsiftp-lcg", "uberftp", "globus", "hadoop", "xrootd"]
+            "srm-lcg", "gsiftp-lcg", "uberftp", "globus", "hadoop", "xrootd", "lstore"]
     #############################
 
     def __init__(self, hostname=None, prot=None, port=None):
@@ -76,11 +77,10 @@ class SElement(object):
             return ProtocolGlobusUtils()
         elif protocol == "hadoop":
             return ProtocolHadoop()
-        #### FEDE FOR xrootd ####### 
         elif protocol == "xrootd":
-            #print "--->>> FEDE cerco xrootd chiamando ProtocolXrootd()"
             return ProtocolXrootd()
-        #####################################    
+        elif protocol == "lstore":
+            return ProtocolLStore()
         else:
             raise ProtocolUnknown()
 
@@ -113,6 +113,10 @@ class SElement(object):
             if self.workon[0] != '/':
                 self.workon = join("/", self.workon) 
             return (self.hostname + self.workon)
+        elif self.protocol == "lstore":
+            if self.workon[0] != '/':
+                self.workon = join("/", self.workon)
+            return ("lstore://" + self.workon)
         else:
             raise ProtocolUnknown("Protocol %s not supported or unknown" \
                                    % self.protocol)
@@ -125,10 +129,10 @@ class SElement(object):
             if self.protocol == "local":
                 if self.hostname != "/":
                     return ("file://" + join(self.hostname, self.workon))
-            ###### FEDE FOR XROOTD ######################################         
             elif (self.protocol == "hadoop" or self.protocol == "xrootd") :
-            #############################################################
                return join(self.hostname, self.workon)
+            elif self.protocol == "lstore":
+                return join("lstore://" + self.hostname, self.workon)
             else:
                 if self.hostname.find(":") != -1:
                     tmpath = self.hostname.split(":")[-1]

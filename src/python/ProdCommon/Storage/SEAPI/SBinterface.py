@@ -12,6 +12,7 @@ from ProtocolLcgUtils import ProtocolLcgUtils
 from ProtocolGlobusUtils import ProtocolGlobusUtils
 from ProtocolUberFtp import ProtocolUberFtp
 from ProtocolHadoop import ProtocolHadoop
+from ProtocolLStore import ProtocolLStore
 from SElement import SElement
 from Exceptions import SizeZeroException, MissingDestination, ProtocolUnknown, \
                        ProtocolMismatch, OperationException
@@ -385,7 +386,7 @@ class SBinterface:
             val = self.storage1.action.createDir(self.storage1, proxy, opt, tout = tout)
             self.storage1.workon = ""
             return val
-        if self.storage1.protocol in ['local', 'hadoop']: #'rfio', 'local']:
+        if self.storage1.protocol in ['local', 'hadoop', 'lstore']:
             self.storage1.workon = source
             val = self.storage1.action.createDir(self.storage1, opt = opt, tout = tout)
             self.storage1.workon = ""
