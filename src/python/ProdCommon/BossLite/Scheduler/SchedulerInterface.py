@@ -8,8 +8,8 @@ import os
 from ProdCommon.BossLite.Common.System import executeCommand
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 
-__version__ = "$Id: SchedulerInterface.py,v 1.32 2009/01/20 18:49:45 gcodispo Exp $"
-__revision__ = "$Revision: 1.32 $"
+__version__ = "$Id: SchedulerInterface.py,v 1.33 2009/05/25 16:05:35 gcodispo Exp $"
+__revision__ = "$Revision: 1.33 $"
 
 
 
@@ -187,7 +187,7 @@ class SchedulerInterface(object):
 
     ##########################################################################
 
-    def postMortem ( self, schedIdList, outfile, service ) :
+    def postMortem ( self, obj, schedIdList, outfile, service ) :
         """
         execute any post mortem command such as logging-info
         and write it in outfile

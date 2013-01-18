@@ -3,8 +3,8 @@
 basic LSF CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerLsf.py,v 1.29 2009/11/10 18:54:41 spiga Exp $"
-__version__ = "$Revision: 1.29 $"
+__revision__ = "$Id: SchedulerLsf.py,v 1.30 2010/01/11 22:17:07 riahi Exp $"
+__version__ = "$Revision: 1.30 $"
 
 import re, os
 import tempfile
@@ -300,7 +300,7 @@ class SchedulerLsf (SchedulerInterface) :
         pass
 
 
-    def postMortem ( self, schedIdList, outfile, service ) :
+    def postMortem ( self, obj, schedIdList, outfile, service ) :
         """
         execute any post mortem command such as logging-info
         and write it in outfile

@@ -9,8 +9,8 @@ from ProdCommon.BossLite.DbObjects.RunningJob import RunningJob
 from ProdCommon.BossLite.Common.Exceptions import SchedulerError
 import time
 
-__version__ = "$Id: Scheduler.py,v 1.47 2009/06/11 10:53:57 gcodispo Exp $"
-__revision__ = "$Revision: 1.47 $"
+__version__ = "$Id: Scheduler.py,v 1.48 2010/08/09 16:18:08 spiga Exp $"
+__revision__ = "$Revision: 1.48 $"
 
 
 ##########################################################################
@@ -301,13 +301,13 @@ class Scheduler(object):
 
         # the object passed is a runningJob
         if type(obj) == RunningJob :
-            self.schedObj.postMortem(
+            self.schedObj.postMortem(obj,
                 obj['schedulerId'], outfile, self.parameters['service']
                 )
 
         # the object passed is a job
         elif type(obj) == Job :
-            self.schedObj.postMortem( obj.runningJob['schedulerId'], \
+            self.schedObj.postMortem( obj, obj.runningJob['schedulerId'], \
                                       outfile, self.parameters['service']
                 )
 
@@ -316,7 +316,7 @@ class Scheduler(object):
             for job in obj.jobs:
                 if job.runningJob is None:
                     continue
-                self.schedObj.postMortem( job.runningJob['schedulerId'], \
+                self.schedObj.postMortem( obj, job.runningJob['schedulerId'], \
                                           outfile, self.parameters['service'] )
 
         # unknown object type

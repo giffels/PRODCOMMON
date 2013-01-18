@@ -3,8 +3,8 @@
 basic SGE CLI interaction class
 """
 
-__revision__ = "$Id: SchedulerSge.py,v 1.9 2009/11/30 15:38:00 spiga Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerSge.py,v 1.10 2010/05/06 15:03:06 spiga Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import re, os
 
@@ -362,7 +362,7 @@ class SchedulerSge (SchedulerInterface) :
             pass
         pass
 
-    def postMortem ( self, schedIdList, outfile, service ) :
+    def postMortem ( self, obj, schedIdList, outfile, service ) :
         """
         execute any post mortem command such as logging-info
         and write it in outfile

@@ -3,8 +3,8 @@
 _SchedulerFake_
 """
 
-__revision__ = "$Id: SchedulerFake.py,v 1.9 2009/06/07 15:02:48 gcodispo Exp $"
-__version__ = "$Revision: 1.9 $"
+__revision__ = "$Id: SchedulerFake.py,v 1.10 2009/06/09 13:46:01 gcodispo Exp $"
+__version__ = "$Revision: 1.10 $"
 
 import re, os
 from ProdCommon.BossLite.Scheduler.SchedulerInterface import SchedulerInterface
@@ -180,7 +180,7 @@ class SchedulerFake(SchedulerInterface) :
 
     ##########################################################################
 
-    def postMortem( self, schedulerId, outfile, service):
+    def postMortem( self, obj, schedulerId, outfile, service):
         """
         perform scheduler logging-info
         

@@ -3,8 +3,8 @@
 gLite CLI interaction class through JSON formatted output
 """
 
-__revision__ = "$Id: SchedulerGLite.py,v 2.48 2012/07/31 21:02:33 belforte Exp $"
-__version__ = "$Revision: 2.48 $"
+__revision__ = "$Id: SchedulerGLite.py,v 2.49 2012/07/31 21:05:49 belforte Exp $"
+__version__ = "$Revision: 2.49 $"
 
 import os
 import tempfile
@@ -691,7 +691,7 @@ class SchedulerGLite(SchedulerInterface) :
 
     ##########################################################################
 
-    def postMortem( self, schedulerId, outfile, service):
+    def postMortem( self, obj, schedulerId, outfile, service):
         """
         perform scheduler logging-info
         """

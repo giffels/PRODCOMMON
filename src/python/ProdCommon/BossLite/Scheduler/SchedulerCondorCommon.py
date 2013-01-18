@@ -4,8 +4,8 @@ _SchedulerCondorCommon_
 Base class for CondorG and GlideIn schedulers
 """
 
-__revision__ = "$Id: SchedulerCondorCommon.py,v 1.72 2012/09/24 14:34:52 belforte Exp $"
-__version__ = "$Revision: 1.72 $"
+__revision__ = "$Id: SchedulerCondorCommon.py,v 1.73 2012/10/22 12:56:07 belforte Exp $"
+__version__ = "$Revision: 1.73 $"
 
 import os
 import time
@@ -555,7 +555,7 @@ class SchedulerCondorCommon(SchedulerInterface) :
 
 
 
-    def postMortem( self, schedulerId, outfile, service):
+    def postMortem( self, obj, schedulerId, outfile, service):
         """
         Get detailed postMortem job info
         """

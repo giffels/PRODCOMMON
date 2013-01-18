@@ -609,20 +609,57 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 job.runningJob.errors.append( msg )
 
 
-    def postMortem( self, schedulerId, outfile, service):
+    def postMortem( self, obj, schedulerId, outfile, service):
         """
         Get detailed postMortem job info
         """
 
-        raise SchedulerError('NotImplemented','postMortem not implemented for this scheduler')
+        if not type(obj) == Task:
+            raise SchedulerError('Wrong argument type or object type',
+                                  str(type(obj)) + ' ' + str(objType))
 
-        #if not outfile:
-        #    raise SchedulerError('Empty filename',
-        #                         'postMortem called with empty logfile name')
+        if not outfile:
+            raise SchedulerError('Empty filename',
+                                 'postMortem called with empty logfile name')
 
-        #submissionHost, jobId = schedulerId.split('//')
-        #command = "condor_history -l -name  %s %s > %s" % (submissionHost, jobId, outfile)
-        #return self.ExecuteCommand(command)
+        taskId = obj['name']
+        condorId = schedulerId.split('//')[-1]
+        header = '========= LOGGING INFO FOR %s =========\n' % schedulerId
+        horsep = '\n'+80*'='+'\n'
+        sep1 =   '\n========= OUTPUT OF : Condor_history -l %s =========\n' % condorId
+        sep2 =   '\n========= OUTPUT OF : Condor_q -l  %s =========\n' % condorId
+        
+        self.initializeGsissh(obj)
+
+        fp=open(outfile,'w')
+        fp.write(header)
+        fp.write(horsep)
+        fp.write(sep1)
+        
+        command = '%s %s %s ' \
+                  % (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
+        command += ' "condor_history -userlog %s/condor.log -l %s"' % \
+                   (taskId, condorId)
+        (status, output) = commands.getstatusoutput(command)
+
+        fp.write(output)
+        fp.write(horsep)
+
+        # the following condor_q only makes sense if job status
+        # is 1(Idle), 2(Run) or 5(Held) but may cost little to do always
+
+        fp.write(sep2)
+        command = '%s %s %s ' \
+                  % (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
+        command += ' "condor_q -l %s"' % condorId
+        (status, output) = commands.getstatusoutput(command)
+        
+        fp.write(output)
+        fp.write('\n')
+        fp.write(horsep)
+        fp.close()
+
+        return
 
     def jobDescription(self, obj, requirements='', config='', service = ''):
         """
