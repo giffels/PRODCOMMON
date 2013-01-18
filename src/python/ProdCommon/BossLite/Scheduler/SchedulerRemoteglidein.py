@@ -598,10 +598,12 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 self.logging.debug("Status,output= %s,%s" %
                     (status, output))
                 if (status) :
-                    msg="Could not retrieve file %s." % fileName
-                    self.logging.error( msg )
-                    msg += " Command: %s failed with status,output=\n%d\n%s"%(command,status,output)
-                    job.runningJob.errors.append( msg )
+                    # did copy really fail ?
+                    if not os.access(outdir+'/'+fileName,os.F_OK) :
+                        msg="Could not retrieve file %s." % fileName
+                        self.logging.error( msg )
+                        msg += " Command: %s failed with status,output=\n%d\n%s"%(command,status,output)
+                        job.runningJob.errors.append( msg )
             except :
                 msg="Could not retrieve file %s." % fileName
                 self.logging.error( msg )
