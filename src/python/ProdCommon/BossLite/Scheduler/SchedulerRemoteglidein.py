@@ -361,15 +361,21 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         bossStatus = {}
         schdId = {}
 
+        somethingDone = False # note if some jobs became Done in this round
+
         for job in obj.jobs:
             if not self.valid(job.runningJob):
                 continue
             
-            schedulerId = job.runningJob['schedulerId']
-
-            # fix: skip if the Job was created but never submitted
+            # skip if the Job was created but never submitted
             if job.runningJob['status'] == 'C' :
                 continue
+
+            # skip if the Job is already Done, nothing more to ask glidein
+            if job.runningJob['statusScheduler'] == 'Done' :
+                continue
+            
+            schedulerId = job.runningJob['schedulerId']
 
             # Jobs are done if condor_q/history does not list them
             # queries to condor schedd's will only return cluster.job
@@ -489,15 +495,48 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                     statusRecord['service']         = service
                     if execHost:
                         statusRecord['destination'] = execHost
+                    if statusRecord['status'] == 'SD' :
+                        somethingDone = True
 
                     bossStatus[schedulerId] = statusRecord
 
+        if somethingDone :
+            # get ExitCodes from fjrs"
+            command = "%s %s %s " % \
+            (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
+            command += '"cd %s; ' % (taskId)
+            # need to put single and double quotes and tab (\t) in
+            # shell command for gsissh. So get horrible escaping here
+            # be very careful with changes
+            command += "egrep -H WrapperExitCode\|ExeExitCode crab_fjr_*xml"
+            command += "|tr '_.\\t\\\"' ' '"   # change all delim to blank for awk
+            command += "|awk '{print \\$3\\\" \\\"\\$7\\\" \\\"\\$9}'\""
+            self.logging.debug("Execute command :\n%s" % command)
+            (status, output) = commands.getstatusoutput(command)
+            self.logging.debug("Status,output= %s\n%s" %
+                               (status, output))
 
-        for job in obj.jobs:
+            ExeCodes={}
+            WrapperCodes={}
+            for line in output.split('\n'):
+                jid,code,kind=line.split(' ')
+                if kind == 'ExeExitCode' :
+                    ExeCodes[int(jid)]=code
+                if kind == 'WrapperExitCode' :
+                    WrapperCodes[int(jid)]=code
+        
+        for job in obj.jobs:      # loop on crab job id's
+            jid=job.runningJob['jobId']
             schedulerId = job.runningJob['schedulerId']
-            if bossStatus.has_key(schedulerId):
+            if bossStatus.has_key(schedulerId):  # there's an update from condor
                 for key, value in bossStatus[schedulerId].items():
                     job.runningJob[key] = value
+                # if this a newly terminated job get the exit code w/o waiting for crab -get
+                if somethingDone :
+                    if ExeCodes.has_key(jid):
+                        job.runningJob['applicationReturnCode']=ExeCodes[jid]
+                        if WrapperCodes.has_key(jid):
+                            job.runningJob['wrapperReturnCode']=WrapperCodes[jid]
 
         return
 
