@@ -865,8 +865,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             # the desired persist time, create a gsissh connection
             # to keep CP link alive
 
-            #self.logging.debug("Execute command :\n%s" % command)
-            self.logging.info("Execute command :\n%s" % command)
+            self.logging.debug("Execute command :\n%s" % command)
             bkgGsissh = subprocess.Popen(shlex.split(command))
 
             # make sure the ControlPath link is there before going on
