@@ -34,8 +34,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         self.shareDir  = args.get('shareDir',None)
         self.remoteDir  = args.get('taskDir',None)
         self.submissionDay  = args.get('submissionDay',None)
+        self.sshControlPersist = args.get('sshControlPersist',None)
         self.taskId = ''
-        self.renewProxy    = args.get('renewProxy', None)
         self.userRequirements = ''
         
     def submit( self, obj, requirements='', config ='', service='' ):
@@ -837,19 +837,36 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         else :
             # no problem, will be created as needed
             sshLinkOK = False
-                
-        if sshLinkOK :
-            linkTime=(time.time() - os.stat(sshLink).st_ctime)
-            # if created by less then 10min, surely there are 10 more to go
-            sshLinkOK = linkTime/60 < 10
+
+        # which kind of socket is required ?
+        if self.sshControlPersist.lower() == "no" :
+            # since nothing is requested, pretend whatever is there is OK
+            sshLinkOK = True
+        if self.sshControlPersist.lower() == "yes" :
+            # need to create a permanent socket, no harm in doing twice
+            sshLinkOK = False
+            command = "%s  -N -n %s %s /bin/true" % \
+                (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
+        if self.sshControlPersist.isdigit() :
+            # interprete as persist time in seconds
+            persistTime=int(self.sshControlPersist)
+            if sshLinkOK :
+                linkTime=(time.time() - os.stat(sshLink).st_ctime)
+                sshLinkOK = (persistTime - linkTime) > persistTime/2
+
+            command = "%s  %s %s " % \
+                      (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
+            command += ' "sleep %s"' % persistTime
+
+        #self.logging.info("SB sshLinkOK after all checks = %s" % sshLinkOK)
 
         if not sshLinkOK :
-            # CP link is either missing or expiring in less then 10min
-            # create 20min gsissh connection to keep CP link alive
-            
-            command = "%s  -n %s %s " % \
-                      (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
-            command += ' "sleep 1200"'
+            # CP link is either missing or expiring in less then half
+            # the desired persist time, create a gsissh connection
+            # to keep CP link alive
+
+            #self.logging.debug("Execute command :\n%s" % command)
+            self.logging.info("Execute command :\n%s" % command)
             bkgGsissh = subprocess.Popen(shlex.split(command))
 
             # make sure the ControlPath link is there before going on
