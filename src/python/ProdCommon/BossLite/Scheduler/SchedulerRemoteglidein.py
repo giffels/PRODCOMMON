@@ -135,7 +135,10 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                            (status, output))
         if (status) :
             self.logging.error("Command: %s failed with output=\n%s"%(command,output))
+            if "already exists" in output:
+                self.removeGsisshSocket()
 
+                
         # submit
 
         self.logging.info("SUBMIT TO REMOTE GLIDEIN FRONTEND")
@@ -155,6 +158,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
                            (status, output))
+        if "already exists" in output:
+            self.removeGsisshSocket()
 
         # Parse output, build numbers
 
@@ -413,6 +418,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             if (status) :
                 self.logging.error("Failed to renew proxy on remote submission host")
                 self.logging.error("Command: %s failed with output=\n%s"%(command,output))
+                if "already exists" in output:
+                    self.removeGsisshSocket()
 
             command = "%s %s %s " % \
                 (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
@@ -515,6 +522,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             (status, output) = commands.getstatusoutput(command)
             self.logging.debug("Status,output= %s\n%s" %
                                (status, output))
+            if "already exists" in output:
+                self.removeGsisshSocket()
 
             ExeCodes={}
             WrapperCodes={}
@@ -643,6 +652,8 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                         self.logging.error( msg )
                         msg += " Command: %s failed with status,output=\n%d\n%s"%(command,status,output)
                         job.runningJob.errors.append( msg )
+                    if "already exists" in output:
+                        self.removeGsisshSocket()
             except :
                 msg="Could not retrieve file %s." % fileName
                 self.logging.error( msg )
@@ -667,7 +678,7 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         condorId = schedulerId.split('//')[-1]
         header = '========= LOGGING INFO FOR %s =========\n' % schedulerId
         horsep = '\n'+80*'='+'\n'
-        sep1 =   '\n========= OUTPUT OF : Condor_history -l %s =========\n' % condorId
+        sep1 =   '\n========= OUTPUT OF : Condor_history -match 1 -l %s =========\n' % condorId
         sep2 =   '\n========= OUTPUT OF : Condor_q -l  %s =========\n' % condorId
         
         self.initializeGsissh(obj)
@@ -679,9 +690,11 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         
         command = '%s %s %s ' \
                   % (self.remoteCommand, self.gsisshOptions, self.remoteUserHost)
-        command += ' "condor_history -userlog %s/condor.log -l %s"' % \
+        command += ' "condor_history -match 1 -userlog %s/condor.log -l %s"' % \
                    (taskId, condorId)
         (status, output) = commands.getstatusoutput(command)
+        if "already exists" in output:
+            self.removeGsisshSocket()
 
         fp.write(output)
         fp.write(horsep)
@@ -875,5 +888,25 @@ class SchedulerRemoteglidein(SchedulerInterface) :
                 time.sleep(2)
             # update time stamp of ssh CP link to signal that it was renewed
             os.utime(sshLink,None)
+
+        return
+
+
+    def removeGsisshSocket(self):
+        import time
+
+        socketPath=None
+        for option in self.gsisshOptions.split(' '):
+            if "ControlPath" in option:
+                socketPath=option.split('=')[1]
+                break
+        lTime = os.stat(socketPath).st_atime
+        lastTime = time.asctime(time.localtime(lTime))+" "+time.tzname[time.daylight]
+        self.logging.info("Stale ssh control socket: %s" % socketPath)
+        slef.logging.info("last used on %s" % lastTime)
+        os.remove(socketPath)
+        
+        self.logging.info("Stale control socket removed")
+        self.logging.info("Please try crab command again")
 
         return
