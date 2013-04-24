@@ -158,8 +158,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         (status, output) = commands.getstatusoutput(command)
         self.logging.debug("Status,output= %s,%s" %
                            (status, output))
-        if "already exists" in output:
-            self.removeGsisshSocket()
+        if (status) :
+            if "already exists" in output:
+                self.removeGsisshSocket()
 
         # Parse output, build numbers
 
@@ -522,8 +523,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
             (status, output) = commands.getstatusoutput(command)
             self.logging.debug("Status,output= %s\n%s" %
                                (status, output))
-            if "already exists" in output:
-                self.removeGsisshSocket()
+            if (status) :
+                if "already exists" in output:
+                    self.removeGsisshSocket()
 
             ExeCodes={}
             WrapperCodes={}
@@ -693,8 +695,9 @@ class SchedulerRemoteglidein(SchedulerInterface) :
         command += ' "condor_history -match 1 -userlog %s/condor.log -l %s"' % \
                    (taskId, condorId)
         (status, output) = commands.getstatusoutput(command)
-        if "already exists" in output:
-            self.removeGsisshSocket()
+        if (status) :
+            if "already exists" in output:
+                self.removeGsisshSocket()
 
         fp.write(output)
         fp.write(horsep)
