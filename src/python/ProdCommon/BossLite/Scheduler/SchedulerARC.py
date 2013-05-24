@@ -104,31 +104,47 @@ Arc2StatusReason = {
 }
 
 
-def ngstatqlSplitClusters(output):
+def ARCInfoSplitClusters(output):
     """
-    Take the output of 'ngstat -q -l', and split it into text
+    Take the output of 'arcinfo -l', and split it into text
     chunks; one chunck per cluster.
     """
 
-    in_cluster = False
+    cluster = []
     for line in output.split('\n'):
-        if in_cluster:
-            if line == "":
-                in_cluster = False
+        if line.find("Execution Target on Computing Service:") >= 0:
+            if cluster:
                 yield cluster
-            else:
-                cluster.append(line)
+            cluster = [ line ]
         else:
-            if line[0:8] == "Cluster ":
-                cluster = [ line ]
-                in_cluster = True
-    if in_cluster:
+            if line != "":
+                cluster.append(line)
+    if cluster:
         yield cluster
 
 
-def splitNgstatOutput(output):
+def get_id2name():
+    """
+    Create an ARC ID: Job name dictionary.
+    """
+    m = {}
+
+    jobsfile = os.path.join(os.environ['HOME'], ".arc", "jobs.xml")
+    doc = ET.parse(jobsfile)
+    for j in doc.findall('Job'):
+        id = j.find("JobID").text
+        name_elem = j.find("Name")
+        if type(name_elem) != type(None):
+            name = name_elem.text
+        else:
+            name = None
+        m[id] = name
+    return m
+
+
+def splitARCStatOutput(output):
      """
-     Split a string of ngstat output into a list with one job per list
+     Split a string of arcstat output into a list with one job per list
      item.
 
      The assumption is that the first line of a job has no indentation,
@@ -164,7 +180,7 @@ def count_nonempty(list):
     return n
 
 
-def get_ngsub_opts(requirements):
+def get_arcsub_opts(requirements):
     assert type(requirements) == dict
 
     opt = ""
@@ -298,37 +314,41 @@ class SchedulerARC(SchedulerInterface):
         f.close()
 
         # Submit
-        opt = get_ngsub_opts(requirements)
-        command = self.pre_arcCmd + "ngsub %s %s" % (xrsl_file, opt)
+        opt = get_arcsub_opts(requirements)
+        command = self.pre_arcCmd + "arcsub %s %s" % (xrsl_file, opt)
         self.logging.debug(command)
         self.setTimeout(300)
-        tmp, exitStat = self.ExecuteCommand(command)
-        self.logging.debug("ngsub exitStatus: %i" % exitStat)
-        self.logging.debug("ngsub output:\n" + tmp)
-        output = tmp.split('\n')
+        output, exitStat = self.ExecuteCommand(command)
+        self.logging.debug("arcsub exitStatus: %i" % exitStat)
+        self.logging.debug("arcsub output:\n" + output)
         os.remove(xrsl_file)
 
-        # Check output of submit command
-        subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.-]+)(:\d+)?(/.*)?/\d+)")
-        n = 0
+
+        # build a "job name": "ARC ID" dictionary
+        name2id = {}
+        id2name = get_id2name()
+        subRe = re.compile("Job submitted with jobid: +(\w+://([a-zA-Z0-9.-]+)(:\d+)?(/.*)?/\w+)")
+        for line in output.split('\n'):
+            m = re.match(subRe, line)
+            if m:
+                arcId = m.group(1)
+                name = id2name[arcId]
+                name2id[name] = arcId
+            elif line.find("ERROR") >= 0:
+                self.logging.warning("Found '%s' in arcsub output" % line)
+
+        # Find job names
         for job in task.getJobs():
-            try:
-                m = re.match(subRe, output[n])
-
-                if not m:
-                    raise SchedulerError('Error in submit:', output[n], command)
-
-                arcId = m.group(1) 
-                jobAttributes[job['name']] = arcId
-                self.logging.info("Submitted job with id %s" % arcId)
-            except SchedulerError, e:
-                msg = "Submission failed for job %s: %s" % (job['id'], str(e).replace('\n', ' '))
+            name = job['name']
+            if name not in name2id:
+                msg = "Submitting job '%s' failed" % name
                 self.logging.error(msg)
                 job.runningJob.errors.append(msg)
-            except Exception, e:
-                job.runningJob.errors.append("Checking submission failed for job %s: %s"
-                                              % (job['id'], str(e).replace('\n', ' ')))
-            n += 1
+                continue
+
+            arcId = name2id[name]
+            jobAttributes[name] = arcId
+            self.logging.info("Submitted job %s with id %s" % (name, arcId))
 
         return jobAttributes, None, service 
 
@@ -385,26 +405,26 @@ class SchedulerARC(SchedulerInterface):
             self.logging.info("No (valid) jobs to query")
             return
 
-        cmd = self.pre_arcCmd + 'ngstat -i %s' % jobsFile.name
+        cmd = self.pre_arcCmd + 'arcstat -i %s' % jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         jobsFile.close()
         if stat != 0:
-            raise SchedulerError('%i exit status for ngstat' % stat, output, cmd)
+            raise SchedulerError('%i exit status for arcstat' % stat, output, cmd)
 
-        # Parse output of ngstat
-        for jobstring in splitNgstatOutput(output):
+        # Parse output of arcstat
+        for jobstring in splitARCStatOutput(output):
 
             arcStat = None
             host = None
             jobExitCode = None
 
             if jobstring.find("Job information not found") >= 0:
-                if jobstring.find("job was only very recently submitted") >= 0:
+                if jobstring.find("This job was very recently submitted") >= 0:
                     arcStat = "ACCEPTING"  # At least approximately true
                 else:
                     arcStat = "UNKNOWN"
 
-                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
+                arcIdMatch = re.search("(\w+://([a-zA-Z0-9.-]+)\S*/\w*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -412,7 +432,7 @@ class SchedulerARC(SchedulerInterface):
                 # This is something that really shoudln't happen.
                 arcStat = "WTF?"
 
-                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\d*)", jobstring)
+                arcIdMatch = re.search("URL: (\w+://([a-zA-Z0-9.-]+)\S*/\w*)", jobstring)
                 if arcIdMatch:
                     arcId = arcIdMatch.group(1)
                     host = arcIdMatch.group(2)
@@ -430,13 +450,13 @@ class SchedulerARC(SchedulerInterface):
 
                 for line in jobstring.split('\n'):
 
-                    arcIdMatch = re.match("Job +(\w+://([a-zA-Z0-9.-]+)\S*/\d*)", line)
+                    arcIdMatch = re.match("Job: +(\w+://([a-zA-Z0-9.-]+)\S*/\w*)", line)
                     if arcIdMatch:
                         arcId = arcIdMatch.group(1)
                         host = arcIdMatch.group(2)
                         continue
                         
-                    statusMatch = re.match(" +Status: *(.+)", line)
+                    statusMatch = re.match(" +State: *[^(]*\((.+)\)", line)
                     if statusMatch:
                         arcStat = statusMatch.group(1)
                         continue
@@ -483,11 +503,13 @@ class SchedulerARC(SchedulerInterface):
         # afterwards within the same files system (faster!)
         tmpdir = tempfile.mkdtemp(prefix="joboutputs.", dir=outdir)
 
-        cmd = self.pre_arcCmd + 'ngget -i %s -dir %s' % (jobsFile.name, tmpdir)
+        cmd = self.pre_arcCmd + 'arcget -i %s -dir %s' % (jobsFile.name, tmpdir)
+        self.logging.debug("Running command: %s" % cmd)
         output, stat = self.ExecuteCommand(cmd)
+        self.logging.debug("Output of arcget: %s" % output)
         jobsFile.close()
         if stat != 0:
-            raise SchedulerError('ngget returned %i' % stat, output, cmd)
+            raise SchedulerError('arcget returned %i' % stat, output, cmd)
 
         # Copy the dowlodaed files to their final destination
         cmd = 'mv %s/*/* %s' % (tmpdir, outdir)
@@ -517,15 +539,15 @@ class SchedulerARC(SchedulerInterface):
 
         jobsFile, arcId2job = self.createJobsFile(jobList, "Will kill")
 
-        cmd = self.pre_arcCmd + "ngkill -i " + jobsFile.name
+        cmd = self.pre_arcCmd + "arckill -i " + jobsFile.name
         output, stat = self.ExecuteCommand(cmd)
         if stat != 0:
-            raise SchedulerError('ngkill returned %i' % stat, output, cmd)
+            raise SchedulerError('arckill returned %i' % stat, output, cmd)
 
         for line in output.split('\n'):
             # If a job URL ("arcId") occurs on a line of output, it tends
             # to be en error message:
-            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.-]+\S*/\d*)", line)
+            errorMatch = re.match(".*: *(gsiftp://[a-zA-Z0-9.-]+\S*/\w*)", line)
             if errorMatch:
                 arcId = errorMatch.group(1)
                 job = arcId2job[arcId]
@@ -538,7 +560,7 @@ class SchedulerARC(SchedulerInterface):
         and write it in outfile
         """
         self.logging.debug('postMortem for job %s' % arcId)
-        cmd = self.pre_arcCmd + "ngcat -l " + arcId + " > " + outfile
+        cmd = self.pre_arcCmd + "arccat -l " + arcId + " > " + outfile
         return self.ExecuteCommand(cmd)[0]
 
 
@@ -556,30 +578,24 @@ class SchedulerARC(SchedulerInterface):
         installed RTE:s and local SE:s of the clusters.
         """
 
-        cmd = self.pre_arcCmd + 'ngstat -q -l'
+        cmd = self.pre_arcCmd + 'arcinfo -l'
         output, s = self.ExecuteCommand(cmd)
 
         clusters = []
-        for c_text in ngstatqlSplitClusters(output):
+        for c_text in ARCInfoSplitClusters(output):
             c = {}
-            c["cluster"] = c_text[0].split(' ')[1]
-            c["localse"] = []
+            c["cluster"] = c_text[0].split(': ')[1]
             c["rte"] = []
-            in_list = False
+            in_rtelist = False
             for line in c_text:
-                if in_list:
-                    if line[0:4] == "    ":
-                        c[list_name].append(line.lstrip())
+                if in_rtelist:
+                    if line[0:2] == "  ":
+                        c["rte"].append(line.lstrip())
                     else:
-                        in_list = False
-
-                if not in_list:
-                    if line == "  Local Storage Elements:":
-                        in_list = True
-                        list_name = "localse"
-                    elif line == "  Installed Runtime Environments:":
-                        in_list = True
-                        list_name = "rte"
+                        in_rtelist = False
+                if not in_rtelist:
+                    if line == " Installed application environments:":
+                        in_rtelist = True
 
             clusters.append(c)
         return clusters
@@ -595,13 +611,13 @@ class SchedulerARC(SchedulerInterface):
 
         for ce in CEs:
             name = ce['cluster']
-            localSEs = set(ce['localse'])
+            #localSEs = set(ce['localse'])
             RTEs = set(ce['rte'])
 
-            if count_nonempty(seList) > 0 and not set(seList) & localSEs:
-                if count_nonempty(whitelist) > 0 and name in whitelist:
-                    self.logging.warning("NOTE: Whitelisted CE %s was found but isn't close to any SE that have the data" % name)
-                continue
+            #if count_nonempty(seList) > 0 and not set(seList) & localSEs:
+            #    if count_nonempty(whitelist) > 0 and name in whitelist:
+            #        self.logging.warning("NOTE: Whitelisted CE %s was found but isn't close to any SE that have the data" % name)
+            #    continue
 
             if count_nonempty(tags) > 0 and not set(tags) <= RTEs:
                 if count_nonempty(whitelist) > 0 and name in whitelist:
