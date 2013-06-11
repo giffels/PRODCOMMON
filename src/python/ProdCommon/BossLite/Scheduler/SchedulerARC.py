@@ -22,6 +22,7 @@ from ProdCommon.BossLite.DbObjects.Job import Job
 from ProdCommon.BossLite.DbObjects.Task import Task
 import logging
 import re
+from elementtree import ElementTree as ET
 #import arclib as arc
 
 #
